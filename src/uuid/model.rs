@@ -1,12 +1,12 @@
 use anyhow::Result;
 use chrono::{DateTime, TimeZone};
 use serde::Serialize;
-use sqlx::{FromRow, MySqlPool};
+use sqlx::MySqlPool;
 
 pub struct Uuid {}
 
 /// Represents a User data record
-#[derive(Serialize, FromRow)]
+#[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: i32,

@@ -660,6 +660,7 @@ dependencies = [
  "chrono-tz",
  "dotenv",
  "futures",
+ "regex",
  "serde",
  "serde_json",
  "sqlx",

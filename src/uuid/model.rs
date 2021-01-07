@@ -1,6 +1,7 @@
 use anyhow::Result;
 use chrono::{DateTime, TimeZone};
 use futures::try_join;
+use regex::Regex;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
@@ -17,6 +18,7 @@ pub struct User {
     pub id: i32,
     pub trashed: bool,
     pub alias: String,
+    #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
     pub username: String,
     pub date: String,
@@ -30,6 +32,7 @@ pub struct Page {
     pub id: i32,
     pub trashed: bool,
     pub alias: String,
+    #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
     pub instance: String,
     pub current_revision_id: Option<i32>,
@@ -39,18 +42,27 @@ pub struct Page {
 }
 
 impl Uuid {
-    // TODO: We'd like an union type here (e.g. returns one of the concrete uuid types). Not entirely sure how to do this in a idiomatic way.
     pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Uuid> {
-        let uuid = sqlx::query!(r#"SELECT * FROM uuid WHERE id = ?"#, id)
-            .fetch_one(&*pool)
-            .await?;
+        let uuid = sqlx::query!(
+            r#"SELECT discriminator, trashed FROM uuid WHERE id = ?"#,
+            id
+        )
+        .fetch_one(&*pool)
+        .await?;
 
         match uuid.discriminator.as_str() {
             "page" => {
-                // TODO:
-                let title = "";
-                let page_fut = sqlx::query!(r#"SELECT i.subdomain, pr.current_revision_id, pr.license_id FROM page_repository pr JOIN instance i ON pr.instance_id = i.id WHERE pr.id = ?"#, id)
-                    .fetch_one(&*pool);
+                let page_fut = sqlx::query!(
+                    r#"
+                        SELECT i.subdomain, p.current_revision_id, p.license_id, r.title
+                            FROM page_repository p
+                            JOIN instance i ON i.id = p.instance_id
+                            LEFT JOIN page_revision r ON r.id = p.current_revision_id
+                            WHERE p.id = ?
+                    "#,
+                    id
+                )
+                .fetch_one(&*pool);
                 let revisions_fut = sqlx::query!(
                     r#"SELECT id, date FROM page_revision WHERE page_repository_id = ?"#,
                     id
@@ -58,10 +70,10 @@ impl Uuid {
                 .fetch_all(&*pool);
                 let (page, revisions) = try_join!(page_fut, revisions_fut)?;
                 Ok(Uuid::Page(Page {
-                    id: uuid.id as i32,
+                    id,
                     trashed: uuid.trashed != 0,
                     // TODO:
-                    alias: format!("/{}/{}", uuid.id, title),
+                    alias: format_alias(None, id, page.title.as_deref()),
                     __typename: String::from("Page"),
                     instance: page.subdomain,
                     current_revision_id: page.current_revision_id,
@@ -79,9 +91,9 @@ impl Uuid {
                     .fetch_one(&*pool)
                     .await?;
                 Ok(Uuid::User(User {
-                    id: uuid.id as i32,
+                    id,
                     trashed: uuid.trashed != 0,
-                    alias: format!("/user/{}/{}", uuid.id, user.username),
+                    alias: format!("/user/{}/{}", id, user.username),
                     __typename: String::from("User"),
                     username: user.username,
                     date: format_datetime(&user.date),
@@ -106,4 +118,22 @@ where
         .from_local_datetime(&naive_datetime)
         .unwrap()
         .to_rfc3339()
+}
+
+pub fn format_alias(prefix: Option<&str>, id: i32, suffix: Option<&str>) -> String {
+    let prefix = prefix
+        .map(|p| format!("/{}", slugify(p)))
+        .unwrap_or_else(|| String::from(""));
+    let suffix = suffix.map(slugify).unwrap_or_else(|| String::from(""));
+    format!("{}/{}/{}", prefix, id, suffix)
+}
+
+pub fn slugify(segment: &str) -> String {
+    let segment = Regex::new(r#"['"`=+*&^%$#@!<>?]"#)
+        .unwrap()
+        .replace_all(&segment, "");
+    let segment = Regex::new(r"[\[\]{}() ,;/|]+")
+        .unwrap()
+        .replace_all(&segment, "-");
+    String::from(segment.to_lowercase().trim_matches('-'))
 }

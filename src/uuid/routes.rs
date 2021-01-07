@@ -7,7 +7,10 @@ async fn find(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respond
     let result = Uuid::find_by_id(id.into_inner(), db_pool.get_ref()).await;
     match result {
         Ok(uuid) => HttpResponse::Ok().json(uuid),
-        _ => HttpResponse::NotFound().body("UUID not found"),
+        Err(e) => {
+            println!("{}", e);
+            HttpResponse::NotFound().body("UUID not found")
+        }
     }
 }
 

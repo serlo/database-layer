@@ -40,11 +40,11 @@ impl Page {
         .fetch_all(pool);
         let (page, revisions) = try_join!(page_fut, revisions_fut)?;
         Ok(Page {
+            __typename: String::from("Page"),
             id,
             trashed: page.trashed != 0,
             // TODO:
             alias: format_alias(None, id, page.title.as_deref()),
-            __typename: String::from("Page"),
             instance: page.subdomain,
             current_revision_id: page.current_revision_id,
             revision_ids: revisions

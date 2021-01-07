@@ -1,4 +1,5 @@
 mod page;
+mod page_revision;
 mod user;
 mod uuid;
 

@@ -1,14 +1,17 @@
-use crate::uuid::model::page::Page;
-use crate::uuid::model::user::User;
 use anyhow::Result;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
+use crate::uuid::model::page::Page;
+use crate::uuid::model::page_revision::PageRevision;
+use crate::uuid::model::user::User;
+
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum Uuid {
-    User(User),
     Page(Page),
+    PageRevision(PageRevision),
+    User(User),
 }
 
 impl Uuid {
@@ -18,6 +21,9 @@ impl Uuid {
             .await?;
         match uuid.discriminator.as_str() {
             "page" => Ok(Uuid::Page(Page::find_by_id(id, pool).await?)),
+            "pageRevision" => Ok(Uuid::PageRevision(
+                PageRevision::find_by_id(id, pool).await?,
+            )),
             "user" => Ok(Uuid::User(User::find_by_id(id, pool).await?)),
             _ => {
                 panic!("TODO")

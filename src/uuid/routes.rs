@@ -1,4 +1,4 @@
-use crate::uuid::Uuid;
+use crate::uuid::model::Uuid;
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 

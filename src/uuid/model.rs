@@ -3,9 +3,13 @@ use chrono::{DateTime, TimeZone};
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-pub struct Uuid {}
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum Uuid {
+    User(User),
+    Page(Page),
+}
 
-/// Represents a User data record
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
@@ -19,30 +23,59 @@ pub struct User {
     pub description: Option<String>,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Page {
+    pub id: i32,
+    pub trashed: bool,
+    pub alias: String,
+    pub __typename: String,
+    // pub instance: String,
+    pub current_revision_id: Option<i32>,
+    // pub revision_ids: Vec<i32>,
+    // pub date: String,
+    pub license_id: i32,
+}
+
 impl Uuid {
-    // TODO: We'd like an union type here (e.g. returns on of the concrete uuid types). Not entirely sure how to do this in a idiomatic way.
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<User> {
+    // TODO: We'd like an union type here (e.g. returns one of the concrete uuid types). Not entirely sure how to do this in a idiomatic way.
+    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Uuid> {
         let uuid = sqlx::query!(r#"SELECT * FROM uuid WHERE id = ?"#, id)
             .fetch_one(&*pool)
             .await?;
 
         match uuid.discriminator.as_str() {
+            "page" => {
+                // TODO:
+                let title = "";
+                let page = sqlx::query!(r#"SELECT * FROM page_repository WHERE id = ?"#, id)
+                    .fetch_one(&*pool)
+                    .await?;
+                Ok(Uuid::Page(Page {
+                    id: uuid.id as i32,
+                    trashed: uuid.trashed != 0,
+                    // TODO:
+                    alias: format!("/{}/{}", uuid.id, title),
+                    __typename: String::from("Page"),
+                    // instance: page.subdomain,
+                    current_revision_id: page.current_revision_id,
+                    license_id: page.license_id,
+                }))
+            }
             "user" => {
                 let user = sqlx::query!(r#"SELECT * FROM user WHERE id = ?"#, id)
                     .fetch_one(&*pool)
                     .await?;
-                Ok({
-                    User {
-                        id: uuid.id as i32,
-                        trashed: uuid.trashed != 0,
-                        alias: format!("/user/{}/{}", uuid.id, user.username),
-                        __typename: String::from("User"),
-                        username: user.username,
-                        date: format_datetime(&user.date),
-                        last_login: user.last_login.map(|date| format_datetime(&date)),
-                        description: user.description,
-                    }
-                })
+                Ok(Uuid::User(User {
+                    id: uuid.id as i32,
+                    trashed: uuid.trashed != 0,
+                    alias: format!("/user/{}/{}", uuid.id, user.username),
+                    __typename: String::from("User"),
+                    username: user.username,
+                    date: format_datetime(&user.date),
+                    last_login: user.last_login.map(|date| format_datetime(&date)),
+                    description: user.description,
+                }))
             }
             _ => {
                 panic!("TODO")

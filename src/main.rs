@@ -1,8 +1,8 @@
-use actix_web::{get, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App, HttpServer, Result};
 
-#[get("/")]
-async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello world")
+#[get("/uuid/{uuid}")]
+async fn hello(web::Path(uuid): web::Path<u32>) -> Result<String> {
+    Ok(format!("Hello {}", uuid))
 }
 
 #[actix_web::main]

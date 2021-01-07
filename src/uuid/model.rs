@@ -30,7 +30,7 @@ pub struct Page {
     pub trashed: bool,
     pub alias: String,
     pub __typename: String,
-    // pub instance: String,
+    pub instance: String,
     pub current_revision_id: Option<i32>,
     // pub revision_ids: Vec<i32>,
     // pub date: String,
@@ -48,7 +48,7 @@ impl Uuid {
             "page" => {
                 // TODO:
                 let title = "";
-                let page = sqlx::query!(r#"SELECT * FROM page_repository WHERE id = ?"#, id)
+                let page = sqlx::query!(r#"SELECT i.subdomain, pr.current_revision_id, pr.license_id FROM page_repository pr JOIN instance i ON pr.instance_id = i.id WHERE pr.id = ?"#, id)
                     .fetch_one(&*pool)
                     .await?;
                 Ok(Uuid::Page(Page {
@@ -57,7 +57,7 @@ impl Uuid {
                     // TODO:
                     alias: format!("/{}/{}", uuid.id, title),
                     __typename: String::from("Page"),
-                    // instance: page.subdomain,
+                    instance: page.subdomain,
                     current_revision_id: page.current_revision_id,
                     license_id: page.license_id,
                 }))

@@ -1,7 +1,6 @@
 use actix_web::{get, web, App, HttpServer, Result};
 use dotenv::dotenv;
-use sqlx::mysql::MySqlPoolOptions;
-use std::env;
+use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 
 mod uuid;
 
@@ -14,10 +13,16 @@ async fn hello(web::Path(uuid): web::Path<u32>) -> Result<String> {
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
 
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL is not set in .env file");
+    // TODO: we can't use DATABASE_URL correctly because we need to override charset.
+    let options = MySqlConnectOptions::new()
+        .host("localhost")
+        .username("root")
+        .password("secret")
+        .database("serlo")
+        .charset("latin1");
     let pool = MySqlPoolOptions::new()
         .max_connections(5)
-        .connect(&database_url)
+        .connect_with(options)
         .await?;
 
     HttpServer::new(move || App::new().data(pool.clone()).configure(uuid::init))

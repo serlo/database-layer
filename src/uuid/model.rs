@@ -1,5 +1,6 @@
 use anyhow::Result;
 use chrono::{DateTime, TimeZone};
+use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
@@ -32,8 +33,8 @@ pub struct Page {
     pub __typename: String,
     pub instance: String,
     pub current_revision_id: Option<i32>,
-    // pub revision_ids: Vec<i32>,
-    // pub date: String,
+    pub revision_ids: Vec<i32>,
+    pub date: String,
     pub license_id: i32,
 }
 
@@ -48,9 +49,14 @@ impl Uuid {
             "page" => {
                 // TODO:
                 let title = "";
-                let page = sqlx::query!(r#"SELECT i.subdomain, pr.current_revision_id, pr.license_id FROM page_repository pr JOIN instance i ON pr.instance_id = i.id WHERE pr.id = ?"#, id)
-                    .fetch_one(&*pool)
-                    .await?;
+                let page_fut = sqlx::query!(r#"SELECT i.subdomain, pr.current_revision_id, pr.license_id FROM page_repository pr JOIN instance i ON pr.instance_id = i.id WHERE pr.id = ?"#, id)
+                    .fetch_one(&*pool);
+                let revisions_fut = sqlx::query!(
+                    r#"SELECT id, date FROM page_revision WHERE page_repository_id = ?"#,
+                    id
+                )
+                .fetch_all(&*pool);
+                let (page, revisions) = try_join!(page_fut, revisions_fut)?;
                 Ok(Uuid::Page(Page {
                     id: uuid.id as i32,
                     trashed: uuid.trashed != 0,
@@ -59,6 +65,12 @@ impl Uuid {
                     __typename: String::from("Page"),
                     instance: page.subdomain,
                     current_revision_id: page.current_revision_id,
+                    revision_ids: revisions
+                        .iter()
+                        .rev()
+                        .map(|revision| revision.id as i32)
+                        .collect(),
+                    date: format_datetime(&revisions[0].date),
                     license_id: page.license_id,
                 }))
             }

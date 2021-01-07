@@ -28,7 +28,7 @@ impl User {
             "#,
             id
         )
-        .fetch_one(&*pool)
+        .fetch_one(pool)
         .await?;
         Ok(User {
             __typename: String::from("User"),

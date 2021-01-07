@@ -14,7 +14,7 @@ pub enum Uuid {
 impl Uuid {
     pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Uuid> {
         let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
-            .fetch_one(&*pool)
+            .fetch_one(pool)
             .await?;
         match uuid.discriminator.as_str() {
             "page" => Ok(Uuid::Page(Page::find_by_id(id, pool).await?)),

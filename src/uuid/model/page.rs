@@ -32,12 +32,12 @@ impl Page {
             "#,
             id
         )
-        .fetch_one(&*pool);
+        .fetch_one(pool);
         let revisions_fut = sqlx::query!(
             r#"SELECT id, date FROM page_revision WHERE page_repository_id = ?"#,
             id
         )
-        .fetch_all(&*pool);
+        .fetch_all(pool);
         let (page, revisions) = try_join!(page_fut, revisions_fut)?;
         Ok(Page {
             id,

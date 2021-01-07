@@ -22,30 +22,20 @@ pub struct User {
 impl Uuid {
     // TODO: We'd like an union type here (e.g. returns on of the concrete uuid types). Not entirely sure how to do this in a idiomatic way.
     pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<User> {
-        let row = sqlx::query!(
-            r#"
-                SELECT * FROM uuid WHERE id = ?
-            "#,
-            id
-        )
-        .fetch_one(&*pool)
-        .await?;
+        let uuid = sqlx::query!(r#"SELECT * FROM uuid WHERE id = ?"#, id)
+            .fetch_one(&*pool)
+            .await?;
 
-        match row.discriminator.as_str() {
+        match uuid.discriminator.as_str() {
             "user" => {
-                let user = sqlx::query!(
-                    r#"
-                SELECT * FROM user WHERE id = ?
-            "#,
-                    id
-                )
-                .fetch_one(&*pool)
-                .await?;
+                let user = sqlx::query!(r#"SELECT * FROM user WHERE id = ?"#, id)
+                    .fetch_one(&*pool)
+                    .await?;
                 Ok({
                     User {
-                        id: row.id as i32,
-                        trashed: row.trashed != 0,
-                        alias: format!("/user/{}/{}", row.id, user.username),
+                        id: uuid.id as i32,
+                        trashed: uuid.trashed != 0,
+                        alias: format!("/user/{}/{}", uuid.id, user.username),
                         __typename: String::from("User"),
                         username: user.username,
                         date: format_datetime(&user.date),

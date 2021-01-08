@@ -147,15 +147,20 @@ impl Entity {
     ) -> Result<Option<String>, sqlx::Error> {
         let taxonomy_terms = sqlx::query!(
             r#"
-            SELECT term_taxonomy_id as id
-                FROM (
-                    SELECT term_taxonomy_id, entity_id FROM term_taxonomy_entity
-                    UNION ALL
-                    SELECT t.term_taxonomy_id, l.child_id as entity_id
-                        FROM term_taxonomy_entity t
-                        JOIN entity_link l ON t.entity_id = l.parent_id
-                ) u
-                WHERE entity_id = ?
+                SELECT term_taxonomy_id as id
+                    FROM (
+                        SELECT term_taxonomy_id, entity_id FROM term_taxonomy_entity
+                        UNION ALL
+                        SELECT t.term_taxonomy_id, l.child_id as entity_id
+                            FROM term_taxonomy_entity t
+                            JOIN entity_link l ON t.entity_id = l.parent_id
+                        UNION ALL
+                        SELECT t.term_taxonomy_id, l2.child_id as entity_id
+                            FROM term_taxonomy_entity t
+                            JOIN entity_link l1 ON t.entity_id = l1.parent_id
+                            JOIN entity_link l2 ON l2.parent_id = l1.child_id
+                    ) u
+                    WHERE entity_id = ?
             "#,
             id
         )

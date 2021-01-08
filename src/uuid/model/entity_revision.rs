@@ -76,7 +76,7 @@ impl EntityRevision {
             title: if revision.name == "text-exercise"
                 || revision.name == "text-exercise-group"
                 || revision.name == "grouped-text-exercise"
-                || revision.name == "solution"
+                || revision.name == "text-solution"
             {
                 None
             } else {

@@ -100,7 +100,11 @@ impl Entity {
             __typename: normalize_type(entity.name.as_str()),
             id,
             trashed: entity.trashed != 0,
-            alias: format_alias(subject.as_deref(), id, entity.value.as_deref()),
+            alias: format_alias(
+                subject.as_deref(),
+                id,
+                Some(entity.value.unwrap_or(format!("{}", id)).as_str()),
+            ),
             instance: entity.subdomain,
             date: format_datetime(&entity.date),
             current_revision_id: entity.current_revision_id,
@@ -117,7 +121,7 @@ impl Entity {
             } else {
                 None
             },
-            exercise_ids: if entity.name == "exercise-group" {
+            exercise_ids: if entity.name == "text-exercise-group" {
                 Some(children.clone())
             } else {
                 None

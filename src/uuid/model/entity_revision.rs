@@ -69,25 +69,31 @@ impl EntityRevision {
             Some(term) => TaxonomyTerm::find_canonical_subject_by_id(term.id as i32, pool).await?,
             _ => None,
         };
-        let title = get_field("title", &fields);
 
         Ok(EntityRevision {
             __typename: format!("{}Revision", normalize_type(revision.name.as_str())),
             id,
             trashed: revision.trashed != 0,
-            alias: format_alias(subject.as_deref(), id, title.as_deref()),
-            // instance: entity.subdomain,
+            alias: format_alias(
+                subject.as_deref(),
+                id,
+                Some(
+                    get_field("title", &fields)
+                        .unwrap_or(format!("{}", id))
+                        .as_str(),
+                ),
+            ),
             date: format_datetime(&revision.date),
             author_id: revision.author_id as i32,
             repository_id: revision.repository_id as i32,
             title: if revision.name == "exercise"
-                || revision.name == "exercise-group"
+                || revision.name == "text-exercise-group"
                 || revision.name == "grouped-exercise"
                 || revision.name == "solution"
             {
                 None
             } else {
-                Some(title.unwrap_or_else(|| String::from("")))
+                Some(get_field("title", &fields).unwrap_or_else(|| String::from("")))
             },
             content: if revision.name == "video" {
                 get_field("description", &fields).unwrap_or_else(|| String::from(""))

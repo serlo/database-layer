@@ -4,6 +4,7 @@ use sqlx::MySqlPool;
 use thiserror::Error;
 
 use crate::uuid::model::entity::Entity;
+use crate::uuid::model::entity_revision::EntityRevision;
 use crate::uuid::model::page::Page;
 use crate::uuid::model::page_revision::PageRevision;
 use crate::uuid::model::taxonomy_term::TaxonomyTerm;
@@ -13,6 +14,7 @@ use crate::uuid::model::user::User;
 #[serde(untagged)]
 pub enum Uuid {
     Entity(Entity),
+    EntityRevision(EntityRevision),
     Page(Page),
     PageRevision(PageRevision),
     TaxonomyTerm(TaxonomyTerm),
@@ -26,6 +28,9 @@ impl Uuid {
             .await?;
         match uuid.discriminator.as_str() {
             "entity" => Ok(Uuid::Entity(Entity::find_by_id(id, pool).await?)),
+            "entityRevision" => Ok(Uuid::EntityRevision(
+                EntityRevision::find_by_id(id, pool).await?,
+            )),
             "page" => Ok(Uuid::Page(Page::find_by_id(id, pool).await?)),
             "pageRevision" => Ok(Uuid::PageRevision(
                 PageRevision::find_by_id(id, pool).await?,

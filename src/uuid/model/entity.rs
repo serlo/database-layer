@@ -68,12 +68,14 @@ impl Entity {
             id,
             id
         ).fetch_all(pool);
-        let (entity, revisions, taxonomy_terms, links) =
-            try_join!(entity_fut, revisions_fut, taxonomy_terms_fut, links_fut)?;
-        let subject = match taxonomy_terms.first() {
-            Some(term) => TaxonomyTerm::find_canonical_subject_by_id(term.id as i32, pool).await?,
-            _ => None,
-        };
+        let subject_fut = Self::find_canonical_subject_by_id(id, pool);
+        let (entity, revisions, taxonomy_terms, links, subject) = try_join!(
+            entity_fut,
+            revisions_fut,
+            taxonomy_terms_fut,
+            links_fut,
+            subject_fut
+        )?;
 
         let parents: Vec<i32> = links
             .iter()
@@ -126,7 +128,8 @@ impl Entity {
             } else {
                 None
             },
-            solution_id: if entity.name == "exercise" || entity.name == "grouped-exercise" {
+            solution_id: if entity.name == "text-exercise" || entity.name == "grouped-text-exercise"
+            {
                 // This double-wrapping is intentional. So basically:
                 // Entities that aren't exercises have no solutionId in the serialized json
                 // Exercises have an optional solutionId in the serialized json (i.e. number | null).
@@ -136,6 +139,33 @@ impl Entity {
                 None
             },
         })
+    }
+
+    pub async fn find_canonical_subject_by_id(
+        id: i32,
+        pool: &MySqlPool,
+    ) -> Result<Option<String>, sqlx::Error> {
+        let taxonomy_terms = sqlx::query!(
+            r#"
+            SELECT term_taxonomy_id as id
+                FROM (
+                    SELECT term_taxonomy_id, entity_id FROM term_taxonomy_entity
+                    UNION ALL
+                    SELECT t.term_taxonomy_id, l.child_id as entity_id
+                        FROM term_taxonomy_entity t
+                        JOIN entity_link l ON t.entity_id = l.parent_id
+                ) u
+                WHERE entity_id = ?
+            "#,
+            id
+        )
+        .fetch_all(pool)
+        .await?;
+        let subject = match taxonomy_terms.first() {
+            Some(term) => TaxonomyTerm::find_canonical_subject_by_id(term.id as i32, pool).await?,
+            _ => None,
+        };
+        Ok(subject)
     }
 }
 

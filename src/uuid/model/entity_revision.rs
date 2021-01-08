@@ -86,9 +86,9 @@ impl EntityRevision {
             date: format_datetime(&revision.date),
             author_id: revision.author_id as i32,
             repository_id: revision.repository_id as i32,
-            title: if revision.name == "exercise"
+            title: if revision.name == "text-exercise"
                 || revision.name == "text-exercise-group"
-                || revision.name == "grouped-exercise"
+                || revision.name == "grouped-text-exercise"
                 || revision.name == "solution"
             {
                 None

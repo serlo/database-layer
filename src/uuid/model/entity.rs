@@ -20,6 +20,14 @@ pub struct Entity {
     pub revision_ids: Vec<i32>,
     pub license_id: i32,
     pub taxonomy_term_ids: Vec<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_id: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page_ids: Option<Vec<i32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exercise_ids: Option<Vec<i32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub solution_id: Option<Option<i32>>,
 }
 
 impl Entity {
@@ -48,14 +56,49 @@ impl Entity {
             id
         )
         .fetch_all(pool);
-        let (entity, revisions, taxonomy_terms) =
-            try_join!(entity_fut, revisions_fut, taxonomy_terms_fut)?;
+        let links_fut = sqlx::query!(
+            r#"
+                SELECT c.id as child_id, ct.name as child_type, p.id as parent_id, pt.name as parent_type
+                    FROM entity_link l
+                    JOIN entity p ON p.id = l.parent_id
+                    JOIN type pt ON pt.id = p.type_id
+                    JOIN entity c on c.id = l.child_id
+                    JOIN type ct ON ct.id = c.type_id
+                    WHERE c.id = ? OR p.id = ?
+            "#,
+            id,
+            id
+        ).fetch_all(pool);
+        let (entity, revisions, taxonomy_terms, links) =
+            try_join!(entity_fut, revisions_fut, taxonomy_terms_fut, links_fut)?;
         let subject = match taxonomy_terms.first() {
             Some(term) => TaxonomyTerm::find_canonical_subject_by_id(term.id as i32, pool).await?,
             _ => None,
         };
+
+        let parents: Vec<i32> = links
+            .iter()
+            .filter_map(|link| {
+                if link.child_id as i32 == id {
+                    Some(link.parent_id as i32)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let children: Vec<i32> = links
+            .iter()
+            .filter_map(|link| {
+                if link.parent_id as i32 == id {
+                    Some(link.child_id as i32)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
         Ok(Entity {
-            __typename: normalize_type(entity.name),
+            __typename: normalize_type(entity.name.as_str()),
             id,
             trashed: entity.trashed != 0,
             alias: format_alias(subject.as_deref(), id, entity.value.as_deref()),
@@ -69,11 +112,31 @@ impl Entity {
                 .collect(),
             license_id: entity.license_id,
             taxonomy_term_ids: taxonomy_terms.iter().map(|term| term.id as i32).collect(),
+            parent_id: parents.first().cloned(),
+            page_ids: if entity.name == "course" {
+                Some(children.clone())
+            } else {
+                None
+            },
+            exercise_ids: if entity.name == "exercise-group" {
+                Some(children.clone())
+            } else {
+                None
+            },
+            solution_id: if entity.name == "exercise" || entity.name == "grouped-exercise" {
+                // This double-wrapping is intentional. So basically:
+                // Entities that aren't exercises have no solutionId in the serialized json
+                // Exercises have an optional solutionId in the serialized json (i.e. number | null).
+                // Might not be absolutely necessary but this achieves full feature-parity with serlo.org/api/*
+                Some(children.first().cloned())
+            } else {
+                None
+            },
         })
     }
 }
 
-fn normalize_type(typename: String) -> String {
+fn normalize_type(typename: &str) -> String {
     let typename = typename.replace("text-", "");
     typename.to_case(Case::Pascal)
 }

@@ -7,12 +7,15 @@ async fn find(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respond
     let result = Uuid::find_by_id(id.into_inner(), db_pool.get_ref()).await;
     match result {
         Ok(uuid) => HttpResponse::Ok().json(uuid),
-        Err(e) => match e.downcast_ref::<UuidError>() {
-            Some(UuidError::UnsupportedDiscriminator { .. }) => {
-                HttpResponse::BadRequest().json(None::<String>)
+        Err(e) => {
+            println!("{:?}", e);
+            match e.downcast_ref::<UuidError>() {
+                Some(UuidError::UnsupportedDiscriminator { .. }) => {
+                    HttpResponse::BadRequest().json(None::<String>)
+                }
+                _ => HttpResponse::NotFound().json(None::<String>),
             }
-            _ => HttpResponse::NotFound().json(None::<String>),
-        },
+        }
     }
 }
 

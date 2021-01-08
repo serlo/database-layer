@@ -39,9 +39,8 @@ impl Entity {
                     JOIN uuid u ON u.id = e.id
                     JOIN instance i ON i.id = e.instance_id
                     JOIN type t ON t.id = e.type_id
-                    LEFT JOIN entity_revision_field f ON f.entity_revision_id = e.current_revision_id
+                    LEFT JOIN entity_revision_field f ON f.entity_revision_id = e.current_revision_id AND f.field = 'title'
                     WHERE e.id = ?
-                        AND f.field = 'title'
             "#,
             id
         )

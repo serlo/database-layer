@@ -25,8 +25,21 @@ fn slugify(segment: &str) -> String {
     let segment = Regex::new(r#"['"`=+*&^%$#@!<>?]"#)
         .unwrap()
         .replace_all(&segment, "");
-    let segment = Regex::new(r"[\[\]{}() ,;/|]+")
+    let segment = Regex::new(r"[\[\]{}() ,;/|\-]+")
         .unwrap()
         .replace_all(&segment, "-");
     String::from(segment.to_lowercase().trim_matches('-'))
+}
+
+#[cfg(test)]
+mod test {
+    use crate::slugify;
+
+    #[test]
+    fn format_alias_double_dash() {
+        assert_eq!(
+            slugify("Flächen- und Volumenberechnung mit Integralen"),
+            "flächen-und-volumenberechnung-mit-integralen"
+        )
+    }
 }

@@ -64,6 +64,7 @@ impl Entity {
                     JOIN entity c on c.id = l.child_id
                     JOIN type ct ON ct.id = c.type_id
                     WHERE c.id = ? OR p.id = ?
+                    ORDER BY l.order ASC
             "#,
             id,
             id

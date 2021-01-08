@@ -1,3 +1,4 @@
+mod entity;
 mod page;
 mod page_revision;
 mod taxonomy_term;

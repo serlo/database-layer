@@ -3,6 +3,7 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
+use crate::uuid::model::entity::Entity;
 use crate::uuid::model::page::Page;
 use crate::uuid::model::page_revision::PageRevision;
 use crate::uuid::model::taxonomy_term::TaxonomyTerm;
@@ -11,6 +12,7 @@ use crate::uuid::model::user::User;
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum Uuid {
+    Entity(Entity),
     Page(Page),
     PageRevision(PageRevision),
     TaxonomyTerm(TaxonomyTerm),
@@ -23,6 +25,7 @@ impl Uuid {
             .fetch_one(pool)
             .await?;
         match uuid.discriminator.as_str() {
+            "entity" => Ok(Uuid::Entity(Entity::find_by_id(id, pool).await?)),
             "page" => Ok(Uuid::Page(Page::find_by_id(id, pool).await?)),
             "pageRevision" => Ok(Uuid::PageRevision(
                 PageRevision::find_by_id(id, pool).await?,

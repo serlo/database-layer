@@ -58,10 +58,37 @@ impl TaxonomyTerm {
             id
         )
         .fetch_all(pool);
+        let subject_fut = TaxonomyTerm::find_canonical_subject_by_id(id, &pool);
+        let (taxonomy_term, entities, children, subject) =
+            try_join!(taxonomy_term_fut, entities_fut, children_fut, subject_fut)?;
+        let mut children_ids: Vec<i32> = entities
+            .iter()
+            .map(|child| child.entity_id as i32)
+            .collect();
+        children_ids.extend(children.iter().map(|child| child.id as i32));
+        Ok(TaxonomyTerm {
+            __typename: String::from("TaxonomyTerm"),
+            id,
+            trashed: taxonomy_term.trashed != 0,
+            alias: format_alias(subject.as_deref(), id, Some(&taxonomy_term.name)),
+            term_type: taxonomy_term.term_type,
+            instance: taxonomy_term.subdomain,
+            name: taxonomy_term.name,
+            description: taxonomy_term.description,
+            weight: taxonomy_term.weight.unwrap_or(0),
+            parent_id: taxonomy_term.parent_id.map(|id| id as i32),
+            children_ids,
+        })
+    }
+
+    pub async fn find_canonical_subject_by_id(
+        id: i32,
+        pool: &MySqlPool,
+    ) -> Result<Option<String>, sqlx::Error> {
         // Yes, this is super hacky. Didn't find a better way to handle recursion in MySQL 5 (in production, the max depth is around 10 at the moment)
-        let subject_fut = sqlx::query!(
+        let subjects = sqlx::query!(
             r#"
-                SELECT t1.id, t.name
+                SELECT t.name
                     FROM term_taxonomy t0
                     LEFT JOIN term_taxonomy t1 ON t1.parent_id = t0.id
                     LEFT JOIN term_taxonomy t2 ON t2.parent_id = t1.id
@@ -111,27 +138,12 @@ impl TaxonomyTerm {
             id,
             id,
             id
-        ).fetch_all(pool);
-        let (taxonomy_term, entities, children, subject) =
-            try_join!(taxonomy_term_fut, entities_fut, children_fut, subject_fut)?;
-        let mut children_ids: Vec<i32> = entities
-            .iter()
-            .map(|child| child.entity_id as i32)
-            .collect();
-        let subject_name = subject.first().map(|x| x.name.as_str());
-        children_ids.extend(children.iter().map(|child| child.id as i32));
-        Ok(TaxonomyTerm {
-            __typename: String::from("TaxonomyTerm"),
-            id,
-            trashed: taxonomy_term.trashed != 0,
-            alias: format_alias(subject_name, id, Some(&taxonomy_term.name)),
-            term_type: taxonomy_term.term_type,
-            instance: taxonomy_term.subdomain,
-            name: taxonomy_term.name,
-            description: taxonomy_term.description,
-            weight: taxonomy_term.weight.unwrap_or(0),
-            parent_id: taxonomy_term.parent_id.map(|id| id as i32),
-            children_ids,
-        })
+        ).fetch_all(pool).await?;
+        // TODO: This should probably be easier somehow
+        let subject = subjects
+            .first()
+            .as_ref()
+            .map(|subject| String::from(&subject.name));
+        Ok(subject)
     }
 }

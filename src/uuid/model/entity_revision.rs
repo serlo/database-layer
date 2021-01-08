@@ -1,4 +1,4 @@
-use crate::uuid::model::taxonomy_term::TaxonomyTerm;
+use crate::uuid::model::entity::Entity;
 use anyhow::Result;
 use convert_case::{Case, Casing};
 use database_layer_actix::{format_alias, format_datetime};
@@ -53,22 +53,9 @@ impl EntityRevision {
             id
         )
         .fetch_all(pool);
-        let taxonomy_terms_fut = sqlx::query!(
-            r#"
-                SELECT t.term_taxonomy_id as id
-                    FROM entity_revision r
-                    JOIN term_taxonomy_entity t ON t.entity_id = r.repository_id
-                    WHERE r.id = ?
-            "#,
-            id
-        )
-        .fetch_all(pool);
-        let (revision, fields, taxonomy_terms) =
-            try_join!(revision_fut, fields_fut, taxonomy_terms_fut)?;
-        let subject = match taxonomy_terms.first() {
-            Some(term) => TaxonomyTerm::find_canonical_subject_by_id(term.id as i32, pool).await?,
-            _ => None,
-        };
+        let (revision, fields) = try_join!(revision_fut, fields_fut)?;
+        let subject =
+            Entity::find_canonical_subject_by_id(revision.repository_id as i32, pool).await?;
 
         Ok(EntityRevision {
             __typename: format!("{}Revision", normalize_type(revision.name.as_str())),

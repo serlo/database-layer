@@ -1,5 +1,5 @@
 use anyhow::Result;
-use database_layer_actix::{format_alias, format_datetime};
+use database_layer_actix::format_alias;
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;

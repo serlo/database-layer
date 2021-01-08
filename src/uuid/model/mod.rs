@@ -1,5 +1,6 @@
 mod page;
 mod page_revision;
+mod taxonomy_term;
 mod user;
 mod uuid;
 

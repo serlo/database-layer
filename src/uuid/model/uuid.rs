@@ -4,6 +4,7 @@ use sqlx::MySqlPool;
 
 use crate::uuid::model::page::Page;
 use crate::uuid::model::page_revision::PageRevision;
+use crate::uuid::model::taxonomy_term::TaxonomyTerm;
 use crate::uuid::model::user::User;
 
 #[derive(Serialize)]
@@ -11,6 +12,7 @@ use crate::uuid::model::user::User;
 pub enum Uuid {
     Page(Page),
     PageRevision(PageRevision),
+    TaxonomyTerm(TaxonomyTerm),
     User(User),
 }
 
@@ -23,6 +25,9 @@ impl Uuid {
             "page" => Ok(Uuid::Page(Page::find_by_id(id, pool).await?)),
             "pageRevision" => Ok(Uuid::PageRevision(
                 PageRevision::find_by_id(id, pool).await?,
+            )),
+            "taxonomyTerm" => Ok(Uuid::TaxonomyTerm(
+                TaxonomyTerm::find_by_id(id, pool).await?,
             )),
             "user" => Ok(Uuid::User(User::find_by_id(id, pool).await?)),
             _ => {

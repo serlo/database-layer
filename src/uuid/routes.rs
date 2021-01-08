@@ -1,4 +1,4 @@
-use crate::uuid::model::Uuid;
+use crate::uuid::model::{Uuid, UuidError};
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
@@ -7,10 +7,12 @@ async fn find(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respond
     let result = Uuid::find_by_id(id.into_inner(), db_pool.get_ref()).await;
     match result {
         Ok(uuid) => HttpResponse::Ok().json(uuid),
-        Err(e) => {
-            println!("{}", e);
-            HttpResponse::NotFound().body("UUID not found")
-        }
+        Err(e) => match e.downcast_ref::<UuidError>() {
+            Some(UuidError::UnsupportedDiscriminator { .. }) => {
+                HttpResponse::BadRequest().json(None::<String>)
+            }
+            _ => HttpResponse::NotFound().json(None::<String>),
+        },
     }
 }
 

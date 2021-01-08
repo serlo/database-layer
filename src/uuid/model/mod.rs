@@ -4,4 +4,4 @@ mod taxonomy_term;
 mod user;
 mod uuid;
 
-pub use self::uuid::Uuid;
+pub use self::uuid::{Uuid, UuidError};

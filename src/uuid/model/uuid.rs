@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde::Serialize;
 use sqlx::MySqlPool;
+use thiserror::Error;
 
 use crate::uuid::model::page::Page;
 use crate::uuid::model::page_revision::PageRevision;
@@ -30,9 +31,16 @@ impl Uuid {
                 TaxonomyTerm::find_by_id(id, pool).await?,
             )),
             "user" => Ok(Uuid::User(User::find_by_id(id, pool).await?)),
-            _ => {
-                panic!("TODO")
-            }
+            _ => Err(anyhow::Error::new(UuidError::UnsupportedDiscriminator {
+                id,
+                discriminator: uuid.discriminator,
+            })),
         }
     }
+}
+
+#[derive(Error, Debug)]
+pub enum UuidError {
+    #[error("UUID {id:?} can't be fetched because is `{discriminator:?}` is not supported.")]
+    UnsupportedDiscriminator { id: i32, discriminator: String },
 }

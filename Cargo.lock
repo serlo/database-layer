@@ -664,6 +664,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "thiserror",
 ]
 
 [[package]]

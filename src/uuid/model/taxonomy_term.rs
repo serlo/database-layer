@@ -1,4 +1,5 @@
 use anyhow::Result;
+use convert_case::{Case, Casing};
 use database_layer_actix::format_alias;
 use futures::try_join;
 use serde::Serialize;
@@ -71,7 +72,7 @@ impl TaxonomyTerm {
             id,
             trashed: taxonomy_term.trashed != 0,
             alias: format_alias(subject.as_deref(), id, Some(&taxonomy_term.name)),
-            term_type: taxonomy_term.term_type,
+            term_type: normalize_type(taxonomy_term.term_type.as_str()),
             instance: taxonomy_term.subdomain,
             name: taxonomy_term.name,
             description: taxonomy_term.description,
@@ -146,4 +147,8 @@ impl TaxonomyTerm {
             .map(|subject| String::from(&subject.name));
         Ok(subject)
     }
+}
+
+fn normalize_type(typename: &str) -> String {
+    typename.to_case(Case::Camel)
 }

@@ -31,7 +31,11 @@ impl Uuid {
     pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Uuid> {
         let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
             .fetch_one(pool)
-            .await?;
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::RowNotFound => anyhow::Error::new(UuidError::NotFound { id }),
+                e => anyhow::Error::new(e),
+            })?;
         match uuid.discriminator.as_str() {
             "attachment" => Ok(Uuid::Attachment(Attachment::find_by_id(id, pool).await?)),
             "blogPost" => Ok(Uuid::BlogPost(BlogPost::find_by_id(id, pool).await?)),
@@ -82,4 +86,6 @@ impl Uuid {
 pub enum UuidError {
     #[error("UUID {id:?} can't be fetched because is `{discriminator:?}` is not supported.")]
     UnsupportedDiscriminator { id: i32, discriminator: String },
+    #[error("UUID {id:?} not found.")]
+    NotFound { id: i32 },
 }

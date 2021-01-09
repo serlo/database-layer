@@ -14,7 +14,8 @@ async fn find(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respond
                 Some(UuidError::UnsupportedDiscriminator { .. }) => {
                     HttpResponse::BadRequest().json(None::<String>)
                 }
-                _ => HttpResponse::NotFound().json(None::<String>),
+                Some(UuidError::NotFound { .. }) => HttpResponse::NotFound().json(None::<String>),
+                _ => HttpResponse::BadRequest().json(None::<String>),
             }
         }
     }

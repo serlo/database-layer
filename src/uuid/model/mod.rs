@@ -1,3 +1,4 @@
+mod attachment;
 mod blog_post;
 mod comment;
 mod entity;

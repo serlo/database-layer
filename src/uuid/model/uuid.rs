@@ -3,6 +3,7 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
+use crate::uuid::model::attachment::Attachment;
 use crate::uuid::model::blog_post::BlogPost;
 use crate::uuid::model::comment::Comment;
 use crate::uuid::model::entity::Entity;
@@ -15,6 +16,7 @@ use crate::uuid::model::user::User;
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum Uuid {
+    Attachment(Attachment),
     BlogPost(BlogPost),
     Comment(Comment),
     Entity(Entity),
@@ -31,6 +33,7 @@ impl Uuid {
             .fetch_one(pool)
             .await?;
         match uuid.discriminator.as_str() {
+            "attachment" => Ok(Uuid::Attachment(Attachment::find_by_id(id, pool).await?)),
             "blogPost" => Ok(Uuid::BlogPost(BlogPost::find_by_id(id, pool).await?)),
             "comment" => Ok(Uuid::Comment(Comment::find_by_id(id, pool).await?)),
             "entity" => Ok(Uuid::Entity(Entity::find_by_id(id, pool).await?)),
@@ -60,6 +63,7 @@ impl Uuid {
             .fetch_one(pool)
             .await?;
         match uuid.discriminator.as_str() {
+            "attachment" => Ok(Attachment::get_context()),
             "blogPost" => Ok(BlogPost::get_context()),
             // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
             "comment" => Ok(None),

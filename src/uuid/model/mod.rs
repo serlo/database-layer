@@ -1,4 +1,5 @@
 mod blog_post;
+mod comment;
 mod entity;
 mod entity_revision;
 mod page;

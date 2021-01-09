@@ -27,7 +27,15 @@ impl BlogPost {
         Ok(BlogPost {
             id,
             trashed: blog.trashed != 0,
-            alias: format_alias(Some("blog"), id, Some(blog.title.as_str())),
+            alias: format_alias(
+                Self::get_context().as_deref(),
+                id,
+                Some(blog.title.as_str()),
+            ),
         })
+    }
+
+    pub fn get_context() -> Option<String> {
+        return Some(String::from("blog"));
     }
 }

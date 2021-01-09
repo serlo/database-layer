@@ -54,15 +54,15 @@ impl EntityRevision {
         )
         .fetch_all(pool);
         let (revision, fields) = try_join!(revision_fut, fields_fut)?;
-        let subject =
-            Entity::find_canonical_subject_by_id(revision.repository_id as i32, pool).await?;
 
         Ok(EntityRevision {
             __typename: format!("{}Revision", normalize_type(revision.name.as_str())),
             id,
             trashed: revision.trashed != 0,
             alias: format_alias(
-                subject.as_deref(),
+                Self::find_canonical_subject_by_id(id, pool)
+                    .await?
+                    .as_deref(),
                 id,
                 Some(
                     get_field("title", &fields)
@@ -111,6 +111,19 @@ impl EntityRevision {
                 get_field("url", &fields)
             },
         })
+    }
+
+    pub async fn find_canonical_subject_by_id(
+        id: i32,
+        pool: &MySqlPool,
+    ) -> Result<Option<String>, sqlx::Error> {
+        let revision = sqlx::query!(
+            r#"SELECT repository_id FROM entity_revision WHERE id = ?"#,
+            id
+        )
+        .fetch_one(pool)
+        .await?;
+        Entity::find_canonical_subject_by_id(revision.repository_id as i32, pool).await
     }
 }
 

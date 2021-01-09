@@ -34,11 +34,15 @@ impl User {
             __typename: String::from("User"),
             id,
             trashed: user.trashed != 0,
-            alias: format_alias(Some("user"), id, Some(&user.username)),
+            alias: format_alias(Self::get_context().as_deref(), id, Some(&user.username)),
             username: user.username,
             date: format_datetime(&user.date),
             last_login: user.last_login.map(|date| format_datetime(&date)),
             description: user.description,
         })
+    }
+
+    pub fn get_context() -> Option<String> {
+        return Some(String::from("user"));
     }
 }

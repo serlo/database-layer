@@ -55,49 +55,9 @@ impl Entity {
             id
         )
         .fetch_all(pool);
-        let links_fut = sqlx::query!(
-            r#"
-                SELECT c.id as child_id, ct.name as child_type, p.id as parent_id, pt.name as parent_type
-                    FROM entity_link l
-                    JOIN entity p ON p.id = l.parent_id
-                    JOIN type pt ON pt.id = p.type_id
-                    JOIN entity c on c.id = l.child_id
-                    JOIN type ct ON ct.id = c.type_id
-                    WHERE c.id = ? OR p.id = ?
-                    ORDER BY l.order ASC
-            "#,
-            id,
-            id
-        ).fetch_all(pool);
         let subject_fut = Self::find_canonical_subject_by_id(id, pool);
-        let (entity, revisions, taxonomy_terms, links, subject) = try_join!(
-            entity_fut,
-            revisions_fut,
-            taxonomy_terms_fut,
-            links_fut,
-            subject_fut
-        )?;
-
-        let parents: Vec<i32> = links
-            .iter()
-            .filter_map(|link| {
-                if link.child_id as i32 == id {
-                    Some(link.parent_id as i32)
-                } else {
-                    None
-                }
-            })
-            .collect();
-        let children: Vec<i32> = links
-            .iter()
-            .filter_map(|link| {
-                if link.parent_id as i32 == id {
-                    Some(link.child_id as i32)
-                } else {
-                    None
-                }
-            })
-            .collect();
+        let (entity, revisions, taxonomy_terms, subject) =
+            try_join!(entity_fut, revisions_fut, taxonomy_terms_fut, subject_fut)?;
 
         Ok(Entity {
             __typename: normalize_type(entity.name.as_str()),
@@ -118,14 +78,14 @@ impl Entity {
                 .collect(),
             license_id: entity.license_id,
             taxonomy_term_ids: taxonomy_terms.iter().map(|term| term.id as i32).collect(),
-            parent_id: parents.first().cloned(),
+            parent_id: Self::find_parent_by_id(id, pool).await?,
             page_ids: if entity.name == "course" {
-                Some(children.clone())
+                Some(Self::find_children_by_id_and_type(id, "course-page", pool).await?)
             } else {
                 None
             },
             exercise_ids: if entity.name == "text-exercise-group" {
-                Some(children.clone())
+                Some(Self::find_children_by_id_and_type(id, "grouped-text-exercise", pool).await?)
             } else {
                 None
             },
@@ -135,7 +95,12 @@ impl Entity {
                 // Entities that aren't exercises have no solutionId in the serialized json
                 // Exercises have an optional solutionId in the serialized json (i.e. number | null).
                 // Might not be absolutely necessary but this achieves full feature-parity with serlo.org/api/*
-                Some(children.first().cloned())
+                Some(
+                    Self::find_children_by_id_and_type(id, "text-solution", pool)
+                        .await?
+                        .first()
+                        .cloned(),
+                )
             } else {
                 None
             },
@@ -172,6 +137,47 @@ impl Entity {
             _ => None,
         };
         Ok(subject)
+    }
+
+    async fn find_parent_by_id(id: i32, pool: &MySqlPool) -> Result<Option<i32>, sqlx::Error> {
+        let parents = sqlx::query!(
+            r#"
+                SELECT l.parent_id as id
+                    FROM entity_link l
+                    WHERE l.child_id = ?
+            "#,
+            id
+        )
+        .fetch_all(pool)
+        .await?;
+        Ok(parents
+            .iter()
+            .map(|parent| parent.id as i32)
+            .collect::<Vec<i32>>()
+            .first()
+            .cloned())
+    }
+
+    async fn find_children_by_id_and_type(
+        id: i32,
+        children_type: &str,
+        pool: &MySqlPool,
+    ) -> Result<Vec<i32>, sqlx::Error> {
+        let children = sqlx::query!(
+            r#"
+                SELECT c.id
+                    FROM entity_link l
+                    JOIN entity c on c.id = l.child_id
+                    JOIN type t ON t.id = c.type_id
+                    WHERE l.parent_id = ? AND t.name = ?
+                    ORDER BY l.order ASC
+            "#,
+            id,
+            children_type,
+        )
+        .fetch_all(pool)
+        .await?;
+        Ok(children.iter().map(|child| child.id as i32).collect())
     }
 }
 

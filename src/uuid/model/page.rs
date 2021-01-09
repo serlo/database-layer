@@ -41,7 +41,7 @@ impl Page {
         .fetch_all(pool);
         let (page, revisions) = try_join!(page_fut, revisions_fut)?;
 
-        if revisions.len() == 0 {
+        if revisions.is_empty() {
             return Err(anyhow::Error::new(UuidError::NotFound { id }));
         } else {
             Ok(Page {

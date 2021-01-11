@@ -15,6 +15,10 @@ async fn hello(web::Path(uuid): web::Path<u32>) -> Result<String> {
 async fn main() -> anyhow::Result<()> {
     dotenv().ok();
 
+    let database_max_connections: u32 = env::var("DATABASE_MAX_CONNECTIONS")
+        .expect("DATABASE_MAX_CONNECTIONS is not set.")
+        .parse()
+        .unwrap();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL is not set.");
     let re = Regex::new(
         r"^mysql://(?P<username>.+):(?P<password>.+)@(?P<host>.+):(?P<port>\d+)/(?P<database>.+)$",
@@ -35,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
         .database(database)
         .charset("latin1");
     let pool = MySqlPoolOptions::new()
-        .max_connections(5)
+        .max_connections(database_max_connections)
         .connect_with(options)
         .await?;
 

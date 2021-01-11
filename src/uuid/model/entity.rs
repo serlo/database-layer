@@ -34,14 +34,16 @@ impl Entity {
     pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Entity> {
         let entity_fut = sqlx::query!(
             r#"
-                SELECT t.name, u.trashed, i.subdomain, e.date, e.current_revision_id, e.license_id, f.value
+                SELECT t.name, u.trashed, i.subdomain, e.date, e.current_revision_id, e.license_id, f1.value as title, f2.value as fallback_title
                     FROM entity e
                     JOIN uuid u ON u.id = e.id
                     JOIN instance i ON i.id = e.instance_id
                     JOIN type t ON t.id = e.type_id
-                    LEFT JOIN entity_revision_field f ON f.entity_revision_id = e.current_revision_id AND f.field = 'title'
+                    LEFT JOIN entity_revision_field f1 ON f1.entity_revision_id = e.current_revision_id AND f1.field = 'title'
+                    LEFT JOIN entity_revision_field f2 on f2.entity_revision_id = (SELECT id FROM entity_revision WHERE repository_id = ? LIMIT 1) AND f2.field = 'title'
                     WHERE e.id = ?
             "#,
+            id,
             id
         )
         .fetch_one(pool);
@@ -66,7 +68,13 @@ impl Entity {
             alias: format_alias(
                 subject.as_deref(),
                 id,
-                Some(entity.value.unwrap_or(format!("{}", id)).as_str()),
+                Some(
+                    entity
+                        .title
+                        .or(entity.fallback_title)
+                        .unwrap_or(format!("{}", id))
+                        .as_str(),
+                ),
             ),
             instance: entity.subdomain,
             date: format_datetime(&entity.date),

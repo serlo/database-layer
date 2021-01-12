@@ -1,8 +1,8 @@
 [package]
-name = "database-layer-actix"
-version = "0.1.0"
 authors = ["Jonas Keinholz <jonas@keinholz.dev>"]
 edition = "2018"
+name = "database-layer-actix"
+version = "0.1.0"
 
 [dependencies]
 actix-web = "3.0.0"
@@ -11,9 +11,10 @@ chrono = "0.4.0"
 chrono-tz = "0.5.0"
 convert_case = "0.4.0"
 dotenv = "0.15.0"
+dotenv_codegen = "0.15.0"
 futures = "0.3.0"
 regex = "1.0.0"
 serde = "1.0.0"
 serde_json = "1.0.0"
-sqlx = { version = "0.4.0", features = [ "chrono", "mysql", "runtime-actix-native-tls"] }
+sqlx = {version = "0.4.0", features = ["chrono", "mysql", "runtime-actix-native-tls"]}
 thiserror = "1.0.0"

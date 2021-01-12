@@ -1,3 +1,3 @@
-mod thread;
+mod threads;
 
-pub use self::thread::Thread;
+pub use self::threads::Threads;

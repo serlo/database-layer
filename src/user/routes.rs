@@ -28,4 +28,5 @@ async fn get_active_reviewers(db_pool: web::Data<MySqlPool>) -> impl Responder {
 
 pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.service(get_active_authors);
+    cfg.service(get_active_reviewers);
 }

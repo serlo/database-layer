@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cargo",
+			"subcommand": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Rust: cargo run - rust-playground",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}

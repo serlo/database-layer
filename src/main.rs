@@ -4,6 +4,7 @@ use regex::Regex;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use std::env;
 
+mod user;
 mod uuid;
 
 #[get("/uuid/{uuid}")]
@@ -45,10 +46,15 @@ async fn main() -> anyhow::Result<()> {
 
     println!("🚀 Server ready: http://localhost:8080");
 
-    HttpServer::new(move || App::new().data(pool.clone()).configure(uuid::init))
-        .bind("0.0.0.0:8080")?
-        .run()
-        .await?;
+    HttpServer::new(move || {
+        App::new()
+            .data(pool.clone())
+            .configure(uuid::init)
+            .configure(user::init)
+    })
+    .bind("0.0.0.0:8080")?
+    .run()
+    .await?;
 
     Ok(())
 }

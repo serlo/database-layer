@@ -9,7 +9,7 @@ async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Resp
     match result {
         Ok(user_array) => HttpResponse::Ok().json(user_array),
         Err(e) => {
-            println!("Could not get active authors: {:?}", e);
+            println!("Could not get threads: {:?}", e);
             HttpResponse::BadRequest().json(None::<String>)
         }
     }

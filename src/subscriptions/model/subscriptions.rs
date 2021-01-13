@@ -1,7 +1,6 @@
 use anyhow::Result;
 use serde::Serialize;
 use sqlx::MySqlPool;
-use thiserror::Error;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -20,19 +19,6 @@ impl Subscriptions {
         user_id: i32,
         pool: &MySqlPool,
     ) -> Result<Subscriptions> {
-        sqlx::query!(
-            r#"SELECT id FROM uuid WHERE discriminator = "user" AND id = ?"#,
-            user_id
-        )
-        .fetch_one(pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::RowNotFound => {
-                anyhow::Error::new(SubscriptionsError::NotFound { user_id })
-            }
-            e => anyhow::Error::new(e),
-        })?;
-
         let subscriptions_fut = sqlx::query!(
             "SELECT uuid_id FROM subscription WHERE user_id = ?",
             user_id
@@ -52,10 +38,4 @@ impl Subscriptions {
             subscriptions: subscriptions,
         })
     }
-}
-
-#[derive(Error, Debug)]
-pub enum SubscriptionsError {
-    #[error("Given id {user_id:?} is not a valid user id.")]
-    NotFound { user_id: i32 },
 }

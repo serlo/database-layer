@@ -1,3 +1,3 @@
 mod notifications;
 
-pub use self::notifications::{Notifications, NotificationsError};
+pub use self::notifications::Notifications;

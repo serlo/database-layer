@@ -1,4 +1,4 @@
-use crate::notifications::model::{Notifications, NotificationsError};
+use crate::notifications::model::Notifications;
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
@@ -9,13 +9,8 @@ async fn notifications(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -
     match result {
         Ok(user_array) => HttpResponse::Ok().json(user_array),
         Err(e) => {
-            println!("Could not get notifications for {}: {:?}", user_id, e);
-            match e.downcast_ref::<NotificationsError>() {
-                Some(NotificationsError::NotFound { .. }) => {
-                    HttpResponse::NotFound().json(None::<String>)
-                }
-                _ => HttpResponse::BadRequest().json(None::<String>),
-            }
+            println!("Could not get notifications of user {}: {:?}", user_id, e);
+            HttpResponse::BadRequest().json(None::<String>)
         }
     }
 }

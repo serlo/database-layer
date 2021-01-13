@@ -1,3 +1,3 @@
 mod subscriptions;
 
-pub use self::subscriptions::{Subscriptions, SubscriptionsError};
+pub use self::subscriptions::Subscriptions;

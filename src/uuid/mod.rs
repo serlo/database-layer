@@ -1,4 +1,4 @@
 mod model;
 mod routes;
 
-pub use routes::init;
+pub use self::routes::init;

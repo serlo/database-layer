@@ -56,6 +56,6 @@ impl Subscriptions {
 
 #[derive(Error, Debug)]
 pub enum SubscriptionsError {
-    #[error("Supported id {user_id:?} is not a valid user id.")]
+    #[error("Given id {user_id:?} is not a valid user id.")]
     NotFound { user_id: i32 },
 }

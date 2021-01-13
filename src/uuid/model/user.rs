@@ -43,6 +43,6 @@ impl User {
     }
 
     pub fn get_context() -> Option<String> {
-        return Some(String::from("user"));
+        Some(String::from("user"))
     }
 }

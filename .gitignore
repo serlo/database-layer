@@ -86,3 +86,6 @@ docker-compose.override.yml
 
 # asdf-vm configuration file
 .tool-versions
+
+# vscode
+.vscode

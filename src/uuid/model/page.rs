@@ -1,5 +1,6 @@
-use crate::uuid::model::UuidError;
+use crate::uuid::model::{IdAccessible, UuidError};
 use anyhow::Result;
+use async_trait::async_trait;
 use database_layer_actix::{format_alias, format_datetime};
 use futures::try_join;
 use serde::Serialize;
@@ -20,8 +21,9 @@ pub struct Page {
     pub license_id: i32,
 }
 
-impl Page {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Page> {
+#[async_trait]
+impl IdAccessible for Page {
+    async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Self, UuidError> {
         let page_fut = sqlx::query!(
             r#"
                 SELECT u.trashed, i.subdomain, p.current_revision_id, p.license_id, r.title
@@ -42,7 +44,7 @@ impl Page {
         let (page, revisions) = try_join!(page_fut, revisions_fut)?;
 
         if revisions.is_empty() {
-            return Err(anyhow::Error::new(UuidError::NotFound { id }));
+            return Err(UuidError::NotFound);
         } else {
             Ok(Page {
                 __typename: String::from("Page"),

@@ -1,7 +1,9 @@
 use crate::uuid::model::taxonomy_term::TaxonomyTerm;
-use anyhow::Result;
+use crate::uuid::model::{IdAccessible, UuidError};
+use async_trait::async_trait;
 use convert_case::{Case, Casing};
 use database_layer_actix::{format_alias, format_datetime};
+use futures::future::TryFutureExt;
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
@@ -30,8 +32,9 @@ pub struct Entity {
     pub solution_id: Option<Option<i32>>,
 }
 
-impl Entity {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Entity> {
+#[async_trait]
+impl IdAccessible for Entity {
+    async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Self, UuidError> {
         let entity_fut = sqlx::query!(
             r#"
                 SELECT t.name, u.trashed, i.subdomain, e.date, e.current_revision_id, e.license_id, f1.value as title, f2.value as fallback_title
@@ -46,17 +49,19 @@ impl Entity {
             id,
             id
         )
-        .fetch_one(pool);
+        .fetch_one(pool).map_err(|e| UuidError::from(e));
         let revisions_fut = sqlx::query!(
             r#"SELECT id FROM entity_revision WHERE repository_id = ?"#,
             id
         )
-        .fetch_all(pool);
+        .fetch_all(pool)
+        .map_err(|e| UuidError::from(e));
         let taxonomy_terms_fut = sqlx::query!(
             r#"SELECT term_taxonomy_id as id FROM term_taxonomy_entity WHERE entity_id = ?"#,
             id
         )
-        .fetch_all(pool);
+        .fetch_all(pool)
+        .map_err(|e| UuidError::from(e));
         let subject_fut = Self::find_canonical_subject_by_id(id, pool);
         let (entity, revisions, taxonomy_terms, subject) =
             try_join!(entity_fut, revisions_fut, taxonomy_terms_fut, subject_fut)?;
@@ -114,11 +119,13 @@ impl Entity {
             },
         })
     }
+}
 
+impl Entity {
     pub async fn find_canonical_subject_by_id(
         id: i32,
         pool: &MySqlPool,
-    ) -> Result<Option<String>, sqlx::Error> {
+    ) -> Result<Option<String>, UuidError> {
         let taxonomy_terms = sqlx::query!(
             r#"
                 SELECT term_taxonomy_id as id
@@ -166,11 +173,14 @@ impl Entity {
             .cloned())
     }
 
-    async fn find_children_by_id_and_type(
+    async fn find_children_by_id_and_type<'e, E>(
         id: i32,
         children_type: &str,
-        pool: &MySqlPool,
-    ) -> Result<Vec<i32>, sqlx::Error> {
+        pool: E,
+    ) -> Result<Vec<i32>, sqlx::Error>
+    where
+        E: sqlx::Executor<'e, Database = sqlx::MySql>,
+    {
         let children = sqlx::query!(
             r#"
                 SELECT c.id

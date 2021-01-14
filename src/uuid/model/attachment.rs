@@ -1,4 +1,5 @@
-use anyhow::Result;
+use crate::uuid::model::{IdAccessible, UuidError};
+use async_trait::async_trait;
 use database_layer_actix::format_alias;
 use serde::Serialize;
 use sqlx::MySqlPool;
@@ -11,8 +12,9 @@ pub struct Attachment {
     pub alias: String,
 }
 
-impl Attachment {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Attachment> {
+#[async_trait]
+impl IdAccessible for Attachment {
+    async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Self, UuidError> {
         let attachment = sqlx::query!(
             r#"
                 SELECT u.trashed, f.name
@@ -35,7 +37,9 @@ impl Attachment {
             ),
         })
     }
+}
 
+impl Attachment {
     pub fn get_context() -> Option<String> {
         return Some(String::from("attachment"));
     }

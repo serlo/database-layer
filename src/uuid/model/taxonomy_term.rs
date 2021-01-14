@@ -1,6 +1,9 @@
+use crate::uuid::model::{IdAccessible, UuidError};
 use anyhow::Result;
+use async_trait::async_trait;
 use convert_case::{Case, Casing};
 use database_layer_actix::format_alias;
+use futures::future::TryFutureExt;
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
@@ -23,8 +26,9 @@ pub struct TaxonomyTerm {
     pub children_ids: Vec<i32>,
 }
 
-impl TaxonomyTerm {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<TaxonomyTerm> {
+#[async_trait]
+impl IdAccessible for TaxonomyTerm {
+    async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Self, UuidError> {
         let taxonomy_term_fut = sqlx::query!(
             r#"
                 SELECT u.trashed, term.name, type.name as term_type, instance.subdomain, term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id
@@ -38,7 +42,7 @@ impl TaxonomyTerm {
             "#,
             id
         )
-        .fetch_one(pool);
+        .fetch_one(pool).map_err(|e| UuidError::from(e));
         let entities_fut = sqlx::query!(
             r#"
                 SELECT entity_id
@@ -48,7 +52,8 @@ impl TaxonomyTerm {
             "#,
             id
         )
-        .fetch_all(pool);
+        .fetch_all(pool)
+        .map_err(|e| UuidError::from(e));
         let children_fut = sqlx::query!(
             r#"
                 SELECT id
@@ -58,7 +63,8 @@ impl TaxonomyTerm {
             "#,
             id
         )
-        .fetch_all(pool);
+        .fetch_all(pool)
+        .map_err(|e| UuidError::from(e));
         let subject_fut = TaxonomyTerm::find_canonical_subject_by_id(id, &pool);
         let (taxonomy_term, entities, children, subject) =
             try_join!(taxonomy_term_fut, entities_fut, children_fut, subject_fut)?;
@@ -81,11 +87,13 @@ impl TaxonomyTerm {
             children_ids,
         })
     }
+}
 
+impl TaxonomyTerm {
     pub async fn find_canonical_subject_by_id(
         id: i32,
         pool: &MySqlPool,
-    ) -> Result<Option<String>, sqlx::Error> {
+    ) -> Result<Option<String>, UuidError> {
         // Yes, this is super hacky. Didn't find a better way to handle recursion in MySQL 5 (in production, the max depth is around 10 at the moment)
         let subjects = sqlx::query!(
             r#"

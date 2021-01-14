@@ -1,7 +1,7 @@
-use anyhow::Result;
+use crate::uuid::model::{IdAccessible, UuidError};
+use async_trait::async_trait;
 use database_layer_actix::{format_alias, format_datetime};
 use serde::Serialize;
-use sqlx::MySqlPool;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -17,8 +17,9 @@ pub struct User {
     pub description: Option<String>,
 }
 
-impl User {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<User> {
+#[async_trait]
+impl IdAccessible for User {
+    async fn find_by_id(id: i32, pool: &sqlx::MySqlPool) -> Result<Self, UuidError> {
         let user = sqlx::query!(
             r#"
                 SELECT trashed, username, date, last_login, description
@@ -41,7 +42,8 @@ impl User {
             description: user.description,
         })
     }
-
+}
+impl User {
     pub fn get_context() -> Option<String> {
         return Some(String::from("user"));
     }

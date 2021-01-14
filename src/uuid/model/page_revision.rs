@@ -1,7 +1,7 @@
-use anyhow::Result;
+use crate::uuid::model::{IdAccessible, UuidError};
+use async_trait::async_trait;
 use database_layer_actix::{format_alias, format_datetime};
 use serde::Serialize;
-use sqlx::MySqlPool;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,8 +18,9 @@ pub struct PageRevision {
     pub repository_id: i32,
 }
 
-impl PageRevision {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<PageRevision> {
+#[async_trait]
+impl IdAccessible for PageRevision {
+    async fn find_by_id(id: i32, pool: &sqlx::MySqlPool) -> Result<Self, UuidError> {
         let revision = sqlx::query!(
             r#"
                 SELECT u.trashed, r.title, r.content, r.date, r.author_id, r.page_repository_id

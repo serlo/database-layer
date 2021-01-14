@@ -10,12 +10,14 @@ async fn find(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respond
         Ok(uuid) => HttpResponse::Ok().json(uuid),
         Err(e) => {
             println!("UUID {} failed: {:?}", id, e);
-            match e.downcast_ref::<UuidError>() {
-                Some(UuidError::UnsupportedDiscriminator { .. }) => {
+            match e {
+                UuidError::InvalidDiscriminator { .. } => {
                     HttpResponse::BadRequest().json(None::<String>)
                 }
-                Some(UuidError::NotFound { .. }) => HttpResponse::NotFound().json(None::<String>),
-                _ => HttpResponse::BadRequest().json(None::<String>),
+                UuidError::NotFound => HttpResponse::NotFound().json(None::<String>),
+                UuidError::DatabaseError { .. } => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
             }
         }
     }

@@ -1,7 +1,7 @@
-use anyhow::Result;
+use crate::uuid::model::{IdAccessible, UuidError};
+use async_trait::async_trait;
 use database_layer_actix::format_alias;
 use serde::Serialize;
-use sqlx::MySqlPool;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -11,8 +11,9 @@ pub struct BlogPost {
     pub alias: String,
 }
 
-impl BlogPost {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<BlogPost> {
+#[async_trait]
+impl IdAccessible for BlogPost {
+    async fn find_by_id(id: i32, pool: &sqlx::MySqlPool) -> Result<Self, UuidError> {
         let blog = sqlx::query!(
             r#"
                 SELECT u.trashed, b.title
@@ -34,7 +35,9 @@ impl BlogPost {
             ),
         })
     }
+}
 
+impl BlogPost {
     pub fn get_context() -> Option<String> {
         return Some(String::from("blog"));
     }

@@ -1,5 +1,5 @@
-use crate::uuid::model::Uuid;
-use anyhow::Result;
+use crate::uuid::model::{IdAccessible, Uuid, UuidError};
+use async_trait::async_trait;
 use database_layer_actix::{format_alias, format_datetime};
 use futures::try_join;
 use serde::Serialize;
@@ -22,8 +22,9 @@ pub struct Comment {
     pub children_ids: Vec<i32>,
 }
 
-impl Comment {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Comment> {
+#[async_trait]
+impl IdAccessible for Comment {
+    async fn find_by_id(id: i32, pool: &sqlx::MySqlPool) -> Result<Self, UuidError> {
         let comment_fut = sqlx::query!(
             r#"
                 SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id, c.uuid_id, p.title as parent_title
@@ -71,11 +72,13 @@ impl Comment {
             children_ids: children.iter().map(|child| child.id as i32).collect(),
         })
     }
+}
 
+impl Comment {
     pub async fn find_context_by_id(
         id: i32,
         pool: &MySqlPool,
-    ) -> Result<Option<String>, sqlx::Error> {
+    ) -> Result<Option<String>, UuidError> {
         let object = sqlx::query!(
             r#"
                 SELECT uuid_id as id
@@ -87,7 +90,9 @@ impl Comment {
                     WHERE id = ? AND uuid_id IS NOT NULL
             "#,
             id
-        ).fetch_one(pool).await?;
+        ).fetch_one(pool).await
+            .map_err(|e| UuidError::DatabaseError { inner: e })
+            ?;
         Uuid::find_context_by_id(object.id.unwrap() as i32, pool).await
     }
 }

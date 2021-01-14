@@ -1,5 +1,6 @@
 use crate::uuid::model::entity::Entity;
-use anyhow::Result;
+use crate::uuid::model::{IdAccessible, UuidError};
+use async_trait::async_trait;
 use convert_case::{Case, Casing};
 use database_layer_actix::{format_alias, format_datetime};
 use futures::try_join;
@@ -29,8 +30,9 @@ pub struct EntityRevision {
     pub meta_description: Option<String>,
 }
 
-impl EntityRevision {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<EntityRevision> {
+#[async_trait]
+impl IdAccessible for EntityRevision {
+    async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Self, UuidError> {
         let revision_fut = sqlx::query!(
             r#"
                 SELECT t.name, u.trashed, r.date, r.author_id, r.repository_id
@@ -112,11 +114,13 @@ impl EntityRevision {
             },
         })
     }
+}
 
+impl EntityRevision {
     pub async fn find_canonical_subject_by_id(
         id: i32,
         pool: &MySqlPool,
-    ) -> Result<Option<String>, sqlx::Error> {
+    ) -> Result<Option<String>, UuidError> {
         let revision = sqlx::query!(
             r#"SELECT repository_id FROM entity_revision WHERE id = ?"#,
             id

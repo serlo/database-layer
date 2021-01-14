@@ -4,6 +4,7 @@ use regex::Regex;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use std::env;
 
+mod event;
 mod health;
 mod notifications;
 mod subscriptions;
@@ -54,6 +55,7 @@ async fn main() -> anyhow::Result<()> {
             .configure(threads::init)
             .configure(user::init)
             .configure(uuid::init)
+            .configure(event::init)
     })
     .bind("0.0.0.0:8080")?
     .run()

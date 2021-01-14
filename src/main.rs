@@ -1,19 +1,15 @@
-use actix_web::{get, web, App, HttpServer, Result};
+use actix_web::{App, HttpServer};
 use dotenv::dotenv;
 use regex::Regex;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use std::env;
 
+mod health;
 mod notifications;
 mod subscriptions;
 mod threads;
 mod user;
 mod uuid;
-
-#[get("/uuid/{uuid}")]
-async fn hello(web::Path(uuid): web::Path<u32>) -> Result<String> {
-    Ok(format!("Hello {}", uuid))
-}
 
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
@@ -52,11 +48,12 @@ async fn main() -> anyhow::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(pool.clone())
-            .configure(uuid::init)
-            .configure(user::init)
-            .configure(threads::init)
-            .configure(subscriptions::init)
+            .configure(health::init)
             .configure(notifications::init)
+            .configure(subscriptions::init)
+            .configure(threads::init)
+            .configure(user::init)
+            .configure(uuid::init)
     })
     .bind("0.0.0.0:8080")?
     .run()

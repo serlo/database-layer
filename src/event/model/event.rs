@@ -44,24 +44,13 @@ pub struct Event {
 }
 
 impl Event {
-    pub async fn get_event(id: i32, pool: &MySqlPool) -> Result<Event> {
+    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Event> {
         // could probably use refactoring :)
         // but should be a good starting point
         // and putting it all in one file is def. a lot less code
 
         // needs testing for different types if it matches legacy api
         // @inyono do you have a tool for that already?
-
-        /*
-
-        is there a way to simplify something like this?
-        (seems a bit verbose :)
-
-            match object_uuid_id {
-                Some(id) => Some(id),
-                None => None,
-            };
-        */
 
         let event_fut = sqlx::query!(
             "
@@ -173,19 +162,17 @@ fn get_object_id(name: &str, uuid_id: i32) -> Option<i32> {
 
 fn get_child_id(name: &str, uuid_id: i32, object_uuid_id: Option<i32>) -> Option<i32> {
     if name == "taxonomy/term/associate" || name == "taxonomy/term/dissociate" {
-        return match object_uuid_id {
-            Some(id) => Some(id),
-            None => None,
-        };
+        return object_uuid_id;
     }
 
-    match name == "entity/link/create"
+    if name == "entity/link/create"
         || name == "entity/link/remove"
         || name == "taxonomy/term/parent/change"
     {
-        true => Some(uuid_id),
-        false => None,
+        return Some(uuid_id);
     }
+
+    None
 }
 
 fn get_entity_revision_id(name: &str, uuid_id: i32) -> Option<i32> {
@@ -220,20 +207,14 @@ fn get_taxonomy_term_id(name: &str, uuid_id: i32) -> Option<i32> {
 fn get_entity_id(name: &str, uuid_id: i32, repository_uuid_id: Option<i32>) -> Option<i32> {
     match name {
         "entity/create" => Some(uuid_id),
-        "entity/revision/add" => match repository_uuid_id {
-            Some(id) => Some(id),
-            None => None,
-        },
+        "entity/revision/add" => repository_uuid_id,
         _ => None,
     }
 }
 
 fn get_reason(name: &str, reason: Option<String>) -> Option<String> {
     match name == "entity/revision/checkout" || name == "entity/revision/reject" {
-        true => match reason {
-            Some(string) => Some(string),
-            None => None,
-        },
+        true => reason,
         false => None,
     }
 }
@@ -244,10 +225,7 @@ fn get_repository_id(name: &str, uuid_id: i32, repository_uuid_id: Option<i32>) 
     };
 
     match name == "entity/revision/checkout" || name == "entity/revision/reject" {
-        true => match repository_uuid_id {
-            Some(id) => Some(id),
-            None => None,
-        },
+        true => repository_uuid_id,
         false => None,
     }
 }
@@ -259,10 +237,7 @@ fn get_parent_id(
     from_and_to: &(Option<i32>, Option<i32>),
 ) -> Option<i32> {
     match name {
-        "entity/link/create" | "entity/link/remove" => match parent_uuid_id {
-            Some(value) => Some(value),
-            _ => None,
-        },
+        "entity/link/create" | "entity/link/remove" => parent_uuid_id,
         "taxonomy/term/associate" | "taxonomy/term/dissociate" => Some(uuid_id),
         "taxonomy/term/parent/change" => match from_and_to.1 {
             Some(to) => Some(to),
@@ -274,13 +249,10 @@ fn get_parent_id(
 }
 
 fn get_previous_parent_id(name: &str, from_and_to: &(Option<i32>, Option<i32>)) -> Option<i32> {
-    match name == "taxonomy/term/parent/change" {
-        true => match from_and_to.1 {
-            Some(to) => Some(to),
-            None => None,
-        },
-        false => None,
+    if name == "taxonomy/term/parent/change" {
+        return from_and_to.1;
     }
+    None
 }
 
 async fn query_repository_uuid_id(
@@ -334,10 +306,7 @@ async fn query_parameter_uuid_id(parameter_ids: &Option<String>, pool: &MySqlPoo
     .fetch_one(pool)
     .await;
 
-    match uuid_id_fut {
-        Ok(value) => Some(value.uuid_id as i32),
-        _ => None,
-    }
+    uuid_id_fut.ok().map(|value| value.uuid_id as i32)
 }
 
 async fn query_reason_string(
@@ -368,10 +337,7 @@ async fn query_parameter_string(
     .fetch_one(pool)
     .await;
 
-    match string_fut {
-        Ok(string) => Some(string.value as String),
-        _ => None,
-    }
+    string_fut.ok().map(|value| value.value as String)
 }
 
 async fn query_from_and_to_ids(
@@ -416,13 +382,7 @@ async fn query_from_and_to_ids(
     let (from, to) = join!(from_fut, to_fut);
 
     (
-        match from {
-            Ok(value) => Some(value.uuid_id as i32),
-            _ => None,
-        },
-        match to {
-            Ok(value) => Some(value.uuid_id as i32),
-            _ => None,
-        },
+        from.ok().map(|value| value.uuid_id as i32),
+        to.ok().map(|value| value.uuid_id as i32),
     )
 }

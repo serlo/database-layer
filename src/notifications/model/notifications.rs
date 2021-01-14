@@ -45,8 +45,8 @@ impl Notifications {
             .collect();
 
         Ok(Notifications {
-            user_id: user_id,
-            notifications: notifications,
+            user_id,
+            notifications,
         })
     }
 }

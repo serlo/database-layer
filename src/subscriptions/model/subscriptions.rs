@@ -34,8 +34,8 @@ impl Subscriptions {
             .collect();
 
         Ok(Subscriptions {
-            user_id: user_id,
-            subscriptions: subscriptions,
+            user_id,
+            subscriptions,
         })
     }
 }

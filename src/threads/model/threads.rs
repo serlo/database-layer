@@ -19,8 +19,6 @@ impl Threads {
 
         let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();
 
-        Ok(Threads {
-            first_comment_ids: first_comment_ids,
-        })
+        Ok(Threads { first_comment_ids })
     }
 }

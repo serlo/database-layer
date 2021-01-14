@@ -87,5 +87,8 @@ docker-compose.override.yml
 # asdf-vm configuration file
 .tool-versions
 
-# vscode
+# Editor files
 .vscode
+
+# OS files
+.DS_Store

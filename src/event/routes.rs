@@ -1,20 +1,20 @@
-use crate::threads::model::Threads;
+use crate::event::model::Event;
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
-#[get("/threads/{id}")]
-async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
+#[get("/event/{id}")]
+async fn event(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let id = id.into_inner();
-    let result = Threads::get_thread_ids(id, db_pool.get_ref()).await;
+    let result = Event::get_event(id, db_pool.get_ref()).await;
     match result {
         Ok(data) => HttpResponse::Ok().json(data),
         Err(e) => {
-            println!("Could not get threads: {:?}", e);
+            println!("Could not get event: {:?}", e);
             HttpResponse::BadRequest().json(None::<String>)
         }
     }
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {
-    cfg.service(threads);
+    cfg.service(event);
 }

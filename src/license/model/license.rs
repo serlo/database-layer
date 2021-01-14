@@ -29,9 +29,6 @@ impl License {
         .fetch_one(pool)
         .await?;
 
-        //TODO: legacy api encodes strings a lot more strictly (e.g. umlauts)
-        // is our encoding okay, or should we do some more?
-
         Ok(License {
             id: id,
             instance: license_fut.subdomain,

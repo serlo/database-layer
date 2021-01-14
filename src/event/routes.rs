@@ -3,7 +3,7 @@ use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
 #[get("/event/{id}")]
-async fn event(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
+async fn find(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let id = id.into_inner();
     let result = Event::find_by_id(id, db_pool.get_ref()).await;
     match result {
@@ -16,5 +16,5 @@ async fn event(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respon
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {
-    cfg.service(event);
+    cfg.service(find);
 }

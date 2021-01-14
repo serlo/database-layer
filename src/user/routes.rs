@@ -3,8 +3,8 @@ use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
 #[get("/user/active-authors")]
-async fn get_active_authors(db_pool: web::Data<MySqlPool>) -> impl Responder {
-    let result = User::get_active_author_ids(db_pool.get_ref()).await;
+async fn find_active_authors(db_pool: web::Data<MySqlPool>) -> impl Responder {
+    let result = User::find_all_active_authors(db_pool.get_ref()).await;
     match result {
         Ok(data) => HttpResponse::Ok().json(data),
         Err(e) => {
@@ -15,8 +15,8 @@ async fn get_active_authors(db_pool: web::Data<MySqlPool>) -> impl Responder {
 }
 
 #[get("/user/active-reviewers")]
-async fn get_active_reviewers(db_pool: web::Data<MySqlPool>) -> impl Responder {
-    let result = User::get_active_reviewer_ids(db_pool.get_ref()).await;
+async fn find_active_reviewers(db_pool: web::Data<MySqlPool>) -> impl Responder {
+    let result = User::find_all_active_reviewers(db_pool.get_ref()).await;
     match result {
         Ok(data) => HttpResponse::Ok().json(data),
         Err(e) => {
@@ -27,6 +27,6 @@ async fn get_active_reviewers(db_pool: web::Data<MySqlPool>) -> impl Responder {
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {
-    cfg.service(get_active_authors);
-    cfg.service(get_active_reviewers);
+    cfg.service(find_active_authors);
+    cfg.service(find_active_reviewers);
 }

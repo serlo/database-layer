@@ -18,10 +18,7 @@ pub struct Notification {
 }
 
 impl Notifications {
-    pub async fn get_notifications_for_user(
-        user_id: i32,
-        pool: &MySqlPool,
-    ) -> Result<Notifications> {
+    pub async fn find_by_user_id(user_id: i32, pool: &MySqlPool) -> Result<Notifications> {
         let notifications_fut = sqlx::query!(
             "
                 SELECT n.id, n.seen, e.event_log_id

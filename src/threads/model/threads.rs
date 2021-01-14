@@ -9,7 +9,7 @@ pub struct Threads {
 }
 
 impl Threads {
-    pub async fn get_thread_ids(id: i32, pool: &MySqlPool) -> Result<Threads> {
+    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Threads> {
         let result = sqlx::query!(
             "SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC",
             id

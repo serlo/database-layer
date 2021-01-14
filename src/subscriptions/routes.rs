@@ -3,9 +3,9 @@ use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
 #[get("/subscriptions/{user_id}")]
-async fn subscriptions(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
+async fn find(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let user_id = user_id.into_inner();
-    let result = Subscriptions::get_subscriptions_for_user(user_id, db_pool.get_ref()).await;
+    let result = Subscriptions::find_by_user_id(user_id, db_pool.get_ref()).await;
     match result {
         Ok(data) => HttpResponse::Ok().json(data),
         Err(e) => {
@@ -16,5 +16,5 @@ async fn subscriptions(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {
-    cfg.service(subscriptions);
+    cfg.service(find);
 }

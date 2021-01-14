@@ -37,6 +37,6 @@ impl Attachment {
     }
 
     pub fn get_context() -> Option<String> {
-        return Some(String::from("attachment"));
+        Some(String::from("attachment"))
     }
 }

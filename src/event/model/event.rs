@@ -1,5 +1,6 @@
 use anyhow::Result;
 use database_layer_actix::format_datetime;
+use futures::join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
@@ -44,16 +45,34 @@ pub struct Event {
 
 impl Event {
     pub async fn get_event(id: i32, pool: &MySqlPool) -> Result<Event> {
+        // could probably use refactoring :)
+        // but should be a good starting point
+        // and putting it all in one file is def. a lot less code
+
+        // needs testing for different types if it matches legacy api
+        // @inyono do you have a tool for that already?
+
+        /*
+
+        is there a way to simplify something like this?
+        (seems a bit verbose :)
+
+            match object_uuid_id {
+                Some(id) => Some(id),
+                None => None,
+            };
+        */
+
         let event_fut = sqlx::query!(
             "
-            SELECT el.event_id, el.actor_id, el.uuid_id, el.instance_id, el.date, instance.subdomain, event.name,
-            GROUP_CONCAT(event_parameter.id) as parameter_ids
-            FROM event_log el
-            LEFT JOIN instance ON el.instance_id = instance.id
-            INNER JOIN event ON el.event_id = event.id
-            LEFT JOIN event_parameter ON el.id = event_parameter.log_id
-            WHERE el.id = ?
-            GROUP BY el.event_id, el.actor_id, el.uuid_id, el.instance_id, el.date
+            SELECT e.event_id, e.actor_id, e.uuid_id, e.instance_id, e.date, i.subdomain, event.name,
+                GROUP_CONCAT(p.id) as parameter_ids 
+                FROM event_log e
+                LEFT JOIN event_parameter p ON e.id = p.log_id
+                LEFT JOIN instance i ON e.instance_id = i.id
+                JOIN event ON e.event_id = event.id
+                WHERE e.id = ?
+                GROUP BY e.event_id, e.actor_id, e.uuid_id, e.instance_id, e.date
             ",
             id
         )
@@ -67,7 +86,9 @@ impl Event {
         //query parameters
         let repository_uuid_id = query_repository_uuid_id(&name, &paramater_ids, &pool).await;
         let object_uuid_id = query_object_uuid_id(&name, &paramater_ids, &pool).await;
+        let parent_uuid_id = query_parent_uuid_id(&name, &paramater_ids, &pool).await;
         let reason = query_reason_string(&name, &paramater_ids, &pool).await;
+        let from_and_to = query_from_and_to_ids(&name, &paramater_ids, &pool).await;
 
         Ok(Event {
             //for all
@@ -90,8 +111,8 @@ impl Event {
             entity_id: get_entity_id(&name, uuid_id, repository_uuid_id),
             repository_id: get_repository_id(&name, uuid_id, repository_uuid_id),
             reason: get_reason(&name, reason),
-            parent_id: get_parent_id(&name, uuid_id, &paramater_ids),
-            previous_parent_id: get_previous_parent_id(&name, &paramater_ids),
+            parent_id: get_parent_id(&name, uuid_id, parent_uuid_id, &from_and_to),
+            previous_parent_id: get_previous_parent_id(&name, &from_and_to),
         })
     }
 }
@@ -231,41 +252,34 @@ fn get_repository_id(name: &str, uuid_id: i32, repository_uuid_id: Option<i32>) 
     }
 }
 
-// TODO!
-fn get_parent_id(name: &str, uuid_id: i32, parameter_ids: &Option<String>) -> Option<i32> {
+fn get_parent_id(
+    name: &str,
+    uuid_id: i32,
+    parent_uuid_id: Option<i32>,
+    from_and_to: &(Option<i32>, Option<i32>),
+) -> Option<i32> {
     match name {
-        "entity/link/create" | "entity/link/remove" => Some(0), //TODO: get parameter parent id $event->getParameter('parent')->getId(),
+        "entity/link/create" | "entity/link/remove" => match parent_uuid_id {
+            Some(value) => Some(value),
+            _ => None,
+        },
         "taxonomy/term/associate" | "taxonomy/term/dissociate" => Some(uuid_id),
-        "taxonomy/term/parent/change" => {
-            Some(0) //TODO: $to != 'no parent' ? $to->getId() : null,
-        }
+        "taxonomy/term/parent/change" => match from_and_to.1 {
+            Some(to) => Some(to),
+            None => None,
+            //TODO: should return as "null" in json… help?
+        },
         _ => None,
     }
 }
 
-fn get_previous_parent_id(name: &str, parameter_ids: &Option<String>) -> Option<i32> {
+fn get_previous_parent_id(name: &str, from_and_to: &(Option<i32>, Option<i32>)) -> Option<i32> {
     match name == "taxonomy/term/parent/change" {
-        true => {
-            Some(0) //TODO: $from != 'no parent' ? $from->getId() : null
-        }
+        true => match from_and_to.1 {
+            Some(to) => Some(to),
+            None => None,
+        },
         false => None,
-    }
-}
-
-async fn query_from_and_to_ids(
-    name: &str,
-    parameter_ids: &Option<String>,
-    pool: &MySqlPool,
-) -> [Option<i32>; 2] {
-    match name == "taxonomy/term/parent/change" {
-        true => {
-            //TODO: find out how this is supposed to work…
-            return [
-                query_parameter_uuid_id(parameter_ids, pool).await,
-                query_parameter_uuid_id(parameter_ids, pool).await,
-            ];
-        }
-        false => return [None, None],
     }
 }
 
@@ -279,8 +293,8 @@ async fn query_repository_uuid_id(
         || name == "entity/revision/add"
         || name == "entity/revision/reject"
     {
-        true => return query_parameter_uuid_id(parameter_ids, pool).await,
-        false => return None,
+        true => query_parameter_uuid_id(parameter_ids, pool).await,
+        false => None,
     }
 }
 
@@ -290,8 +304,19 @@ async fn query_object_uuid_id(
     pool: &MySqlPool,
 ) -> Option<i32> {
     match name == "taxonomy/term/associate" || name == "taxonomy/term/dissociate" {
-        true => return query_parameter_uuid_id(parameter_ids, pool).await,
-        false => return None,
+        true => query_parameter_uuid_id(parameter_ids, pool).await,
+        false => None,
+    }
+}
+
+async fn query_parent_uuid_id(
+    name: &str,
+    parameter_ids: &Option<String>,
+    pool: &MySqlPool,
+) -> Option<i32> {
+    match name == "entity/link/create" || name == "entity/link/remove" {
+        true => query_parameter_uuid_id(parameter_ids, pool).await,
+        false => None,
     }
 }
 
@@ -302,7 +327,7 @@ async fn query_parameter_uuid_id(parameter_ids: &Option<String>, pool: &MySqlPoo
     let uuid_id_fut = sqlx::query!(
         "
             SELECT uuid_id FROM event_parameter_uuid
-            WHERE event_parameter_id in ( ? )
+            WHERE FIND_IN_SET(event_parameter_id, ?)
         ",
         parameter_ids
     )
@@ -310,8 +335,8 @@ async fn query_parameter_uuid_id(parameter_ids: &Option<String>, pool: &MySqlPoo
     .await;
 
     match uuid_id_fut {
-        Ok(value) => return Some(value.uuid_id as i32),
-        _ => return None,
+        Ok(value) => Some(value.uuid_id as i32),
+        _ => None,
     }
 }
 
@@ -321,8 +346,8 @@ async fn query_reason_string(
     pool: &MySqlPool,
 ) -> Option<String> {
     match name == "entity/revision/checkout" || name == "entity/revision/reject" {
-        true => return query_parameter_string(parameter_ids, pool).await,
-        false => return None,
+        true => query_parameter_string(parameter_ids, pool).await,
+        false => None,
     }
 }
 
@@ -336,7 +361,7 @@ async fn query_parameter_string(
     let string_fut = sqlx::query!(
         "
             SELECT value FROM event_parameter_string
-            WHERE event_parameter_id in ( ? )
+            WHERE FIND_IN_SET(event_parameter_id, ?)
         ",
         parameter_ids
     )
@@ -344,18 +369,60 @@ async fn query_parameter_string(
     .await;
 
     match string_fut {
-        Ok(string) => return Some(string.value as String),
-        _ => return None,
+        Ok(string) => Some(string.value as String),
+        _ => None,
     }
 }
 
-// case 'taxonomy/term/parent/change':
-// $from = $event->getParameter('from');
-// $to = $event->getParameter('to');
+async fn query_from_and_to_ids(
+    name: &str,
+    parameter_ids: &Option<String>,
+    pool: &MySqlPool,
+) -> (Option<i32>, Option<i32>) {
+    if name != "taxonomy/term/parent/change" || parameter_ids.is_none() {
+        return (None, None);
+    }
+    //could probably rewriten to return in one query, but it was a lot easier this way
+    //also: relies on hardcoded parameter name id (7 = from; 8 = to).
+    //okay, or should we query the names event_parameter_name also to check?
 
-//     'previousParentId' =>
-//         $from != 'no parent' ? $from->getId() : null,
-//     'parentId' => $to != 'no parent' ? $to->getId() : null,
-// ];
+    //puh: this one is suprisingly annoying :)
+    //legacy queries event_parameter_string also to check for "no parent" string
+    //but I think it's okay to set None when there is no uuid_id present
 
-// default: 'Unsupported event type',
+    let from_fut = sqlx::query!(
+        "
+            SELECT u.uuid_id
+                FROM event_parameter e
+                JOIN event_parameter_uuid u ON e.id = u.event_parameter_id
+                WHERE FIND_IN_SET(e.id, ? ) AND e.name_id = 7
+                ORDER BY e.name_id
+        ",
+        parameter_ids
+    )
+    .fetch_one(pool);
+    let to_fut = sqlx::query!(
+        "
+            SELECT u.uuid_id
+                FROM event_parameter e
+                JOIN event_parameter_uuid u ON e.id = u.event_parameter_id
+                WHERE FIND_IN_SET(e.id, ? ) AND e.name_id = 8
+                ORDER BY e.name_id
+        ",
+        parameter_ids
+    )
+    .fetch_one(pool);
+
+    let (from, to) = join!(from_fut, to_fut);
+
+    (
+        match from {
+            Ok(value) => Some(value.uuid_id as i32),
+            _ => None,
+        },
+        match to {
+            Ok(value) => Some(value.uuid_id as i32),
+            _ => None,
+        },
+    )
+}

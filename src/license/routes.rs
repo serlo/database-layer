@@ -5,7 +5,7 @@ use sqlx::MySqlPool;
 #[get("/license/{id}")]
 async fn license(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let id = id.into_inner();
-    let result = License::get_license_by_id(id, db_pool.get_ref()).await;
+    let result = License::find_by_id(id, db_pool.get_ref()).await;
     match result {
         Ok(data) => HttpResponse::Ok().json(data),
         Err(e) => {

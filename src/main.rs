@@ -50,12 +50,12 @@ async fn main() -> anyhow::Result<()> {
         App::new()
             .data(pool.clone())
             .configure(health::init)
+            .configure(license::init)
             .configure(notifications::init)
             .configure(subscriptions::init)
             .configure(threads::init)
             .configure(user::init)
             .configure(uuid::init)
-            .configure(license::init)
     })
     .bind("0.0.0.0:8080")?
     .run()

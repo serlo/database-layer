@@ -5,6 +5,7 @@ use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use std::env;
 
 mod health;
+mod license;
 mod notifications;
 mod subscriptions;
 mod threads;
@@ -54,6 +55,7 @@ async fn main() -> anyhow::Result<()> {
             .configure(threads::init)
             .configure(user::init)
             .configure(uuid::init)
+            .configure(license::init)
     })
     .bind("0.0.0.0:8080")?
     .run()

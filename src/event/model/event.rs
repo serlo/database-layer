@@ -13,6 +13,7 @@ pub struct Event {
     pub instance: String,
     pub date: String,
     pub actor_id: i32,
+    pub object_id: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub archived: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -25,8 +26,6 @@ pub struct Event {
     pub entity_id: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entity_revision_id: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub object_id: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_id: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -78,6 +77,7 @@ impl Event {
         let parent_uuid_id = query_parent_uuid_id(&name, &paramater_ids, &pool).await;
         let reason = query_reason_string(&name, &paramater_ids, &pool).await;
         let from_and_to = query_from_and_to_ids(&name, &paramater_ids, &pool).await;
+        let on_uuid_id = query_on_uuid_id(&name, &paramater_ids, &pool).await;
 
         Ok(Event {
             //for all
@@ -86,12 +86,12 @@ impl Event {
             instance: event_fut.subdomain.unwrap(),
             date: format_datetime(&event_fut.date),
             actor_id: event_fut.actor_id as i32,
+            object_id: get_object_id(&name, uuid_id, on_uuid_id),
 
             //for some
             archived: get_archived(&name),
             thread_id: get_thread_id(&name, uuid_id),
             comment_id: get_comment_id(&name, uuid_id),
-            object_id: get_object_id(&name, uuid_id),
             child_id: get_child_id(&name, uuid_id, object_uuid_id),
             entity_revision_id: get_entity_revision_id(&name, uuid_id),
             revision_id: get_revision_id(&name, uuid_id),
@@ -153,11 +153,11 @@ fn get_comment_id(name: &str, uuid_id: i32) -> Option<i32> {
     }
 }
 
-fn get_object_id(name: &str, uuid_id: i32) -> Option<i32> {
-    match name == "discussion/create" {
-        true => Some(uuid_id),
-        false => None,
+fn get_object_id(name: &str, uuid_id: i32, on_uuid_id: Option<i32>) -> i32 {
+    if name == "discussion/create" && on_uuid_id.is_some() {
+        return on_uuid_id.unwrap();
     }
+    uuid_id
 }
 
 fn get_child_id(name: &str, uuid_id: i32, object_uuid_id: Option<i32>) -> Option<i32> {
@@ -265,6 +265,17 @@ async fn query_repository_uuid_id(
         || name == "entity/revision/add"
         || name == "entity/revision/reject"
     {
+        true => query_parameter_uuid_id(parameter_ids, pool).await,
+        false => None,
+    }
+}
+
+async fn query_on_uuid_id(
+    name: &str,
+    parameter_ids: &Option<String>,
+    pool: &MySqlPool,
+) -> Option<i32> {
+    match name == "discussion/create" {
         true => query_parameter_uuid_id(parameter_ids, pool).await,
         false => None,
     }

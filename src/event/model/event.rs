@@ -7,12 +7,14 @@ use sqlx::MySqlPool;
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Event {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename(serialize = "__typename"))]
-    pub __typename: String,
+    pub __typename: Option<String>,
     pub id: i32,
     pub instance: String,
     pub date: String,
-    pub actor_id: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actor_id: Option<i32>,
     pub object_id: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub archived: Option<bool>,
@@ -40,17 +42,16 @@ pub struct Event {
     pub taxonomy_term_id: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thread_id: Option<i32>,
+
+    //error return
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub r#type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
 }
 
 impl Event {
     pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Event> {
-        // could probably use refactoring :)
-        // but should be a good starting point
-        // and putting it all in one file is def. a lot less code
-
-        // needs testing for different types if it matches legacy api
-        // @inyono do you have a tool for that already?
-
         let event_fut = sqlx::query!(
             "
             SELECT e.event_id, e.actor_id, e.uuid_id, e.instance_id, e.date, i.subdomain, event.name,
@@ -72,25 +73,53 @@ impl Event {
         let paramater_ids = event_fut.parameter_ids;
 
         //query parameters
-        let repository_uuid_id = query_repository_uuid_id(&name, &paramater_ids, &pool).await;
         let object_uuid_id = query_object_uuid_id(&name, &paramater_ids, &pool).await;
+        let repository_uuid_id = query_repository_uuid_id(&name, &paramater_ids, &pool).await;
         let parent_uuid_id = query_parent_uuid_id(&name, &paramater_ids, &pool).await;
+        let on_uuid_id = query_on_uuid_id(&name, &paramater_ids, &pool).await;
+        let thread_uuid_id = query_thread_uuid_id(&name, &paramater_ids, &pool).await;
         let reason = query_reason_string(&name, &paramater_ids, &pool).await;
         let from_and_to = query_from_and_to_ids(&name, &paramater_ids, &pool).await;
-        let on_uuid_id = query_on_uuid_id(&name, &paramater_ids, &pool).await;
+
+        //TODO: Should we keep that consitency with legacy?
+        if name == "discussion/restore" {
+            return Ok(Event {
+                __typename: None,
+                id: id,
+                date: format_datetime(&event_fut.date),
+                instance: event_fut.subdomain.unwrap(),
+                object_id: get_object_id(&name, uuid_id, on_uuid_id),
+                r#type: Some(String::from("discussion/restore")),
+                error: Some(String::from("unsupported")),
+                archived: None,
+                actor_id: None,
+                thread_id: None,
+                comment_id: None,
+                child_id: None,
+                entity_revision_id: None,
+                revision_id: None,
+                trashed: None,
+                taxonomy_term_id: None,
+                entity_id: None,
+                repository_id: None,
+                reason: None,
+                parent_id: None,
+                previous_parent_id: None,
+            });
+        }
 
         Ok(Event {
             //for all
-            __typename: get_typename(&name),
+            __typename: Some(get_typename(&name)),
             id: id,
             instance: event_fut.subdomain.unwrap(),
             date: format_datetime(&event_fut.date),
-            actor_id: event_fut.actor_id as i32,
+            actor_id: Some(event_fut.actor_id as i32),
             object_id: get_object_id(&name, uuid_id, on_uuid_id),
 
             //for some
             archived: get_archived(&name),
-            thread_id: get_thread_id(&name, uuid_id),
+            thread_id: get_thread_id(&name, uuid_id, thread_uuid_id),
             comment_id: get_comment_id(&name, uuid_id),
             child_id: get_child_id(&name, uuid_id, object_uuid_id),
             entity_revision_id: get_entity_revision_id(&name, uuid_id),
@@ -102,6 +131,10 @@ impl Event {
             reason: get_reason(&name, reason),
             parent_id: get_parent_id(&name, uuid_id, parent_uuid_id, &from_and_to),
             previous_parent_id: get_previous_parent_id(&name, &from_and_to),
+
+            //never
+            r#type: None,
+            error: None,
         })
     }
 }
@@ -139,9 +172,15 @@ fn get_archived(name: &str) -> Option<bool> {
     }
 }
 
-fn get_thread_id(name: &str, uuid_id: i32) -> Option<i32> {
-    match name.starts_with("discussion") {
-        true => Some(uuid_id),
+fn get_thread_id(name: &str, uuid_id: i32, thread_uuid_id: Option<i32>) -> Option<i32> {
+    if name == "discussion/create" {
+        return Some(uuid_id);
+    }
+    match name == "discussion/comment/archive" || name == "discussion/comment/create" {
+        true => match thread_uuid_id.is_some() {
+            true => thread_uuid_id,
+            false => Some(uuid_id),
+        },
         false => None,
     }
 }
@@ -298,6 +337,17 @@ async fn query_parent_uuid_id(
     pool: &MySqlPool,
 ) -> Option<i32> {
     match name == "entity/link/create" || name == "entity/link/remove" {
+        true => query_parameter_uuid_id(parameter_ids, pool).await,
+        false => None,
+    }
+}
+
+async fn query_thread_uuid_id(
+    name: &str,
+    parameter_ids: &Option<String>,
+    pool: &MySqlPool,
+) -> Option<i32> {
+    match name == "discussion/comment/archive" || name == "discussion/comment/create" {
         true => query_parameter_uuid_id(parameter_ids, pool).await,
         false => None,
     }

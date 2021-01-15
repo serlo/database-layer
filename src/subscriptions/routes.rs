@@ -7,7 +7,9 @@ async fn subscriptions(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -
     let user_id = user_id.into_inner();
     let result = Subscriptions::get_subscriptions_for_user(user_id, db_pool.get_ref()).await;
     match result {
-        Ok(user_array) => HttpResponse::Ok().json(user_array),
+        Ok(user_array) => HttpResponse::Ok()
+            .content_type("application/json; charset=utf-8")
+            .json(user_array),
         Err(e) => {
             println!("Could not get subscriptions for {}: {:?}", user_id, e);
             HttpResponse::BadRequest().json(None::<String>)

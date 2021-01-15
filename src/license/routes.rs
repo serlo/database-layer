@@ -7,7 +7,9 @@ async fn license(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Resp
     let id = id.into_inner();
     let result = License::find_by_id(id, db_pool.get_ref()).await;
     match result {
-        Ok(data) => HttpResponse::Ok().json(data),
+        Ok(data) => HttpResponse::Ok()
+            .content_type("application/json; charset=utf-8")
+            .json(data),
         Err(e) => {
             println!("Could not get license {}: {:?}", id, e);
             HttpResponse::BadRequest().json(None::<String>)

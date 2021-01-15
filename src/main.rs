@@ -6,6 +6,7 @@ use std::env;
 
 mod event;
 mod health;
+mod license;
 mod notifications;
 mod subscriptions;
 mod threads;
@@ -50,6 +51,7 @@ async fn main() -> anyhow::Result<()> {
         App::new()
             .data(pool.clone())
             .configure(health::init)
+            .configure(license::init)
             .configure(notifications::init)
             .configure(subscriptions::init)
             .configure(threads::init)

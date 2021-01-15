@@ -11,24 +11,29 @@ test(
     }`,
   })
 )
-test.todo('Legacy route')
-
 test(
-  'New Alias with subject',
+  'Legacy route',
+  createTestForAlias({
+    instance: 'de',
+    path: '/subscribe/1855/true',
+  })
+)
+test(
+  'Alias with subject',
   createTestForAlias({
     instance: 'de',
     path: '/mathe/1855/mathe-startseite',
   })
 )
 test(
-  'New alias without subject',
+  'Alias without subject',
   createTestForAlias({
     instance: 'de',
     path: '/1855/mathe-startseite',
   })
 )
 test(
-  'New alias with empty title',
+  'Alias with empty title',
   createTestForAlias({
     instance: 'de',
     path: '/mathe/1855/',
@@ -41,7 +46,6 @@ test(
     path: '/mathe',
   })
 )
-test.todo('Legacy Alias with special characters')
 
 function createTestForAlias({ instance, path }) {
   return async () => {

@@ -10,7 +10,9 @@ async fn alias(
     let (instance, path) = params.into_inner();
     let result = Alias::find_alias_by_path_and_instance(&path, &instance, db_pool.get_ref()).await;
     match result {
-        Ok(data) => HttpResponse::Ok().json(data),
+        Ok(data) => HttpResponse::Ok()
+            .content_type("application/json; charset=utf-8")
+            .json(data),
         Err(e) => {
             println!(
                 "Could not resolve alias {} in instance {}: {:?}",

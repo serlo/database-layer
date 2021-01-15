@@ -15,11 +15,13 @@
     "mysql:dump": "ts-node scripts/mysql-dump.ts",
     "mysql:import-anonymous-data": "ts-node scripts/mysql-import-anonymous-data",
     "mysql:rollback": "ts-node scripts/mysql-rollback",
+    "pacts": "jest --config jest.config-pacts.js",
     "test": "jest",
     "test:staging": "DATABASE_ENV=staging jest"
   },
   "dependencies": {},
   "devDependencies": {
+    "@pact-foundation/pact": "^9.0.0",
     "@types/node": "^14.0.0",
     "@types/ramda": "^0.27.0",
     "@types/semver": "^7.0.0",

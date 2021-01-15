@@ -19,29 +19,46 @@ impl Alias {
         instance: &str,
         pool: &MySqlPool,
     ) -> Result<Option<Alias>> {
-        let re = Regex::new(r"^(?P<subject>[^/]+/)?(?P<id>\d+)/(?P<title>[^/]*)$").unwrap();
-
         let mut id: Option<i32> = None;
 
+        let re = Regex::new(r"^user/profile/(?P<username>.+)$").unwrap();
         match re.captures(&path) {
             Some(captures) => {
-                // This is an uuid
-                id = Some(captures.name("id").unwrap().as_str().parse().unwrap());
+                let username = captures.name("username").unwrap().as_str();
+                let user = sqlx::query!(
+                    r#"
+                        SELECT id
+                            FROM user
+                            WHERE username = ?
+                    "#,
+                    username
+                )
+                .fetch_all(pool)
+                .await?;
+                id = user.first().map(|user| user.id as i32);
             }
             _ => {
-                let legacy_alias = sqlx::query!(
-                    r#"
+                let re = Regex::new(r"^(?P<subject>[^/]+/)?(?P<id>\d+)/(?P<title>[^/]*)$").unwrap();
+                match re.captures(&path) {
+                    Some(captures) => {
+                        id = Some(captures.name("id").unwrap().as_str().parse().unwrap());
+                    }
+                    _ => {
+                        let legacy_alias = sqlx::query!(
+                            r#"
                         SELECT a.uuid_id FROM url_alias a
                             JOIN instance i on i.id = a.instance_id
                             WHERE i.subdomain = ? AND a.alias = ?
                             ORDER BY a.timestamp DESC
                     "#,
-                    instance,
-                    path
-                )
-                .fetch_all(pool)
-                .await?;
-                id = legacy_alias.first().map(|alias| alias.uuid_id as i32);
+                            instance,
+                            path
+                        )
+                        .fetch_all(pool)
+                        .await?;
+                        id = legacy_alias.first().map(|alias| alias.uuid_id as i32);
+                    }
+                }
             }
         }
 

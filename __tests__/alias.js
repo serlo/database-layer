@@ -2,7 +2,15 @@ const fetch = require('node-fetch')
 
 jest.setTimeout(999999999)
 
-test.todo('/user/profile/:username')
+test(
+  '/user/profile/:username',
+  createTestForAlias({
+    instance: 'de',
+    path: `/user/profile/${
+      process.env.DATABASE_ENV === 'staging' ? 'inyono' : 'admin'
+    }`,
+  })
+)
 test.todo('Legacy route')
 
 test(

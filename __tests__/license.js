@@ -1,5 +1,7 @@
 const fetch = require('node-fetch')
 
+const getLicenseFixtures = require('../__fixtures__/license')
+
 jest.setTimeout(999999999)
 
 const limit = process.env.LIMIT
@@ -9,7 +11,9 @@ const limit = process.env.LIMIT
 test('license', async () => {
   let failures = []
 
-  for (let i = 0; i < Math.min(limit, getFixtures()); i++) {
+  const lastId = getLicenseFixtures()
+
+  for (let i = 0; i < Math.min(limit, lastId); i++) {
     const id = i + 1
     console.log(id)
 
@@ -33,12 +37,3 @@ test('license', async () => {
     throw new Error(`${failures.length} failures.`)
   }
 })
-
-const getFixtures = () => {
-  if (process.env.DATABASE_ENV === 'staging') {
-    // SELECT max(id) as lastId FROM license
-    return 19
-  }
-
-  return 0
-}

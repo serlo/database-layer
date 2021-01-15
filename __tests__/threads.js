@@ -32,9 +32,9 @@ function createTestForDiscriminator(discriminator) {
       console.log(i, id)
 
       try {
-        const aResponse = await fetch(`http://localhost:8080/uuid/${id}`)
+        const aResponse = await fetch(`http://localhost:8080/threads/${id}`)
         const bResponse = await fetch(
-          `http://de.serlo.localhost:4567/api/uuid/${id}`
+          `http://de.serlo.localhost:4567/api/threads/${id}`
         )
 
         if (aResponse.status !== 200 && bResponse.status !== 200) {
@@ -45,11 +45,7 @@ function createTestForDiscriminator(discriminator) {
         const a = await aResponse.json()
         const b = await bResponse.json()
 
-        // Inconsistency in serlo.org repo. Legacy system incorrectly applies lowercase
-        expect({ ...a, alias: a?.alias?.toLowerCase() }).toEqual({
-          ...b,
-          alias: b?.alias?.toLowerCase(),
-        })
+        expect(a).toEqual(b)
       } catch (error) {
         failures.push({ discriminator, id, error })
       }

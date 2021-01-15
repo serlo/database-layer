@@ -4,5 +4,5 @@ module.exports = function getLicenseFixtures() {
     return 19
   }
 
-  return 0
+  return 9
 }

@@ -34,6 +34,7 @@ impl Alias {
                         SELECT a.uuid_id FROM url_alias a
                             JOIN instance i on i.id = a.instance_id
                             WHERE i.subdomain = ? AND a.alias = ?
+                            ORDER BY a.timestamp DESC
                     "#,
                     instance,
                     path
@@ -56,28 +57,5 @@ impl Alias {
             }
             _ => Ok(None),
         }
-
-        //
-        // let captures = re.captures(&path).unwrap();
-        //
-        // let username = captures.name("username").unwrap().as_str();
-
-        // TODO: if this is an alias of an object > return object with canonical alias
-        // TODO: if this is not an alias of an object > try tro resolve legacy alias and return with canonical alias
-
-        // let alias_fut = sqlx::query!(
-        //     "SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC",
-        //     alias
-        // )
-        // .fetch_all(pool)
-        // .await?;
-        //
-        // println!("{:?}", alias_fut);
-
-        // Ok(Alias {
-        //     id: 0,
-        //     instance: String::from(instance),
-        //     path: String::from(path),
-        // })
     }
 }

@@ -80,6 +80,20 @@ impl Uuid {
             _ => Ok(None),
         }
     }
+
+    pub fn get_alias(self: &Self) -> String {
+        match self {
+            Uuid::Attachment(attachment) => String::from(&attachment.alias),
+            Uuid::BlogPost(blog) => String::from(&blog.alias),
+            Uuid::Comment(comment) => String::from(&comment.alias),
+            Uuid::Entity(entity) => String::from(&entity.alias),
+            Uuid::EntityRevision(entity_revision) => String::from(&entity_revision.alias),
+            Uuid::Page(page) => String::from(&page.alias),
+            Uuid::PageRevision(page_revision) => String::from(&page_revision.alias),
+            Uuid::TaxonomyTerm(taxonomy_term) => String::from(&taxonomy_term.alias),
+            Uuid::User(user) => String::from(&user.alias),
+        }
+    }
 }
 
 #[derive(Error, Debug)]

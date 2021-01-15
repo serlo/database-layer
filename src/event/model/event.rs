@@ -29,7 +29,7 @@ pub struct Event {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entity_revision_id: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent_id: Option<i32>,
+    pub parent_id: Option<Option<i32>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub previous_parent_id: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -253,7 +253,10 @@ fn get_entity_id(name: &str, uuid_id: i32, repository_uuid_id: Option<i32>) -> O
 
 fn get_reason(name: &str, reason: Option<String>) -> Option<String> {
     match name == "entity/revision/checkout" || name == "entity/revision/reject" {
-        true => reason,
+        true => match reason.is_some() {
+            true => reason,
+            false => Some(String::from("")),
+        },
         false => None,
     }
 }
@@ -274,14 +277,14 @@ fn get_parent_id(
     uuid_id: i32,
     parent_uuid_id: Option<i32>,
     from_and_to: &(Option<i32>, Option<i32>),
-) -> Option<i32> {
+) -> Option<Option<i32>> {
+    //Wrapping option decides if it should be serialized
     match name {
-        "entity/link/create" | "entity/link/remove" => parent_uuid_id,
-        "taxonomy/term/associate" | "taxonomy/term/dissociate" => Some(uuid_id),
+        "entity/link/create" | "entity/link/remove" => Some(parent_uuid_id),
+        "taxonomy/term/associate" | "taxonomy/term/dissociate" => Some(Some(uuid_id)),
         "taxonomy/term/parent/change" => match from_and_to.1 {
-            Some(to) => Some(to),
-            None => None,
-            //TODO: should return as "null" in json… help?
+            Some(to) => Some(Some(to)),
+            None => Some(None),
         },
         _ => None,
     }
@@ -289,7 +292,7 @@ fn get_parent_id(
 
 fn get_previous_parent_id(name: &str, from_and_to: &(Option<i32>, Option<i32>)) -> Option<i32> {
     if name == "taxonomy/term/parent/change" {
-        return from_and_to.1;
+        return from_and_to.0;
     }
     None
 }
@@ -441,7 +444,6 @@ async fn query_from_and_to_ids(
     .fetch_one(pool);
 
     let (from, to) = join!(from_fut, to_fut);
-
     (
         from.ok().map(|value| value.uuid_id as i32),
         to.ok().map(|value| value.uuid_id as i32),

@@ -7,7 +7,9 @@ async fn navigation(instance: web::Path<String>, db_pool: web::Data<MySqlPool>) 
     let instance = instance.into_inner();
     let result = Navigation::find_navigation_by_instance(&instance, db_pool.get_ref()).await;
     match result {
-        Ok(data) => HttpResponse::Ok().json(data),
+        Ok(data) => HttpResponse::Ok()
+            .content_type("application/json; charset=utf-8")
+            .json(data),
         Err(e) => {
             println!(
                 "Could not get navigation for instance {}: {:?}",

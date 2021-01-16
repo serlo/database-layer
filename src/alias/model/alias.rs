@@ -24,7 +24,7 @@ impl Alias {
             || path == "horizon"
             || path.starts_with("horizon/")
             || path.starts_with("api/")
-            || path == ""
+            || path.is_empty()
             || path == "application"
             || path.starts_with("application/")
             || path.starts_with("attachment/file/")

@@ -7,6 +7,7 @@ use std::env;
 mod alias;
 mod health;
 mod license;
+mod navigation;
 mod notifications;
 mod subscriptions;
 mod threads;
@@ -58,6 +59,7 @@ async fn main() -> anyhow::Result<()> {
             .service(index)
             .configure(health::init)
             .configure(license::init)
+            .configure(navigation::init)
             .configure(notifications::init)
             .configure(subscriptions::init)
             .configure(threads::init)

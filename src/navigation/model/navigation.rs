@@ -1,6 +1,8 @@
 use anyhow::Result;
 use serde::Serialize;
 use sqlx::MySqlPool;
+use std::future::Future;
+use std::pin::Pin;
 
 #[derive(Serialize)]
 pub struct Navigation {
@@ -31,8 +33,7 @@ impl Navigation {
         let mut data = Vec::with_capacity(pages.len());
 
         for page in pages.iter() {
-            let child = NavigationChild::find_by_id(page.id, pool).await?;
-            data.push(child)
+            data.push(NavigationChild::find_by_id(page.id, pool).await.await?)
         }
 
         Ok(Navigation {
@@ -50,7 +51,38 @@ pub struct NavigationChild {
 }
 
 impl NavigationChild {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<NavigationChild> {
-        Ok(NavigationChild { id, children: None })
+    pub async fn find_by_id(
+        id: i32,
+        pool: &MySqlPool,
+        // TODO: `Result` might not be needed here? Need to check if `Future` already handles errors or something
+    ) -> Pin<Box<dyn Future<Output = Result<NavigationChild>> + '_>> {
+        Box::pin(async move {
+            let pages = sqlx::query!(
+                r#"
+                    SELECT p.id
+                        FROM navigation_page p
+                        WHERE p.parent_id = ?
+                        ORDER BY p.position
+                "#,
+                id
+            )
+            .fetch_all(pool)
+            .await?;
+
+            let mut children = Vec::with_capacity(pages.len());
+
+            for page in pages.iter() {
+                let ret = NavigationChild::find_by_id(page.id, pool).await.await?;
+                children.push(ret);
+            }
+
+            let children = if children.is_empty() {
+                None
+            } else {
+                Some(children)
+            };
+
+            Ok(NavigationChild { id, children })
+        })
     }
 }

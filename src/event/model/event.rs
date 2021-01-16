@@ -51,11 +51,11 @@ pub struct Event {
 }
 
 impl Event {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Event> {
+    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Option<Event>> {
         let event_fut = sqlx::query!(
             "
             SELECT e.event_id, e.actor_id, e.uuid_id, e.instance_id, e.date, i.subdomain, event.name,
-                GROUP_CONCAT(p.id) as parameter_ids 
+                GROUP_CONCAT(p.id) as parameter_ids
                 FROM event_log e
                 LEFT JOIN event_parameter p ON e.id = p.log_id
                 LEFT JOIN instance i ON e.instance_id = i.id
@@ -72,7 +72,7 @@ impl Event {
         let name = event_fut.name;
         let paramater_ids = event_fut.parameter_ids;
 
-        //query parameters
+        // query parameters
         let object_uuid_id = query_object_uuid_id(&name, &paramater_ids, &pool).await;
         let repository_uuid_id = query_repository_uuid_id(&name, &paramater_ids, &pool).await;
         let parent_uuid_id = query_parent_uuid_id(&name, &paramater_ids, &pool).await;
@@ -81,11 +81,11 @@ impl Event {
         let reason = query_reason_string(&name, &paramater_ids, &pool).await;
         let from_and_to = query_from_and_to_ids(&name, &paramater_ids, &pool).await;
 
-        //TODO: Should we keep that consitency with legacy?
+        // TODO: Should we keep that consistency with legacy?
         if name == "discussion/restore" {
-            return Ok(Event {
+            return Ok(Some(Event {
                 __typename: None,
-                id: id,
+                id,
                 date: format_datetime(&event_fut.date),
                 instance: event_fut.subdomain.unwrap(),
                 object_id: get_object_id(&name, uuid_id, on_uuid_id),
@@ -105,19 +105,30 @@ impl Event {
                 reason: None,
                 parent_id: None,
                 previous_parent_id: None,
-            });
+            }));
         }
 
-        Ok(Event {
-            //for all
-            __typename: Some(get_typename(&name)),
-            id: id,
+        let typename = get_typename(&name);
+        let parent_id = get_parent_id(&name, uuid_id, parent_uuid_id, &from_and_to);
+        let previous_parent_id = get_previous_parent_id(&name, &from_and_to);
+
+        if typename.as_str() == "SetTaxonomyParentNotificationEvent"
+            && parent_id.unwrap().is_none()
+            && previous_parent_id.is_none()
+        {
+            return Ok(None);
+        }
+
+        Ok(Some(Event {
+            // for all
+            __typename: Some(typename),
+            id,
             instance: event_fut.subdomain.unwrap(),
             date: format_datetime(&event_fut.date),
             actor_id: Some(event_fut.actor_id as i32),
             object_id: get_object_id(&name, uuid_id, on_uuid_id),
 
-            //for some
+            // for some
             archived: get_archived(&name),
             thread_id: get_thread_id(&name, uuid_id, thread_uuid_id),
             comment_id: get_comment_id(&name, uuid_id),
@@ -129,13 +140,13 @@ impl Event {
             entity_id: get_entity_id(&name, uuid_id, repository_uuid_id),
             repository_id: get_repository_id(&name, uuid_id, repository_uuid_id),
             reason: get_reason(&name, reason),
-            parent_id: get_parent_id(&name, uuid_id, parent_uuid_id, &from_and_to),
-            previous_parent_id: get_previous_parent_id(&name, &from_and_to),
+            parent_id,
+            previous_parent_id,
 
-            //never
+            // never
             r#type: None,
             error: None,
-        })
+        }))
     }
 }
 
@@ -278,7 +289,7 @@ fn get_parent_id(
     parent_uuid_id: Option<i32>,
     from_and_to: &(Option<i32>, Option<i32>),
 ) -> Option<Option<i32>> {
-    //Wrapping option decides if it should be serialized
+    // Wrapping option decides if it should be serialized
     match name {
         "entity/link/create" | "entity/link/remove" => Some(parent_uuid_id),
         "taxonomy/term/associate" | "taxonomy/term/dissociate" => Some(Some(uuid_id)),
@@ -304,7 +315,6 @@ async fn query_repository_uuid_id(
 ) -> Option<i32> {
     match name == "entity/revision/add"
         || name == "entity/revision/checkout"
-        || name == "entity/revision/add"
         || name == "entity/revision/reject"
     {
         true => query_parameter_uuid_id(parameter_ids, pool).await,

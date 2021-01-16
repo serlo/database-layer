@@ -58,12 +58,18 @@ function createTestForEventType(name) {
 
       try {
         const aResponse = await fetch(`http://localhost:8080/event/${id}`)
-        const bResponse = await fetch(
-          `http://de.serlo.localhost:4567/api/event/${id}`
-        )
-
         const a = await aResponse.json()
-        const b = await bResponse.json()
+
+        let b
+        try {
+          const bResponse = await fetch(
+            `http://de.serlo.localhost:4567/api/event/${id}`
+          )
+          b = await bResponse.json()
+        } catch (error) {
+          expect(a).toEqual(null)
+          continue
+        }
 
         expect(a).toEqual(b)
       } catch (error) {

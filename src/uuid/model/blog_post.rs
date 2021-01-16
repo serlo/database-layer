@@ -1,6 +1,6 @@
 use anyhow::Result;
-use database_layer_actix::format_alias;
 use serde::Serialize;
+use serlo_org_database_layer::format_alias;
 use sqlx::MySqlPool;
 
 #[derive(Serialize)]

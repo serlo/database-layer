@@ -1,5 +1,5 @@
 [package]
-name = "database-layer-actix"
+name = "serlo-org-database-layer"
 version = "0.1.6"
 authors = ["Serlo Education e.V."]
 edition = "2018"

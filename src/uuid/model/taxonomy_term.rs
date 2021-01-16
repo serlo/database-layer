@@ -1,8 +1,8 @@
 use anyhow::Result;
 use convert_case::{Case, Casing};
-use database_layer_actix::format_alias;
 use futures::try_join;
 use serde::Serialize;
+use serlo_org_database_layer::format_alias;
 use sqlx::MySqlPool;
 
 #[derive(Serialize)]

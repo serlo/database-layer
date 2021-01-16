@@ -5,6 +5,7 @@ use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use std::env;
 
 mod alias;
+mod event;
 mod health;
 mod license;
 mod navigation;
@@ -57,6 +58,8 @@ async fn main() -> anyhow::Result<()> {
         App::new()
             .data(pool.clone())
             .service(index)
+            .configure(alias::init)
+            .configure(event::init)
             .configure(health::init)
             .configure(license::init)
             .configure(navigation::init)
@@ -65,7 +68,6 @@ async fn main() -> anyhow::Result<()> {
             .configure(threads::init)
             .configure(user::init)
             .configure(uuid::init)
-            .configure(alias::init)
     })
     .bind("0.0.0.0:8080")?
     .run()

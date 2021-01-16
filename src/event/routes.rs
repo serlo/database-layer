@@ -1,17 +1,15 @@
-use crate::threads::model::Threads;
+use crate::event::model::Event;
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
-#[get("/threads/{id}")]
+#[get("/event/{id}")]
 async fn find(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let id = id.into_inner();
-    let result = Threads::find_by_id(id, db_pool.get_ref()).await;
+    let result = Event::find_by_id(id, db_pool.get_ref()).await;
     match result {
-        Ok(data) => HttpResponse::Ok()
-            .content_type("application/json; charset=utf-8")
-            .json(data),
+        Ok(data) => HttpResponse::Ok().json(data),
         Err(e) => {
-            println!("Could not get threads: {:?}", e);
+            println!("Could not get event: {:?}", e);
             HttpResponse::BadRequest().json(None::<String>)
         }
     }

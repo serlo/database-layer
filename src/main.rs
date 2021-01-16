@@ -1,9 +1,10 @@
-use actix_web::{App, HttpServer};
+use actix_web::{get, App, HttpServer, Result};
 use dotenv::dotenv;
 use regex::Regex;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use std::env;
 
+mod alias;
 mod event;
 mod health;
 mod license;
@@ -12,6 +13,11 @@ mod subscriptions;
 mod threads;
 mod user;
 mod uuid;
+
+#[get("/")]
+async fn index() -> Result<String> {
+    Ok(String::from("Ok"))
+}
 
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
@@ -50,6 +56,9 @@ async fn main() -> anyhow::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(pool.clone())
+            .service(index)
+            .configure(alias::init)
+            .configure(event::init)
             .configure(health::init)
             .configure(license::init)
             .configure(notifications::init)
@@ -57,7 +66,6 @@ async fn main() -> anyhow::Result<()> {
             .configure(threads::init)
             .configure(user::init)
             .configure(uuid::init)
-            .configure(event::init)
     })
     .bind("0.0.0.0:8080")?
     .run()

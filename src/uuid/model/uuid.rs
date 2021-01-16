@@ -81,7 +81,7 @@ impl Uuid {
         }
     }
 
-    pub fn get_alias(self: &Self) -> String {
+    pub fn get_alias(&self) -> String {
         match self {
             Uuid::Attachment(attachment) => String::from(&attachment.alias),
             Uuid::BlogPost(blog) => String::from(&blog.alias),

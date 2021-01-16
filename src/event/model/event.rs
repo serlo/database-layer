@@ -43,7 +43,7 @@ pub struct Event {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thread_id: Option<i32>,
 
-    //error return
+    // error return
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r#type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -53,16 +53,16 @@ pub struct Event {
 impl Event {
     pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Option<Event>> {
         let event_fut = sqlx::query!(
-            "
-            SELECT e.event_id, e.actor_id, e.uuid_id, e.instance_id, e.date, i.subdomain, event.name,
-                GROUP_CONCAT(p.id) as parameter_ids
-                FROM event_log e
-                LEFT JOIN event_parameter p ON e.id = p.log_id
-                LEFT JOIN instance i ON e.instance_id = i.id
-                JOIN event ON e.event_id = event.id
-                WHERE e.id = ?
-                GROUP BY e.event_id, e.actor_id, e.uuid_id, e.instance_id, e.date
-            ",
+            r#"
+                SELECT e.event_id, e.actor_id, e.uuid_id, e.instance_id, e.date, i.subdomain, event.name,
+                    GROUP_CONCAT(p.id) as parameter_ids
+                    FROM event_log e
+                    LEFT JOIN event_parameter p ON e.id = p.log_id
+                    LEFT JOIN instance i ON e.instance_id = i.id
+                    JOIN event ON e.event_id = event.id
+                    WHERE e.id = ?
+                    GROUP BY e.event_id, e.actor_id, e.uuid_id, e.instance_id, e.date
+            "#,
             id
         )
         .fetch_one(pool)
@@ -70,16 +70,16 @@ impl Event {
 
         let uuid_id = event_fut.uuid_id as i32;
         let name = event_fut.name;
-        let paramater_ids = event_fut.parameter_ids;
+        let parameter_ids = event_fut.parameter_ids;
 
         // query parameters
-        let object_uuid_id = query_object_uuid_id(&name, &paramater_ids, &pool).await;
-        let repository_uuid_id = query_repository_uuid_id(&name, &paramater_ids, &pool).await;
-        let parent_uuid_id = query_parent_uuid_id(&name, &paramater_ids, &pool).await;
-        let on_uuid_id = query_on_uuid_id(&name, &paramater_ids, &pool).await;
-        let thread_uuid_id = query_thread_uuid_id(&name, &paramater_ids, &pool).await;
-        let reason = query_reason_string(&name, &paramater_ids, &pool).await;
-        let from_and_to = query_from_and_to_ids(&name, &paramater_ids, &pool).await;
+        let object_uuid_id = query_object_uuid_id(&name, &parameter_ids, &pool).await;
+        let repository_uuid_id = query_repository_uuid_id(&name, &parameter_ids, &pool).await;
+        let parent_uuid_id = query_parent_uuid_id(&name, &parameter_ids, &pool).await;
+        let on_uuid_id = query_on_uuid_id(&name, &parameter_ids, &pool).await;
+        let thread_uuid_id = query_thread_uuid_id(&name, &parameter_ids, &pool).await;
+        let reason = query_reason_string(&name, &parameter_ids, &pool).await;
+        let from_and_to = query_from_and_to_ids(&name, &parameter_ids, &pool).await;
 
         // TODO: Should we keep that consistency with legacy?
         if name == "discussion/restore" {
@@ -204,10 +204,11 @@ fn get_comment_id(name: &str, uuid_id: i32) -> Option<i32> {
 }
 
 fn get_object_id(name: &str, uuid_id: i32, on_uuid_id: Option<i32>) -> i32 {
-    if name == "discussion/create" && on_uuid_id.is_some() {
-        return on_uuid_id.unwrap();
+    if name == "discussion/create" {
+        on_uuid_id.unwrap_or(uuid_id)
+    } else {
+        uuid_id
     }
-    uuid_id
 }
 
 fn get_child_id(name: &str, uuid_id: i32, object_uuid_id: Option<i32>) -> Option<i32> {
@@ -422,33 +423,33 @@ async fn query_from_and_to_ids(
     if name != "taxonomy/term/parent/change" || parameter_ids.is_none() {
         return (None, None);
     }
-    //could probably rewriten to return in one query, but it was a lot easier this way
-    //also: relies on hardcoded parameter name id (7 = from; 8 = to).
-    //okay, or should we query the names event_parameter_name also to check?
+    // could probably rewritten to return in one query, but it was a lot easier this way
+    // also: relies on hardcoded parameter name id (7 = from; 8 = to).
+    // okay, or should we query the names event_parameter_name also to check?
 
-    //puh: this one is suprisingly annoying :)
-    //legacy queries event_parameter_string also to check for "no parent" string
-    //but I think it's okay to set None when there is no uuid_id present
+    // puh: this one is surprisingly annoying :)
+    // legacy queries event_parameter_string also to check for "no parent" string
+    // but I think it's okay to set None when there is no uuid_id present
 
     let from_fut = sqlx::query!(
-        "
+        r#"
             SELECT u.uuid_id
                 FROM event_parameter e
                 JOIN event_parameter_uuid u ON e.id = u.event_parameter_id
                 WHERE FIND_IN_SET(e.id, ? ) AND e.name_id = 7
                 ORDER BY e.name_id
-        ",
+        "#,
         parameter_ids
     )
     .fetch_one(pool);
     let to_fut = sqlx::query!(
-        "
+        r#"
             SELECT u.uuid_id
                 FROM event_parameter e
                 JOIN event_parameter_uuid u ON e.id = u.event_parameter_id
                 WHERE FIND_IN_SET(e.id, ? ) AND e.name_id = 8
                 ORDER BY e.name_id
-        ",
+        "#,
         parameter_ids
     )
     .fetch_one(pool);

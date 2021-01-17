@@ -1,3 +1,20 @@
+mod checkout_revision;
+mod create_comment;
+mod create_entity;
+mod create_entity_link;
+mod create_entity_revision;
+mod create_taxonomy_link;
+mod create_taxonomy_term;
+mod create_thread;
 mod event;
+mod reject_revision;
+mod remove_entity_link;
+mod remove_taxonomy_link;
+mod set_license;
+mod set_taxonomy_parent;
+mod set_taxonomy_term;
+mod set_thread_state;
+mod set_uuid_state;
+mod unsupported;
 
-pub use self::event::Event;
+pub use self::event::{CommonEventData, Event};

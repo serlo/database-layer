@@ -19,7 +19,7 @@ impl Unsupported {
             date: event_data.date,
             instance: event_data.instance,
             object_id: event_data.uuid_id,
-            r#type: event_data.name, //use supported name
+            r#type: event_data.name,
             error: String::from("unsupported"),
         }
     }

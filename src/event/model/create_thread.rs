@@ -1,3 +1,4 @@
+use crate::event::model::CommonEventData;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -13,7 +14,6 @@ pub struct CreateThread {
     pub thread_id: i32,
 }
 
-use crate::event::model::CommonEventData;
 impl CreateThread {
     pub fn build(data: CommonEventData) -> CreateThread {
         CreateThread {
@@ -21,7 +21,8 @@ impl CreateThread {
             id: data.id,
             instance: data.instance,
             date: data.date,
-            object_id: data.parameter_uuid_id.unwrap_or(data.uuid_id), // "on" parameter
+            // uses "on" parameter
+            object_id: data.parameter_uuid_id.unwrap_or(data.uuid_id),
             actor_id: data.actor_id,
             thread_id: data.uuid_id,
         }

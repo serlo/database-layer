@@ -82,7 +82,7 @@ impl Event {
 
         let event = match e.name.as_str() {
             "discussion/comment/archive" => Event::SetThreadState(SetThreadState::build(e, true)),
-            "discussion/comment/restore" => Event::SetThreadState(SetThreadState::build(e, false)), //maybe not set threadid?
+            "discussion/comment/restore" => Event::SetThreadState(SetThreadState::build(e, false)),
             "discussion/comment/create" => Event::CreateComment(CreateComment::build(e)),
             "discussion/create" => Event::CreateThread(CreateThread::build(e)),
             "entity/create" => Event::CreateEntity(CreateEntity::build(e)),
@@ -92,16 +92,12 @@ impl Event {
             "entity/revision/add" => Event::CreateEntityRevision(CreateEntityRevision::build(e)),
             "entity/revision/checkout" => {
                 let repository_id = fetch_parameter_uuid_id(e.id, "repository", &pool).await;
-                let reason = fetch_parameter_string(e.id, "reason", &pool)
-                    .await
-                    .unwrap_or("".to_string());
+                let reason = fetch_parameter_string(e.id, "reason", &pool).await;
                 Event::CheckoutRevision(CheckoutRevision::build(e, repository_id.unwrap(), reason))
             }
             "entity/revision/reject" => {
                 let repository_id = fetch_parameter_uuid_id(e.id, "repository", &pool).await;
-                let reason = fetch_parameter_string(e.id, "reason", &pool)
-                    .await
-                    .unwrap_or("".to_string());
+                let reason = fetch_parameter_string(e.id, "reason", &pool).await;
                 Event::RejectRevision(RejectRevision::build(e, repository_id.unwrap(), reason))
             }
             "taxonomy/term/associate" => Event::CreateTaxonomyLink(CreateTaxonomyLink::build(e)),
@@ -139,7 +135,7 @@ async fn fetch_parameter_uuid_id(id: i32, parameter_name: &str, pool: &MySqlPool
     .map(|o| o.uuid_id as i32)
 }
 
-async fn fetch_parameter_string(id: i32, parameter_name: &str, pool: &MySqlPool) -> Option<String> {
+async fn fetch_parameter_string(id: i32, parameter_name: &str, pool: &MySqlPool) -> String {
     sqlx::query!(
         r#"
             SELECT s.value FROM event_parameter p
@@ -154,4 +150,5 @@ async fn fetch_parameter_string(id: i32, parameter_name: &str, pool: &MySqlPool)
     .await
     .ok()
     .map(|o| o.value)
+    .unwrap_or("".to_string())
 }

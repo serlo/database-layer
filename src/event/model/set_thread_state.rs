@@ -24,7 +24,7 @@ impl SetThreadState {
             date: data.date,
             object_id: data.uuid_id,
             actor_id: data.actor_id,
-            thread_id: data.parameter_uuid_id.unwrap_or(data.uuid_id),
+            thread_id: data.uuid_id,
             archived,
         }
     }

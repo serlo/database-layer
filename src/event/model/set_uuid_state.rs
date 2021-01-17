@@ -1,3 +1,4 @@
+use crate::event::model::CommonEventData;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -12,8 +13,6 @@ pub struct SetUuidState {
     pub actor_id: i32,
     pub trashed: bool,
 }
-
-use crate::event::model::CommonEventData;
 
 impl SetUuidState {
     pub fn build(data: CommonEventData, trashed: bool) -> SetUuidState {

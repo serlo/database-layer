@@ -1,3 +1,4 @@
+use crate::event::model::CommonEventData;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -14,8 +15,6 @@ pub struct RemoveEntityLink {
     pub parent_id: i32,
 }
 
-use crate::event::model::CommonEventData;
-
 impl RemoveEntityLink {
     pub fn build(data: CommonEventData) -> RemoveEntityLink {
         RemoveEntityLink {
@@ -26,6 +25,7 @@ impl RemoveEntityLink {
             object_id: data.uuid_id,
             actor_id: data.actor_id,
             child_id: data.uuid_id,
+            // uses "parent" parameter
             parent_id: data.parameter_uuid_id.unwrap_or(data.uuid_id),
         }
     }

@@ -1,3 +1,4 @@
+use crate::event::model::CommonEventData;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -15,7 +16,6 @@ pub struct RejectRevision {
     pub reason: String,
 }
 
-use crate::event::model::CommonEventData;
 impl RejectRevision {
     pub fn build(data: CommonEventData, repository_id: i32, reason: String) -> RejectRevision {
         RejectRevision {

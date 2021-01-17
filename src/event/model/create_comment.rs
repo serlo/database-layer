@@ -24,7 +24,8 @@ impl CreateComment {
             date: data.date,
             object_id: data.uuid_id,
             actor_id: data.actor_id,
-            thread_id: data.parameter_uuid_id.unwrap_or(data.uuid_id), // "discussion" parameter
+            // uses "discussion" parameter
+            thread_id: data.parameter_uuid_id.unwrap_or(data.uuid_id),
             comment_id: data.uuid_id,
         }
     }

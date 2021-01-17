@@ -1,3 +1,4 @@
+use crate::event::model::CommonEventData;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -12,8 +13,6 @@ pub struct SetLicense {
     pub actor_id: i32,
     pub repository_id: i32,
 }
-
-use crate::event::model::CommonEventData;
 
 impl SetLicense {
     pub fn build(data: CommonEventData) -> SetLicense {

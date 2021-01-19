@@ -3,23 +3,23 @@ use serde::Serialize;
 use serlo_org_database_layer::format_datetime;
 use sqlx::MySqlPool;
 
-use crate::event::model::checkout_revision::CheckoutRevision;
-use crate::event::model::create_comment::CreateComment;
-use crate::event::model::create_entity::CreateEntity;
-use crate::event::model::create_entity_link::CreateEntityLink;
-use crate::event::model::create_entity_revision::CreateEntityRevision;
-use crate::event::model::create_taxonomy_link::CreateTaxonomyLink;
-use crate::event::model::create_taxonomy_term::CreateTaxonomyTerm;
-use crate::event::model::create_thread::CreateThread;
-use crate::event::model::reject_revision::RejectRevision;
-use crate::event::model::remove_entity_link::RemoveEntityLink;
-use crate::event::model::remove_taxonomy_link::RemoveTaxonomyLink;
-use crate::event::model::set_license::SetLicense;
-use crate::event::model::set_taxonomy_parent::SetTaxonomyParent;
-use crate::event::model::set_taxonomy_term::SetTaxonomyTerm;
-use crate::event::model::set_thread_state::SetThreadState;
-use crate::event::model::set_uuid_state::SetUuidState;
-use crate::event::model::unsupported::Unsupported;
+use super::checkout_revision::CheckoutRevision;
+use super::create_comment::CreateComment;
+use super::create_entity::CreateEntity;
+use super::create_entity_link::CreateEntityLink;
+use super::create_entity_revision::CreateEntityRevision;
+use super::create_taxonomy_link::CreateTaxonomyLink;
+use super::create_taxonomy_term::CreateTaxonomyTerm;
+use super::create_thread::CreateThread;
+use super::reject_revision::RejectRevision;
+use super::remove_entity_link::RemoveEntityLink;
+use super::remove_taxonomy_link::RemoveTaxonomyLink;
+use super::set_license::SetLicense;
+use super::set_taxonomy_parent::SetTaxonomyParent;
+use super::set_taxonomy_term::SetTaxonomyTerm;
+use super::set_thread_state::SetThreadState;
+use super::set_uuid_state::SetUuidState;
+use super::unsupported::Unsupported;
 
 #[derive(Serialize)]
 #[serde(untagged)]
@@ -150,5 +150,5 @@ async fn fetch_parameter_string(id: i32, parameter_name: &str, pool: &MySqlPool)
     .await
     .ok()
     .map(|o| o.value)
-    .unwrap_or("".to_string())
+    .unwrap_or_else(|| "".to_string())
 }

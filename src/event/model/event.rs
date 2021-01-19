@@ -53,6 +53,16 @@ pub struct CommonEventData {
     pub parameter_uuid_id: Option<i32>,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AbstractEvent {
+    pub id: i32,
+    pub instance: String,
+    pub date: String,
+    pub actor_id: i32,
+    pub object_id: i32,
+}
+
 impl Event {
     pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Event> {
         let event_fut = sqlx::query!(
@@ -76,8 +86,17 @@ impl Event {
             uuid_id: event_fut.uuid_id as i32,
             actor_id: event_fut.actor_id as i32,
             date: format_datetime(&event_fut.date),
-            instance: event_fut.subdomain,
+            instance: String::from(&event_fut.subdomain),
             parameter_uuid_id: event_fut.parameter_uuid_id.map(|id| id as i32),
+        };
+
+        let abstract_event = AbstractEvent {
+            id: event_fut.id as i32,
+
+            instance: String::from(&event_fut.subdomain),
+            date: format_datetime(&event_fut.date),
+            actor_id: event_fut.actor_id as i32,
+            object_id: event_fut.uuid_id as i32,
         };
 
         let event = match e.name.as_str() {
@@ -91,9 +110,19 @@ impl Event {
             "entity/link/remove" => Event::RemoveEntityLink(RemoveEntityLink::build(e)),
             "entity/revision/add" => Event::CreateEntityRevision(CreateEntityRevision::build(e)),
             "entity/revision/checkout" => {
-                let repository_id = fetch_parameter_uuid_id(e.id, "repository", &pool).await;
+                let repository_id = fetch_parameter_uuid_id(e.id, "repository", &pool)
+                    .await
+                    .unwrap();
                 let reason = fetch_parameter_string(e.id, "reason", &pool).await;
-                Event::CheckoutRevision(CheckoutRevision::build(e, repository_id.unwrap(), reason))
+                let revision_id = abstract_event.object_id;
+                Event::CheckoutRevision(CheckoutRevision {
+                    abstract_event,
+
+                    __typename: String::from("CheckoutRevisionNotificationEvent"),
+                    repository_id,
+                    revision_id,
+                    reason,
+                })
             }
             "entity/revision/reject" => {
                 let repository_id = fetch_parameter_uuid_id(e.id, "repository", &pool).await;

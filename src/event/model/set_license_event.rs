@@ -9,12 +9,11 @@ pub struct SetLicense {
 
     #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
-
     pub repository_id: i32,
 }
 
 impl SetLicense {
-    pub fn new(abstract_event: AbstractEvent) -> SetLicense {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         SetLicense {
             __typename: "SetLicenseNotificationEvent".to_string(),
             abstract_event,

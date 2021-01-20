@@ -15,7 +15,7 @@ pub struct RemoveEntityLink {
 }
 
 impl RemoveEntityLink {
-    pub fn new(abstract_event: AbstractEvent) -> RemoveEntityLink {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         RemoveEntityLink {
             __typename: "RemoveEntityLinkNotificationEvent".to_string(),
             child_id: abstract_event.object_id,

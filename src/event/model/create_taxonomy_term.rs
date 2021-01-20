@@ -14,7 +14,7 @@ pub struct CreateTaxonomyTerm {
 }
 
 impl CreateTaxonomyTerm {
-    pub fn new(abstract_event: AbstractEvent) -> CreateTaxonomyTerm {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         CreateTaxonomyTerm {
             __typename: "CreateTaxonomyTermNotificationEvent".to_string(),
             taxonomy_term_id: abstract_event.object_id,

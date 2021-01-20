@@ -15,7 +15,7 @@ pub struct CreateTaxonomyLink {
 }
 
 impl CreateTaxonomyLink {
-    pub fn new(abstract_event: AbstractEvent) -> CreateTaxonomyLink {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         CreateTaxonomyLink {
             __typename: "CreateTaxonomyLinkNotificationEvent".to_string(),
             parent_id: abstract_event.object_id,

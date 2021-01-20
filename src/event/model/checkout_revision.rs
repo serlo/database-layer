@@ -1,5 +1,6 @@
 use super::event::AbstractEvent;
 use serde::Serialize;
+use sqlx::MySqlPool;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,11 +16,13 @@ pub struct CheckoutRevision {
 }
 
 impl CheckoutRevision {
-    pub fn new(
-        abstract_event: AbstractEvent,
-        repository_id: i32,
-        reason: String,
-    ) -> CheckoutRevision {
+    pub async fn new(abstract_event: AbstractEvent, pool: &MySqlPool) -> Self {
+        let repository_id =
+            super::event::fetch_parameter_uuid_id(abstract_event.id, "repository", &pool)
+                .await
+                .unwrap();
+        let reason = super::event::fetch_parameter_string(abstract_event.id, "reason", &pool).await;
+
         CheckoutRevision {
             __typename: "CheckoutRevisionNotificationEvent".to_string(),
             repository_id,

@@ -78,7 +78,7 @@ impl Event {
         let name = event_fut.name;
         let uuid_id = event_fut.uuid_id as i32;
 
-        let abstract_event = AbstractEvent {
+        let e = AbstractEvent {
             id: event_fut.id as i32,
             instance: event_fut.subdomain.to_string(),
             date: format_datetime(&event_fut.date),
@@ -88,64 +88,40 @@ impl Event {
         };
 
         let event = match name.as_str() {
-            "discussion/comment/archive" => {
-                Event::SetThreadState(SetThreadState::new(abstract_event, true))
-            }
-            "discussion/comment/restore" => {
-                Event::SetThreadState(SetThreadState::new(abstract_event, false))
-            }
-            "discussion/comment/create" => Event::CreateComment(CreateComment::new(abstract_event)),
-            "discussion/create" => Event::CreateThread(CreateThread::new(abstract_event)),
-            "entity/create" => Event::CreateEntity(CreateEntity::new(abstract_event)),
-            "license/object/set" => Event::SetLicense(SetLicense::new(abstract_event)),
-            "entity/link/create" => Event::CreateEntityLink(CreateEntityLink::new(abstract_event)),
-            "entity/link/remove" => Event::RemoveEntityLink(RemoveEntityLink::new(abstract_event)),
-            "entity/revision/add" => {
-                Event::CreateEntityRevision(CreateEntityRevision::new(abstract_event))
-            }
+            "discussion/comment/archive" => Event::SetThreadState(SetThreadState::new(e, true)),
+            "discussion/comment/restore" => Event::SetThreadState(SetThreadState::new(e, false)),
+            "discussion/comment/create" => Event::CreateComment(CreateComment::new(e)),
+            "discussion/create" => Event::CreateThread(CreateThread::new(e)),
+            "entity/create" => Event::CreateEntity(CreateEntity::new(e)),
+            "license/object/set" => Event::SetLicense(SetLicense::new(e)),
+            "entity/link/create" => Event::CreateEntityLink(CreateEntityLink::new(e)),
+            "entity/link/remove" => Event::RemoveEntityLink(RemoveEntityLink::new(e)),
+            "entity/revision/add" => Event::CreateEntityRevision(CreateEntityRevision::new(e)),
             "entity/revision/checkout" => {
-                let repository_id = fetch_parameter_uuid_id(abstract_event.id, "repository", &pool)
-                    .await
-                    .unwrap();
-                let reason = fetch_parameter_string(abstract_event.id, "reason", &pool).await;
-                Event::CheckoutRevision(CheckoutRevision::new(
-                    abstract_event,
-                    repository_id,
-                    reason,
-                ))
+                Event::CheckoutRevision(CheckoutRevision::new(e, pool).await)
             }
-            "entity/revision/reject" => {
-                let repository_id = fetch_parameter_uuid_id(abstract_event.id, "repository", &pool)
-                    .await
-                    .unwrap();
-                let reason = fetch_parameter_string(abstract_event.id, "reason", &pool).await;
-                Event::RejectRevision(RejectRevision::new(abstract_event, repository_id, reason))
-            }
-            "taxonomy/term/associate" => {
-                Event::CreateTaxonomyLink(CreateTaxonomyLink::new(abstract_event))
-            }
-            "taxonomy/term/dissociate" => {
-                Event::RemoveTaxonomyLink(RemoveTaxonomyLink::new(abstract_event))
-            }
-            "taxonomy/term/create" => {
-                Event::CreateTaxonomyTerm(CreateTaxonomyTerm::new(abstract_event))
-            }
-            "taxonomy/term/update" => Event::SetTaxonomyTerm(SetTaxonomyTerm::new(abstract_event)),
+            "entity/revision/reject" => Event::RejectRevision(RejectRevision::new(e, pool).await),
+            "taxonomy/term/associate" => Event::CreateTaxonomyLink(CreateTaxonomyLink::new(e)),
+            "taxonomy/term/dissociate" => Event::RemoveTaxonomyLink(RemoveTaxonomyLink::new(e)),
+            "taxonomy/term/create" => Event::CreateTaxonomyTerm(CreateTaxonomyTerm::new(e)),
+            "taxonomy/term/update" => Event::SetTaxonomyTerm(SetTaxonomyTerm::new(e)),
             "taxonomy/term/parent/change" => {
-                let from = fetch_parameter_uuid_id(abstract_event.id, "from", &pool).await;
-                let to = fetch_parameter_uuid_id(abstract_event.id, "to", &pool).await;
-                Event::SetTaxonomyParent(SetTaxonomyParent::new(abstract_event, from, to))
+                Event::SetTaxonomyParent(SetTaxonomyParent::new(e, pool).await)
             }
-            "uuid/restore" => Event::SetUuidState(SetUuidState::new(abstract_event, false)),
-            "uuid/trash" => Event::SetUuidState(SetUuidState::new(abstract_event, true)),
-            _ => Event::Unsupported(Unsupported::new(abstract_event, name)),
+            "uuid/restore" => Event::SetUuidState(SetUuidState::new(e, false)),
+            "uuid/trash" => Event::SetUuidState(SetUuidState::new(e, true)),
+            _ => Event::Unsupported(Unsupported::new(e, name)),
         };
 
         Ok(event)
     }
 }
 
-async fn fetch_parameter_uuid_id(id: i32, parameter_name: &str, pool: &MySqlPool) -> Option<i32> {
+pub async fn fetch_parameter_uuid_id(
+    id: i32,
+    parameter_name: &str,
+    pool: &MySqlPool,
+) -> Option<i32> {
     sqlx::query!(
         r#"
             SELECT id.uuid_id FROM event_parameter p
@@ -162,7 +138,7 @@ async fn fetch_parameter_uuid_id(id: i32, parameter_name: &str, pool: &MySqlPool
     .map(|o| o.uuid_id as i32)
 }
 
-async fn fetch_parameter_string(id: i32, parameter_name: &str, pool: &MySqlPool) -> String {
+pub async fn fetch_parameter_string(id: i32, parameter_name: &str, pool: &MySqlPool) -> String {
     sqlx::query!(
         r#"
             SELECT s.value FROM event_parameter p

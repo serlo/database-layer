@@ -15,7 +15,7 @@ pub struct CreateEntityLink {
 }
 
 impl CreateEntityLink {
-    pub fn new(abstract_event: AbstractEvent) -> CreateEntityLink {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         CreateEntityLink {
             __typename: "CreateEntityLinkNotificationEvent".to_string(),
             child_id: abstract_event.object_id,

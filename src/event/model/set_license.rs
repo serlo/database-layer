@@ -14,7 +14,7 @@ pub struct SetLicense {
 }
 
 impl SetLicense {
-    pub fn new(abstract_event: AbstractEvent) -> SetLicense {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         SetLicense {
             __typename: "SetLicenseNotificationEvent".to_string(),
             repository_id: abstract_event.object_id,

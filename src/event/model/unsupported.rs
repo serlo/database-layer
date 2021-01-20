@@ -13,7 +13,7 @@ pub struct Unsupported {
 }
 
 impl Unsupported {
-    pub fn new(abstract_event: AbstractEvent, name: String) -> Unsupported {
+    pub fn new(abstract_event: AbstractEvent, name: String) -> Self {
         Unsupported {
             id: abstract_event.id,
             date: abstract_event.date,

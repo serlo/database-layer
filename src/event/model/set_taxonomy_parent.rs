@@ -1,5 +1,6 @@
 use super::event::AbstractEvent;
 use serde::Serialize;
+use sqlx::MySqlPool;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -17,11 +18,10 @@ pub struct SetTaxonomyParent {
 }
 
 impl SetTaxonomyParent {
-    pub fn new(
-        abstract_event: AbstractEvent,
-        from: Option<i32>,
-        to: Option<i32>,
-    ) -> SetTaxonomyParent {
+    pub async fn new(abstract_event: AbstractEvent, pool: &MySqlPool) -> Self {
+        let from = super::event::fetch_parameter_uuid_id(abstract_event.id, "from", &pool).await;
+        let to = super::event::fetch_parameter_uuid_id(abstract_event.id, "to", &pool).await;
+
         SetTaxonomyParent {
             __typename: "SetTaxonomyParentNotificationEvent".to_string(),
             child_id: abstract_event.object_id,

@@ -13,7 +13,7 @@ pub struct CreateEntity {
 }
 
 impl CreateEntity {
-    pub fn new(abstract_event: AbstractEvent) -> CreateEntity {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         CreateEntity {
             __typename: "CreateEntityNotificationEvent".to_string(),
             entity_id: abstract_event.object_id,

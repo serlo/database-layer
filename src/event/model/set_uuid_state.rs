@@ -8,12 +8,11 @@ pub struct SetUuidState {
     pub __typename: String,
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
-
     pub trashed: bool,
 }
 
 impl SetUuidState {
-    pub fn new(abstract_event: AbstractEvent, trashed: bool) -> SetUuidState {
+    pub fn new(abstract_event: AbstractEvent, trashed: bool) -> Self {
         SetUuidState {
             __typename: "SetUuidStateNotificationEvent".to_string(),
             abstract_event,

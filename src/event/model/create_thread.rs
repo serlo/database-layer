@@ -13,7 +13,7 @@ pub struct CreateThread {
 }
 
 impl CreateThread {
-    pub fn new(abstract_event: AbstractEvent) -> CreateThread {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         CreateThread {
             __typename: "CreateThreadNotificationEvent".to_string(),
             // uses "on" parameter

@@ -14,7 +14,7 @@ pub struct CreateComment {
 }
 
 impl CreateComment {
-    pub fn new(abstract_event: AbstractEvent) -> CreateComment {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         CreateComment {
             __typename: "CreateCommentNotificationEvent".to_string(),
             // uses "discussion" parameter

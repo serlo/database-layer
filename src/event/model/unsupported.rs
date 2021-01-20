@@ -13,13 +13,13 @@ pub struct Unsupported {
 }
 
 impl Unsupported {
-    pub fn new(abstract_event: AbstractEvent, name: String) -> Self {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         Unsupported {
             id: abstract_event.id,
             date: abstract_event.date,
             instance: abstract_event.instance,
             object_id: abstract_event.object_id,
-            r#type: name,
+            r#type: abstract_event.name.to_string(),
             error: String::from("unsupported"),
         }
     }

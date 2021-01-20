@@ -11,7 +11,8 @@ pub struct SetThreadState {
 }
 
 impl SetThreadState {
-    pub fn new(abstract_event: AbstractEvent, archived: bool) -> Self {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
+        let archived = abstract_event.name == "discussion/comment/archive";
         SetThreadState {
             thread_id: abstract_event.object_id,
             archived,

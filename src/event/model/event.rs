@@ -129,7 +129,10 @@ pub enum EventType {
         deserialize = "uuid/trash"
     ))]
     SetUuidState,
-    #[serde(rename(serialize = "UnsupportedNotificationEvent", deserialize = "???"))]
+    #[serde(rename(
+        serialize = "UnsupportedNotificationEvent",
+        deserialize = "discussion/restore"
+    ))]
     Unsupported,
 }
 
@@ -153,6 +156,8 @@ pub struct AbstractEvent {
     pub object_id: i32,
     #[serde(skip)]
     pub parameter_uuid_id: i32,
+    #[serde(skip)]
+    pub name: String,
 }
 
 impl Event {
@@ -172,9 +177,12 @@ impl Event {
         .fetch_one(pool)
         .await?;
 
-        let parameter_uuid_id = event_fut.parameter_uuid_id.map(|id| id as i32);
         let name = event_fut.name;
         let uuid_id = event_fut.uuid_id as i32;
+        let parameter_uuid_id = event_fut
+            .parameter_uuid_id
+            .map(|id| id as i32)
+            .unwrap_or(uuid_id);
 
         let e = AbstractEvent {
             __typename: name.parse::<EventType>()?,
@@ -183,33 +191,34 @@ impl Event {
             date: format_datetime(&event_fut.date),
             actor_id: event_fut.actor_id as i32,
             object_id: uuid_id,
-            parameter_uuid_id: parameter_uuid_id.unwrap_or(uuid_id),
+            parameter_uuid_id,
+            name,
         };
 
-        let event = match name.as_str() {
-            "discussion/comment/archive" => Event::SetThreadState(SetThreadState::new(e, true)),
-            "discussion/comment/restore" => Event::SetThreadState(SetThreadState::new(e, false)),
-            "discussion/comment/create" => Event::CreateComment(CreateComment::new(e)),
-            "discussion/create" => Event::CreateThread(CreateThread::new(e)),
-            "entity/create" => Event::CreateEntity(CreateEntity::new(e)),
-            "license/object/set" => Event::SetLicense(SetLicense::new(e)),
-            "entity/link/create" => Event::CreateEntityLink(CreateEntityLink::new(e)),
-            "entity/link/remove" => Event::RemoveEntityLink(RemoveEntityLink::new(e)),
-            "entity/revision/add" => Event::CreateEntityRevision(CreateEntityRevision::new(e)),
-            "entity/revision/checkout" => {
+        let event = match e.name.as_str().parse()? {
+            EventType::SetThreadState => Event::SetThreadState(SetThreadState::new(e)),
+            EventType::CreateComment => Event::CreateComment(CreateComment::new(e)),
+            EventType::CreateThread => Event::CreateThread(CreateThread::new(e)),
+            EventType::CreateEntity => Event::CreateEntity(CreateEntity::new(e)),
+            EventType::SetLicense => Event::SetLicense(SetLicense::new(e)),
+            EventType::CreateEntityLink => Event::CreateEntityLink(CreateEntityLink::new(e)),
+            EventType::RemoveEntityLink => Event::RemoveEntityLink(RemoveEntityLink::new(e)),
+            EventType::CreateEntityRevision => {
+                Event::CreateEntityRevision(CreateEntityRevision::new(e))
+            }
+            EventType::CheckoutRevision => {
                 Event::CheckoutRevision(CheckoutRevision::new(e, pool).await)
             }
-            "entity/revision/reject" => Event::RejectRevision(RejectRevision::new(e, pool).await),
-            "taxonomy/term/associate" => Event::CreateTaxonomyLink(CreateTaxonomyLink::new(e)),
-            "taxonomy/term/dissociate" => Event::RemoveTaxonomyLink(RemoveTaxonomyLink::new(e)),
-            "taxonomy/term/create" => Event::CreateTaxonomyTerm(CreateTaxonomyTerm::new(e)),
-            "taxonomy/term/update" => Event::SetTaxonomyTerm(SetTaxonomyTerm::new(e)),
-            "taxonomy/term/parent/change" => {
+            EventType::RejectRevision => Event::RejectRevision(RejectRevision::new(e, pool).await),
+            EventType::CreateTaxonomyLink => Event::CreateTaxonomyLink(CreateTaxonomyLink::new(e)),
+            EventType::RemoveTaxonomyLink => Event::RemoveTaxonomyLink(RemoveTaxonomyLink::new(e)),
+            EventType::CreateTaxonomyTerm => Event::CreateTaxonomyTerm(CreateTaxonomyTerm::new(e)),
+            EventType::SetTaxonomyTerm => Event::SetTaxonomyTerm(SetTaxonomyTerm::new(e)),
+            EventType::SetTaxonomyParent => {
                 Event::SetTaxonomyParent(SetTaxonomyParent::new(e, pool).await)
             }
-            "uuid/restore" => Event::SetUuidState(SetUuidState::new(e, false)),
-            "uuid/trash" => Event::SetUuidState(SetUuidState::new(e, true)),
-            _ => Event::Unsupported(Unsupported::new(e, name)),
+            EventType::SetUuidState => Event::SetUuidState(SetUuidState::new(e)),
+            EventType::Unsupported => Event::Unsupported(Unsupported::new(e)),
         };
 
         Ok(event)

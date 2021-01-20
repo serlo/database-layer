@@ -10,7 +10,8 @@ pub struct SetUuidState {
 }
 
 impl SetUuidState {
-    pub fn new(abstract_event: AbstractEvent, trashed: bool) -> Self {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
+        let trashed = abstract_event.name == "uuid/trash";
         SetUuidState {
             abstract_event,
             trashed,

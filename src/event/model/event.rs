@@ -21,8 +21,6 @@ use super::set_thread_state::SetThreadState;
 use super::set_uuid_state::SetUuidState;
 use super::unsupported::Unsupported;
 
-// To string
-
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum Event {

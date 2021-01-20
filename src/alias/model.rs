@@ -70,9 +70,6 @@ impl Alias {
             return Ok(None);
         }
 
-        // TODO: /horizon/:id
-        // TODO: /horizon/:id/{delete,out,edit}
-
         let re = Regex::new(r"^user/profile/(?P<username>.+)$").unwrap();
         let id = match re.captures(&path) {
             Some(captures) => {

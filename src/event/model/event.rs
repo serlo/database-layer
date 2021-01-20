@@ -82,7 +82,6 @@ impl Event {
         let reason = query_reason_string(&name, &parameter_ids, &pool).await;
         let from_and_to = query_from_and_to_ids(&name, &parameter_ids, &pool).await;
 
-        // TODO: Should we keep that consistency with legacy?
         if name == "discussion/restore" {
             return Ok(Some(Event {
                 __typename: None,

@@ -23,13 +23,13 @@ impl CheckoutRevision {
         let reason_fut = fetch_parameter_string(abstract_event.id, "reason", pool);
         let revision_id = abstract_event.object_id;
 
-        if let (Some(repository_id), Some(reason)) = try_join!(repository_id_fut, reason_fut)? {
+        if let (Some(repository_id), reason) = try_join!(repository_id_fut, reason_fut)? {
             Ok(CheckoutRevision {
                 abstract_event,
 
                 repository_id,
                 revision_id,
-                reason,
+                reason: reason.unwrap_or_else(|| "".to_string()),
             })
         } else {
             Err(anyhow::Error::new(EventError::MissingField {

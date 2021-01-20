@@ -21,13 +21,15 @@ impl RejectRevision {
     pub async fn new(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self> {
         let repository_id_fut = fetch_parameter_uuid_id(abstract_event.id, "repository", pool);
         let reason_fut = fetch_parameter_string(abstract_event.id, "reason", pool);
+        let revision_id = abstract_event.object_id;
 
-        if let (Some(repository_id), Some(reason)) = try_join!(repository_id_fut, reason_fut)? {
+        if let (Some(repository_id), reason) = try_join!(repository_id_fut, reason_fut)? {
             Ok(RejectRevision {
-                repository_id,
-                revision_id: abstract_event.object_id,
-                reason,
                 abstract_event,
+
+                repository_id,
+                revision_id,
+                reason: reason.unwrap_or_else(|| "".to_string()),
             })
         } else {
             Err(anyhow::Error::new(EventError::MissingField {

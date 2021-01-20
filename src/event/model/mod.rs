@@ -17,4 +17,4 @@ mod set_thread_state;
 mod set_uuid_state;
 mod unsupported;
 
-pub use self::event::{CommonEventData, Event};
+pub use self::event::Event;

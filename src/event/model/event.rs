@@ -1,5 +1,5 @@
 use anyhow::Result;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serlo_org_database_layer::format_datetime;
 use sqlx::MySqlPool;
 
@@ -43,14 +43,119 @@ pub enum Event {
     Unsupported(Unsupported),
 }
 
-pub struct CommonEventData {
+#[derive(Deserialize, Serialize)]
+pub enum EventType {
+    #[serde(rename(
+        serialize = "SetThreadStateNotificationEvent",
+        deserialize = "discussion/comment/archive",
+        deserialize = "discussion/comment/restore"
+    ))]
+    SetThreadState,
+    #[serde(rename(
+        serialize = "CreateCommentNotificationEvent",
+        deserialize = "discussion/comment/create"
+    ))]
+    CreateComment,
+    #[serde(rename(
+        serialize = "CreateThreadNotificationEvent",
+        deserialize = "discussion/create"
+    ))]
+    CreateThread,
+    #[serde(rename(
+        serialize = "CreateEntityNotificationEvent",
+        deserialize = "entity/create"
+    ))]
+    CreateEntity,
+    #[serde(rename(
+        serialize = "SetLicenseNotificationEvent",
+        deserialize = "license/object/set"
+    ))]
+    SetLicense,
+    #[serde(rename(
+        serialize = "CreateEntityLinkNotificationEvent",
+        deserialize = "entity/link/create"
+    ))]
+    CreateEntityLink,
+    #[serde(rename(
+        serialize = "RemoveEntityLinkNotificationEvent",
+        deserialize = "entity/link/remove"
+    ))]
+    RemoveEntityLink,
+    #[serde(rename(
+        serialize = "CreateEntityRevisionNotificationEvent",
+        deserialize = "entity/revision/add"
+    ))]
+    CreateEntityRevision,
+    #[serde(rename(
+        serialize = "CheckoutRevisionNotificationEvent",
+        deserialize = "entity/revision/checkout"
+    ))]
+    CheckoutRevision,
+    #[serde(rename(
+        serialize = "RejectRevisionNotificationEvent",
+        deserialize = "entity/revision/reject"
+    ))]
+    RejectRevision,
+    #[serde(rename(
+        serialize = "CreateTaxonomyLinkNotificationEvent",
+        deserialize = "taxonomy/term/associate"
+    ))]
+    CreateTaxonomyLink,
+    #[serde(rename(
+        serialize = "RemoveTaxonomyLinkNotificationEvent",
+        deserialize = "taxonomy/term/dissociate"
+    ))]
+    RemoveTaxonomyLink,
+    #[serde(rename(
+        serialize = "CreateTaxonomyTermNotificationEvent",
+        deserialize = "taxonomy/term/create"
+    ))]
+    CreateTaxonomyTerm,
+    #[serde(rename(
+        serialize = "SetTaxonomyTermNotificationEvent",
+        deserialize = "taxonomy/term/update"
+    ))]
+    SetTaxonomyTerm,
+    #[serde(rename(
+        serialize = "SetTaxonomyParentNotificationEvent",
+        deserialize = "taxonomy/term/parent/change"
+    ))]
+    SetTaxonomyParent,
+    #[serde(rename(
+        serialize = "SetUuidStateNotificationEvent",
+        deserialize = "uuid/restore",
+        deserialize = "uuid/trash"
+    ))]
+    SetUuidState,
+    #[serde(rename(
+        serialize = "UnsupportedNotificationEvent",
+        deserialize = "discussion/restore"
+    ))]
+    Unsupported,
+}
+
+impl std::str::FromStr for EventType {
+    type Err = serde_json::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_value(serde_json::value::Value::String(s.to_string()))
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AbstractEvent {
+    #[serde(rename(serialize = "__typename"))]
+    pub __typename: EventType,
     pub id: i32,
-    pub name: String,
-    pub uuid_id: i32,
-    pub actor_id: i32,
-    pub date: String,
     pub instance: String,
-    pub parameter_uuid_id: Option<i32>,
+    pub date: String,
+    pub actor_id: i32,
+    pub object_id: i32,
+    #[serde(skip)]
+    pub parameter_uuid_id: i32,
+    #[serde(skip)]
+    pub name: String,
 }
 
 impl Event {
@@ -70,55 +175,59 @@ impl Event {
         .fetch_one(pool)
         .await?;
 
-        let e = CommonEventData {
+        let name = event_fut.name;
+        let uuid_id = event_fut.uuid_id as i32;
+        let parameter_uuid_id = event_fut
+            .parameter_uuid_id
+            .map(|id| id as i32)
+            .unwrap_or(uuid_id);
+
+        let e = AbstractEvent {
+            __typename: name.parse::<EventType>()?,
             id: event_fut.id as i32,
-            name: event_fut.name,
-            uuid_id: event_fut.uuid_id as i32,
-            actor_id: event_fut.actor_id as i32,
+            instance: event_fut.subdomain.to_string(),
             date: format_datetime(&event_fut.date),
-            instance: event_fut.subdomain,
-            parameter_uuid_id: event_fut.parameter_uuid_id.map(|id| id as i32),
+            actor_id: event_fut.actor_id as i32,
+            object_id: uuid_id,
+            parameter_uuid_id,
+            name,
         };
 
-        let event = match e.name.as_str() {
-            "discussion/comment/archive" => Event::SetThreadState(SetThreadState::build(e, true)),
-            "discussion/comment/restore" => Event::SetThreadState(SetThreadState::build(e, false)),
-            "discussion/comment/create" => Event::CreateComment(CreateComment::build(e)),
-            "discussion/create" => Event::CreateThread(CreateThread::build(e)),
-            "entity/create" => Event::CreateEntity(CreateEntity::build(e)),
-            "license/object/set" => Event::SetLicense(SetLicense::build(e)),
-            "entity/link/create" => Event::CreateEntityLink(CreateEntityLink::build(e)),
-            "entity/link/remove" => Event::RemoveEntityLink(RemoveEntityLink::build(e)),
-            "entity/revision/add" => Event::CreateEntityRevision(CreateEntityRevision::build(e)),
-            "entity/revision/checkout" => {
-                let repository_id = fetch_parameter_uuid_id(e.id, "repository", &pool).await;
-                let reason = fetch_parameter_string(e.id, "reason", &pool).await;
-                Event::CheckoutRevision(CheckoutRevision::build(e, repository_id.unwrap(), reason))
+        let event = match e.name.as_str().parse()? {
+            EventType::SetThreadState => Event::SetThreadState(SetThreadState::new(e)),
+            EventType::CreateComment => Event::CreateComment(CreateComment::new(e)),
+            EventType::CreateThread => Event::CreateThread(CreateThread::new(e)),
+            EventType::CreateEntity => Event::CreateEntity(CreateEntity::new(e)),
+            EventType::SetLicense => Event::SetLicense(SetLicense::new(e)),
+            EventType::CreateEntityLink => Event::CreateEntityLink(CreateEntityLink::new(e)),
+            EventType::RemoveEntityLink => Event::RemoveEntityLink(RemoveEntityLink::new(e)),
+            EventType::CreateEntityRevision => {
+                Event::CreateEntityRevision(CreateEntityRevision::new(e))
             }
-            "entity/revision/reject" => {
-                let repository_id = fetch_parameter_uuid_id(e.id, "repository", &pool).await;
-                let reason = fetch_parameter_string(e.id, "reason", &pool).await;
-                Event::RejectRevision(RejectRevision::build(e, repository_id.unwrap(), reason))
+            EventType::CheckoutRevision => {
+                Event::CheckoutRevision(CheckoutRevision::new(e, pool).await)
             }
-            "taxonomy/term/associate" => Event::CreateTaxonomyLink(CreateTaxonomyLink::build(e)),
-            "taxonomy/term/dissociate" => Event::RemoveTaxonomyLink(RemoveTaxonomyLink::build(e)),
-            "taxonomy/term/create" => Event::CreateTaxonomyTerm(CreateTaxonomyTerm::build(e)),
-            "taxonomy/term/update" => Event::SetTaxonomyTerm(SetTaxonomyTerm::build(e)),
-            "taxonomy/term/parent/change" => {
-                let from = fetch_parameter_uuid_id(e.id, "from", &pool).await;
-                let to = fetch_parameter_uuid_id(e.id, "to", &pool).await;
-                Event::SetTaxonomyParent(SetTaxonomyParent::build(e, from, to))
+            EventType::RejectRevision => Event::RejectRevision(RejectRevision::new(e, pool).await),
+            EventType::CreateTaxonomyLink => Event::CreateTaxonomyLink(CreateTaxonomyLink::new(e)),
+            EventType::RemoveTaxonomyLink => Event::RemoveTaxonomyLink(RemoveTaxonomyLink::new(e)),
+            EventType::CreateTaxonomyTerm => Event::CreateTaxonomyTerm(CreateTaxonomyTerm::new(e)),
+            EventType::SetTaxonomyTerm => Event::SetTaxonomyTerm(SetTaxonomyTerm::new(e)),
+            EventType::SetTaxonomyParent => {
+                Event::SetTaxonomyParent(SetTaxonomyParent::new(e, pool).await)
             }
-            "uuid/restore" => Event::SetUuidState(SetUuidState::build(e, false)),
-            "uuid/trash" => Event::SetUuidState(SetUuidState::build(e, true)),
-            _ => Event::Unsupported(Unsupported::build(e)),
+            EventType::SetUuidState => Event::SetUuidState(SetUuidState::new(e)),
+            EventType::Unsupported => Event::Unsupported(Unsupported::new(e)),
         };
 
         Ok(event)
     }
 }
 
-async fn fetch_parameter_uuid_id(id: i32, parameter_name: &str, pool: &MySqlPool) -> Option<i32> {
+pub async fn fetch_parameter_uuid_id(
+    id: i32,
+    parameter_name: &str,
+    pool: &MySqlPool,
+) -> Option<i32> {
     sqlx::query!(
         r#"
             SELECT id.uuid_id FROM event_parameter p
@@ -135,7 +244,7 @@ async fn fetch_parameter_uuid_id(id: i32, parameter_name: &str, pool: &MySqlPool
     .map(|o| o.uuid_id as i32)
 }
 
-async fn fetch_parameter_string(id: i32, parameter_name: &str, pool: &MySqlPool) -> String {
+pub async fn fetch_parameter_string(id: i32, parameter_name: &str, pool: &MySqlPool) -> String {
     sqlx::query!(
         r#"
             SELECT s.value FROM event_parameter p

@@ -1,28 +1,19 @@
-use crate::event::model::CommonEventData;
+use super::event::AbstractEvent;
 use serde::Serialize;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetUuidState {
-    #[serde(rename(serialize = "__typename"))]
-    pub __typename: String,
-    pub id: i32,
-    pub instance: String,
-    pub date: String,
-    pub object_id: i32,
-    pub actor_id: i32,
+    #[serde(flatten)]
+    pub abstract_event: AbstractEvent,
     pub trashed: bool,
 }
 
 impl SetUuidState {
-    pub fn build(data: CommonEventData, trashed: bool) -> SetUuidState {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
+        let trashed = abstract_event.name == "uuid/trash";
         SetUuidState {
-            __typename: "SetUuidStateNotificationEvent".to_string(),
-            id: data.id,
-            instance: data.instance,
-            date: data.date,
-            object_id: data.uuid_id,
-            actor_id: data.actor_id,
+            abstract_event,
             trashed,
         }
     }

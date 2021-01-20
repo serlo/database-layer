@@ -1,4 +1,4 @@
-use crate::event::model::CommonEventData;
+use super::event::AbstractEvent;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -13,13 +13,13 @@ pub struct Unsupported {
 }
 
 impl Unsupported {
-    pub fn build(event_data: CommonEventData) -> Unsupported {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         Unsupported {
-            id: event_data.id,
-            date: event_data.date,
-            instance: event_data.instance,
-            object_id: event_data.uuid_id,
-            r#type: event_data.name,
+            id: abstract_event.id,
+            date: abstract_event.date,
+            instance: abstract_event.instance,
+            object_id: abstract_event.object_id,
+            r#type: abstract_event.name.to_string(),
             error: String::from("unsupported"),
         }
     }

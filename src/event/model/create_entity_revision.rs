@@ -1,32 +1,22 @@
-use crate::event::model::CommonEventData;
+use super::event::AbstractEvent;
 use serde::Serialize;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateEntityRevision {
-    #[serde(rename(serialize = "__typename"))]
-    pub __typename: String,
-    pub id: i32,
-    pub instance: String,
-    pub date: String,
-    pub object_id: i32,
-    pub actor_id: i32,
+    #[serde(flatten)]
+    pub abstract_event: AbstractEvent,
     pub entity_id: i32,
     pub entity_revision_id: i32,
 }
 
 impl CreateEntityRevision {
-    pub fn build(data: CommonEventData) -> CreateEntityRevision {
+    pub fn new(abstract_event: AbstractEvent) -> Self {
         CreateEntityRevision {
-            __typename: "CreateEntityRevisionNotificationEvent".to_string(),
-            id: data.id,
-            instance: data.instance,
-            date: data.date,
-            object_id: data.uuid_id,
-            actor_id: data.actor_id,
             // uses "repository" parameter
-            entity_id: data.parameter_uuid_id.unwrap_or(data.uuid_id),
-            entity_revision_id: data.uuid_id,
+            entity_id: abstract_event.parameter_uuid_id,
+            entity_revision_id: abstract_event.object_id,
+            abstract_event,
         }
     }
 }

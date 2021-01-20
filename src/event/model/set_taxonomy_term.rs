@@ -1,4 +1,4 @@
-use crate::event::model::CommonEventData;
+use super::event::AbstractEvent;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -6,24 +6,18 @@ use serde::Serialize;
 pub struct SetTaxonomyTerm {
     #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
-    pub id: i32,
-    pub instance: String,
-    pub date: String,
-    pub object_id: i32,
-    pub actor_id: i32,
+    #[serde(flatten)]
+    pub abstract_event: AbstractEvent,
+
     pub taxonomy_term_id: i32,
 }
 
 impl SetTaxonomyTerm {
-    pub fn build(data: CommonEventData) -> SetTaxonomyTerm {
+    pub fn new(abstract_event: AbstractEvent) -> SetTaxonomyTerm {
         SetTaxonomyTerm {
             __typename: "SetTaxonomyTermNotificationEvent".to_string(),
-            id: data.id,
-            instance: data.instance,
-            date: data.date,
-            object_id: data.uuid_id,
-            actor_id: data.actor_id,
-            taxonomy_term_id: data.uuid_id,
+            taxonomy_term_id: abstract_event.object_id,
+            abstract_event,
         }
     }
 }

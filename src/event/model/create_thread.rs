@@ -1,4 +1,4 @@
-use crate::event::model::CommonEventData;
+use super::event::AbstractEvent;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -6,25 +6,20 @@ use serde::Serialize;
 pub struct CreateThread {
     #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
-    pub id: i32,
-    pub instance: String,
-    pub date: String,
+    #[serde(flatten)]
+    pub abstract_event: AbstractEvent,
     pub object_id: i32,
-    pub actor_id: i32,
     pub thread_id: i32,
 }
 
 impl CreateThread {
-    pub fn build(data: CommonEventData) -> CreateThread {
+    pub fn new(abstract_event: AbstractEvent) -> CreateThread {
         CreateThread {
             __typename: "CreateThreadNotificationEvent".to_string(),
-            id: data.id,
-            instance: data.instance,
-            date: data.date,
             // uses "on" parameter
-            object_id: data.parameter_uuid_id.unwrap_or(data.uuid_id),
-            actor_id: data.actor_id,
-            thread_id: data.uuid_id,
+            object_id: abstract_event.parameter_uuid_id,
+            thread_id: abstract_event.object_id,
+            abstract_event,
         }
     }
 }

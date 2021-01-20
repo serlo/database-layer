@@ -1,4 +1,4 @@
-use crate::event::model::CommonEventData;
+use super::event::AbstractEvent;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -6,24 +6,18 @@ use serde::Serialize;
 pub struct CreateEntity {
     #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
-    pub id: i32,
-    pub instance: String,
-    pub date: String,
-    pub object_id: i32,
-    pub actor_id: i32,
+    #[serde(flatten)]
+    pub abstract_event: AbstractEvent,
+
     pub entity_id: i32,
 }
 
 impl CreateEntity {
-    pub fn build(data: CommonEventData) -> CreateEntity {
+    pub fn new(abstract_event: AbstractEvent) -> CreateEntity {
         CreateEntity {
             __typename: "CreateEntityNotificationEvent".to_string(),
-            id: data.id,
-            instance: data.instance,
-            date: data.date,
-            object_id: data.uuid_id,
-            actor_id: data.actor_id,
-            entity_id: data.uuid_id,
+            entity_id: abstract_event.object_id,
+            abstract_event,
         }
     }
 }

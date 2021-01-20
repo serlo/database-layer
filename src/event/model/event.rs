@@ -21,6 +21,8 @@ use super::set_thread_state::SetThreadState;
 use super::set_uuid_state::SetUuidState;
 use super::unsupported::Unsupported;
 
+// To string
+
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum Event {
@@ -43,16 +45,6 @@ pub enum Event {
     Unsupported(Unsupported),
 }
 
-pub struct CommonEventData {
-    pub id: i32,
-    pub name: String,
-    pub uuid_id: i32,
-    pub actor_id: i32,
-    pub date: String,
-    pub instance: String,
-    pub parameter_uuid_id: Option<i32>,
-}
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AbstractEvent {
@@ -61,6 +53,8 @@ pub struct AbstractEvent {
     pub date: String,
     pub actor_id: i32,
     pub object_id: i32,
+    #[serde(skip)]
+    pub parameter_uuid_id: i32,
 }
 
 impl Event {
@@ -80,67 +74,71 @@ impl Event {
         .fetch_one(pool)
         .await?;
 
-        let e = CommonEventData {
-            id: event_fut.id as i32,
-            name: event_fut.name,
-            uuid_id: event_fut.uuid_id as i32,
-            actor_id: event_fut.actor_id as i32,
-            date: format_datetime(&event_fut.date),
-            instance: String::from(&event_fut.subdomain),
-            parameter_uuid_id: event_fut.parameter_uuid_id.map(|id| id as i32),
-        };
+        let parameter_uuid_id = event_fut.parameter_uuid_id.map(|id| id as i32);
+        let name = event_fut.name;
+        let uuid_id = event_fut.uuid_id as i32;
 
         let abstract_event = AbstractEvent {
             id: event_fut.id as i32,
-
-            instance: String::from(&event_fut.subdomain),
+            instance: event_fut.subdomain.to_string(),
             date: format_datetime(&event_fut.date),
             actor_id: event_fut.actor_id as i32,
-            object_id: event_fut.uuid_id as i32,
+            object_id: uuid_id,
+            parameter_uuid_id: parameter_uuid_id.unwrap_or(uuid_id),
         };
 
-        let event = match e.name.as_str() {
-            "discussion/comment/archive" => Event::SetThreadState(SetThreadState::build(e, true)),
-            "discussion/comment/restore" => Event::SetThreadState(SetThreadState::build(e, false)),
-            "discussion/comment/create" => Event::CreateComment(CreateComment::build(e)),
-            "discussion/create" => Event::CreateThread(CreateThread::build(e)),
-            "entity/create" => Event::CreateEntity(CreateEntity::build(e)),
-            "license/object/set" => Event::SetLicense(SetLicense::build(e)),
-            "entity/link/create" => Event::CreateEntityLink(CreateEntityLink::build(e)),
-            "entity/link/remove" => Event::RemoveEntityLink(RemoveEntityLink::build(e)),
-            "entity/revision/add" => Event::CreateEntityRevision(CreateEntityRevision::build(e)),
+        let event = match name.as_str() {
+            "discussion/comment/archive" => {
+                Event::SetThreadState(SetThreadState::new(abstract_event, true))
+            }
+            "discussion/comment/restore" => {
+                Event::SetThreadState(SetThreadState::new(abstract_event, false))
+            }
+            "discussion/comment/create" => Event::CreateComment(CreateComment::new(abstract_event)),
+            "discussion/create" => Event::CreateThread(CreateThread::new(abstract_event)),
+            "entity/create" => Event::CreateEntity(CreateEntity::new(abstract_event)),
+            "license/object/set" => Event::SetLicense(SetLicense::new(abstract_event)),
+            "entity/link/create" => Event::CreateEntityLink(CreateEntityLink::new(abstract_event)),
+            "entity/link/remove" => Event::RemoveEntityLink(RemoveEntityLink::new(abstract_event)),
+            "entity/revision/add" => {
+                Event::CreateEntityRevision(CreateEntityRevision::new(abstract_event))
+            }
             "entity/revision/checkout" => {
-                let repository_id = fetch_parameter_uuid_id(e.id, "repository", &pool)
+                let repository_id = fetch_parameter_uuid_id(abstract_event.id, "repository", &pool)
                     .await
                     .unwrap();
-                let reason = fetch_parameter_string(e.id, "reason", &pool).await;
-                let revision_id = abstract_event.object_id;
-                Event::CheckoutRevision(CheckoutRevision {
+                let reason = fetch_parameter_string(abstract_event.id, "reason", &pool).await;
+                Event::CheckoutRevision(CheckoutRevision::new(
                     abstract_event,
-
-                    __typename: String::from("CheckoutRevisionNotificationEvent"),
                     repository_id,
-                    revision_id,
                     reason,
-                })
+                ))
             }
             "entity/revision/reject" => {
-                let repository_id = fetch_parameter_uuid_id(e.id, "repository", &pool).await;
-                let reason = fetch_parameter_string(e.id, "reason", &pool).await;
-                Event::RejectRevision(RejectRevision::build(e, repository_id.unwrap(), reason))
+                let repository_id = fetch_parameter_uuid_id(abstract_event.id, "repository", &pool)
+                    .await
+                    .unwrap();
+                let reason = fetch_parameter_string(abstract_event.id, "reason", &pool).await;
+                Event::RejectRevision(RejectRevision::new(abstract_event, repository_id, reason))
             }
-            "taxonomy/term/associate" => Event::CreateTaxonomyLink(CreateTaxonomyLink::build(e)),
-            "taxonomy/term/dissociate" => Event::RemoveTaxonomyLink(RemoveTaxonomyLink::build(e)),
-            "taxonomy/term/create" => Event::CreateTaxonomyTerm(CreateTaxonomyTerm::build(e)),
-            "taxonomy/term/update" => Event::SetTaxonomyTerm(SetTaxonomyTerm::build(e)),
+            "taxonomy/term/associate" => {
+                Event::CreateTaxonomyLink(CreateTaxonomyLink::new(abstract_event))
+            }
+            "taxonomy/term/dissociate" => {
+                Event::RemoveTaxonomyLink(RemoveTaxonomyLink::new(abstract_event))
+            }
+            "taxonomy/term/create" => {
+                Event::CreateTaxonomyTerm(CreateTaxonomyTerm::new(abstract_event))
+            }
+            "taxonomy/term/update" => Event::SetTaxonomyTerm(SetTaxonomyTerm::new(abstract_event)),
             "taxonomy/term/parent/change" => {
-                let from = fetch_parameter_uuid_id(e.id, "from", &pool).await;
-                let to = fetch_parameter_uuid_id(e.id, "to", &pool).await;
-                Event::SetTaxonomyParent(SetTaxonomyParent::build(e, from, to))
+                let from = fetch_parameter_uuid_id(abstract_event.id, "from", &pool).await;
+                let to = fetch_parameter_uuid_id(abstract_event.id, "to", &pool).await;
+                Event::SetTaxonomyParent(SetTaxonomyParent::new(abstract_event, from, to))
             }
-            "uuid/restore" => Event::SetUuidState(SetUuidState::build(e, false)),
-            "uuid/trash" => Event::SetUuidState(SetUuidState::build(e, true)),
-            _ => Event::Unsupported(Unsupported::build(e)),
+            "uuid/restore" => Event::SetUuidState(SetUuidState::new(abstract_event, false)),
+            "uuid/trash" => Event::SetUuidState(SetUuidState::new(abstract_event, true)),
+            _ => Event::Unsupported(Unsupported::new(abstract_event, name)),
         };
 
         Ok(event)

@@ -1,31 +1,26 @@
-use crate::event::model::CommonEventData;
+use super::event::AbstractEvent;
 use serde::Serialize;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetThreadState {
+    #[serde(flatten)]
+    pub abstract_event: AbstractEvent,
+
     #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
-    pub id: i32,
-    pub instance: String,
-    pub date: String,
-    pub object_id: i32,
-    pub actor_id: i32,
+
     pub thread_id: i32,
     pub archived: bool,
 }
 
 impl SetThreadState {
-    pub fn build(data: CommonEventData, archived: bool) -> SetThreadState {
+    pub fn new(abstract_event: AbstractEvent, archived: bool) -> SetThreadState {
         SetThreadState {
             __typename: "SetThreadStateNotificationEvent".to_string(),
-            id: data.id,
-            instance: data.instance,
-            date: data.date,
-            object_id: data.uuid_id,
-            actor_id: data.actor_id,
-            thread_id: data.uuid_id,
+            thread_id: abstract_event.object_id,
             archived,
+            abstract_event,
         }
     }
 }

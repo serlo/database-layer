@@ -1,7 +1,8 @@
 use anyhow::Result;
 use serde::Serialize;
-use serlo_org_database_layer::format_alias;
 use sqlx::MySqlPool;
+
+use crate::format_alias;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

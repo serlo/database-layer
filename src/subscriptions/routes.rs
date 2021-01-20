@@ -1,9 +1,10 @@
-use crate::subscriptions::model::Subscriptions;
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
+use super::model::Subscriptions;
+
 #[get("/subscriptions/{user_id}")]
-async fn find(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
+async fn subscriptions(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let user_id = user_id.into_inner();
     let result = Subscriptions::find_by_user_id(user_id, db_pool.get_ref()).await;
     match result {
@@ -18,5 +19,5 @@ async fn find(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Re
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {
-    cfg.service(find);
+    cfg.service(subscriptions);
 }

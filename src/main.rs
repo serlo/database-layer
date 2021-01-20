@@ -4,16 +4,9 @@ use regex::Regex;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use std::env;
 
-mod alias;
-mod event;
-mod health;
-mod license;
-mod navigation;
-mod notifications;
-mod subscriptions;
-mod threads;
-mod user;
-mod uuid;
+use serlo_org_database_layer::{
+    alias, event, health, license, navigation, notifications, subscriptions, threads, user, uuid,
+};
 
 #[get("/")]
 async fn index() -> Result<String> {

@@ -3,15 +3,11 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
-use crate::uuid::model::attachment::Attachment;
-use crate::uuid::model::blog_post::BlogPost;
-use crate::uuid::model::comment::Comment;
-use crate::uuid::model::entity::Entity;
-use crate::uuid::model::entity_revision::EntityRevision;
-use crate::uuid::model::page::Page;
-use crate::uuid::model::page_revision::PageRevision;
-use crate::uuid::model::taxonomy_term::TaxonomyTerm;
-use crate::uuid::model::user::User;
+use super::{
+    attachment::Attachment, blog_post::BlogPost, comment::Comment, entity::Entity,
+    entity_revision::EntityRevision, page::Page, page_revision::PageRevision,
+    taxonomy_term::TaxonomyTerm, user::User,
+};
 
 #[derive(Serialize)]
 #[serde(untagged)]

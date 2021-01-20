@@ -1,6 +1,7 @@
-use crate::threads::model::Threads;
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
+
+use super::model::Threads;
 
 #[get("/threads/{id}")]
 async fn find(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {

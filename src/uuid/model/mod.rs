@@ -9,4 +9,4 @@ mod taxonomy_term;
 mod user;
 mod uuid;
 
-pub use self::uuid::{Uuid, UuidError};
+pub use uuid::{Uuid, UuidError};

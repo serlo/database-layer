@@ -1,5 +1,6 @@
+mod abstract_entity;
+
 use anyhow::Result;
-use convert_case::{Case, Casing};
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
@@ -7,11 +8,13 @@ use sqlx::MySqlPool;
 use super::taxonomy_term::TaxonomyTerm;
 use crate::{format_alias, format_datetime};
 
+use abstract_entity::EntityType;
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Entity {
     #[serde(rename(serialize = "__typename"))]
-    pub __typename: String,
+    pub __typename: EntityType,
     pub id: i32,
     pub trashed: bool,
     pub alias: String,
@@ -47,7 +50,7 @@ impl Entity {
             id,
             id
         )
-        .fetch_one(pool);
+            .fetch_one(pool);
         let revisions_fut = sqlx::query!(
             r#"SELECT id FROM entity_revision WHERE repository_id = ?"#,
             id
@@ -63,7 +66,7 @@ impl Entity {
             try_join!(entity_fut, revisions_fut, taxonomy_terms_fut, subject_fut)?;
 
         Ok(Entity {
-            __typename: normalize_type(entity.name.as_str()),
+            __typename: entity.name.parse::<EntityType>()?,
             id,
             trashed: entity.trashed != 0,
             alias: format_alias(
@@ -188,9 +191,4 @@ impl Entity {
         .await?;
         Ok(children.iter().map(|child| child.id as i32).collect())
     }
-}
-
-fn normalize_type(typename: &str) -> String {
-    let typename = typename.replace("text-", "");
-    typename.to_case(Case::Pascal)
 }

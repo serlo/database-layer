@@ -19,8 +19,8 @@ pub struct CheckoutRevision {
 
 impl CheckoutRevision {
     pub async fn new(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self> {
-        let repository_id_fut = fetch_parameter_uuid_id(abstract_event.id, "repository", &pool);
-        let reason_fut = fetch_parameter_string(abstract_event.id, "reason", &pool);
+        let repository_id_fut = fetch_parameter_uuid_id(abstract_event.id, "repository", pool);
+        let reason_fut = fetch_parameter_string(abstract_event.id, "reason", pool);
         let revision_id = abstract_event.object_id;
 
         if let (Some(repository_id), Some(reason)) = try_join!(repository_id_fut, reason_fut)? {

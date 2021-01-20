@@ -60,7 +60,7 @@ impl TaxonomyTerm {
             id
         )
         .fetch_all(pool);
-        let subject_fut = TaxonomyTerm::find_canonical_subject_by_id(id, &pool);
+        let subject_fut = TaxonomyTerm::find_canonical_subject_by_id(id, pool);
         let (taxonomy_term, entities, children, subject) =
             try_join!(taxonomy_term_fut, entities_fut, children_fut, subject_fut)?;
         let mut children_ids: Vec<i32> = entities

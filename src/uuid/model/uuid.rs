@@ -3,15 +3,11 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
-use super::attachment::Attachment;
-use super::blog_post::BlogPost;
-use super::comment::Comment;
-use super::entity::Entity;
-use super::entity_revision::EntityRevision;
-use super::page::Page;
-use super::page_revision::PageRevision;
-use super::taxonomy_term::TaxonomyTerm;
-use super::user::User;
+use super::{
+    attachment::Attachment, blog_post::BlogPost, comment::Comment, entity::Entity,
+    entity_revision::EntityRevision, page::Page, page_revision::PageRevision,
+    taxonomy_term::TaxonomyTerm, user::User,
+};
 
 #[derive(Serialize)]
 #[serde(untagged)]

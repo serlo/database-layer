@@ -1,8 +1,9 @@
 use anyhow::Result;
 use futures::join;
 use serde::Serialize;
-use serlo_org_database_layer::format_datetime;
 use sqlx::MySqlPool;
+
+use crate::format_datetime;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

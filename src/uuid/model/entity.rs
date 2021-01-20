@@ -2,10 +2,10 @@ use anyhow::Result;
 use convert_case::{Case, Casing};
 use futures::try_join;
 use serde::Serialize;
-use serlo_org_database_layer::{format_alias, format_datetime};
 use sqlx::MySqlPool;
 
 use super::taxonomy_term::TaxonomyTerm;
+use crate::{format_alias, format_datetime};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

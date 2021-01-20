@@ -1,6 +1,7 @@
-use crate::alias::model::Alias;
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
+
+use super::model::Alias;
 
 #[get("/alias/{instance}/{path:.*}")]
 async fn alias(

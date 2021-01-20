@@ -1,6 +1,7 @@
-use crate::license::model::License;
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
+
+use super::model::License;
 
 #[get("/license/{id}")]
 async fn license(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {

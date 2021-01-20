@@ -1,6 +1,5 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use serlo_org_database_layer::format_datetime;
 use sqlx::MySqlPool;
 
 use super::checkout_revision::CheckoutRevision;
@@ -20,6 +19,7 @@ use super::set_taxonomy_term::SetTaxonomyTerm;
 use super::set_thread_state::SetThreadState;
 use super::set_uuid_state::SetUuidState;
 use super::unsupported::Unsupported;
+use crate::format_datetime;
 
 #[derive(Serialize)]
 #[serde(untagged)]
@@ -172,8 +172,8 @@ impl Event {
             "#,
             id
         )
-        .fetch_one(pool)
-        .await?;
+            .fetch_one(pool)
+            .await?;
 
         let name = event_fut.name;
         let uuid_id = event_fut.uuid_id as i32;

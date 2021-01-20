@@ -4,34 +4,78 @@ use anyhow::Result;
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
+use thiserror::Error;
 
 use super::taxonomy_term::TaxonomyTerm;
 use crate::{format_alias, format_datetime};
 
-use abstract_entity::EntityType;
+use abstract_entity::{AbstractEntity, EntityType};
+
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum Entity {
+    GenericEntity(AbstractEntity),
+    Course(Course),
+    CoursePage(CoursePage),
+    ExerciseGroup(ExerciseGroup),
+    Exercise(Exercise),
+    GroupedExercise(GroupedExercise),
+    Solution(Solution),
+}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Entity {
-    #[serde(rename(serialize = "__typename"))]
-    pub __typename: EntityType,
-    pub id: i32,
-    pub trashed: bool,
-    pub alias: String,
-    pub instance: String,
-    pub date: String,
-    pub current_revision_id: Option<i32>,
-    pub revision_ids: Vec<i32>,
-    pub license_id: i32,
-    pub taxonomy_term_ids: Vec<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent_id: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub page_ids: Option<Vec<i32>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub exercise_ids: Option<Vec<i32>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub solution_id: Option<Option<i32>>,
+pub struct Course {
+    #[serde(flatten)]
+    abstract_entity: AbstractEntity,
+
+    page_ids: Vec<i32>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CoursePage {
+    #[serde(flatten)]
+    abstract_entity: AbstractEntity,
+
+    parent_id: i32,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExerciseGroup {
+    #[serde(flatten)]
+    abstract_entity: AbstractEntity,
+
+    exercise_ids: Vec<i32>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Exercise {
+    #[serde(flatten)]
+    abstract_entity: AbstractEntity,
+
+    solution_id: Option<i32>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GroupedExercise {
+    #[serde(flatten)]
+    abstract_entity: AbstractEntity,
+
+    parent_id: i32,
+    solution_id: Option<i32>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Solution {
+    #[serde(flatten)]
+    abstract_entity: AbstractEntity,
+
+    parent_id: i32,
 }
 
 impl Entity {
@@ -65,7 +109,7 @@ impl Entity {
         let (entity, revisions, taxonomy_terms, subject) =
             try_join!(entity_fut, revisions_fut, taxonomy_terms_fut, subject_fut)?;
 
-        Ok(Entity {
+        let abstract_entity = AbstractEntity {
             __typename: entity.name.parse::<EntityType>()?,
             id,
             trashed: entity.trashed != 0,
@@ -82,41 +126,83 @@ impl Entity {
             ),
             instance: entity.subdomain,
             date: format_datetime(&entity.date),
+            license_id: entity.license_id,
+            taxonomy_term_ids: taxonomy_terms.iter().map(|term| term.id as i32).collect(),
+
             current_revision_id: entity.current_revision_id,
             revision_ids: revisions
                 .iter()
                 .rev()
                 .map(|revision| revision.id as i32)
                 .collect(),
-            license_id: entity.license_id,
-            taxonomy_term_ids: taxonomy_terms.iter().map(|term| term.id as i32).collect(),
-            parent_id: Self::find_parent_by_id(id, pool).await?,
-            page_ids: if entity.name == "course" {
-                Some(Self::find_children_by_id_and_type(id, "course-page", pool).await?)
-            } else {
-                None
-            },
-            exercise_ids: if entity.name == "text-exercise-group" {
-                Some(Self::find_children_by_id_and_type(id, "grouped-text-exercise", pool).await?)
-            } else {
-                None
-            },
-            solution_id: if entity.name == "text-exercise" || entity.name == "grouped-text-exercise"
-            {
-                // This double-wrapping is intentional. So basically:
-                // Entities that aren't exercises have no solutionId in the serialized json
-                // Exercises have an optional solutionId in the serialized json (i.e. number | null).
-                // Might not be absolutely necessary but this achieves full feature-parity with serlo.org/api/*
-                Some(
-                    Self::find_children_by_id_and_type(id, "text-solution", pool)
-                        .await?
-                        .first()
-                        .cloned(),
-                )
-            } else {
-                None
-            },
-        })
+        };
+
+        let entity = match abstract_entity.__typename {
+            EntityType::Course => {
+                let page_ids =
+                    Self::find_children_by_id_and_type(id, EntityType::CoursePage, pool).await?;
+
+                Entity::Course(Course {
+                    abstract_entity,
+
+                    page_ids,
+                })
+            }
+            EntityType::CoursePage => {
+                let parent_id = Self::find_parent_by_id(id, pool).await?;
+
+                Entity::CoursePage(CoursePage {
+                    abstract_entity,
+
+                    parent_id,
+                })
+            }
+            EntityType::ExerciseGroup => {
+                let exercise_ids =
+                    Self::find_children_by_id_and_type(id, EntityType::GroupedExercise, pool)
+                        .await?;
+
+                Entity::ExerciseGroup(ExerciseGroup {
+                    abstract_entity,
+
+                    exercise_ids,
+                })
+            }
+            EntityType::Exercise => {
+                let solution_id =
+                    Self::find_child_by_id_and_type(id, EntityType::Solution, pool).await?;
+
+                Entity::Exercise(Exercise {
+                    abstract_entity,
+
+                    solution_id,
+                })
+            }
+            EntityType::GroupedExercise => {
+                let parent_id = Self::find_parent_by_id(id, pool).await?;
+                let solution_id =
+                    Self::find_child_by_id_and_type(id, EntityType::Solution, pool).await?;
+
+                Entity::GroupedExercise(GroupedExercise {
+                    abstract_entity,
+
+                    parent_id,
+                    solution_id,
+                })
+            }
+            EntityType::Solution => {
+                let parent_id = Self::find_parent_by_id(id, pool).await?;
+
+                Entity::Solution(Solution {
+                    abstract_entity,
+
+                    parent_id,
+                })
+            }
+            _ => Entity::GenericEntity(abstract_entity),
+        };
+
+        Ok(entity)
     }
 
     pub async fn find_canonical_subject_by_id(
@@ -151,7 +237,7 @@ impl Entity {
         Ok(subject)
     }
 
-    async fn find_parent_by_id(id: i32, pool: &MySqlPool) -> Result<Option<i32>, sqlx::Error> {
+    async fn find_parent_by_id(id: i32, pool: &MySqlPool) -> Result<i32> {
         let parents = sqlx::query!(
             r#"
                 SELECT l.parent_id as id
@@ -162,17 +248,18 @@ impl Entity {
         )
         .fetch_all(pool)
         .await?;
-        Ok(parents
+        parents
             .iter()
             .map(|parent| parent.id as i32)
             .collect::<Vec<i32>>()
             .first()
-            .cloned())
+            .ok_or_else(|| anyhow::Error::new(EntityError::MissingParent { id }))
+            .map(|parent_id| *parent_id)
     }
 
     async fn find_children_by_id_and_type(
         id: i32,
-        children_type: &str,
+        child_type: EntityType,
         pool: &MySqlPool,
     ) -> Result<Vec<i32>, sqlx::Error> {
         let children = sqlx::query!(
@@ -185,10 +272,42 @@ impl Entity {
                     ORDER BY l.order ASC
             "#,
             id,
-            children_type,
+            child_type,
         )
         .fetch_all(pool)
         .await?;
         Ok(children.iter().map(|child| child.id as i32).collect())
     }
+
+    async fn find_child_by_id_and_type(
+        id: i32,
+        child_type: EntityType,
+        pool: &MySqlPool,
+    ) -> Result<Option<i32>, sqlx::Error> {
+        Self::find_children_by_id_and_type(id, child_type, pool)
+            .await
+            .map(|children| children.first().cloned())
+    }
+
+    pub fn get_alias(&self) -> String {
+        match self {
+            Entity::GenericEntity(abstract_entity) => abstract_entity.alias.to_string(),
+            Entity::Course(course) => course.abstract_entity.alias.to_string(),
+            Entity::CoursePage(course_page) => course_page.abstract_entity.alias.to_string(),
+            Entity::ExerciseGroup(exercise_group) => {
+                exercise_group.abstract_entity.alias.to_string()
+            }
+            Entity::Exercise(exercise) => exercise.abstract_entity.alias.to_string(),
+            Entity::GroupedExercise(grouped_exercise) => {
+                grouped_exercise.abstract_entity.alias.to_string()
+            }
+            Entity::Solution(solution) => solution.abstract_entity.alias.to_string(),
+        }
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum EntityError {
+    #[error("Entity {id:?} can't be fetched because its parent is missing.")]
+    MissingParent { id: i32 },
 }

@@ -82,7 +82,7 @@ impl Uuid {
             Uuid::Attachment(attachment) => String::from(&attachment.alias),
             Uuid::BlogPost(blog) => String::from(&blog.alias),
             Uuid::Comment(comment) => String::from(&comment.alias),
-            Uuid::Entity(entity) => String::from(&entity.alias),
+            Uuid::Entity(entity) => entity.get_alias(),
             Uuid::EntityRevision(entity_revision) => String::from(&entity_revision.alias),
             Uuid::Page(page) => String::from(&page.alias),
             Uuid::PageRevision(page_revision) => String::from(&page_revision.alias),

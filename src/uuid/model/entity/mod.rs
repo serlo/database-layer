@@ -1,15 +1,16 @@
-mod abstract_entity;
-
 use anyhow::Result;
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
-use super::taxonomy_term::TaxonomyTerm;
+use abstract_entity::{AbstractEntity, EntityType};
+
 use crate::{format_alias, format_datetime};
 
-use abstract_entity::{AbstractEntity, EntityType};
+use super::taxonomy_term::TaxonomyTerm;
+
+mod abstract_entity;
 
 #[derive(Serialize)]
 #[serde(untagged)]

@@ -38,6 +38,6 @@ impl Attachment {
     }
 
     pub fn get_context() -> Option<String> {
-        Some(String::from("attachment"))
+        Some("attachment".to_string())
     }
 }

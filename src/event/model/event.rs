@@ -1,462 +1,299 @@
 use anyhow::Result;
-use futures::join;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
+use thiserror::Error;
 
 use crate::format_datetime;
 
+use super::checkout_revision::CheckoutRevision;
+use super::create_comment::CreateComment;
+use super::create_entity::CreateEntity;
+use super::create_entity_link::CreateEntityLink;
+use super::create_entity_revision::CreateEntityRevision;
+use super::create_taxonomy_link::CreateTaxonomyLink;
+use super::create_taxonomy_term::CreateTaxonomyTerm;
+use super::create_thread::CreateThread;
+use super::reject_revision::RejectRevision;
+use super::remove_entity_link::RemoveEntityLink;
+use super::remove_taxonomy_link::RemoveTaxonomyLink;
+use super::set_license::SetLicense;
+use super::set_taxonomy_parent::SetTaxonomyParent;
+use super::set_taxonomy_term::SetTaxonomyTerm;
+use super::set_thread_state::SetThreadState;
+use super::set_uuid_state::SetUuidState;
+use super::unsupported::Unsupported;
+
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum Event {
+    SetThreadState(SetThreadState),
+    CreateComment(CreateComment),
+    CreateThread(CreateThread),
+    CreateEntity(CreateEntity),
+    SetLicense(SetLicense),
+    CreateEntityLink(CreateEntityLink),
+    RemoveEntityLink(RemoveEntityLink),
+    CreateEntityRevision(CreateEntityRevision),
+    CheckoutRevision(CheckoutRevision),
+    RejectRevision(RejectRevision),
+    CreateTaxonomyLink(CreateTaxonomyLink),
+    RemoveTaxonomyLink(RemoveTaxonomyLink),
+    CreateTaxonomyTerm(CreateTaxonomyTerm),
+    SetTaxonomyTerm(SetTaxonomyTerm),
+    SetTaxonomyParent(SetTaxonomyParent),
+    SetUuidState(SetUuidState),
+    Unsupported(Unsupported),
+}
+
+#[derive(Deserialize, Serialize)]
+pub enum EventType {
+    #[serde(rename(
+        serialize = "SetThreadStateNotificationEvent",
+        deserialize = "discussion/comment/archive",
+        deserialize = "discussion/comment/restore"
+    ))]
+    SetThreadState,
+    #[serde(rename(
+        serialize = "CreateCommentNotificationEvent",
+        deserialize = "discussion/comment/create"
+    ))]
+    CreateComment,
+    #[serde(rename(
+        serialize = "CreateThreadNotificationEvent",
+        deserialize = "discussion/create"
+    ))]
+    CreateThread,
+    #[serde(rename(
+        serialize = "CreateEntityNotificationEvent",
+        deserialize = "entity/create"
+    ))]
+    CreateEntity,
+    #[serde(rename(
+        serialize = "SetLicenseNotificationEvent",
+        deserialize = "license/object/set"
+    ))]
+    SetLicense,
+    #[serde(rename(
+        serialize = "CreateEntityLinkNotificationEvent",
+        deserialize = "entity/link/create"
+    ))]
+    CreateEntityLink,
+    #[serde(rename(
+        serialize = "RemoveEntityLinkNotificationEvent",
+        deserialize = "entity/link/remove"
+    ))]
+    RemoveEntityLink,
+    #[serde(rename(
+        serialize = "CreateEntityRevisionNotificationEvent",
+        deserialize = "entity/revision/add"
+    ))]
+    CreateEntityRevision,
+    #[serde(rename(
+        serialize = "CheckoutRevisionNotificationEvent",
+        deserialize = "entity/revision/checkout"
+    ))]
+    CheckoutRevision,
+    #[serde(rename(
+        serialize = "RejectRevisionNotificationEvent",
+        deserialize = "entity/revision/reject"
+    ))]
+    RejectRevision,
+    #[serde(rename(
+        serialize = "CreateTaxonomyLinkNotificationEvent",
+        deserialize = "taxonomy/term/associate"
+    ))]
+    CreateTaxonomyLink,
+    #[serde(rename(
+        serialize = "RemoveTaxonomyLinkNotificationEvent",
+        deserialize = "taxonomy/term/dissociate"
+    ))]
+    RemoveTaxonomyLink,
+    #[serde(rename(
+        serialize = "CreateTaxonomyTermNotificationEvent",
+        deserialize = "taxonomy/term/create"
+    ))]
+    CreateTaxonomyTerm,
+    #[serde(rename(
+        serialize = "SetTaxonomyTermNotificationEvent",
+        deserialize = "taxonomy/term/update"
+    ))]
+    SetTaxonomyTerm,
+    #[serde(rename(
+        serialize = "SetTaxonomyParentNotificationEvent",
+        deserialize = "taxonomy/term/parent/change"
+    ))]
+    SetTaxonomyParent,
+    #[serde(rename(
+        serialize = "SetUuidStateNotificationEvent",
+        deserialize = "uuid/restore",
+        deserialize = "uuid/trash"
+    ))]
+    SetUuidState,
+    #[serde(rename(
+        serialize = "UnsupportedNotificationEvent",
+        deserialize = "discussion/restore"
+    ))]
+    Unsupported,
+}
+
+impl std::str::FromStr for EventType {
+    type Err = serde_json::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_value(serde_json::value::Value::String(s.to_string()))
+    }
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Event {
-    #[serde(skip_serializing_if = "Option::is_none")]
+pub struct AbstractEvent {
     #[serde(rename(serialize = "__typename"))]
-    pub __typename: Option<String>,
+    pub __typename: EventType,
     pub id: i32,
     pub instance: String,
     pub date: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub actor_id: Option<i32>,
+    pub actor_id: i32,
     pub object_id: i32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub archived: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub trashed: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub child_id: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub comment_id: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub entity_id: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub entity_revision_id: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent_id: Option<Option<i32>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub previous_parent_id: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reason: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub repository_id: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub revision_id: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub taxonomy_term_id: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub thread_id: Option<i32>,
 
-    // error return
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
+    #[serde(skip)]
+    pub parameter_uuid_id: i32,
+    #[serde(skip)]
+    pub name: String,
 }
 
 impl Event {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Option<Event>> {
-        let event_fut = sqlx::query!(
+    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Event> {
+        let event = sqlx::query!(
             r#"
-                SELECT e.event_id, e.actor_id, e.uuid_id, e.instance_id, e.date, i.subdomain, event.name,
-                    GROUP_CONCAT(p.id) as parameter_ids
+                SELECT e.id, e.actor_id, e.uuid_id, e.date, i.subdomain, ev.name, id.uuid_id AS parameter_uuid_id
                     FROM event_log e
                     LEFT JOIN event_parameter p ON e.id = p.log_id
-                    LEFT JOIN instance i ON e.instance_id = i.id
-                    JOIN event ON e.event_id = event.id
+                    LEFT JOIN event_parameter_uuid id ON p.id = id.event_parameter_id
+                    JOIN instance i ON e.instance_id = i.id
+                    JOIN event ev ON e.event_id = ev.id
                     WHERE e.id = ?
-                    GROUP BY e.event_id, e.actor_id, e.uuid_id, e.instance_id, e.date
             "#,
             id
         )
-        .fetch_one(pool)
-        .await?;
+            .fetch_one(pool)
+            .await?;
 
-        let uuid_id = event_fut.uuid_id as i32;
-        let name = event_fut.name;
-        let parameter_ids = event_fut.parameter_ids;
+        let name = event.name;
+        let uuid_id = event.uuid_id as i32;
+        let parameter_uuid_id = event
+            .parameter_uuid_id
+            .map(|id| id as i32)
+            .unwrap_or(uuid_id);
 
-        // query parameters
-        let object_uuid_id = query_object_uuid_id(&name, &parameter_ids, &pool).await;
-        let repository_uuid_id = query_repository_uuid_id(&name, &parameter_ids, &pool).await;
-        let parent_uuid_id = query_parent_uuid_id(&name, &parameter_ids, &pool).await;
-        let on_uuid_id = query_on_uuid_id(&name, &parameter_ids, &pool).await;
-        let thread_uuid_id = query_thread_uuid_id(&name, &parameter_ids, &pool).await;
-        let reason = query_reason_string(&name, &parameter_ids, &pool).await;
-        let from_and_to = query_from_and_to_ids(&name, &parameter_ids, &pool).await;
+        let abstract_event = AbstractEvent {
+            __typename: name.parse::<EventType>()?,
+            id: event.id as i32,
+            instance: event.subdomain.to_string(),
+            date: format_datetime(&event.date),
+            actor_id: event.actor_id as i32,
+            object_id: uuid_id,
+            parameter_uuid_id,
+            name,
+        };
 
-        if name == "discussion/restore" {
-            return Ok(Some(Event {
-                __typename: None,
-                id,
-                date: format_datetime(&event_fut.date),
-                instance: event_fut.subdomain.unwrap(),
-                object_id: get_object_id(&name, uuid_id, on_uuid_id),
-                r#type: Some(String::from("discussion/restore")),
-                error: Some(String::from("unsupported")),
-                archived: None,
-                actor_id: None,
-                thread_id: None,
-                comment_id: None,
-                child_id: None,
-                entity_revision_id: None,
-                revision_id: None,
-                trashed: None,
-                taxonomy_term_id: None,
-                entity_id: None,
-                repository_id: None,
-                reason: None,
-                parent_id: None,
-                previous_parent_id: None,
-            }));
-        }
+        let event = match abstract_event.name.as_str().parse()? {
+            EventType::SetThreadState => {
+                Event::SetThreadState(SetThreadState::new(abstract_event).await?)
+            }
+            EventType::CreateComment => {
+                Event::CreateComment(CreateComment::new(abstract_event).await?)
+            }
+            EventType::CreateThread => {
+                Event::CreateThread(CreateThread::new(abstract_event).await?)
+            }
+            EventType::CreateEntity => {
+                Event::CreateEntity(CreateEntity::new(abstract_event).await?)
+            }
+            EventType::SetLicense => Event::SetLicense(SetLicense::new(abstract_event).await?),
+            EventType::CreateEntityLink => {
+                Event::CreateEntityLink(CreateEntityLink::new(abstract_event).await?)
+            }
+            EventType::RemoveEntityLink => {
+                Event::RemoveEntityLink(RemoveEntityLink::new(abstract_event).await?)
+            }
+            EventType::CreateEntityRevision => {
+                Event::CreateEntityRevision(CreateEntityRevision::new(abstract_event).await?)
+            }
+            EventType::CheckoutRevision => {
+                Event::CheckoutRevision(CheckoutRevision::new(abstract_event, pool).await?)
+            }
+            EventType::RejectRevision => {
+                Event::RejectRevision(RejectRevision::new(abstract_event, pool).await?)
+            }
+            EventType::CreateTaxonomyLink => {
+                Event::CreateTaxonomyLink(CreateTaxonomyLink::new(abstract_event).await?)
+            }
+            EventType::RemoveTaxonomyLink => {
+                Event::RemoveTaxonomyLink(RemoveTaxonomyLink::new(abstract_event).await?)
+            }
+            EventType::CreateTaxonomyTerm => {
+                Event::CreateTaxonomyTerm(CreateTaxonomyTerm::new(abstract_event).await?)
+            }
+            EventType::SetTaxonomyTerm => {
+                Event::SetTaxonomyTerm(SetTaxonomyTerm::new(abstract_event).await?)
+            }
+            EventType::SetTaxonomyParent => {
+                Event::SetTaxonomyParent(SetTaxonomyParent::new(abstract_event, pool).await?)
+            }
+            EventType::SetUuidState => {
+                Event::SetUuidState(SetUuidState::new(abstract_event).await?)
+            }
+            EventType::Unsupported => Event::Unsupported(Unsupported::new(abstract_event).await?),
+        };
 
-        let typename = get_typename(&name);
-        let parent_id = get_parent_id(&name, uuid_id, parent_uuid_id, &from_and_to);
-        let previous_parent_id = get_previous_parent_id(&name, &from_and_to);
-
-        if typename.as_str() == "SetTaxonomyParentNotificationEvent"
-            && parent_id.unwrap().is_none()
-            && previous_parent_id.is_none()
-        {
-            return Ok(None);
-        }
-
-        Ok(Some(Event {
-            // for all
-            __typename: Some(typename),
-            id,
-            instance: event_fut.subdomain.unwrap(),
-            date: format_datetime(&event_fut.date),
-            actor_id: Some(event_fut.actor_id as i32),
-            object_id: get_object_id(&name, uuid_id, on_uuid_id),
-
-            // for some
-            archived: get_archived(&name),
-            thread_id: get_thread_id(&name, uuid_id, thread_uuid_id),
-            comment_id: get_comment_id(&name, uuid_id),
-            child_id: get_child_id(&name, uuid_id, object_uuid_id),
-            entity_revision_id: get_entity_revision_id(&name, uuid_id),
-            revision_id: get_revision_id(&name, uuid_id),
-            trashed: get_trashed(&name),
-            taxonomy_term_id: get_taxonomy_term_id(&name, uuid_id),
-            entity_id: get_entity_id(&name, uuid_id, repository_uuid_id),
-            repository_id: get_repository_id(&name, uuid_id, repository_uuid_id),
-            reason: get_reason(&name, reason),
-            parent_id,
-            previous_parent_id,
-
-            // never
-            r#type: None,
-            error: None,
-        }))
+        Ok(event)
     }
 }
 
-fn get_typename(name: &str) -> String {
-    let typename = match name {
-        "discussion/comment/archive" => "SetThreadStateNotificationEvent",
-        "discussion/comment/restore" => "SetThreadStateNotificationEvent",
-        "discussion/comment/create" => "CreateCommentNotificationEvent",
-        "discussion/create" => "CreateThreadNotificationEvent",
-        "entity/create" => "CreateEntityNotificationEvent",
-        "license/object/set" => "SetLicenseNotificationEvent",
-        "entity/link/create" => "CreateEntityLinkNotificationEvent",
-        "entity/link/remove" => "RemoveEntityLinkNotificationEvent",
-        "entity/revision/add" => "CreateEntityRevisionNotificationEvent",
-        "entity/revision/checkout" => "CheckoutRevisionNotificationEvent",
-        "entity/revision/reject" => "RejectRevisionNotificationEvent",
-        "taxonomy/term/associate" => "CreateTaxonomyLinkNotificationEvent",
-        "taxonomy/term/dissociate" => "RemoveTaxonomyLinkNotificationEvent",
-        "taxonomy/term/create" => "CreateTaxonomyTermNotificationEvent",
-        "taxonomy/term/update" => "SetTaxonomyTermNotificationEvent",
-        "taxonomy/term/parent/change" => "SetTaxonomyParentNotificationEvent",
-        "uuid/restore" => "SetUuidStateNotificationEvent",
-        "uuid/trash" => "SetUuidStateNotificationEvent",
-        _ => "",
-    };
-    String::from(typename)
-}
-
-fn get_archived(name: &str) -> Option<bool> {
-    match name {
-        "discussion/comment/archive" => Some(true),
-        "discussion/comment/restore" => Some(false),
-        _ => None,
-    }
-}
-
-fn get_thread_id(name: &str, uuid_id: i32, thread_uuid_id: Option<i32>) -> Option<i32> {
-    if name == "discussion/create" {
-        return Some(uuid_id);
-    }
-    match name == "discussion/comment/archive" || name == "discussion/comment/create" {
-        true => match thread_uuid_id.is_some() {
-            true => thread_uuid_id,
-            false => Some(uuid_id),
-        },
-        false => None,
-    }
-}
-
-fn get_comment_id(name: &str, uuid_id: i32) -> Option<i32> {
-    match name == "discussion/comment/create" {
-        true => Some(uuid_id),
-        false => None,
-    }
-}
-
-fn get_object_id(name: &str, uuid_id: i32, on_uuid_id: Option<i32>) -> i32 {
-    if name == "discussion/create" {
-        on_uuid_id.unwrap_or(uuid_id)
-    } else {
-        uuid_id
-    }
-}
-
-fn get_child_id(name: &str, uuid_id: i32, object_uuid_id: Option<i32>) -> Option<i32> {
-    if name == "taxonomy/term/associate" || name == "taxonomy/term/dissociate" {
-        return object_uuid_id;
-    }
-
-    if name == "entity/link/create"
-        || name == "entity/link/remove"
-        || name == "taxonomy/term/parent/change"
-    {
-        return Some(uuid_id);
-    }
-
-    None
-}
-
-fn get_entity_revision_id(name: &str, uuid_id: i32) -> Option<i32> {
-    match name {
-        "entity/revision/add" => Some(uuid_id),
-        _ => None,
-    }
-}
-
-fn get_revision_id(name: &str, uuid_id: i32) -> Option<i32> {
-    match name == "entity/revision/checkout" || name == "entity/revision/reject" {
-        true => Some(uuid_id),
-        false => None,
-    }
-}
-
-fn get_trashed(name: &str) -> Option<bool> {
-    match name {
-        "uuid/restore" => Some(false),
-        "uuid/trash" => Some(true),
-        _ => None,
-    }
-}
-
-fn get_taxonomy_term_id(name: &str, uuid_id: i32) -> Option<i32> {
-    match name == "taxonomy/term/create" || name == "taxonomy/term/update" {
-        true => Some(uuid_id),
-        false => None,
-    }
-}
-
-fn get_entity_id(name: &str, uuid_id: i32, repository_uuid_id: Option<i32>) -> Option<i32> {
-    match name {
-        "entity/create" => Some(uuid_id),
-        "entity/revision/add" => repository_uuid_id,
-        _ => None,
-    }
-}
-
-fn get_reason(name: &str, reason: Option<String>) -> Option<String> {
-    match name == "entity/revision/checkout" || name == "entity/revision/reject" {
-        true => match reason.is_some() {
-            true => reason,
-            false => Some(String::from("")),
-        },
-        false => None,
-    }
-}
-
-fn get_repository_id(name: &str, uuid_id: i32, repository_uuid_id: Option<i32>) -> Option<i32> {
-    if name == "license/object/set" {
-        return Some(uuid_id);
-    };
-
-    match name == "entity/revision/checkout" || name == "entity/revision/reject" {
-        true => repository_uuid_id,
-        false => None,
-    }
-}
-
-fn get_parent_id(
-    name: &str,
-    uuid_id: i32,
-    parent_uuid_id: Option<i32>,
-    from_and_to: &(Option<i32>, Option<i32>),
-) -> Option<Option<i32>> {
-    // Wrapping option decides if it should be serialized
-    match name {
-        "entity/link/create" | "entity/link/remove" => Some(parent_uuid_id),
-        "taxonomy/term/associate" | "taxonomy/term/dissociate" => Some(Some(uuid_id)),
-        "taxonomy/term/parent/change" => match from_and_to.1 {
-            Some(to) => Some(Some(to)),
-            None => Some(None),
-        },
-        _ => None,
-    }
-}
-
-fn get_previous_parent_id(name: &str, from_and_to: &(Option<i32>, Option<i32>)) -> Option<i32> {
-    if name == "taxonomy/term/parent/change" {
-        return from_and_to.0;
-    }
-    None
-}
-
-async fn query_repository_uuid_id(
-    name: &str,
-    parameter_ids: &Option<String>,
+pub async fn fetch_parameter_uuid_id(
+    id: i32,
+    parameter_name: &str,
     pool: &MySqlPool,
-) -> Option<i32> {
-    match name == "entity/revision/add"
-        || name == "entity/revision/checkout"
-        || name == "entity/revision/reject"
-    {
-        true => query_parameter_uuid_id(parameter_ids, pool).await,
-        false => None,
-    }
-}
-
-async fn query_on_uuid_id(
-    name: &str,
-    parameter_ids: &Option<String>,
-    pool: &MySqlPool,
-) -> Option<i32> {
-    match name == "discussion/create" {
-        true => query_parameter_uuid_id(parameter_ids, pool).await,
-        false => None,
-    }
-}
-
-async fn query_object_uuid_id(
-    name: &str,
-    parameter_ids: &Option<String>,
-    pool: &MySqlPool,
-) -> Option<i32> {
-    match name == "taxonomy/term/associate" || name == "taxonomy/term/dissociate" {
-        true => query_parameter_uuid_id(parameter_ids, pool).await,
-        false => None,
-    }
-}
-
-async fn query_parent_uuid_id(
-    name: &str,
-    parameter_ids: &Option<String>,
-    pool: &MySqlPool,
-) -> Option<i32> {
-    match name == "entity/link/create" || name == "entity/link/remove" {
-        true => query_parameter_uuid_id(parameter_ids, pool).await,
-        false => None,
-    }
-}
-
-async fn query_thread_uuid_id(
-    name: &str,
-    parameter_ids: &Option<String>,
-    pool: &MySqlPool,
-) -> Option<i32> {
-    match name == "discussion/comment/archive" || name == "discussion/comment/create" {
-        true => query_parameter_uuid_id(parameter_ids, pool).await,
-        false => None,
-    }
-}
-
-async fn query_parameter_uuid_id(parameter_ids: &Option<String>, pool: &MySqlPool) -> Option<i32> {
-    if parameter_ids.is_none() {
-        return None;
-    }
-    let uuid_id_fut = sqlx::query!(
-        "
-            SELECT uuid_id FROM event_parameter_uuid
-            WHERE FIND_IN_SET(event_parameter_id, ?)
-        ",
-        parameter_ids
-    )
-    .fetch_one(pool)
-    .await;
-
-    uuid_id_fut.ok().map(|value| value.uuid_id as i32)
-}
-
-async fn query_reason_string(
-    name: &str,
-    parameter_ids: &Option<String>,
-    pool: &MySqlPool,
-) -> Option<String> {
-    match name == "entity/revision/checkout" || name == "entity/revision/reject" {
-        true => query_parameter_string(parameter_ids, pool).await,
-        false => None,
-    }
-}
-
-async fn query_parameter_string(
-    parameter_ids: &Option<String>,
-    pool: &MySqlPool,
-) -> Option<String> {
-    if parameter_ids.is_none() {
-        return None;
-    }
-    let string_fut = sqlx::query!(
-        "
-            SELECT value FROM event_parameter_string
-            WHERE FIND_IN_SET(event_parameter_id, ?)
-        ",
-        parameter_ids
-    )
-    .fetch_one(pool)
-    .await;
-
-    string_fut.ok().map(|value| value.value as String)
-}
-
-async fn query_from_and_to_ids(
-    name: &str,
-    parameter_ids: &Option<String>,
-    pool: &MySqlPool,
-) -> (Option<i32>, Option<i32>) {
-    if name != "taxonomy/term/parent/change" || parameter_ids.is_none() {
-        return (None, None);
-    }
-    // could probably rewritten to return in one query, but it was a lot easier this way
-    // also: relies on hardcoded parameter name id (7 = from; 8 = to).
-    // okay, or should we query the names event_parameter_name also to check?
-
-    // puh: this one is surprisingly annoying :)
-    // legacy queries event_parameter_string also to check for "no parent" string
-    // but I think it's okay to set None when there is no uuid_id present
-
-    let from_fut = sqlx::query!(
+) -> Result<Option<i32>, sqlx::Error> {
+    sqlx::query!(
         r#"
-            SELECT u.uuid_id
-                FROM event_parameter e
-                JOIN event_parameter_uuid u ON e.id = u.event_parameter_id
-                WHERE FIND_IN_SET(e.id, ? ) AND e.name_id = 7
-                ORDER BY e.name_id
+            SELECT id.uuid_id
+                FROM event_parameter p
+                JOIN event_parameter_name n ON n.name = ?
+                JOIN event_parameter_uuid id ON id.event_parameter_id = p.id
+                WHERE p.name_id = n.id AND p.log_id = ?
         "#,
-        parameter_ids
+        parameter_name,
+        id,
     )
-    .fetch_one(pool);
-    let to_fut = sqlx::query!(
-        r#"
-            SELECT u.uuid_id
-                FROM event_parameter e
-                JOIN event_parameter_uuid u ON e.id = u.event_parameter_id
-                WHERE FIND_IN_SET(e.id, ? ) AND e.name_id = 8
-                ORDER BY e.name_id
-        "#,
-        parameter_ids
-    )
-    .fetch_one(pool);
+    .fetch_all(pool)
+    .await
+    .map(|params| params.first().map(|param| param.uuid_id as i32))
+}
 
-    let (from, to) = join!(from_fut, to_fut);
-    (
-        from.ok().map(|value| value.uuid_id as i32),
-        to.ok().map(|value| value.uuid_id as i32),
+pub async fn fetch_parameter_string(
+    id: i32,
+    parameter_name: &str,
+    pool: &MySqlPool,
+) -> Result<Option<String>, sqlx::Error> {
+    sqlx::query!(
+        r#"
+            SELECT s.value
+                FROM event_parameter p
+                JOIN event_parameter_name n ON n.name = ?
+                JOIN event_parameter_string s ON s.event_parameter_id = p.id
+                WHERE p.name_id = n.id AND p.log_id = ?
+        "#,
+        parameter_name,
+        id,
     )
+    .fetch_all(pool)
+    .await
+    .map(|params| params.first().map(|param| param.value.to_string()))
+}
+
+#[derive(Error, Debug)]
+pub enum EventError {
+    #[error("Event {id:?} can't be fetched because a field is missing.")]
+    MissingField { id: i32 },
 }

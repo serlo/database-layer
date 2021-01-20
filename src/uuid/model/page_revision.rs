@@ -33,7 +33,7 @@ impl PageRevision {
         .fetch_one(pool)
         .await?;
         Ok(PageRevision {
-            __typename: String::from("PageRevision"),
+            __typename: "PageRevision".to_string(),
             id,
             trashed: revision.trashed != 0,
             // TODO:

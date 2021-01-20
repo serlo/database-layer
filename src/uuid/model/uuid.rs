@@ -79,15 +79,15 @@ impl Uuid {
 
     pub fn get_alias(&self) -> String {
         match self {
-            Uuid::Attachment(attachment) => String::from(&attachment.alias),
-            Uuid::BlogPost(blog) => String::from(&blog.alias),
-            Uuid::Comment(comment) => String::from(&comment.alias),
+            Uuid::Attachment(attachment) => attachment.alias.to_string(),
+            Uuid::BlogPost(blog) => blog.alias.to_string(),
+            Uuid::Comment(comment) => comment.alias.to_string(),
             Uuid::Entity(entity) => entity.get_alias(),
-            Uuid::EntityRevision(entity_revision) => String::from(&entity_revision.alias),
-            Uuid::Page(page) => String::from(&page.alias),
-            Uuid::PageRevision(page_revision) => String::from(&page_revision.alias),
-            Uuid::TaxonomyTerm(taxonomy_term) => String::from(&taxonomy_term.alias),
-            Uuid::User(user) => String::from(&user.alias),
+            Uuid::EntityRevision(entity_revision) => entity_revision.alias.to_string(),
+            Uuid::Page(page) => page.alias.to_string(),
+            Uuid::PageRevision(page_revision) => page_revision.alias.to_string(),
+            Uuid::TaxonomyTerm(taxonomy_term) => taxonomy_term.alias.to_string(),
+            Uuid::User(user) => user.alias.to_string(),
         }
     }
 }

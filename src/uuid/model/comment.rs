@@ -3,8 +3,9 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::Uuid;
 use crate::{format_alias, format_datetime};
+
+use super::Uuid;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -48,7 +49,7 @@ impl Comment {
         let (comment, children) = try_join!(comment_fut, children_fut)?;
 
         Ok(Comment {
-            __typename: String::from("Comment"),
+            __typename: "Comment".to_string(),
             id,
             trashed: comment.trashed != 0,
             alias: format_alias(
@@ -67,7 +68,7 @@ impl Comment {
             title: comment.title,
             date: format_datetime(&comment.date),
             archived: comment.archived != 0,
-            content: comment.content.unwrap_or_else(|| String::from("")),
+            content: comment.content.unwrap_or_else(|| "".to_string()),
             parent_id: comment.parent_id.or(comment.uuid_id).unwrap() as i32,
             children_ids: children.iter().map(|child| child.id as i32).collect(),
         })

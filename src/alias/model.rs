@@ -115,7 +115,7 @@ impl Alias {
 
                 Ok(Some(Alias {
                     id,
-                    instance: String::from(instance),
+                    instance: instance.to_string(),
                     path: uuid.get_alias(),
                 }))
             }

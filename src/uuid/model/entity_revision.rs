@@ -4,8 +4,9 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::entity::Entity;
 use crate::{format_alias, format_datetime};
+
+use super::entity::Entity;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -81,19 +82,19 @@ impl EntityRevision {
             {
                 None
             } else {
-                Some(get_field("title", &fields).unwrap_or_else(|| String::from("")))
+                Some(get_field("title", &fields).unwrap_or_else(|| "".to_string()))
             },
             content: if revision.name == "video" {
-                get_field("description", &fields).unwrap_or_else(|| String::from(""))
+                get_field("description", &fields).unwrap_or_else(|| "".to_string())
             } else {
-                get_field("content", &fields).unwrap_or_else(|| String::from(""))
+                get_field("content", &fields).unwrap_or_else(|| "".to_string())
             },
-            changes: get_field("changes", &fields).unwrap_or_else(|| String::from("")),
+            changes: get_field("changes", &fields).unwrap_or_else(|| "".to_string()),
             meta_title: if revision.name == "applet"
                 || revision.name == "article"
                 || revision.name == "event"
             {
-                Some(get_field("meta_title", &fields).unwrap_or_else(|| String::from("")))
+                Some(get_field("meta_title", &fields).unwrap_or_else(|| "".to_string()))
             } else {
                 None
             },
@@ -102,7 +103,7 @@ impl EntityRevision {
                 || revision.name == "course"
                 || revision.name == "event"
             {
-                Some(get_field("meta_description", &fields).unwrap_or_else(|| String::from("")))
+                Some(get_field("meta_description", &fields).unwrap_or_else(|| "".to_string()))
             } else {
                 None
             },
@@ -143,5 +144,5 @@ fn get_field(name: &str, fields: &[Field]) -> Option<String> {
         .iter()
         .filter(|field| field.field == name)
         .collect::<Vec<&Field>>();
-    matches.first().map(|field| String::from(&field.value))
+    matches.first().map(|field| field.value.to_string())
 }

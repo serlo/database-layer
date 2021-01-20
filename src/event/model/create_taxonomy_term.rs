@@ -1,3 +1,4 @@
+use anyhow::Result;
 use serde::Serialize;
 
 use super::event::AbstractEvent;
@@ -7,14 +8,18 @@ use super::event::AbstractEvent;
 pub struct CreateTaxonomyTerm {
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
+
     pub taxonomy_term_id: i32,
 }
 
 impl CreateTaxonomyTerm {
-    pub fn new(abstract_event: AbstractEvent) -> Self {
-        CreateTaxonomyTerm {
-            taxonomy_term_id: abstract_event.object_id,
+    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+        let taxonomy_term_id = abstract_event.object_id;
+
+        Ok(CreateTaxonomyTerm {
             abstract_event,
-        }
+
+            taxonomy_term_id,
+        })
     }
 }

@@ -1,3 +1,4 @@
+use anyhow::Result;
 use serde::Serialize;
 
 use super::event::AbstractEvent;
@@ -7,17 +8,21 @@ use super::event::AbstractEvent;
 pub struct SetThreadState {
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
+
     pub thread_id: i32,
     pub archived: bool,
 }
 
 impl SetThreadState {
-    pub fn new(abstract_event: AbstractEvent) -> Self {
+    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+        let thread_id = abstract_event.object_id;
         let archived = abstract_event.name == "discussion/comment/archive";
-        SetThreadState {
-            thread_id: abstract_event.object_id,
-            archived,
+
+        Ok(SetThreadState {
             abstract_event,
-        }
+
+            thread_id,
+            archived,
+        })
     }
 }

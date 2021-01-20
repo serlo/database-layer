@@ -1,3 +1,4 @@
+use anyhow::Result;
 use serde::Serialize;
 
 use super::event::AbstractEvent;
@@ -7,17 +8,22 @@ use super::event::AbstractEvent;
 pub struct CreateEntityRevision {
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
+
     pub entity_id: i32,
     pub entity_revision_id: i32,
 }
 
 impl CreateEntityRevision {
-    pub fn new(abstract_event: AbstractEvent) -> Self {
-        CreateEntityRevision {
-            // uses "repository" parameter
-            entity_id: abstract_event.parameter_uuid_id,
-            entity_revision_id: abstract_event.object_id,
+    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+        // uses "repository" parameter
+        let entity_id = abstract_event.parameter_uuid_id;
+        let entity_revision_id = abstract_event.object_id;
+
+        Ok(CreateEntityRevision {
             abstract_event,
-        }
+
+            entity_id,
+            entity_revision_id,
+        })
     }
 }

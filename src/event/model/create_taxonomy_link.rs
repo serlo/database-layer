@@ -1,3 +1,4 @@
+use anyhow::Result;
 use serde::Serialize;
 
 use super::event::AbstractEvent;
@@ -7,17 +8,22 @@ use super::event::AbstractEvent;
 pub struct CreateTaxonomyLink {
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
+
     pub parent_id: i32,
     pub child_id: i32,
 }
 
 impl CreateTaxonomyLink {
-    pub fn new(abstract_event: AbstractEvent) -> Self {
-        CreateTaxonomyLink {
-            parent_id: abstract_event.object_id,
-            // uses "object" parameter
-            child_id: abstract_event.parameter_uuid_id,
+    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+        let parent_id = abstract_event.object_id;
+        // uses "object" parameter
+        let child_id = abstract_event.parameter_uuid_id;
+
+        Ok(CreateTaxonomyLink {
             abstract_event,
-        }
+
+            parent_id,
+            child_id,
+        })
     }
 }

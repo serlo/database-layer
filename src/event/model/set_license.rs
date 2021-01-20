@@ -1,3 +1,4 @@
+use anyhow::Result;
 use serde::Serialize;
 
 use super::event::AbstractEvent;
@@ -7,14 +8,18 @@ use super::event::AbstractEvent;
 pub struct SetLicense {
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
+
     pub repository_id: i32,
 }
 
 impl SetLicense {
-    pub fn new(abstract_event: AbstractEvent) -> Self {
-        SetLicense {
-            repository_id: abstract_event.object_id,
+    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+        let repository_id = abstract_event.object_id;
+
+        Ok(SetLicense {
             abstract_event,
-        }
+
+            repository_id,
+        })
     }
 }

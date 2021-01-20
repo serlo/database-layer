@@ -1,3 +1,4 @@
+use anyhow::Result;
 use serde::Serialize;
 
 use super::event::AbstractEvent;
@@ -7,15 +8,18 @@ use super::event::AbstractEvent;
 pub struct SetUuidState {
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
+
     pub trashed: bool,
 }
 
 impl SetUuidState {
-    pub fn new(abstract_event: AbstractEvent) -> Self {
+    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
         let trashed = abstract_event.name == "uuid/trash";
-        SetUuidState {
+
+        Ok(SetUuidState {
             abstract_event,
+
             trashed,
-        }
+        })
     }
 }

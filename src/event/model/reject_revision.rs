@@ -1,6 +1,7 @@
-use super::event::AbstractEvent;
 use serde::Serialize;
 use sqlx::MySqlPool;
+
+use super::event::AbstractEvent;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

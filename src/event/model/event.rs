@@ -2,6 +2,8 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
+use crate::format_datetime;
+
 use super::checkout_revision::CheckoutRevision;
 use super::create_comment::CreateComment;
 use super::create_entity::CreateEntity;
@@ -19,7 +21,6 @@ use super::set_taxonomy_term::SetTaxonomyTerm;
 use super::set_thread_state::SetThreadState;
 use super::set_uuid_state::SetUuidState;
 use super::unsupported::Unsupported;
-use crate::format_datetime;
 
 #[derive(Serialize)]
 #[serde(untagged)]

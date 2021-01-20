@@ -4,8 +4,9 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::entity::Entity;
 use crate::{format_alias, format_datetime};
+
+use super::entity::Entity;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -3,8 +3,9 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::UuidError;
 use crate::{format_alias, format_datetime};
+
+use super::UuidError;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

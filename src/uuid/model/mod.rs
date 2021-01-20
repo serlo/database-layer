@@ -1,3 +1,5 @@
+pub use uuid::{Uuid, UuidError};
+
 mod attachment;
 mod blog_post;
 mod comment;
@@ -8,5 +10,3 @@ mod page_revision;
 mod taxonomy_term;
 mod user;
 mod uuid;
-
-pub use uuid::{Uuid, UuidError};

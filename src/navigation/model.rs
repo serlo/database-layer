@@ -1,11 +1,12 @@
+use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
+
 use anyhow::Result;
 use futures::try_join;
 use regex::Regex;
 use serde::Serialize;
 use sqlx::MySqlPool;
-use std::collections::HashMap;
-use std::future::Future;
-use std::pin::Pin;
 
 #[derive(Serialize)]
 pub struct Navigation {

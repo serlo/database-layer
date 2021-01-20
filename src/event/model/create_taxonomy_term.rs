@@ -1,5 +1,6 @@
-use super::event::AbstractEvent;
 use serde::Serialize;
+
+use super::event::AbstractEvent;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

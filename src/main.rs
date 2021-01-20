@@ -1,8 +1,9 @@
+use std::env;
+
 use actix_web::{get, App, HttpServer, Result};
 use dotenv::dotenv;
 use regex::Regex;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
-use std::env;
 
 use serlo_org_database_layer::{
     alias, event, health, license, navigation, notifications, subscriptions, threads, user, uuid,

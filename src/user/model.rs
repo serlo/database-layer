@@ -1,7 +1,8 @@
-use anyhow::Result;
-use sqlx::MySqlPool;
 use std::env;
 use std::time::SystemTime;
+
+use anyhow::Result;
+use sqlx::MySqlPool;
 
 pub struct User {}
 

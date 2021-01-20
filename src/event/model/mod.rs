@@ -1,3 +1,5 @@
+pub use self::event::Event;
+
 mod checkout_revision;
 mod create_comment;
 mod create_entity;
@@ -16,5 +18,3 @@ mod set_taxonomy_term;
 mod set_thread_state;
 mod set_uuid_state;
 mod unsupported;
-
-pub use self::event::Event;

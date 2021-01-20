@@ -1,8 +1,9 @@
+use std::env;
+
 use actix_web::{get, App, HttpServer, Result};
 use dotenv::dotenv;
 use regex::Regex;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
-use std::env;
 
 mod alias;
 mod event;

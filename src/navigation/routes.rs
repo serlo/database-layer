@@ -1,6 +1,7 @@
-use crate::navigation::model::Navigation;
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
+
+use super::model::Navigation;
 
 #[get("/navigation/{instance}")]
 async fn navigation(instance: web::Path<String>, db_pool: web::Data<MySqlPool>) -> impl Responder {

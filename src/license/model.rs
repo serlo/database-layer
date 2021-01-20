@@ -35,9 +35,9 @@ impl License {
             default: license_fut.default == Some(1),
             title: license_fut.title,
             url: license_fut.url,
-            content: license_fut.content.unwrap_or_else(|| String::from("")),
+            content: license_fut.content.unwrap_or_else(|| "".to_string()),
             agreement: license_fut.agreement,
-            icon_href: license_fut.icon_href.unwrap_or_else(|| String::from("")),
+            icon_href: license_fut.icon_href.unwrap_or_else(|| "".to_string()),
         })
     }
 }

@@ -27,8 +27,8 @@ where
 pub fn format_alias(prefix: Option<&str>, id: i32, suffix: Option<&str>) -> String {
     let prefix = prefix
         .map(|p| format!("/{}", slugify(p)))
-        .unwrap_or_else(|| String::from(""));
-    let suffix = suffix.map(slugify).unwrap_or_else(|| String::from(""));
+        .unwrap_or_else(|| "".to_string());
+    let suffix = suffix.map(slugify).unwrap_or_else(|| "".to_string());
     format!("{}/{}/{}", prefix, id, suffix)
 }
 
@@ -39,7 +39,7 @@ fn slugify(segment: &str) -> String {
     let segment = Regex::new(r"[\[\]{}() ,;:/|\-]+")
         .unwrap()
         .replace_all(&segment, "-");
-    String::from(segment.to_lowercase().trim_matches('-'))
+    segment.to_lowercase().trim_matches('-').to_string()
 }
 
 #[cfg(test)]

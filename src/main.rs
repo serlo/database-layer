@@ -10,7 +10,7 @@ use serlo_org_database_layer::{
 
 #[get("/")]
 async fn index() -> Result<String> {
-    Ok(String::from("Ok"))
+    Ok("Ok".to_string())
 }
 
 #[actix_web::main]

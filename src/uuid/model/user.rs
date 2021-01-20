@@ -32,7 +32,7 @@ impl User {
         .fetch_one(pool)
         .await?;
         Ok(User {
-            __typename: String::from("User"),
+            __typename: "User".to_string(),
             id,
             trashed: user.trashed != 0,
             alias: format_alias(Self::get_context().as_deref(), id, Some(&user.username)),
@@ -44,6 +44,6 @@ impl User {
     }
 
     pub fn get_context() -> Option<String> {
-        Some(String::from("user"))
+        Some("user".to_string())
     }
 }

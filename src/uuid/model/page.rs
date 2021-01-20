@@ -46,7 +46,7 @@ impl Page {
             return Err(anyhow::Error::new(UuidError::NotFound { id }));
         } else {
             Ok(Page {
-                __typename: String::from("Page"),
+                __typename: "Page".to_string(),
                 id,
                 trashed: page.trashed != 0,
                 // TODO:

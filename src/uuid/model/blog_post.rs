@@ -37,6 +37,6 @@ impl BlogPost {
     }
 
     pub fn get_context() -> Option<String> {
-        Some(String::from("blog"))
+        Some("blog".to_string())
     }
 }

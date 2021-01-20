@@ -69,7 +69,7 @@ impl TaxonomyTerm {
             .collect();
         children_ids.extend(children.iter().map(|child| child.id as i32));
         Ok(TaxonomyTerm {
-            __typename: String::from("TaxonomyTerm"),
+            __typename: "TaxonomyTerm".to_string(),
             id,
             trashed: taxonomy_term.trashed != 0,
             alias: format_alias(subject.as_deref(), id, Some(&taxonomy_term.name)),
@@ -145,7 +145,7 @@ impl TaxonomyTerm {
         let subject = subjects
             .first()
             .as_ref()
-            .map(|subject| String::from(&subject.name));
+            .map(|subject| subject.name.to_string());
         Ok(subject)
     }
 }

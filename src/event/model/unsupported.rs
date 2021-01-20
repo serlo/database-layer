@@ -20,7 +20,7 @@ impl Unsupported {
             instance: abstract_event.instance,
             object_id: abstract_event.object_id,
             r#type: abstract_event.name,
-            error: String::from("unsupported"),
+            error: "unsupported".to_string(),
         }
     }
 }

@@ -41,7 +41,7 @@ impl Navigation {
 
         Ok(Navigation {
             data: data.iter().filter_map(|child| child.normalize()).collect(),
-            instance: String::from(instance),
+            instance: instance.to_string(),
         })
     }
 }
@@ -184,7 +184,7 @@ impl NavigationChild {
             return if uri == "#" {
                 Some(NormalizedNavigationChild::Container(
                     ContainerNavigationChild {
-                        label: String::from(label),
+                        label: label.to_string(),
                         children,
                     },
                 ))
@@ -194,14 +194,14 @@ impl NavigationChild {
                     Some(captures) => {
                         let id: i32 = captures.name("id").unwrap().as_str().parse().unwrap();
                         Some(NormalizedNavigationChild::Uuid(UuidNavigationChild {
-                            label: String::from(label),
+                            label: label.to_string(),
                             id,
                             children,
                         }))
                     }
                     _ => Some(NormalizedNavigationChild::Url(UrlNavigationChild {
-                        label: String::from(label),
-                        url: String::from(uri),
+                        label: label.to_string(),
+                        url: uri.to_string(),
                         children,
                     })),
                 }
@@ -213,14 +213,14 @@ impl NavigationChild {
         {
             return match route.as_str() {
                 "blog" => Some(NormalizedNavigationChild::Url(UrlNavigationChild {
-                    label: String::from(label),
-                    url: String::from("/blog"),
+                    label: label.to_string(),
+                    url: "/blog".to_string(),
                     children,
                 })),
                 "discussion/discussions" => {
                     Some(NormalizedNavigationChild::Url(UrlNavigationChild {
-                        label: String::from(label),
-                        url: String::from("/discussions"),
+                        label: label.to_string(),
+                        url: "/discussions".to_string(),
                         children,
                     }))
                 }
@@ -230,14 +230,14 @@ impl NavigationChild {
                     .and_then(|id| id.parse::<i32>().ok())
                     .map(|id| {
                         NormalizedNavigationChild::Url(UrlNavigationChild {
-                            label: String::from(label),
+                            label: label.to_string(),
                             url: format!("/discussions/{}", id),
                             children,
                         })
                     }),
                 "event/history/all" => Some(NormalizedNavigationChild::Url(UrlNavigationChild {
-                    label: String::from(label),
-                    url: String::from("/event/history"),
+                    label: label.to_string(),
+                    url: "/event/history".to_string(),
                     children,
                 })),
                 "page/view" => self
@@ -246,14 +246,14 @@ impl NavigationChild {
                     .and_then(|id| id.parse::<i32>().ok())
                     .map(|id| {
                         NormalizedNavigationChild::Uuid(UuidNavigationChild {
-                            label: String::from(label),
+                            label: label.to_string(),
                             id,
                             children,
                         })
                     }),
                 "subject/entity" => self.parameters.get("params.subject").map(|subject| {
                     NormalizedNavigationChild::Url(UrlNavigationChild {
-                        label: String::from(label),
+                        label: label.to_string(),
                         url: format!("/{}/entity/trash-bin", subject.replace(" ", "%20")),
                         children,
                     })
@@ -264,7 +264,7 @@ impl NavigationChild {
                     .and_then(|id| id.parse::<i32>().ok())
                     .map(|id| {
                         NormalizedNavigationChild::Uuid(UuidNavigationChild {
-                            label: String::from(label),
+                            label: label.to_string(),
                             id,
                             children,
                         })
@@ -275,7 +275,7 @@ impl NavigationChild {
                     .and_then(|id| id.parse::<i32>().ok())
                     .map(|id| {
                         NormalizedNavigationChild::Url(UrlNavigationChild {
-                            label: String::from(label),
+                            label: label.to_string(),
                             url: format!("/taxonomy/term/organize/{}", id),
                             children,
                         })

@@ -7,10 +7,6 @@ use sqlx::MySqlPool;
 pub struct SetTaxonomyParent {
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
-
-    #[serde(rename(serialize = "__typename"))]
-    pub __typename: String,
-
     pub child_id: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub previous_parent_id: Option<i32>,
@@ -23,7 +19,6 @@ impl SetTaxonomyParent {
         let to = super::event::fetch_parameter_uuid_id(abstract_event.id, "to", &pool).await;
 
         SetTaxonomyParent {
-            __typename: "SetTaxonomyParentNotificationEvent".to_string(),
             child_id: abstract_event.object_id,
             parent_id: to,
             previous_parent_id: from,

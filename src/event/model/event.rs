@@ -1,5 +1,5 @@
 use anyhow::Result;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serlo_org_database_layer::format_datetime;
 use sqlx::MySqlPool;
 
@@ -45,9 +45,107 @@ pub enum Event {
     Unsupported(Unsupported),
 }
 
+#[derive(Deserialize, Serialize)]
+pub enum EventType {
+    #[serde(rename(
+        serialize = "SetThreadStateNotificationEvent",
+        deserialize = "discussion/comment/archive",
+        deserialize = "discussion/comment/restore"
+    ))]
+    SetThreadState,
+    #[serde(rename(
+        serialize = "CreateCommentNotificationEvent",
+        deserialize = "discussion/comment/create"
+    ))]
+    CreateComment,
+    #[serde(rename(
+        serialize = "CreateThreadNotificationEvent",
+        deserialize = "discussion/create"
+    ))]
+    CreateThread,
+    #[serde(rename(
+        serialize = "CreateEntityNotificationEvent",
+        deserialize = "entity/create"
+    ))]
+    CreateEntity,
+    #[serde(rename(
+        serialize = "SetLicenseNotificationEvent",
+        deserialize = "license/object/set"
+    ))]
+    SetLicense,
+    #[serde(rename(
+        serialize = "CreateEntityLinkNotificationEvent",
+        deserialize = "entity/link/create"
+    ))]
+    CreateEntityLink,
+    #[serde(rename(
+        serialize = "RemoveEntityLinkNotificationEvent",
+        deserialize = "entity/link/remove"
+    ))]
+    RemoveEntityLink,
+    #[serde(rename(
+        serialize = "CreateEntityRevisionNotificationEvent",
+        deserialize = "entity/revision/add"
+    ))]
+    CreateEntityRevision,
+    #[serde(rename(
+        serialize = "CheckoutRevisionNotificationEvent",
+        deserialize = "entity/revision/checkout"
+    ))]
+    CheckoutRevision,
+    #[serde(rename(
+        serialize = "RejectRevisionNotificationEvent",
+        deserialize = "entity/revision/reject"
+    ))]
+    RejectRevision,
+    #[serde(rename(
+        serialize = "CreateTaxonomyLinkNotificationEvent",
+        deserialize = "taxonomy/term/associate"
+    ))]
+    CreateTaxonomyLink,
+    #[serde(rename(
+        serialize = "RemoveTaxonomyLinkNotificationEvent",
+        deserialize = "taxonomy/term/dissociate"
+    ))]
+    RemoveTaxonomyLink,
+    #[serde(rename(
+        serialize = "CreateTaxonomyTermNotificationEvent",
+        deserialize = "taxonomy/term/create"
+    ))]
+    CreateTaxonomyTerm,
+    #[serde(rename(
+        serialize = "SetTaxonomyTermNotificationEvent",
+        deserialize = "taxonomy/term/update"
+    ))]
+    SetTaxonomyTerm,
+    #[serde(rename(
+        serialize = "SetTaxonomyParentNotificationEvent",
+        deserialize = "taxonomy/term/parent/change"
+    ))]
+    SetTaxonomyParent,
+    #[serde(rename(
+        serialize = "SetUuidStateNotificationEvent",
+        deserialize = "uuid/restore",
+        deserialize = "uuid/trash"
+    ))]
+    SetUuidState,
+    #[serde(rename(serialize = "UnsupportedNotificationEvent", deserialize = "???"))]
+    Unsupported,
+}
+
+impl std::str::FromStr for EventType {
+    type Err = serde_json::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_value(serde_json::value::Value::String(s.to_string()))
+    }
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AbstractEvent {
+    #[serde(rename(serialize = "__typename"))]
+    pub __typename: EventType,
     pub id: i32,
     pub instance: String,
     pub date: String,
@@ -79,6 +177,7 @@ impl Event {
         let uuid_id = event_fut.uuid_id as i32;
 
         let e = AbstractEvent {
+            __typename: name.parse::<EventType>()?,
             id: event_fut.id as i32,
             instance: event_fut.subdomain.to_string(),
             date: format_datetime(&event_fut.date),

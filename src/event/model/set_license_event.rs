@@ -6,17 +6,11 @@ use serde::Serialize;
 pub struct SetLicense {
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
-
-    #[serde(rename(serialize = "__typename"))]
-    pub __typename: String,
     pub repository_id: i32,
 }
 
 impl SetLicense {
     pub fn new(abstract_event: AbstractEvent) -> Self {
-        SetLicense {
-            __typename: "SetLicenseNotificationEvent".to_string(),
-            abstract_event,
-        }
+        SetLicense { abstract_event }
     }
 }

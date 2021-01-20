@@ -7,10 +7,6 @@ use sqlx::MySqlPool;
 pub struct RejectRevision {
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
-
-    #[serde(rename(serialize = "__typename"))]
-    pub __typename: String,
-
     pub repository_id: i32,
     pub revision_id: i32,
     pub reason: String,
@@ -25,7 +21,6 @@ impl RejectRevision {
         let reason = super::event::fetch_parameter_string(abstract_event.id, "reason", &pool).await;
 
         RejectRevision {
-            __typename: "RejectRevisionNotificationEvent".to_string(),
             repository_id,
             revision_id: abstract_event.object_id,
             reason,

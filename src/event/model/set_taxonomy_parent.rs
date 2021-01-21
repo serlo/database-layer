@@ -1,25 +1,28 @@
-use anyhow::Result;
+use async_trait::async_trait;
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use crate::event::model::event::{fetch_uuid_parameter, AbstractEvent};
+use super::abstract_event::{AbstractEvent, FromAbstractEvent};
+use super::event::Event;
+use super::EventError;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetTaxonomyParent {
     #[serde(flatten)]
-    pub abstract_event: AbstractEvent,
+    abstract_event: AbstractEvent,
 
-    pub child_id: i32,
-    pub previous_parent_id: Option<i32>,
-    pub parent_id: Option<i32>,
+    child_id: i32,
+    previous_parent_id: Option<i32>,
+    parent_id: Option<i32>,
 }
 
-impl SetTaxonomyParent {
-    pub async fn fetch(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self> {
-        let from_fut = fetch_uuid_parameter(abstract_event.id, "from", pool);
-        let to_fut = fetch_uuid_parameter(abstract_event.id, "to", pool);
+#[async_trait]
+impl FromAbstractEvent for SetTaxonomyParent {
+    async fn fetch(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self, EventError> {
+        let from_fut = Event::fetch_uuid_parameter(abstract_event.id, "from", pool);
+        let to_fut = Event::fetch_uuid_parameter(abstract_event.id, "to", pool);
 
         let (previous_parent_id, parent_id) = try_join!(from_fut, to_fut)?;
         let child_id = abstract_event.object_id;

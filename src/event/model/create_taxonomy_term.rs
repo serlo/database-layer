@@ -1,19 +1,22 @@
-use anyhow::Result;
+use async_trait::async_trait;
 use serde::Serialize;
+use sqlx::MySqlPool;
 
-use super::event::AbstractEvent;
+use super::abstract_event::{AbstractEvent, FromAbstractEvent};
+use super::EventError;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateTaxonomyTerm {
     #[serde(flatten)]
-    pub abstract_event: AbstractEvent,
+    abstract_event: AbstractEvent,
 
-    pub taxonomy_term_id: i32,
+    taxonomy_term_id: i32,
 }
 
-impl CreateTaxonomyTerm {
-    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
+#[async_trait]
+impl FromAbstractEvent for CreateTaxonomyTerm {
+    async fn fetch(abstract_event: AbstractEvent, _pool: &MySqlPool) -> Result<Self, EventError> {
         let taxonomy_term_id = abstract_event.object_id;
 
         Ok(CreateTaxonomyTerm {

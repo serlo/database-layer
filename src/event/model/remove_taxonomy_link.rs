@@ -1,20 +1,23 @@
-use anyhow::Result;
+use async_trait::async_trait;
 use serde::Serialize;
+use sqlx::MySqlPool;
 
-use super::event::AbstractEvent;
+use super::abstract_event::{AbstractEvent, FromAbstractEvent};
+use super::EventError;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoveTaxonomyLink {
     #[serde(flatten)]
-    pub abstract_event: AbstractEvent,
+    abstract_event: AbstractEvent,
 
-    pub parent_id: i32,
-    pub child_id: i32,
+    parent_id: i32,
+    child_id: i32,
 }
 
-impl RemoveTaxonomyLink {
-    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
+#[async_trait]
+impl FromAbstractEvent for RemoveTaxonomyLink {
+    async fn fetch(abstract_event: AbstractEvent, _pool: &MySqlPool) -> Result<Self, EventError> {
         let parent_id = abstract_event.object_id;
         // uses "object" parameter
         let child_id = abstract_event.parameter_uuid_id;

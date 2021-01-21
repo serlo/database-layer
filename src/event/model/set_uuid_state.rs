@@ -1,19 +1,22 @@
-use anyhow::Result;
+use async_trait::async_trait;
 use serde::Serialize;
+use sqlx::MySqlPool;
 
-use super::event::AbstractEvent;
+use super::abstract_event::{AbstractEvent, FromAbstractEvent};
+use super::EventError;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetUuidState {
     #[serde(flatten)]
-    pub abstract_event: AbstractEvent,
+    abstract_event: AbstractEvent,
 
-    pub trashed: bool,
+    trashed: bool,
 }
 
-impl SetUuidState {
-    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
+#[async_trait]
+impl FromAbstractEvent for SetUuidState {
+    async fn fetch(abstract_event: AbstractEvent, _pool: &MySqlPool) -> Result<Self, EventError> {
         let trashed = abstract_event.name == "uuid/trash";
 
         Ok(SetUuidState {

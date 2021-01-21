@@ -1,7 +1,7 @@
-use anyhow::Result;
 use regex::Regex;
 use serde::Serialize;
 use sqlx::MySqlPool;
+use thiserror::Error;
 
 use crate::uuid::Uuid;
 
@@ -13,8 +13,18 @@ pub struct Alias {
     pub path: String,
 }
 
+#[derive(Error, Debug)]
+pub enum AliasError {
+    #[error("Alias cannot be fetched because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("Alias is a legacy route.")]
+    LegacyRoute,
+    #[error("Alias cannot be fetched because it does not exist.")]
+    NotFound,
+}
+
 impl Alias {
-    pub async fn fetch(path: &str, instance: &str, pool: &MySqlPool) -> Result<Option<Alias>> {
+    pub async fn fetch(path: &str, instance: &str, pool: &MySqlPool) -> Result<Alias, AliasError> {
         if path == "backend"
             || path == "debugger"
             || path == "horizon"
@@ -63,14 +73,15 @@ impl Alias {
             || path.starts_with("user/remove/")
             || path.starts_with("uuid/")
         {
-            return Ok(None);
+            return Err(AliasError::LegacyRoute);
         }
 
         let re = Regex::new(r"^user/profile/(?P<username>.+)$").unwrap();
-        let id = match re.captures(&path) {
+
+        let id: i32 = match re.captures(&path) {
             Some(captures) => {
                 let username = captures.name("username").unwrap().as_str();
-                let user = sqlx::query!(
+                sqlx::query!(
                     r#"
                         SELECT id
                             FROM user
@@ -78,44 +89,49 @@ impl Alias {
                     "#,
                     username
                 )
-                .fetch_all(pool)
-                .await?;
-                user.first().map(|user| user.id as i32)
+                .fetch_one(pool)
+                .await
+                .map_err(|error| match error {
+                    sqlx::Error::RowNotFound => AliasError::NotFound,
+                    inner => AliasError::DatabaseError { inner },
+                })
+                .map(|user| user.id as i32)?
             }
             _ => {
                 let re = Regex::new(r"^(?P<subject>[^/]+/)?(?P<id>\d+)/(?P<title>[^/]*)$").unwrap();
                 match re.captures(&path) {
-                    Some(captures) => Some(captures.name("id").unwrap().as_str().parse().unwrap()),
-                    _ => {
-                        let legacy_alias = sqlx::query!(
-                            r#"
-                        SELECT a.uuid_id FROM url_alias a
-                            JOIN instance i on i.id = a.instance_id
-                            WHERE i.subdomain = ? AND a.alias = ?
-                            ORDER BY a.timestamp DESC
-                    "#,
-                            instance,
-                            path
-                        )
-                        .fetch_all(pool)
-                        .await?;
-                        legacy_alias.first().map(|alias| alias.uuid_id as i32)
-                    }
+                    Some(captures) => captures.name("id").unwrap().as_str().parse().unwrap(),
+                    _ => sqlx::query!(
+                        r#"
+                            SELECT a.uuid_id FROM url_alias a
+                                JOIN instance i on i.id = a.instance_id
+                                WHERE i.subdomain = ? AND a.alias = ?
+                                ORDER BY a.timestamp DESC
+                        "#,
+                        instance,
+                        path
+                    )
+                    .fetch_one(pool)
+                    .await
+                    .map_err(|error| match error {
+                        sqlx::Error::RowNotFound => AliasError::NotFound,
+                        inner => AliasError::DatabaseError { inner },
+                    })
+                    .map(|alias| alias.uuid_id as i32)?,
                 }
             }
         };
 
-        match id {
-            Some(id) => {
-                let uuid = Uuid::fetch(id, pool).await?;
-
-                Ok(Some(Alias {
-                    id,
-                    instance: instance.to_string(),
-                    path: uuid.get_alias(),
-                }))
+        match Uuid::fetch(id, pool).await {
+            Ok(uuid) => Ok(Alias {
+                id,
+                instance: instance.to_string(),
+                path: uuid.get_alias(),
+            }),
+            Err(_) => {
+                // TODO: here we need a better error handling from UUID
+                Err(AliasError::NotFound)
             }
-            _ => Ok(None),
         }
     }
 }

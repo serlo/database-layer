@@ -64,8 +64,8 @@ impl Event {
             .await
             .map_err(|error| {
                 match error {
-                    sqlx::Error::RowNotFound => EventError::NotFound { id },
-                    _ => EventError::DatabaseError { id, error },
+                    sqlx::Error::RowNotFound => EventError::NotFound,
+                    inner => EventError::DatabaseError { inner },
                 }
             })?;
 
@@ -77,10 +77,7 @@ impl Event {
             .unwrap_or(uuid_id);
 
         let abstract_event = AbstractEvent {
-            __typename: name.parse().map_err(|_error| EventError::InvalidType {
-                id,
-                typename: name.to_string(),
-            })?,
+            __typename: name.parse().map_err(|_error| EventError::InvalidType)?,
             id: event.id as i32,
             instance: event.subdomain.to_string(),
             date: format_datetime(&event.date),
@@ -166,7 +163,7 @@ impl Event {
         .fetch_all(pool)
         .await
         .map(|params| params.first().map(|param| param.uuid_id as i32))
-        .map_err(|error| EventError::DatabaseError { id, error })
+        .map_err(|inner| EventError::DatabaseError { inner })
     }
 
     pub async fn fetch_string_parameter(
@@ -188,6 +185,6 @@ impl Event {
         .fetch_all(pool)
         .await
         .map(|params| params.first().map(|param| param.value.to_string()))
-        .map_err(|error| EventError::DatabaseError { id, error })
+        .map_err(|inner| EventError::DatabaseError { inner })
     }
 }

@@ -1,7 +1,7 @@
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
-use super::model::Alias;
+use super::model::{Alias, AliasError};
 
 #[get("/alias/{instance}/{path:.*}")]
 async fn alias(
@@ -9,17 +9,19 @@ async fn alias(
     db_pool: web::Data<MySqlPool>,
 ) -> impl Responder {
     let (instance, path) = params.into_inner();
-    let result = Alias::fetch(&path, &instance, db_pool.get_ref()).await;
-    match result {
+    match Alias::fetch(&path, &instance, db_pool.get_ref()).await {
         Ok(data) => HttpResponse::Ok()
             .content_type("application/json; charset=utf-8")
             .json(data),
         Err(e) => {
-            println!(
-                "Could not resolve alias {} in instance {}: {:?}",
-                path, instance, e
-            );
-            HttpResponse::BadRequest().json(None::<String>)
+            println!("/alias/{:?}/{:?}: {:?}", instance, path, e);
+            match e {
+                AliasError::DatabaseError { .. } => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
+                AliasError::LegacyRoute => HttpResponse::NotFound().json(None::<String>),
+                AliasError::NotFound => HttpResponse::NotFound().json(None::<String>),
+            }
         }
     }
 }

@@ -34,9 +34,7 @@ impl FromAbstractEvent for RejectRevision {
                 reason: reason.unwrap_or_else(|| "".to_string()),
             })
         } else {
-            Err(EventError::MissingRequiredField {
-                id: abstract_event.id,
-            })
+            Err(EventError::MissingRequiredField)
         }
     }
 }

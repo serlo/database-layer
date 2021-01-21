@@ -25,12 +25,12 @@ mod unsupported;
 
 #[derive(Error, Debug)]
 pub enum EventError {
-    #[error("Event {id:?} cannot be fetched because of a database error {error:?}.")]
-    DatabaseError { id: i32, error: sqlx::Error },
-    #[error("Event {id:?} cannot be fetched because its type is invalid.")]
-    InvalidType { id: i32, typename: String },
-    #[error("Event {id:?} cannot be fetched because a field is missing.")]
-    MissingRequiredField { id: i32 },
-    #[error("Event {id:?} does not exist.")]
-    NotFound { id: i32 },
+    #[error("Event cannot be fetched because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("Event cannot be fetched because its type is invalid.")]
+    InvalidType,
+    #[error("Event cannot be fetched because a required field is missing.")]
+    MissingRequiredField,
+    #[error("Event does not exist.")]
+    NotFound,
 }

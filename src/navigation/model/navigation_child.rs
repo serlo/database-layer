@@ -1,10 +1,11 @@
+use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
+
 use futures::try_join;
 use regex::Regex;
 use serde::Serialize;
 use sqlx::MySqlPool;
-use std::collections::HashMap;
-use std::future::Future;
-use std::pin::Pin;
 use thiserror::Error;
 
 #[derive(Serialize)]

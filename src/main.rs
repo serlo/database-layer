@@ -1,8 +1,8 @@
 use actix_web::{get, App, HttpServer, Result};
-use regex::Regex;
 
 use serlo_org_database_layer::{
-    alias, create_database_pool, event, health, license, navigation, notifications, subscriptions, threads, user, uuid,
+    alias, create_database_pool, event, health, license, navigation, notifications, subscriptions,
+    threads, user, uuid,
 };
 
 #[get("/")]

@@ -1,10 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use actix_web::{test, web, App};
-    use serlo_org_database_layer::create_database_pool;
+    use actix_web::{test, App};
     use futures::StreamExt;
-    use json;
-    use super::*;
+
+    use serlo_org_database_layer::create_database_pool;
 
     #[actix_rt::test]
     async fn test_pact1() {
@@ -21,9 +20,6 @@ mod tests {
         // first chunk
         let (bytes, _) = resp.take_body().into_future().await;
         let uuid = json::parse(std::str::from_utf8(&bytes.unwrap().unwrap()).unwrap()).unwrap();
-        assert_eq!(
-            uuid["__typename"],
-            "User"
-        );
+        assert_eq!(uuid["__typename"], "User");
     }
 }

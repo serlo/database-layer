@@ -1,12 +1,11 @@
+use std::env;
+
 use chrono::{DateTime, TimeZone};
 use dotenv::dotenv;
 use regex::Regex;
-use std::env;
-
-use sqlx::MySql;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use sqlx::pool::Pool;
-
+use sqlx::MySql;
 
 pub mod alias;
 pub mod event;

@@ -6,7 +6,7 @@ use super::model::Notifications;
 #[get("/notifications/{user_id}")]
 async fn find(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let notifications = user_id.into_inner();
-    let result = Notifications::find_by_user_id(notifications, db_pool.get_ref()).await;
+    let result = Notifications::fetch(notifications, db_pool.get_ref()).await;
     match result {
         Ok(data) => HttpResponse::Ok()
             .content_type("application/json; charset=utf-8")

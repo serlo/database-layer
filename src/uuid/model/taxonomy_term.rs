@@ -25,7 +25,7 @@ pub struct TaxonomyTerm {
 }
 
 impl TaxonomyTerm {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<TaxonomyTerm> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<TaxonomyTerm> {
         let taxonomy_term_fut = sqlx::query!(
             r#"
                 SELECT u.trashed, term.name, type.name as term_type, instance.subdomain, term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id
@@ -60,7 +60,7 @@ impl TaxonomyTerm {
             id
         )
         .fetch_all(pool);
-        let subject_fut = TaxonomyTerm::find_canonical_subject_by_id(id, pool);
+        let subject_fut = TaxonomyTerm::fetch_canonical_subject(id, pool);
         let (taxonomy_term, entities, children, subject) =
             try_join!(taxonomy_term_fut, entities_fut, children_fut, subject_fut)?;
         let mut children_ids: Vec<i32> = entities
@@ -83,7 +83,7 @@ impl TaxonomyTerm {
         })
     }
 
-    pub async fn find_canonical_subject_by_id(
+    pub async fn fetch_canonical_subject(
         id: i32,
         pool: &MySqlPool,
     ) -> Result<Option<String>, sqlx::Error> {

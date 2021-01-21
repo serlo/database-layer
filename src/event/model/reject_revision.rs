@@ -1,26 +1,28 @@
-use anyhow::Result;
+use async_trait::async_trait;
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::event::{fetch_parameter_string, fetch_parameter_uuid_id, AbstractEvent};
-use crate::event::model::event::EventError;
+use super::abstract_event::{AbstractEvent, FromAbstractEvent};
+use super::event::Event;
+use super::EventError;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RejectRevision {
     #[serde(flatten)]
-    pub abstract_event: AbstractEvent,
+    abstract_event: AbstractEvent,
 
-    pub repository_id: i32,
-    pub revision_id: i32,
-    pub reason: String,
+    repository_id: i32,
+    revision_id: i32,
+    reason: String,
 }
 
-impl RejectRevision {
-    pub async fn new(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self> {
-        let repository_id_fut = fetch_parameter_uuid_id(abstract_event.id, "repository", pool);
-        let reason_fut = fetch_parameter_string(abstract_event.id, "reason", pool);
+#[async_trait]
+impl FromAbstractEvent for RejectRevision {
+    async fn fetch(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self, EventError> {
+        let repository_id_fut = Event::fetch_uuid_parameter(abstract_event.id, "repository", pool);
+        let reason_fut = Event::fetch_string_parameter(abstract_event.id, "reason", pool);
         let revision_id = abstract_event.object_id;
 
         if let (Some(repository_id), reason) = try_join!(repository_id_fut, reason_fut)? {
@@ -32,9 +34,9 @@ impl RejectRevision {
                 reason: reason.unwrap_or_else(|| "".to_string()),
             })
         } else {
-            Err(anyhow::Error::new(EventError::MissingField {
+            Err(EventError::MissingRequiredField {
                 id: abstract_event.id,
-            }))
+            })
         }
     }
 }

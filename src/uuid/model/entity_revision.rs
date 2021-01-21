@@ -32,7 +32,7 @@ pub struct EntityRevision {
 }
 
 impl EntityRevision {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<EntityRevision> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<EntityRevision> {
         let revision_fut = sqlx::query!(
             r#"
                 SELECT t.name, u.trashed, r.date, r.author_id, r.repository_id
@@ -62,9 +62,7 @@ impl EntityRevision {
             id,
             trashed: revision.trashed != 0,
             alias: format_alias(
-                Self::find_canonical_subject_by_id(id, pool)
-                    .await?
-                    .as_deref(),
+                Self::fetch_canonical_subject(id, pool).await?.as_deref(),
                 id,
                 Some(
                     get_field("title", &fields)
@@ -115,7 +113,7 @@ impl EntityRevision {
         })
     }
 
-    pub async fn find_canonical_subject_by_id(
+    pub async fn fetch_canonical_subject(
         id: i32,
         pool: &MySqlPool,
     ) -> Result<Option<String>, sqlx::Error> {
@@ -125,7 +123,7 @@ impl EntityRevision {
         )
         .fetch_one(pool)
         .await?;
-        Entity::find_canonical_subject_by_id(revision.repository_id as i32, pool).await
+        Entity::fetch_canonical_subject(revision.repository_id as i32, pool).await
     }
 }
 

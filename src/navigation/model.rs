@@ -15,7 +15,7 @@ pub struct Navigation {
 }
 
 impl Navigation {
-    pub async fn find_navigation_by_instance(
+    pub async fn fetch(
         instance: &str,
         pool: &MySqlPool,
     ) -> Result<Navigation> {
@@ -37,7 +37,7 @@ impl Navigation {
         let mut data = Vec::with_capacity(pages.len());
 
         for page in pages.iter() {
-            data.push(NavigationChild::find_by_id(page.id, pool).await.await?)
+            data.push(NavigationChild::find_by_id(page.id, pool).await?)
         }
 
         Ok(Navigation {
@@ -85,10 +85,9 @@ pub struct ContainerNavigationChild {
 }
 
 impl NavigationChild {
-    pub async fn find_by_id(
+    pub fn find_by_id(
         id: i32,
         pool: &MySqlPool,
-        // TODO: `Result` might not be needed here? Need to check if `Future` already handles errors or something
     ) -> Pin<Box<dyn Future<Output = Result<NavigationChild>> + '_>> {
         Box::pin(async move {
             let pages_fut = sqlx::query!(
@@ -140,7 +139,7 @@ impl NavigationChild {
             let mut children = Vec::with_capacity(pages.len());
 
             for page in pages.iter() {
-                let ret = NavigationChild::find_by_id(page.id, pool).await.await?;
+                let ret = NavigationChild::find_by_id(page.id, pool).await?;
                 children.push(ret);
             }
 

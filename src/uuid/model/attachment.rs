@@ -13,7 +13,7 @@ pub struct Attachment {
 }
 
 impl Attachment {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Attachment> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Attachment> {
         let attachment = sqlx::query!(
             r#"
                 SELECT u.trashed, f.name

@@ -1826,6 +1826,7 @@ version = "0.1.6"
 dependencies = [
  "actix-web",
  "anyhow",
+ "async-trait",
  "chrono",
  "chrono-tz",
  "convert_case",

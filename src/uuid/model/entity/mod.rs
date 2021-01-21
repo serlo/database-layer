@@ -80,7 +80,7 @@ pub struct Solution {
 }
 
 impl Entity {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Entity> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Entity> {
         let entity_fut = sqlx::query!(
             r#"
                 SELECT t.name, u.trashed, i.subdomain, e.date, e.current_revision_id, e.license_id, f1.value as title, f2.value as fallback_title
@@ -106,7 +106,7 @@ impl Entity {
             id
         )
         .fetch_all(pool);
-        let subject_fut = Self::find_canonical_subject_by_id(id, pool);
+        let subject_fut = Self::fetch_canonical_subject(id, pool);
         let (entity, revisions, taxonomy_terms, subject) =
             try_join!(entity_fut, revisions_fut, taxonomy_terms_fut, subject_fut)?;
 
@@ -206,7 +206,7 @@ impl Entity {
         Ok(entity)
     }
 
-    pub async fn find_canonical_subject_by_id(
+    pub async fn fetch_canonical_subject(
         id: i32,
         pool: &MySqlPool,
     ) -> Result<Option<String>, sqlx::Error> {
@@ -232,7 +232,7 @@ impl Entity {
         .fetch_all(pool)
         .await?;
         let subject = match taxonomy_terms.first() {
-            Some(term) => TaxonomyTerm::find_canonical_subject_by_id(term.id as i32, pool).await?,
+            Some(term) => TaxonomyTerm::fetch_canonical_subject(term.id as i32, pool).await?,
             _ => None,
         };
         Ok(subject)

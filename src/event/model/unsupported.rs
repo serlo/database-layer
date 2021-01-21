@@ -1,20 +1,23 @@
-use anyhow::Result;
+use async_trait::async_trait;
 use serde::Serialize;
+use sqlx::MySqlPool;
 
-use super::event::AbstractEvent;
+use super::abstract_event::{AbstractEvent, FromAbstractEvent};
+use super::EventError;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Unsupported {
     #[serde(flatten)]
-    pub abstract_event: AbstractEvent,
+    abstract_event: AbstractEvent,
 
-    pub r#type: String,
-    pub error: String,
+    r#type: String,
+    error: String,
 }
 
-impl Unsupported {
-    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+#[async_trait]
+impl FromAbstractEvent for Unsupported {
+    async fn fetch(abstract_event: AbstractEvent, _pool: &MySqlPool) -> Result<Self, EventError> {
         let r#type = abstract_event.name.to_string();
 
         Ok(Unsupported {

@@ -19,7 +19,7 @@ pub struct User {
 }
 
 impl User {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<User> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<User> {
         let user = sqlx::query!(
             r#"
                 SELECT trashed, username, date, last_login, description

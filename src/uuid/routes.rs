@@ -6,7 +6,7 @@ use super::model::{Uuid, UuidError};
 #[get("/uuid/{id}")]
 async fn uuid(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let id = id.into_inner();
-    let result = Uuid::find_by_id(id, db_pool.get_ref()).await;
+    let result = Uuid::fetch(id, db_pool.get_ref()).await;
     match result {
         Ok(uuid) => HttpResponse::Ok()
             .content_type("application/json; charset=utf-8")

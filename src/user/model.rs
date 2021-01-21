@@ -7,7 +7,7 @@ use sqlx::MySqlPool;
 pub struct User {}
 
 impl User {
-    pub async fn find_all_active_authors(pool: &MySqlPool) -> Result<Vec<i32>> {
+    pub async fn fetch_active_authors(pool: &MySqlPool) -> Result<Vec<i32>> {
         let time = get_mysql_date_string();
 
         let active_users = sqlx::query!(
@@ -27,7 +27,7 @@ impl User {
         Ok(user_ids)
     }
 
-    pub async fn find_all_active_reviewers(pool: &MySqlPool) -> Result<Vec<i32>> {
+    pub async fn fetch_active_reviewers(pool: &MySqlPool) -> Result<Vec<i32>> {
         let time = get_mysql_date_string();
 
         let results = sqlx::query!(

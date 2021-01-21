@@ -162,7 +162,7 @@ pub struct AbstractEvent {
 }
 
 impl Event {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Event> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Event> {
         let event = sqlx::query!(
             r#"
                 SELECT e.id, e.actor_id, e.uuid_id, e.date, i.subdomain, ev.name, id.uuid_id AS parameter_uuid_id
@@ -198,59 +198,59 @@ impl Event {
 
         let event = match abstract_event.name.as_str().parse()? {
             EventType::SetThreadState => {
-                Event::SetThreadState(SetThreadState::new(abstract_event).await?)
+                Event::SetThreadState(SetThreadState::fetch(abstract_event).await?)
             }
             EventType::CreateComment => {
-                Event::CreateComment(CreateComment::new(abstract_event).await?)
+                Event::CreateComment(CreateComment::fetch(abstract_event).await?)
             }
             EventType::CreateThread => {
-                Event::CreateThread(CreateThread::new(abstract_event).await?)
+                Event::CreateThread(CreateThread::fetch(abstract_event).await?)
             }
             EventType::CreateEntity => {
-                Event::CreateEntity(CreateEntity::new(abstract_event).await?)
+                Event::CreateEntity(CreateEntity::fetch(abstract_event).await?)
             }
-            EventType::SetLicense => Event::SetLicense(SetLicense::new(abstract_event).await?),
+            EventType::SetLicense => Event::SetLicense(SetLicense::fetch(abstract_event).await?),
             EventType::CreateEntityLink => {
-                Event::CreateEntityLink(CreateEntityLink::new(abstract_event).await?)
+                Event::CreateEntityLink(CreateEntityLink::fetch(abstract_event).await?)
             }
             EventType::RemoveEntityLink => {
-                Event::RemoveEntityLink(RemoveEntityLink::new(abstract_event).await?)
+                Event::RemoveEntityLink(RemoveEntityLink::fetch(abstract_event).await?)
             }
             EventType::CreateEntityRevision => {
-                Event::CreateEntityRevision(CreateEntityRevision::new(abstract_event).await?)
+                Event::CreateEntityRevision(CreateEntityRevision::fetch(abstract_event).await?)
             }
             EventType::CheckoutRevision => {
-                Event::CheckoutRevision(CheckoutRevision::new(abstract_event, pool).await?)
+                Event::CheckoutRevision(CheckoutRevision::fetch(abstract_event, pool).await?)
             }
             EventType::RejectRevision => {
-                Event::RejectRevision(RejectRevision::new(abstract_event, pool).await?)
+                Event::RejectRevision(RejectRevision::fetch(abstract_event, pool).await?)
             }
             EventType::CreateTaxonomyLink => {
-                Event::CreateTaxonomyLink(CreateTaxonomyLink::new(abstract_event).await?)
+                Event::CreateTaxonomyLink(CreateTaxonomyLink::fetch(abstract_event).await?)
             }
             EventType::RemoveTaxonomyLink => {
-                Event::RemoveTaxonomyLink(RemoveTaxonomyLink::new(abstract_event).await?)
+                Event::RemoveTaxonomyLink(RemoveTaxonomyLink::fetch(abstract_event).await?)
             }
             EventType::CreateTaxonomyTerm => {
-                Event::CreateTaxonomyTerm(CreateTaxonomyTerm::new(abstract_event).await?)
+                Event::CreateTaxonomyTerm(CreateTaxonomyTerm::fetch(abstract_event).await?)
             }
             EventType::SetTaxonomyTerm => {
-                Event::SetTaxonomyTerm(SetTaxonomyTerm::new(abstract_event).await?)
+                Event::SetTaxonomyTerm(SetTaxonomyTerm::fetch(abstract_event).await?)
             }
             EventType::SetTaxonomyParent => {
-                Event::SetTaxonomyParent(SetTaxonomyParent::new(abstract_event, pool).await?)
+                Event::SetTaxonomyParent(SetTaxonomyParent::fetch(abstract_event, pool).await?)
             }
             EventType::SetUuidState => {
-                Event::SetUuidState(SetUuidState::new(abstract_event).await?)
+                Event::SetUuidState(SetUuidState::fetch(abstract_event).await?)
             }
-            EventType::Unsupported => Event::Unsupported(Unsupported::new(abstract_event).await?),
+            EventType::Unsupported => Event::Unsupported(Unsupported::fetch(abstract_event).await?),
         };
 
         Ok(event)
     }
 }
 
-pub async fn fetch_parameter_uuid_id(
+pub async fn fetch_uuid_parameter(
     id: i32,
     parameter_name: &str,
     pool: &MySqlPool,
@@ -271,7 +271,7 @@ pub async fn fetch_parameter_uuid_id(
     .map(|params| params.first().map(|param| param.uuid_id as i32))
 }
 
-pub async fn fetch_parameter_string(
+pub async fn fetch_string_parameter(
     id: i32,
     parameter_name: &str,
     pool: &MySqlPool,

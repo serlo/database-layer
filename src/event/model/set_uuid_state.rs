@@ -13,7 +13,7 @@ pub struct SetUuidState {
 }
 
 impl SetUuidState {
-    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
         let trashed = abstract_event.name == "uuid/trash";
 
         Ok(SetUuidState {

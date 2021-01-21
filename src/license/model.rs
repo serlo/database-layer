@@ -16,7 +16,7 @@ pub struct License {
 }
 
 impl License {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<License> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<License> {
         let license_fut = sqlx::query!(
             "
                 SELECT l.default, l.title, l.url, l.content, l.agreement, l.icon_href, i.subdomain

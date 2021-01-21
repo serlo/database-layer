@@ -24,7 +24,7 @@ pub enum Uuid {
 }
 
 impl Uuid {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Uuid> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid> {
         let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
             .fetch_one(pool)
             .await
@@ -33,21 +33,15 @@ impl Uuid {
                 e => anyhow::Error::new(e),
             })?;
         match uuid.discriminator.as_str() {
-            "attachment" => Ok(Uuid::Attachment(Attachment::find_by_id(id, pool).await?)),
-            "blogPost" => Ok(Uuid::BlogPost(BlogPost::find_by_id(id, pool).await?)),
-            "comment" => Ok(Uuid::Comment(Comment::find_by_id(id, pool).await?)),
-            "entity" => Ok(Uuid::Entity(Entity::find_by_id(id, pool).await?)),
-            "entityRevision" => Ok(Uuid::EntityRevision(
-                EntityRevision::find_by_id(id, pool).await?,
-            )),
-            "page" => Ok(Uuid::Page(Page::find_by_id(id, pool).await?)),
-            "pageRevision" => Ok(Uuid::PageRevision(
-                PageRevision::find_by_id(id, pool).await?,
-            )),
-            "taxonomyTerm" => Ok(Uuid::TaxonomyTerm(
-                TaxonomyTerm::find_by_id(id, pool).await?,
-            )),
-            "user" => Ok(Uuid::User(User::find_by_id(id, pool).await?)),
+            "attachment" => Ok(Uuid::Attachment(Attachment::fetch(id, pool).await?)),
+            "blogPost" => Ok(Uuid::BlogPost(BlogPost::fetch(id, pool).await?)),
+            "comment" => Ok(Uuid::Comment(Comment::fetch(id, pool).await?)),
+            "entity" => Ok(Uuid::Entity(Entity::fetch(id, pool).await?)),
+            "entityRevision" => Ok(Uuid::EntityRevision(EntityRevision::fetch(id, pool).await?)),
+            "page" => Ok(Uuid::Page(Page::fetch(id, pool).await?)),
+            "pageRevision" => Ok(Uuid::PageRevision(PageRevision::fetch(id, pool).await?)),
+            "taxonomyTerm" => Ok(Uuid::TaxonomyTerm(TaxonomyTerm::fetch(id, pool).await?)),
+            "user" => Ok(Uuid::User(User::fetch(id, pool).await?)),
             _ => Err(anyhow::Error::new(UuidError::UnsupportedDiscriminator {
                 id,
                 discriminator: uuid.discriminator,
@@ -55,10 +49,7 @@ impl Uuid {
         }
     }
 
-    pub async fn find_context_by_id(
-        id: i32,
-        pool: &MySqlPool,
-    ) -> Result<Option<String>, sqlx::Error> {
+    pub async fn fetch_context(id: i32, pool: &MySqlPool) -> Result<Option<String>, sqlx::Error> {
         let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
             .fetch_one(pool)
             .await?;
@@ -67,11 +58,11 @@ impl Uuid {
             "blogPost" => Ok(BlogPost::get_context()),
             // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
             "comment" => Ok(None),
-            "entity" => Entity::find_canonical_subject_by_id(id, pool).await,
-            "entityRevision" => EntityRevision::find_canonical_subject_by_id(id, pool).await,
+            "entity" => Entity::fetch_canonical_subject(id, pool).await,
+            "entityRevision" => EntityRevision::fetch_canonical_subject(id, pool).await,
             "page" => Ok(None),         // TODO:
             "pageRevision" => Ok(None), // TODO:
-            "taxonomyTerm" => TaxonomyTerm::find_canonical_subject_by_id(id, pool).await,
+            "taxonomyTerm" => TaxonomyTerm::fetch_canonical_subject(id, pool).await,
             "user" => Ok(User::get_context()),
             _ => Ok(None),
         }

@@ -25,7 +25,7 @@ pub struct Comment {
 }
 
 impl Comment {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Comment> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Comment> {
         let comment_fut = sqlx::query!(
             r#"
                 SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id, c.uuid_id, p.title as parent_title
@@ -53,7 +53,7 @@ impl Comment {
             id,
             trashed: comment.trashed != 0,
             alias: format_alias(
-                Self::find_context_by_id(id, pool).await?.as_deref(),
+                Self::fetch_context(id, pool).await?.as_deref(),
                 id,
                 Some(
                     comment
@@ -74,10 +74,7 @@ impl Comment {
         })
     }
 
-    pub async fn find_context_by_id(
-        id: i32,
-        pool: &MySqlPool,
-    ) -> Result<Option<String>, sqlx::Error> {
+    pub async fn fetch_context(id: i32, pool: &MySqlPool) -> Result<Option<String>, sqlx::Error> {
         let object = sqlx::query!(
             r#"
                 SELECT uuid_id as id
@@ -90,6 +87,6 @@ impl Comment {
             "#,
             id
         ).fetch_one(pool).await?;
-        Uuid::find_context_by_id(object.id.unwrap() as i32, pool).await
+        Uuid::fetch_context(object.id.unwrap() as i32, pool).await
     }
 }

@@ -14,7 +14,7 @@ pub struct Unsupported {
 }
 
 impl Unsupported {
-    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
         let r#type = abstract_event.name.to_string();
 
         Ok(Unsupported {

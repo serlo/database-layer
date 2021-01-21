@@ -14,7 +14,7 @@ pub struct SetThreadState {
 }
 
 impl SetThreadState {
-    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
         let thread_id = abstract_event.object_id;
         let archived = abstract_event.name == "discussion/comment/archive";
 

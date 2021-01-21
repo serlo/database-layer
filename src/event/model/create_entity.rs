@@ -13,7 +13,7 @@ pub struct CreateEntity {
 }
 
 impl CreateEntity {
-    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
         let entity_id = abstract_event.object_id;
 
         Ok(CreateEntity {

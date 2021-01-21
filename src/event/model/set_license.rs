@@ -13,7 +13,7 @@ pub struct SetLicense {
 }
 
 impl SetLicense {
-    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
         let repository_id = abstract_event.object_id;
 
         Ok(SetLicense {

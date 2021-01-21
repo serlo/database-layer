@@ -15,7 +15,7 @@ pub struct Subscription {
 }
 
 impl Subscriptions {
-    pub async fn find_by_user_id(user_id: i32, pool: &MySqlPool) -> Result<Subscriptions> {
+    pub async fn fetch(user_id: i32, pool: &MySqlPool) -> Result<Subscriptions> {
         let subscriptions_fut = sqlx::query!(
             "SELECT uuid_id FROM subscription WHERE user_id = ?",
             user_id

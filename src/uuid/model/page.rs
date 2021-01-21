@@ -23,7 +23,7 @@ pub struct Page {
 }
 
 impl Page {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<Page> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Page> {
         let page_fut = sqlx::query!(
             r#"
                 SELECT u.trashed, i.subdomain, p.current_revision_id, p.license_id, r.title

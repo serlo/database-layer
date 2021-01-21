@@ -20,7 +20,7 @@ pub struct PageRevision {
 }
 
 impl PageRevision {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<PageRevision> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<PageRevision> {
         let revision = sqlx::query!(
             r#"
                 SELECT u.trashed, r.title, r.content, r.date, r.author_id, r.page_repository_id

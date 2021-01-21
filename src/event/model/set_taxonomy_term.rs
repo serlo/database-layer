@@ -13,7 +13,7 @@ pub struct SetTaxonomyTerm {
 }
 
 impl SetTaxonomyTerm {
-    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
         let taxonomy_term_id = abstract_event.object_id;
 
         Ok(SetTaxonomyTerm {

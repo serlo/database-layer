@@ -15,7 +15,7 @@ pub struct Navigation {
 }
 
 impl Navigation {
-    pub async fn find_navigation_by_instance(
+    pub async fn fetch(
         instance: &str,
         pool: &MySqlPool,
     ) -> Result<Navigation> {

@@ -6,7 +6,7 @@ use super::model::Navigation;
 #[get("/navigation/{instance}")]
 async fn navigation(instance: web::Path<String>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let instance = instance.into_inner();
-    let result = Navigation::find_navigation_by_instance(&instance, db_pool.get_ref()).await;
+    let result = Navigation::fetch(&instance, db_pool.get_ref()).await;
     match result {
         Ok(data) => HttpResponse::Ok()
             .content_type("application/json; charset=utf-8")

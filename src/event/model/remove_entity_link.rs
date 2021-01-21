@@ -14,7 +14,7 @@ pub struct RemoveEntityLink {
 }
 
 impl RemoveEntityLink {
-    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
         let child_id = abstract_event.object_id;
         // uses "parent" parameter
         let parent_id = abstract_event.parameter_uuid_id;

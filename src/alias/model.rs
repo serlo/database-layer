@@ -14,11 +14,7 @@ pub struct Alias {
 }
 
 impl Alias {
-    pub async fn find_alias_by_path_and_instance(
-        path: &str,
-        instance: &str,
-        pool: &MySqlPool,
-    ) -> Result<Option<Alias>> {
+    pub async fn fetch(path: &str, instance: &str, pool: &MySqlPool) -> Result<Option<Alias>> {
         if path == "backend"
             || path == "debugger"
             || path == "horizon"
@@ -111,7 +107,7 @@ impl Alias {
 
         match id {
             Some(id) => {
-                let uuid = Uuid::find_by_id(id, pool).await?;
+                let uuid = Uuid::fetch(id, pool).await?;
 
                 Ok(Some(Alias {
                     id,

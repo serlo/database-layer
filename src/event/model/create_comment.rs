@@ -14,7 +14,7 @@ pub struct CreateComment {
 }
 
 impl CreateComment {
-    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
         // uses "discussion" parameter
         let thread_id = abstract_event.parameter_uuid_id;
         let comment_id = abstract_event.object_id;

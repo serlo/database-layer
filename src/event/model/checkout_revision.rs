@@ -3,7 +3,7 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::event::{fetch_parameter_string, fetch_parameter_uuid_id, AbstractEvent};
+use super::event::{fetch_string_parameter, fetch_uuid_parameter, AbstractEvent};
 use crate::event::model::event::EventError;
 
 #[derive(Serialize)]
@@ -18,9 +18,9 @@ pub struct CheckoutRevision {
 }
 
 impl CheckoutRevision {
-    pub async fn new(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self> {
-        let repository_id_fut = fetch_parameter_uuid_id(abstract_event.id, "repository", pool);
-        let reason_fut = fetch_parameter_string(abstract_event.id, "reason", pool);
+    pub async fn fetch(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self> {
+        let repository_id_fut = fetch_uuid_parameter(abstract_event.id, "repository", pool);
+        let reason_fut = fetch_string_parameter(abstract_event.id, "reason", pool);
         let revision_id = abstract_event.object_id;
 
         if let (Some(repository_id), reason) = try_join!(repository_id_fut, reason_fut)? {

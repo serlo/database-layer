@@ -14,7 +14,7 @@ pub struct CreateEntityRevision {
 }
 
 impl CreateEntityRevision {
-    pub async fn new(abstract_event: AbstractEvent) -> Result<Self> {
+    pub async fn fetch(abstract_event: AbstractEvent) -> Result<Self> {
         // uses "repository" parameter
         let entity_id = abstract_event.parameter_uuid_id;
         let entity_revision_id = abstract_event.object_id;

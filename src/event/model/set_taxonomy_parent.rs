@@ -3,7 +3,7 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use crate::event::model::event::{fetch_parameter_uuid_id, AbstractEvent};
+use crate::event::model::event::{fetch_uuid_parameter, AbstractEvent};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -17,9 +17,9 @@ pub struct SetTaxonomyParent {
 }
 
 impl SetTaxonomyParent {
-    pub async fn new(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self> {
-        let from_fut = fetch_parameter_uuid_id(abstract_event.id, "from", pool);
-        let to_fut = fetch_parameter_uuid_id(abstract_event.id, "to", pool);
+    pub async fn fetch(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self> {
+        let from_fut = fetch_uuid_parameter(abstract_event.id, "from", pool);
+        let to_fut = fetch_uuid_parameter(abstract_event.id, "to", pool);
 
         let (previous_parent_id, parent_id) = try_join!(from_fut, to_fut)?;
         let child_id = abstract_event.object_id;

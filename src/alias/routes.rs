@@ -9,7 +9,7 @@ async fn alias(
     db_pool: web::Data<MySqlPool>,
 ) -> impl Responder {
     let (instance, path) = params.into_inner();
-    let result = Alias::find_alias_by_path_and_instance(&path, &instance, db_pool.get_ref()).await;
+    let result = Alias::fetch(&path, &instance, db_pool.get_ref()).await;
     match result {
         Ok(data) => HttpResponse::Ok()
             .content_type("application/json; charset=utf-8")

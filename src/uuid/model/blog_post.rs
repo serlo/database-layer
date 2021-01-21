@@ -13,7 +13,7 @@ pub struct BlogPost {
 }
 
 impl BlogPost {
-    pub async fn find_by_id(id: i32, pool: &MySqlPool) -> Result<BlogPost> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<BlogPost> {
         let blog = sqlx::query!(
             r#"
                 SELECT u.trashed, b.title

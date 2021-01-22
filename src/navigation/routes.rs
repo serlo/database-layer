@@ -11,7 +11,7 @@ async fn navigation(instance: web::Path<String>, db_pool: web::Data<MySqlPool>) 
             .content_type("application/json; charset=utf-8")
             .json(data),
         Err(e) => {
-            println!("/navigation/{:?}: {:?}", instance, e);
+            println!("/navigation/{}: {:?}", instance, e);
             match e {
                 NavigationError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)

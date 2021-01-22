@@ -11,7 +11,7 @@ async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Resp
             .content_type("application/json; charset=utf-8")
             .json(data),
         Err(e) => {
-            println!("/threads/{:?}: {:?}", id, e);
+            println!("/threads/{}: {:?}", id, e);
             match e {
                 ThreadsError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)

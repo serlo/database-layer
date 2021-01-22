@@ -11,7 +11,7 @@ async fn subscriptions(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -
             .content_type("application/json; charset=utf-8")
             .json(data),
         Err(e) => {
-            println!("/subscriptions/{:?}: {:?}", user_id, e);
+            println!("/subscriptions/{}: {:?}", user_id, e);
             match e {
                 SubscriptionsError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)

@@ -11,7 +11,7 @@ async fn license(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Resp
             .content_type("application/json; charset=utf-8")
             .json(data),
         Err(e) => {
-            println!("/license/{:?}: {:?}", id, e);
+            println!("/license/{}: {:?}", id, e);
             match e {
                 LicenseError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)

@@ -14,7 +14,7 @@ async fn alias(
             .content_type("application/json; charset=utf-8")
             .json(data),
         Err(e) => {
-            println!("/alias/{:?}/{:?}: {:?}", instance, path, e);
+            println!("/alias/{}/{}: {:?}", instance, path, e);
             match e {
                 AliasError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)

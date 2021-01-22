@@ -17,7 +17,7 @@ pub enum ThreadsError {
 impl Threads {
     pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Threads, ThreadsError> {
         let result = sqlx::query!(
-            "SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC",
+            r#"SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC"#,
             id
         )
         .fetch_all(pool)

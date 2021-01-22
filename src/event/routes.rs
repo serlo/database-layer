@@ -11,7 +11,7 @@ async fn event(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respon
             .content_type("application/json; charset=utf-8")
             .json(data),
         Err(e) => {
-            println!("/event/{:?}: {:?}", id, e);
+            println!("/event/{}: {:?}", id, e);
             match e {
                 EventError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)

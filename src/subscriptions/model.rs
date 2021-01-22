@@ -11,7 +11,7 @@ pub struct Subscriptions {
 
 #[derive(Error, Debug)]
 pub enum SubscriptionsError {
-    #[error("Navigation cannot be fetched because of a database error: {inner:?}.")]
+    #[error("Subscriptions cannot be fetched because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
 }
 

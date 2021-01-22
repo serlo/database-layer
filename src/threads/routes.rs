@@ -1,19 +1,22 @@
 use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
-use super::model::Threads;
+use super::model::{Threads, ThreadsError};
 
 #[get("/threads/{id}")]
 async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let id = id.into_inner();
-    let result = Threads::fetch(id, db_pool.get_ref()).await;
-    match result {
+    match Threads::fetch(id, db_pool.get_ref()).await {
         Ok(data) => HttpResponse::Ok()
             .content_type("application/json; charset=utf-8")
             .json(data),
         Err(e) => {
-            println!("Could not get threads: {:?}", e);
-            HttpResponse::BadRequest().json(None::<String>)
+            println!("/threads/{:?}: {:?}", id, e);
+            match e {
+                ThreadsError::DatabaseError { .. } => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
+            }
         }
     }
 }

@@ -3,7 +3,7 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
-use crate::uuid::Uuid;
+use crate::uuid::{Uuid, UuidError};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -122,16 +122,20 @@ impl Alias {
             }
         };
 
-        match Uuid::fetch(id, pool).await {
-            Ok(uuid) => Ok(Alias {
+        Uuid::fetch(id, pool)
+            .await
+            .map(|uuid| Alias {
                 id,
                 instance: instance.to_string(),
                 path: uuid.get_alias(),
-            }),
-            Err(_) => {
-                // TODO: here we need a better error handling from UUID
-                Err(AliasError::NotFound)
-            }
-        }
+            })
+            .map_err(|error| match error {
+                UuidError::DatabaseError { inner } => AliasError::DatabaseError { inner },
+                UuidError::UnsupportedDiscriminator { .. } => AliasError::NotFound,
+                UuidError::UnsupportedEntityType { .. } => AliasError::NotFound,
+                UuidError::UnsupportedEntityRevisionType { .. } => AliasError::NotFound,
+                UuidError::EntityMissingRequiredParent => AliasError::NotFound,
+                UuidError::NotFound => AliasError::NotFound,
+            })
     }
 }

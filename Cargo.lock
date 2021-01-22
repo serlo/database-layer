@@ -1880,6 +1880,7 @@ name = "serlo-org-database-layer"
 version = "0.1.6"
 dependencies = [
  "actix-rt",
+ "actix-service",
  "actix-web",
  "anyhow",
  "async-trait",

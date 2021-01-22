@@ -6,8 +6,9 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-actix-web = "3.0.0"
 actix-rt = "1.0.0"
+actix-service = "1.0.0"
+actix-web = "3.0.0"
 anyhow = "1.0.0"
 async-trait = "0.1.0"
 chrono = "0.4.0"

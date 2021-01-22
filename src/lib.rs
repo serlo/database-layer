@@ -1,11 +1,14 @@
 use std::env;
 
+use actix_service::ServiceFactory;
+use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
+use actix_web::{App, Error};
 use chrono::{DateTime, TimeZone};
 use dotenv::dotenv;
 use regex::Regex;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use sqlx::pool::Pool;
-use sqlx::MySql;
+use sqlx::{MySql, MySqlPool};
 
 pub mod alias;
 pub mod event;
@@ -46,6 +49,30 @@ fn slugify(segment: &str) -> String {
         .unwrap()
         .replace_all(&segment, "-");
     segment.to_lowercase().trim_matches('-').to_string()
+}
+
+pub fn configure_app<T, B>(app: App<T, B>, pool: MySqlPool) -> App<T, B>
+where
+    B: MessageBody,
+    T: ServiceFactory<
+        Config = (),
+        Request = ServiceRequest,
+        Response = ServiceResponse<B>,
+        Error = Error,
+        InitError = (),
+    >,
+{
+    app.data(pool)
+        .configure(alias::init)
+        .configure(event::init)
+        .configure(health::init)
+        .configure(license::init)
+        .configure(navigation::init)
+        .configure(notifications::init)
+        .configure(subscriptions::init)
+        .configure(threads::init)
+        .configure(user::init)
+        .configure(uuid::init)
 }
 
 pub async fn create_database_pool() -> Result<Pool<MySql>, sqlx::Error> {

@@ -1,9 +1,6 @@
 use actix_web::{get, App, HttpServer, Result};
 
-use serlo_org_database_layer::{
-    alias, create_database_pool, event, health, license, navigation, notifications, subscriptions,
-    threads, user, uuid,
-};
+use serlo_org_database_layer::{configure_app, create_database_pool};
 
 #[get("/")]
 async fn index() -> Result<String> {
@@ -16,24 +13,10 @@ async fn main() -> anyhow::Result<()> {
 
     println!("🚀 Server ready: http://localhost:8080");
 
-    HttpServer::new(move || {
-        App::new()
-            .data(pool.clone())
-            .service(index)
-            .configure(alias::init)
-            .configure(event::init)
-            .configure(health::init)
-            .configure(license::init)
-            .configure(navigation::init)
-            .configure(notifications::init)
-            .configure(subscriptions::init)
-            .configure(threads::init)
-            .configure(user::init)
-            .configure(uuid::init)
-    })
-    .bind("0.0.0.0:8080")?
-    .run()
-    .await?;
+    HttpServer::new(move || configure_app(App::new(), pool.clone()).service(index))
+        .bind("0.0.0.0:8080")?
+        .run()
+        .await?;
 
     Ok(())
 }

@@ -1,16 +1,20 @@
 use std::env;
 use std::time::SystemTime;
 
-use anyhow::Result;
 use sqlx::MySqlPool;
+use thiserror::Error;
 
 pub struct User {}
 
-impl User {
-    pub async fn fetch_active_authors(pool: &MySqlPool) -> Result<Vec<i32>> {
-        let time = get_mysql_date_string();
+#[derive(Error, Debug)]
+pub enum UserError {
+    #[error("Users cannot be fetched because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+}
 
-        let active_users = sqlx::query!(
+impl User {
+    pub async fn fetch_active_authors(pool: &MySqlPool) -> Result<Vec<i32>, UserError> {
+        let user_ids = sqlx::query!(
             r#"
                 SELECT u.id
                     FROM user u
@@ -19,18 +23,16 @@ impl User {
                     GROUP BY u.id
                     HAVING count(e.event_id) > 10
             "#,
-            time
+            get_mysql_date_string()
         )
         .fetch_all(pool)
-        .await?;
-        let user_ids: Vec<i32> = active_users.iter().map(|user| user.id as i32).collect();
-        Ok(user_ids)
+        .await
+        .map_err(|inner| UserError::DatabaseError { inner })?;
+        Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }
 
-    pub async fn fetch_active_reviewers(pool: &MySqlPool) -> Result<Vec<i32>> {
-        let time = get_mysql_date_string();
-
-        let results = sqlx::query!(
+    pub async fn fetch_active_reviewers(pool: &MySqlPool) -> Result<Vec<i32>, UserError> {
+        let user_ids = sqlx::query!(
             r#"
                 SELECT u.id
                     FROM event_log e1
@@ -40,10 +42,12 @@ impl User {
                     GROUP BY u.id
                     HAVING count(e1.event_id) > 10
             "#,
-            time
-        ).fetch_all(pool).await?;
-        let user_ids: Vec<i32> = results.iter().map(|user| user.id as i32).collect();
-        Ok(user_ids)
+            get_mysql_date_string()
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|inner| UserError::DatabaseError { inner })?;
+        Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }
 }
 

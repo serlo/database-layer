@@ -4,7 +4,7 @@ use sqlx::MySqlPool;
 use super::model::Threads;
 
 #[get("/threads/{id}")]
-async fn find(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
+async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let id = id.into_inner();
     let result = Threads::fetch(id, db_pool.get_ref()).await;
     match result {
@@ -19,5 +19,5 @@ async fn find(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respond
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {
-    cfg.service(find);
+    cfg.service(threads);
 }

@@ -9,6 +9,7 @@ use regex::Regex;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use sqlx::pool::Pool;
 use sqlx::{MySql, MySqlPool};
+use thiserror::Error;
 
 pub mod alias;
 pub mod event;
@@ -75,7 +76,7 @@ where
         .configure(uuid::init)
 }
 
-pub async fn create_database_pool() -> Result<Pool<MySql>, sqlx::Error> {
+pub async fn create_database_pool() -> Result<Pool<MySql>, ApplicationError> {
     dotenv().ok();
 
     let database_max_connections: u32 = env::var("DATABASE_MAX_CONNECTIONS")
@@ -105,6 +106,15 @@ pub async fn create_database_pool() -> Result<Pool<MySql>, sqlx::Error> {
         .max_connections(database_max_connections)
         .connect_with(options)
         .await
+        .map_err(|inner| ApplicationError::DatabaseError { inner })
+}
+
+#[derive(Error, Debug)]
+pub enum ApplicationError {
+    #[error("Database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("Server error: {inner:?}.")]
+    ServerError { inner: std::io::Error },
 }
 
 #[cfg(test)]

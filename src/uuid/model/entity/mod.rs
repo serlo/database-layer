@@ -1,14 +1,13 @@
-use anyhow::Result;
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
-use thiserror::Error;
 
 use abstract_entity::{AbstractEntity, EntityType};
 
 use crate::{format_alias, format_datetime};
 
 use super::taxonomy_term::TaxonomyTerm;
+use super::UuidError;
 
 mod abstract_entity;
 
@@ -80,7 +79,7 @@ pub struct Solution {
 }
 
 impl Entity {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Entity> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Entity, UuidError> {
         let entity_fut = sqlx::query!(
             r#"
                 SELECT t.name, u.trashed, i.subdomain, e.date, e.current_revision_id, e.license_id, f1.value as title, f2.value as fallback_title
@@ -238,7 +237,7 @@ impl Entity {
         Ok(subject)
     }
 
-    async fn find_parent_by_id(id: i32, pool: &MySqlPool) -> Result<i32> {
+    async fn find_parent_by_id(id: i32, pool: &MySqlPool) -> Result<i32, UuidError> {
         let parents = sqlx::query!(
             r#"
                 SELECT l.parent_id as id
@@ -248,13 +247,14 @@ impl Entity {
             id
         )
         .fetch_all(pool)
-        .await?;
+        .await
+        .map_err(|inner| UuidError::DatabaseError { inner })?;
         parents
             .iter()
             .map(|parent| parent.id as i32)
             .collect::<Vec<i32>>()
             .first()
-            .ok_or_else(|| anyhow::Error::new(EntityError::MissingParent { id }))
+            .ok_or(UuidError::EntityMissingRequiredParent)
             .map(|parent_id| *parent_id)
     }
 
@@ -262,7 +262,7 @@ impl Entity {
         id: i32,
         child_type: EntityType,
         pool: &MySqlPool,
-    ) -> Result<Vec<i32>, sqlx::Error> {
+    ) -> Result<Vec<i32>, UuidError> {
         let children = sqlx::query!(
             r#"
                 SELECT c.id
@@ -276,7 +276,8 @@ impl Entity {
             child_type,
         )
         .fetch_all(pool)
-        .await?;
+        .await
+        .map_err(|inner| UuidError::DatabaseError { inner })?;
         Ok(children.iter().map(|child| child.id as i32).collect())
     }
 
@@ -284,7 +285,7 @@ impl Entity {
         id: i32,
         child_type: EntityType,
         pool: &MySqlPool,
-    ) -> Result<Option<i32>, sqlx::Error> {
+    ) -> Result<Option<i32>, UuidError> {
         Self::find_children_by_id_and_type(id, child_type, pool)
             .await
             .map(|children| children.first().cloned())
@@ -305,10 +306,4 @@ impl Entity {
             Entity::Solution(solution) => solution.abstract_entity.alias.to_string(),
         }
     }
-}
-
-#[derive(Error, Debug)]
-pub enum EntityError {
-    #[error("Entity {id:?} can't be fetched because its parent is missing.")]
-    MissingParent { id: i32 },
 }

@@ -1,9 +1,9 @@
-use anyhow::Result;
 use convert_case::{Case, Casing};
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
+use super::UuidError;
 use crate::format_alias;
 
 #[derive(Serialize)]
@@ -25,8 +25,8 @@ pub struct TaxonomyTerm {
 }
 
 impl TaxonomyTerm {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<TaxonomyTerm> {
-        let taxonomy_term_fut = sqlx::query!(
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<TaxonomyTerm, UuidError> {
+        let taxonomy_term = sqlx::query!(
             r#"
                 SELECT u.trashed, term.name, type.name as term_type, instance.subdomain, term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id
                     FROM term_taxonomy
@@ -39,7 +39,13 @@ impl TaxonomyTerm {
             "#,
             id
         )
-        .fetch_one(pool);
+        .fetch_one(pool)
+            .await
+            .map_err(|error| match error {
+                sqlx::Error::RowNotFound => UuidError::NotFound,
+                inner => UuidError::DatabaseError { inner },
+            })?;
+
         let entities_fut = sqlx::query!(
             r#"
                 SELECT entity_id
@@ -61,8 +67,8 @@ impl TaxonomyTerm {
         )
         .fetch_all(pool);
         let subject_fut = TaxonomyTerm::fetch_canonical_subject(id, pool);
-        let (taxonomy_term, entities, children, subject) =
-            try_join!(taxonomy_term_fut, entities_fut, children_fut, subject_fut)?;
+        let (entities, children, subject) = try_join!(entities_fut, children_fut, subject_fut)
+            .map_err(|inner| UuidError::DatabaseError { inner })?;
         let mut children_ids: Vec<i32> = entities
             .iter()
             .map(|child| child.entity_id as i32)
@@ -140,13 +146,12 @@ impl TaxonomyTerm {
             id,
             id,
             id
-        ).fetch_all(pool).await?;
-        // TODO: This should probably be easier somehow
-        let subject = subjects
-            .first()
-            .as_ref()
-            .map(|subject| subject.name.to_string());
-        Ok(subject)
+        ).fetch_one(pool).await;
+        match subjects {
+            Ok(subject) => Ok(Some(subject.name)),
+            Err(sqlx::Error::RowNotFound) => Ok(None),
+            Err(inner) => Err(inner),
+        }
     }
 }
 

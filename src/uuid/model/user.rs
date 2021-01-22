@@ -1,7 +1,7 @@
-use anyhow::Result;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
+use super::UuidError;
 use crate::{format_alias, format_datetime};
 
 #[derive(Serialize)]
@@ -19,8 +19,8 @@ pub struct User {
 }
 
 impl User {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<User> {
-        let user = sqlx::query!(
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<User, UuidError> {
+        sqlx::query!(
             r#"
                 SELECT trashed, username, date, last_login, description
                     FROM user
@@ -30,8 +30,12 @@ impl User {
             id
         )
         .fetch_one(pool)
-        .await?;
-        Ok(User {
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => UuidError::NotFound,
+            inner => UuidError::DatabaseError { inner },
+        })
+        .map(|user| User {
             __typename: "User".to_string(),
             id,
             trashed: user.trashed != 0,

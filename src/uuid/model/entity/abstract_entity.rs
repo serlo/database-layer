@@ -4,6 +4,8 @@ use sqlx::encode::IsNull;
 use sqlx::mysql::MySqlTypeInfo;
 use sqlx::MySql;
 
+use super::UuidError;
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AbstractEntity {
@@ -41,10 +43,14 @@ pub enum EntityType {
 }
 
 impl std::str::FromStr for EntityType {
-    type Err = serde_json::Error;
+    type Err = UuidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_value(serde_json::value::Value::String(s.to_string()))
+        serde_json::from_value(serde_json::value::Value::String(s.to_string())).map_err(|_e| {
+            UuidError::UnsupportedEntityType {
+                name: s.to_string(),
+            }
+        })
     }
 }
 

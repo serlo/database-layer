@@ -1,4 +1,3 @@
-use anyhow::Result;
 use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
@@ -24,13 +23,13 @@ pub enum Uuid {
 }
 
 impl Uuid {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
         let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
             .fetch_one(pool)
             .await
             .map_err(|e| match e {
-                sqlx::Error::RowNotFound => anyhow::Error::new(UuidError::NotFound { id }),
-                e => anyhow::Error::new(e),
+                sqlx::Error::RowNotFound => UuidError::NotFound,
+                inner => UuidError::DatabaseError { inner },
             })?;
         match uuid.discriminator.as_str() {
             "attachment" => Ok(Uuid::Attachment(Attachment::fetch(id, pool).await?)),
@@ -42,18 +41,21 @@ impl Uuid {
             "pageRevision" => Ok(Uuid::PageRevision(PageRevision::fetch(id, pool).await?)),
             "taxonomyTerm" => Ok(Uuid::TaxonomyTerm(TaxonomyTerm::fetch(id, pool).await?)),
             "user" => Ok(Uuid::User(User::fetch(id, pool).await?)),
-            _ => Err(anyhow::Error::new(UuidError::UnsupportedDiscriminator {
-                id,
+            _ => Err(UuidError::UnsupportedDiscriminator {
                 discriminator: uuid.discriminator,
-            })),
+            }),
         }
     }
 
-    pub async fn fetch_context(id: i32, pool: &MySqlPool) -> Result<Option<String>, sqlx::Error> {
+    pub async fn fetch_context(id: i32, pool: &MySqlPool) -> Result<Option<String>, UuidError> {
         let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
             .fetch_one(pool)
-            .await?;
-        match uuid.discriminator.as_str() {
+            .await
+            .map_err(|error| match error {
+                sqlx::Error::RowNotFound => UuidError::NotFound,
+                inner => UuidError::DatabaseError { inner },
+            })?;
+        let context = match uuid.discriminator.as_str() {
             "attachment" => Ok(Attachment::get_context()),
             "blogPost" => Ok(BlogPost::get_context()),
             // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
@@ -65,7 +67,8 @@ impl Uuid {
             "taxonomyTerm" => TaxonomyTerm::fetch_canonical_subject(id, pool).await,
             "user" => Ok(User::get_context()),
             _ => Ok(None),
-        }
+        };
+        context.map_err(|inner| UuidError::DatabaseError { inner })
     }
 
     pub fn get_alias(&self) -> String {
@@ -85,8 +88,24 @@ impl Uuid {
 
 #[derive(Error, Debug)]
 pub enum UuidError {
-    #[error("UUID {id:?} can't be fetched because is `{discriminator:?}` is not supported.")]
-    UnsupportedDiscriminator { id: i32, discriminator: String },
-    #[error("UUID {id:?} not found.")]
-    NotFound { id: i32 },
+    #[error("UUID cannot be fetched because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error(
+        "UUID cannot be fetched because its discriminator `{discriminator:?}` is not supported."
+    )]
+    UnsupportedDiscriminator { discriminator: String },
+    #[error("Entity cannot be fetched because its type `{name:?}` is not supported.")]
+    UnsupportedEntityType { name: String },
+    #[error("EntityRevision cannot be fetched because its type `{name:?}` is not supported.")]
+    UnsupportedEntityRevisionType { name: String },
+    #[error("Entity cannot be fetched because its parent is missing.")]
+    EntityMissingRequiredParent,
+    #[error("UUID cannot be fetched because it does not exist.")]
+    NotFound,
+}
+
+impl From<sqlx::Error> for UuidError {
+    fn from(inner: sqlx::Error) -> Self {
+        UuidError::DatabaseError { inner }
+    }
 }

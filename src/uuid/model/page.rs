@@ -1,5 +1,3 @@
-use anyhow::Result;
-use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
@@ -23,8 +21,8 @@ pub struct Page {
 }
 
 impl Page {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Page> {
-        let page_fut = sqlx::query!(
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Page, UuidError> {
+        let page = sqlx::query!(
             r#"
                 SELECT u.trashed, i.subdomain, p.current_revision_id, p.license_id, r.title
                     FROM page_repository p
@@ -35,16 +33,23 @@ impl Page {
             "#,
             id
         )
-        .fetch_one(pool);
-        let revisions_fut = sqlx::query!(
+        .fetch_one(pool)
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => UuidError::NotFound,
+            inner => UuidError::DatabaseError { inner },
+        })?;
+
+        let revisions = sqlx::query!(
             r#"SELECT id, date FROM page_revision WHERE page_repository_id = ?"#,
             id
         )
-        .fetch_all(pool);
-        let (page, revisions) = try_join!(page_fut, revisions_fut)?;
+        .fetch_all(pool)
+        .await
+        .map_err(|inner| UuidError::DatabaseError { inner })?;
 
         if revisions.is_empty() {
-            return Err(anyhow::Error::new(UuidError::NotFound { id }));
+            Err(UuidError::NotFound)
         } else {
             Ok(Page {
                 __typename: "Page".to_string(),

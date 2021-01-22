@@ -1,7 +1,7 @@
-use anyhow::Result;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
+use super::UuidError;
 use crate::format_alias;
 
 #[derive(Serialize)]
@@ -13,8 +13,8 @@ pub struct BlogPost {
 }
 
 impl BlogPost {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<BlogPost> {
-        let blog = sqlx::query!(
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<BlogPost, UuidError> {
+        sqlx::query!(
             r#"
                 SELECT u.trashed, b.title
                     FROM blog_post b
@@ -24,8 +24,12 @@ impl BlogPost {
             id
         )
         .fetch_one(pool)
-        .await?;
-        Ok(BlogPost {
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => UuidError::NotFound,
+            inner => UuidError::DatabaseError { inner },
+        })
+        .map(|blog| BlogPost {
             id,
             trashed: blog.trashed != 0,
             alias: format_alias(

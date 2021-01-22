@@ -1,7 +1,7 @@
-use anyhow::Result;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
+use super::UuidError;
 use crate::{format_alias, format_datetime};
 
 #[derive(Serialize)]
@@ -20,8 +20,8 @@ pub struct PageRevision {
 }
 
 impl PageRevision {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<PageRevision> {
-        let revision = sqlx::query!(
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<PageRevision, UuidError> {
+        sqlx::query!(
             r#"
                 SELECT u.trashed, r.title, r.content, r.date, r.author_id, r.page_repository_id
                     FROM page_revision r
@@ -31,18 +31,24 @@ impl PageRevision {
             id
         )
         .fetch_one(pool)
-        .await?;
-        Ok(PageRevision {
-            __typename: "PageRevision".to_string(),
-            id,
-            trashed: revision.trashed != 0,
-            // TODO:
-            alias: format_alias(None, id, Some(&revision.title)),
-            title: revision.title,
-            content: revision.content,
-            date: format_datetime(&revision.date),
-            author_id: revision.author_id as i32,
-            repository_id: revision.page_repository_id as i32,
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => UuidError::NotFound,
+            inner => UuidError::DatabaseError { inner },
+        })
+        .map(|revision| {
+            PageRevision {
+                __typename: "PageRevision".to_string(),
+                id,
+                trashed: revision.trashed != 0,
+                // TODO:
+                alias: format_alias(None, id, Some(&revision.title)),
+                title: revision.title,
+                content: revision.content,
+                date: format_datetime(&revision.date),
+                author_id: revision.author_id as i32,
+                repository_id: revision.page_repository_id as i32,
+            }
         })
     }
 }

@@ -1,4 +1,3 @@
-use anyhow::Result;
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
@@ -15,6 +14,7 @@ use self::event_revision::EventRevision;
 use self::generic_entity_revision::GenericRevision;
 use self::video_revision::VideoRevision;
 use super::entity::Entity;
+use super::UuidError;
 
 mod abstract_entity_revision;
 mod applet_revision;
@@ -38,7 +38,7 @@ pub enum EntityRevision {
 }
 
 impl EntityRevision {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<EntityRevision> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<EntityRevision, UuidError> {
         let revision_fut = sqlx::query!(
             r#"
                 SELECT t.name, u.trashed, r.date, r.author_id, r.repository_id

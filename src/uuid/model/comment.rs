@@ -1,11 +1,9 @@
-use anyhow::Result;
-use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
 use crate::{format_alias, format_datetime};
 
-use super::Uuid;
+use super::{Uuid, UuidError};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -25,8 +23,8 @@ pub struct Comment {
 }
 
 impl Comment {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Comment> {
-        let comment_fut = sqlx::query!(
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Comment, UuidError> {
+        let comment = sqlx::query!(
             r#"
                 SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id, c.uuid_id, p.title as parent_title
                     FROM comment c
@@ -36,8 +34,14 @@ impl Comment {
             "#,
             id
         )
-        .fetch_one(pool);
-        let children_fut = sqlx::query!(
+        .fetch_one(pool)
+            .await
+            .map_err(|error| match error {
+                sqlx::Error::RowNotFound => UuidError::NotFound,
+                inner => UuidError::DatabaseError { inner },
+            })?;
+
+        let children = sqlx::query!(
             r#"
                 SELECT id
                     FROM comment
@@ -45,8 +49,9 @@ impl Comment {
             "#,
             id
         )
-        .fetch_all(pool);
-        let (comment, children) = try_join!(comment_fut, children_fut)?;
+        .fetch_all(pool)
+        .await
+        .map_err(|inner| UuidError::DatabaseError { inner })?;
 
         Ok(Comment {
             __typename: "Comment".to_string(),
@@ -74,7 +79,7 @@ impl Comment {
         })
     }
 
-    pub async fn fetch_context(id: i32, pool: &MySqlPool) -> Result<Option<String>, sqlx::Error> {
+    pub async fn fetch_context(id: i32, pool: &MySqlPool) -> Result<Option<String>, UuidError> {
         let object = sqlx::query!(
             r#"
                 SELECT uuid_id as id
@@ -86,7 +91,12 @@ impl Comment {
                     WHERE id = ? AND uuid_id IS NOT NULL
             "#,
             id
-        ).fetch_one(pool).await?;
+        )
+        .fetch_one(pool).await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => UuidError::NotFound,
+            inner => UuidError::DatabaseError { inner },
+        })?;
         Uuid::fetch_context(object.id.unwrap() as i32, pool).await
     }
 }

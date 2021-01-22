@@ -1,7 +1,7 @@
-use anyhow::Result;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
+use super::UuidError;
 use crate::format_alias;
 
 #[derive(Serialize)]
@@ -13,8 +13,8 @@ pub struct Attachment {
 }
 
 impl Attachment {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Attachment> {
-        let attachment = sqlx::query!(
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Attachment, UuidError> {
+        sqlx::query!(
             r#"
                 SELECT u.trashed, f.name
                     FROM attachment_file f
@@ -25,8 +25,12 @@ impl Attachment {
             id
         )
         .fetch_one(pool)
-        .await?;
-        Ok(Attachment {
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => UuidError::NotFound,
+            inner => UuidError::DatabaseError { inner },
+        })
+        .map(|attachment| Attachment {
             id,
             trashed: attachment.trashed != 0,
             alias: format_alias(

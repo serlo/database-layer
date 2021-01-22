@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use super::UuidError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
@@ -51,10 +52,14 @@ pub enum EntityRevisionType {
 }
 
 impl std::str::FromStr for EntityRevisionType {
-    type Err = serde_json::Error;
+    type Err = UuidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_value(serde_json::value::Value::String(s.to_string()))
+        serde_json::from_value(serde_json::value::Value::String(s.to_string())).map_err(|_e| {
+            UuidError::UnsupportedEntityRevisionType {
+                name: s.to_string(),
+            }
+        })
     }
 }
 

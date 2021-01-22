@@ -68,10 +68,11 @@ impl NavigationChild {
                         }
                     })?;
 
-            if let Some("false") = raw_navigation_child
+            if raw_navigation_child
                 .parameters
-                .get("visible")
-                .map(|value| value.as_str())
+                .get_or("visible", "true")
+                .as_str()
+                == "false"
             {
                 return Err(NavigationChildError::NotVisible);
             }
@@ -103,25 +104,25 @@ impl NavigationChild {
                 raw_navigation_child.parameters.get("label"),
                 raw_navigation_child.parameters.get("uri"),
             ) {
-                if uri == "#" {
+                if uri.as_str() == "#" {
                     Ok(NavigationChild::Container(ContainerNavigationChild {
-                        label: label.to_string(),
+                        label,
                         children,
                     }))
                 } else {
                     let re = Regex::new(r"^/(?P<id>\d+)$").unwrap();
-                    match re.captures(uri) {
+                    match re.captures(&uri) {
                         Some(captures) => {
                             let id: i32 = captures.name("id").unwrap().as_str().parse().unwrap();
                             Ok(NavigationChild::Uuid(UuidNavigationChild {
-                                label: label.to_string(),
+                                label,
                                 id,
                                 children,
                             }))
                         }
                         _ => Ok(NavigationChild::Url(UrlNavigationChild {
-                            label: label.to_string(),
-                            url: uri.to_string(),
+                            label,
+                            url: uri,
                             children,
                         })),
                     }
@@ -132,19 +133,19 @@ impl NavigationChild {
             ) {
                 match route.as_str() {
                     "blog" => Ok(NavigationChild::Url(UrlNavigationChild {
-                        label: label.to_string(),
+                        label,
                         url: "/blog".to_string(),
                         children,
                     })),
                     "discussion/discussions" => Ok(NavigationChild::Url(UrlNavigationChild {
-                        label: label.to_string(),
+                        label,
                         url: "/discussions".to_string(),
                         children,
                     })),
                     "discussion/discussions/get" => {
                         if let Some(id) = raw_navigation_child.parameters.get("params.id") {
                             Ok(NavigationChild::Url(UrlNavigationChild {
-                                label: label.to_string(),
+                                label,
                                 url: format!("/discussions/{}", id),
                                 children,
                             }))
@@ -153,7 +154,7 @@ impl NavigationChild {
                         }
                     }
                     "event/history/all" => Ok(NavigationChild::Url(UrlNavigationChild {
-                        label: label.to_string(),
+                        label,
                         url: "/event/history".to_string(),
                         children,
                     })),
@@ -165,7 +166,7 @@ impl NavigationChild {
                                 })
                                 .map(|id| {
                                     NavigationChild::Uuid(UuidNavigationChild {
-                                        label: label.to_string(),
+                                        label,
                                         id,
                                         children,
                                     })
@@ -178,7 +179,7 @@ impl NavigationChild {
                         if let Some(subject) = raw_navigation_child.parameters.get("params.subject")
                         {
                             Ok(NavigationChild::Url(UrlNavigationChild {
-                                label: label.to_string(),
+                                label,
                                 url: format!("/{}/entity/trash-bin", subject.replace(" ", "%20")),
                                 children,
                             }))
@@ -206,7 +207,7 @@ impl NavigationChild {
                     "taxonomy/term/organize" => {
                         if let Some(id) = raw_navigation_child.parameters.get("params.term") {
                             Ok(NavigationChild::Url(UrlNavigationChild {
-                                label: label.to_string(),
+                                label,
                                 url: format!("/taxonomy/term/organize/{}", id),
                                 children,
                             }))
@@ -230,8 +231,21 @@ impl NavigationChild {
 struct RawNavigationChild {
     id: i32,
     children: Vec<RawNavigationChild>,
-    parameters: HashMap<String, String>,
+    parameters: RawNavigationChildParameters,
 }
+
+impl RawNavigationChildParameters {
+    fn get(&self, name: &str) -> Option<String> {
+        self.0.get(name).map(|value| value.to_string())
+    }
+
+    fn get_or(&self, name: &str, default: &str) -> String {
+        self.get(name).unwrap_or_else(|| default.to_string())
+    }
+}
+
+#[derive(Debug)]
+pub struct RawNavigationChildParameters(HashMap<String, String>);
 
 #[derive(Error, Debug)]
 pub enum RawNavigationChildError {
@@ -299,13 +313,11 @@ impl RawNavigationChild {
                 children.push(RawNavigationChild::fetch(page.id, pool).await?);
             }
 
-            let mut parameters: HashMap<String, String> = HashMap::with_capacity(params.len());
-
-            for param in params.iter() {
-                if let (Some(name), Some(value)) = (param.name.as_ref(), param.value.as_ref()) {
-                    parameters.insert(name.to_string(), value.to_string());
-                }
-            }
+            let parameters = params
+                .into_iter()
+                .filter_map(|param| Some((param.name?, param.value?)))
+                .collect();
+            let parameters = RawNavigationChildParameters(parameters);
 
             Ok(RawNavigationChild {
                 id,

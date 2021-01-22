@@ -7,26 +7,26 @@ use super::EventError;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CreateComment {
+pub struct EntityLink {
     #[serde(flatten)]
     abstract_event: AbstractEvent,
 
-    thread_id: i32,
-    comment_id: i32,
+    child_id: i32,
+    parent_id: i32,
 }
 
-impl TryFrom<AbstractEvent> for CreateComment {
+impl TryFrom<AbstractEvent> for EntityLink {
     type Error = EventError;
 
     fn try_from(abstract_event: AbstractEvent) -> Result<Self, Self::Error> {
-        let thread_id = abstract_event.uuid_parameters.try_get("discussion")?;
-        let comment_id = abstract_event.object_id;
+        let child_id = abstract_event.object_id;
+        let parent_id = abstract_event.uuid_parameters.try_get("parent")?;
 
-        Ok(CreateComment {
+        Ok(EntityLink {
             abstract_event,
 
-            thread_id,
-            comment_id,
+            child_id,
+            parent_id,
         })
     }
 }

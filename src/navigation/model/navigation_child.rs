@@ -234,6 +234,9 @@ struct RawNavigationChild {
     parameters: RawNavigationChildParameters,
 }
 
+#[derive(Debug)]
+pub struct RawNavigationChildParameters(HashMap<String, String>);
+
 impl RawNavigationChildParameters {
     fn get(&self, name: &str) -> Option<String> {
         self.0.get(name).map(|value| value.to_string())
@@ -243,9 +246,6 @@ impl RawNavigationChildParameters {
         self.get(name).unwrap_or_else(|| default.to_string())
     }
 }
-
-#[derive(Debug)]
-pub struct RawNavigationChildParameters(HashMap<String, String>);
 
 #[derive(Error, Debug)]
 pub enum RawNavigationChildError {

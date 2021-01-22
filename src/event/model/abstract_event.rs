@@ -1,6 +1,6 @@
-use async_trait::async_trait;
+use std::collections::HashMap;
+
 use serde::Serialize;
-use sqlx::MySqlPool;
 
 use super::event_type::EventType;
 use super::EventError;
@@ -17,14 +17,32 @@ pub struct AbstractEvent {
     pub object_id: i32,
 
     #[serde(skip)]
-    pub parameter_uuid_id: i32,
+    pub raw_typename: String,
     #[serde(skip)]
-    pub name: String,
+    pub string_parameters: EventStringParameters,
+    #[serde(skip)]
+    pub uuid_parameters: EventUuidParameters,
 }
 
-#[async_trait]
-pub trait FromAbstractEvent {
-    async fn fetch(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self, EventError>
-    where
-        Self: Sized;
+pub struct EventStringParameters(pub HashMap<String, String>);
+
+impl EventStringParameters {
+    pub fn get_or(&self, name: &str, default: &str) -> String {
+        self.0
+            .get(name)
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| default.to_string())
+    }
+}
+
+pub struct EventUuidParameters(pub HashMap<String, i32>);
+
+impl EventUuidParameters {
+    pub fn get(&self, name: &str) -> Option<i32> {
+        self.0.get(name).copied()
+    }
+
+    pub fn try_get(&self, name: &str) -> Result<i32, EventError> {
+        self.get(name).ok_or(EventError::MissingRequiredField)
+    }
 }

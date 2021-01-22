@@ -1,8 +1,8 @@
-use async_trait::async_trait;
-use serde::Serialize;
-use sqlx::MySqlPool;
+use std::convert::TryFrom;
 
-use super::abstract_event::{AbstractEvent, FromAbstractEvent};
+use serde::Serialize;
+
+use super::abstract_event::AbstractEvent;
 use super::EventError;
 
 #[derive(Serialize)]
@@ -15,11 +15,11 @@ pub struct CreateThread {
     thread_id: i32,
 }
 
-#[async_trait]
-impl FromAbstractEvent for CreateThread {
-    async fn fetch(abstract_event: AbstractEvent, _pool: &MySqlPool) -> Result<Self, EventError> {
-        // uses "on" parameter
-        let object_id = abstract_event.parameter_uuid_id;
+impl TryFrom<AbstractEvent> for CreateThread {
+    type Error = EventError;
+
+    fn try_from(abstract_event: AbstractEvent) -> Result<Self, Self::Error> {
+        let object_id = abstract_event.uuid_parameters.try_get("on")?;
         let thread_id = abstract_event.object_id;
 
         Ok(CreateThread {

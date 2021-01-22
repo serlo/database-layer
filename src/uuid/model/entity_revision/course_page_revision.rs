@@ -1,5 +1,3 @@
-use std::convert::From;
-
 use serde::Serialize;
 
 use super::abstract_entity_revision::AbstractEntityRevision;

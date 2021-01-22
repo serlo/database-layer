@@ -1,9 +1,6 @@
-use async_trait::async_trait;
 use serde::Serialize;
-use sqlx::MySqlPool;
 
-use super::abstract_event::{AbstractEvent, FromAbstractEvent};
-use super::EventError;
+use super::abstract_event::AbstractEvent;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -14,15 +11,14 @@ pub struct SetUuidState {
     trashed: bool,
 }
 
-#[async_trait]
-impl FromAbstractEvent for SetUuidState {
-    async fn fetch(abstract_event: AbstractEvent, _pool: &MySqlPool) -> Result<Self, EventError> {
-        let trashed = abstract_event.name == "uuid/trash";
+impl From<AbstractEvent> for SetUuidState {
+    fn from(abstract_event: AbstractEvent) -> Self {
+        let trashed = abstract_event.raw_typename == "uuid/trash";
 
-        Ok(SetUuidState {
+        SetUuidState {
             abstract_event,
 
             trashed,
-        })
+        }
     }
 }

@@ -1,9 +1,6 @@
-use async_trait::async_trait;
 use serde::Serialize;
-use sqlx::MySqlPool;
 
-use super::abstract_event::{AbstractEvent, FromAbstractEvent};
-use super::EventError;
+use super::abstract_event::AbstractEvent;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,17 +12,16 @@ pub struct SetThreadState {
     archived: bool,
 }
 
-#[async_trait]
-impl FromAbstractEvent for SetThreadState {
-    async fn fetch(abstract_event: AbstractEvent, _pool: &MySqlPool) -> Result<Self, EventError> {
+impl From<AbstractEvent> for SetThreadState {
+    fn from(abstract_event: AbstractEvent) -> Self {
         let thread_id = abstract_event.object_id;
-        let archived = abstract_event.name == "discussion/comment/archive";
+        let archived = abstract_event.raw_typename == "discussion/comment/archive";
 
-        Ok(SetThreadState {
+        SetThreadState {
             abstract_event,
 
             thread_id,
             archived,
-        })
+        }
     }
 }

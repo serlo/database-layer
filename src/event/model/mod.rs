@@ -3,24 +3,20 @@ use thiserror::Error;
 pub use self::event::Event;
 
 mod abstract_event;
-mod checkout_revision;
 mod create_comment;
 mod create_entity;
-mod create_entity_link;
 mod create_entity_revision;
-mod create_taxonomy_link;
-mod create_taxonomy_term;
 mod create_thread;
+mod entity_link;
 mod event;
 mod event_type;
-mod reject_revision;
-mod remove_entity_link;
-mod remove_taxonomy_link;
+mod revision;
 mod set_license;
 mod set_taxonomy_parent;
-mod set_taxonomy_term;
 mod set_thread_state;
 mod set_uuid_state;
+mod taxonomy_link;
+mod taxonomy_term;
 mod unsupported;
 
 #[derive(Error, Debug)]

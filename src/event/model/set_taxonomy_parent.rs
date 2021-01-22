@@ -1,10 +1,8 @@
-use async_trait::async_trait;
-use futures::try_join;
-use serde::Serialize;
-use sqlx::MySqlPool;
+use std::convert::TryFrom;
 
-use super::abstract_event::{AbstractEvent, FromAbstractEvent};
-use super::event::Event;
+use serde::Serialize;
+
+use super::abstract_event::AbstractEvent;
 use super::EventError;
 
 #[derive(Serialize)]
@@ -18,14 +16,13 @@ pub struct SetTaxonomyParent {
     parent_id: Option<i32>,
 }
 
-#[async_trait]
-impl FromAbstractEvent for SetTaxonomyParent {
-    async fn fetch(abstract_event: AbstractEvent, pool: &MySqlPool) -> Result<Self, EventError> {
-        let from_fut = Event::fetch_uuid_parameter(abstract_event.id, "from", pool);
-        let to_fut = Event::fetch_uuid_parameter(abstract_event.id, "to", pool);
+impl TryFrom<AbstractEvent> for SetTaxonomyParent {
+    type Error = EventError;
 
-        let (previous_parent_id, parent_id) = try_join!(from_fut, to_fut)?;
+    fn try_from(abstract_event: AbstractEvent) -> Result<Self, Self::Error> {
         let child_id = abstract_event.object_id;
+        let previous_parent_id = abstract_event.uuid_parameters.get("from");
+        let parent_id = abstract_event.uuid_parameters.get("to");
 
         Ok(SetTaxonomyParent {
             abstract_event,

@@ -4,23 +4,21 @@ use super::abstract_event::AbstractEvent;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Unsupported {
+pub struct TaxonomyTerm {
     #[serde(flatten)]
     abstract_event: AbstractEvent,
 
-    r#type: String,
-    error: String,
+    taxonomy_term_id: i32,
 }
 
-impl From<AbstractEvent> for Unsupported {
+impl From<AbstractEvent> for TaxonomyTerm {
     fn from(abstract_event: AbstractEvent) -> Self {
-        let r#type = abstract_event.raw_typename.to_string();
+        let taxonomy_term_id = abstract_event.object_id;
 
-        Unsupported {
+        TaxonomyTerm {
             abstract_event,
 
-            r#type,
-            error: "unsupported".to_string(),
+            taxonomy_term_id,
         }
     }
 }

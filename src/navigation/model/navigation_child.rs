@@ -68,10 +68,12 @@ impl NavigationChild {
                         }
                     })?;
 
-            if let Some(visible) = raw_navigation_child.parameters.get("visible") {
-                if visible == "false" {
-                    return Err(NavigationChildError::NotVisible);
-                }
+            if let Some("false") = raw_navigation_child
+                .parameters
+                .get("visible")
+                .map(|value| value.as_str())
+            {
+                return Err(NavigationChildError::NotVisible);
             }
 
             let mut children = Vec::with_capacity(raw_navigation_child.children.len());

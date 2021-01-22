@@ -15,7 +15,7 @@ mod abstract_entity;
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum Entity {
-    GenericEntity(AbstractEntity),
+    Generic(AbstractEntity),
     Course(Course),
     CoursePage(CoursePage),
     ExerciseGroup(ExerciseGroup),
@@ -200,7 +200,7 @@ impl Entity {
                     parent_id,
                 })
             }
-            _ => Entity::GenericEntity(abstract_entity),
+            _ => Entity::Generic(abstract_entity),
         };
 
         Ok(entity)
@@ -292,7 +292,7 @@ impl Entity {
 
     pub fn get_alias(&self) -> String {
         match self {
-            Entity::GenericEntity(abstract_entity) => abstract_entity.alias.to_string(),
+            Entity::Generic(abstract_entity) => abstract_entity.alias.to_string(),
             Entity::Course(course) => course.abstract_entity.alias.to_string(),
             Entity::CoursePage(course_page) => course_page.abstract_entity.alias.to_string(),
             Entity::ExerciseGroup(exercise_group) => {

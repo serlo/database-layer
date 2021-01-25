@@ -25,8 +25,16 @@ mod generic_entity_revision;
 mod video_revision;
 
 #[derive(Serialize)]
+pub struct EntityRevision {
+    #[serde(flatten)]
+    pub abstract_entity_revision: AbstractEntityRevision,
+    #[serde(flatten)]
+    pub concrete_entity_revision: ConcreteEntityRevision,
+}
+
+#[derive(Serialize)]
 #[serde(untagged)]
-pub enum EntityRevision {
+pub enum ConcreteEntityRevision {
     Generic(GenericRevision),
     Applet(AppletRevision),
     Article(ArticleRevision),
@@ -84,30 +92,45 @@ impl EntityRevision {
             fields,
         };
 
-        let entity_revision = match abstract_entity_revision.__typename {
-            EntityRevisionType::Applet => EntityRevision::Applet(abstract_entity_revision.into()),
-            EntityRevisionType::Article => EntityRevision::Article(abstract_entity_revision.into()),
-            EntityRevisionType::Course => EntityRevision::Course(abstract_entity_revision.into()),
-            EntityRevisionType::CoursePage => {
-                EntityRevision::CoursePage(abstract_entity_revision.into())
+        let abstract_entity_revision_ref = &abstract_entity_revision;
+
+        let concrete_entity_revision = match abstract_entity_revision_ref.__typename {
+            EntityRevisionType::Applet => {
+                ConcreteEntityRevision::Applet(abstract_entity_revision_ref.into())
             }
-            EntityRevisionType::Event => EntityRevision::Event(abstract_entity_revision.into()),
+            EntityRevisionType::Article => {
+                ConcreteEntityRevision::Article(abstract_entity_revision_ref.into())
+            }
+            EntityRevisionType::Course => {
+                ConcreteEntityRevision::Course(abstract_entity_revision_ref.into())
+            }
+            EntityRevisionType::CoursePage => {
+                ConcreteEntityRevision::CoursePage(abstract_entity_revision_ref.into())
+            }
+            EntityRevisionType::Event => {
+                ConcreteEntityRevision::Event(abstract_entity_revision_ref.into())
+            }
             EntityRevisionType::Exercise => {
-                EntityRevision::Generic(abstract_entity_revision.into())
+                ConcreteEntityRevision::Generic(abstract_entity_revision_ref.into())
             }
             EntityRevisionType::ExerciseGroup => {
-                EntityRevision::Generic(abstract_entity_revision.into())
+                ConcreteEntityRevision::Generic(abstract_entity_revision_ref.into())
             }
             EntityRevisionType::GroupedExercise => {
-                EntityRevision::Generic(abstract_entity_revision.into())
+                ConcreteEntityRevision::Generic(abstract_entity_revision_ref.into())
             }
             EntityRevisionType::Solution => {
-                EntityRevision::Generic(abstract_entity_revision.into())
+                ConcreteEntityRevision::Generic(abstract_entity_revision_ref.into())
             }
-            EntityRevisionType::Video => EntityRevision::Video(abstract_entity_revision.into()),
+            EntityRevisionType::Video => {
+                ConcreteEntityRevision::Video(abstract_entity_revision_ref.into())
+            }
         };
 
-        Ok(entity_revision)
+        Ok(EntityRevision {
+            abstract_entity_revision,
+            concrete_entity_revision,
+        })
     }
 
     pub async fn fetch_canonical_subject(
@@ -121,31 +144,5 @@ impl EntityRevision {
         .fetch_one(pool)
         .await?;
         Entity::fetch_canonical_subject(revision.repository_id as i32, pool).await
-    }
-
-    pub fn get_alias(&self) -> String {
-        match self {
-            EntityRevision::Generic(entity_revision) => {
-                entity_revision.abstract_entity_revision.alias.to_string()
-            }
-            EntityRevision::Applet(entity_revision) => {
-                entity_revision.abstract_entity_revision.alias.to_string()
-            }
-            EntityRevision::Article(entity_revision) => {
-                entity_revision.abstract_entity_revision.alias.to_string()
-            }
-            EntityRevision::Course(entity_revision) => {
-                entity_revision.abstract_entity_revision.alias.to_string()
-            }
-            EntityRevision::CoursePage(entity_revision) => {
-                entity_revision.abstract_entity_revision.alias.to_string()
-            }
-            EntityRevision::Event(entity_revision) => {
-                entity_revision.abstract_entity_revision.alias.to_string()
-            }
-            EntityRevision::Video(entity_revision) => {
-                entity_revision.abstract_entity_revision.alias.to_string()
-            }
-        }
     }
 }

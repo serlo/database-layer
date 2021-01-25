@@ -88,6 +88,8 @@ impl SetUuidStateEventPayload {
             .await
             .map_err(|inner| EventError::DatabaseError { inner })?;
 
+        // TODO: create notifications
+
         Ok(event)
     }
 }
@@ -129,6 +131,42 @@ mod tests {
                     ..
                 },
             trashed: true,
+            ..
+        }) = persisted_event
+        {
+            assert!(DateTime::now().signed_duration_since(date) < Duration::minutes(1))
+        } else {
+            panic!("Event does not fulfill assertions: {:?}", persisted_event)
+        }
+    }
+
+    #[actix_rt::test]
+    async fn trigger_restore_event() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let actor_id = 1;
+        let object_id = 1855;
+        let instance = "de".to_string();
+
+        let set_uuid_state_event =
+            SetUuidStateEventPayload::new(false, actor_id, object_id, &instance);
+
+        let event = set_uuid_state_event.save(&mut transaction).await.unwrap();
+        let persisted_event = Event::fetch(event.get_id(), &mut transaction)
+            .await
+            .unwrap();
+        assert_eq!(persisted_event, event);
+
+        if let Event::SetUuidState(SetUuidState {
+            abstract_event:
+                AbstractEvent {
+                    actor_id: 1,
+                    object_id: 1855,
+                    date,
+                    ..
+                },
+            trashed: false,
             ..
         }) = persisted_event
         {

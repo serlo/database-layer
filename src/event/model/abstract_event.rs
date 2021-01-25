@@ -5,6 +5,7 @@ use serde::Serialize;
 use super::event_type::EventType;
 use super::EventError;
 use crate::datetime::DateTime;
+use std::collections::hash_map::Values;
 
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -60,5 +61,9 @@ impl EventUuidParameters {
 
     pub fn try_get(&self, name: &str) -> Result<i32, EventError> {
         self.get(name).ok_or(EventError::MissingRequiredField)
+    }
+
+    pub fn values(&self) -> Values<'_, String, i32> {
+        self.0.values()
     }
 }

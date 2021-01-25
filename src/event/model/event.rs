@@ -19,6 +19,7 @@ use super::taxonomy_term::TaxonomyTerm;
 use super::unsupported::Unsupported;
 use super::EventError;
 use crate::database::Executor;
+use std::collections::hash_map::Values;
 
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(untagged)]
@@ -171,6 +172,72 @@ impl Event {
             Event::SetTaxonomyParent(event) => event.abstract_event.id,
             Event::SetUuidState(event) => event.abstract_event.id,
             Event::Unsupported(event) => event.abstract_event.id,
+        }
+    }
+
+    pub fn get_object_id(&self) -> i32 {
+        match self {
+            Event::SetThreadState(event) => event.abstract_event.object_id,
+            Event::CreateComment(event) => event.abstract_event.object_id,
+            Event::CreateThread(event) => event.abstract_event.object_id,
+            Event::CreateEntity(event) => event.abstract_event.object_id,
+            Event::SetLicense(event) => event.abstract_event.object_id,
+            Event::CreateEntityLink(event) => event.abstract_event.object_id,
+            Event::RemoveEntityLink(event) => event.abstract_event.object_id,
+            Event::CreateEntityRevision(event) => event.abstract_event.object_id,
+            Event::CheckoutRevision(event) => event.abstract_event.object_id,
+            Event::RejectRevision(event) => event.abstract_event.object_id,
+            Event::CreateTaxonomyLink(event) => event.abstract_event.object_id,
+            Event::RemoveTaxonomyLink(event) => event.abstract_event.object_id,
+            Event::CreateTaxonomyTerm(event) => event.abstract_event.object_id,
+            Event::SetTaxonomyTerm(event) => event.abstract_event.object_id,
+            Event::SetTaxonomyParent(event) => event.abstract_event.object_id,
+            Event::SetUuidState(event) => event.abstract_event.object_id,
+            Event::Unsupported(event) => event.abstract_event.object_id,
+        }
+    }
+
+    pub fn get_actor_id(&self) -> i32 {
+        match self {
+            Event::SetThreadState(event) => event.abstract_event.actor_id,
+            Event::CreateComment(event) => event.abstract_event.actor_id,
+            Event::CreateThread(event) => event.abstract_event.actor_id,
+            Event::CreateEntity(event) => event.abstract_event.actor_id,
+            Event::SetLicense(event) => event.abstract_event.actor_id,
+            Event::CreateEntityLink(event) => event.abstract_event.actor_id,
+            Event::RemoveEntityLink(event) => event.abstract_event.actor_id,
+            Event::CreateEntityRevision(event) => event.abstract_event.actor_id,
+            Event::CheckoutRevision(event) => event.abstract_event.actor_id,
+            Event::RejectRevision(event) => event.abstract_event.actor_id,
+            Event::CreateTaxonomyLink(event) => event.abstract_event.actor_id,
+            Event::RemoveTaxonomyLink(event) => event.abstract_event.actor_id,
+            Event::CreateTaxonomyTerm(event) => event.abstract_event.actor_id,
+            Event::SetTaxonomyTerm(event) => event.abstract_event.actor_id,
+            Event::SetTaxonomyParent(event) => event.abstract_event.actor_id,
+            Event::SetUuidState(event) => event.abstract_event.actor_id,
+            Event::Unsupported(event) => event.abstract_event.actor_id,
+        }
+    }
+
+    pub fn get_uuid_parameters(&self) -> Values<'_, String, i32> {
+        match self {
+            Event::SetThreadState(event) => event.abstract_event.uuid_parameters.values(),
+            Event::CreateComment(event) => event.abstract_event.uuid_parameters.values(),
+            Event::CreateThread(event) => event.abstract_event.uuid_parameters.values(),
+            Event::CreateEntity(event) => event.abstract_event.uuid_parameters.values(),
+            Event::SetLicense(event) => event.abstract_event.uuid_parameters.values(),
+            Event::CreateEntityLink(event) => event.abstract_event.uuid_parameters.values(),
+            Event::RemoveEntityLink(event) => event.abstract_event.uuid_parameters.values(),
+            Event::CreateEntityRevision(event) => event.abstract_event.uuid_parameters.values(),
+            Event::CheckoutRevision(event) => event.abstract_event.uuid_parameters.values(),
+            Event::RejectRevision(event) => event.abstract_event.uuid_parameters.values(),
+            Event::CreateTaxonomyLink(event) => event.abstract_event.uuid_parameters.values(),
+            Event::RemoveTaxonomyLink(event) => event.abstract_event.uuid_parameters.values(),
+            Event::CreateTaxonomyTerm(event) => event.abstract_event.uuid_parameters.values(),
+            Event::SetTaxonomyTerm(event) => event.abstract_event.uuid_parameters.values(),
+            Event::SetTaxonomyParent(event) => event.abstract_event.uuid_parameters.values(),
+            Event::SetUuidState(event) => event.abstract_event.uuid_parameters.values(),
+            Event::Unsupported(event) => event.abstract_event.uuid_parameters.values(),
         }
     }
 }

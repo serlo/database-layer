@@ -25,6 +25,19 @@ pub struct AbstractEvent {
     pub uuid_parameters: EventUuidParameters,
 }
 
+impl AbstractEvent {
+    // pub async fn save(&self, transaction: &Transaction<'_, MySql>) -> Result<(), EventError> {
+    //     // TODO
+    //
+    //     // TODO: add create_event method (possibly rather for the concrete Event Types) -> see EventManager::logEvent
+    //     // TODO: this triggers a 'log' event -> see EventManagerListener::onLog
+    //     // TODO: this will create some notifications -> see NotificationManager::createNotification
+    //     // TODO: this will trigger a 'create' event which sets the corresponding cache in legacy
+    //
+    //
+    // }
+}
+
 pub struct EventStringParameters(pub HashMap<String, String>);
 
 impl EventStringParameters {

@@ -2,7 +2,6 @@ use std::convert::TryInto;
 
 use futures::try_join;
 use serde::Serialize;
-use sqlx::MySqlPool;
 
 use super::abstract_event::{AbstractEvent, EventStringParameters, EventUuidParameters};
 use super::create_comment::CreateComment;
@@ -20,6 +19,7 @@ use super::taxonomy_link::TaxonomyLink;
 use super::taxonomy_term::TaxonomyTerm;
 use super::unsupported::Unsupported;
 use super::EventError;
+use crate::database::Executor;
 
 #[derive(Serialize)]
 #[serde(untagged)]
@@ -44,7 +44,14 @@ pub enum Event {
 }
 
 impl Event {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Event, EventError> {
+    pub async fn fetch<'a, E>(id: i32, executor: E) -> Result<Event, EventError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor
+            .begin()
+            .await
+            .map_err(|inner| EventError::DatabaseError { inner })?;
         let event = sqlx::query!(
             r#"
                 SELECT l.id, l.actor_id, l.uuid_id, l.date, i.subdomain, e.name
@@ -56,7 +63,7 @@ impl Event {
             "#,
             id
         )
-        .fetch_one(pool)
+        .fetch_one(&mut transaction)
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => EventError::NotFound,
@@ -73,7 +80,9 @@ impl Event {
             "#,
             id
         )
-        .fetch_all(pool);
+        .fetch_all(&mut transaction)
+        .await
+        .map_err(|inner| EventError::DatabaseError { inner })?;
 
         let uuid_parameters = sqlx::query!(
             r#"
@@ -85,10 +94,12 @@ impl Event {
             "#,
             id
         )
-        .fetch_all(pool);
+        .fetch_all(&mut transaction)
+        .await
+        .map_err(|inner| EventError::DatabaseError { inner })?;
 
-        let (string_parameters, uuid_parameters) = try_join!(string_parameters, uuid_parameters)
-            .map_err(|inner| EventError::DatabaseError { inner })?;
+        // let (string_parameters, uuid_parameters) = try_join!(string_parameters, uuid_parameters)
+        //     .map_err(|inner| EventError::DatabaseError { inner })?;
 
         let raw_typename = event.name;
         let uuid_id = event.uuid_id as i32;

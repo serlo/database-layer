@@ -11,6 +11,7 @@ use sqlx::{MySql, MySqlPool};
 use thiserror::Error;
 
 pub mod alias;
+pub mod database;
 pub mod datetime;
 pub mod event;
 pub mod health;

@@ -1,9 +1,9 @@
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use crate::{format_alias, format_datetime};
-
 use super::{Uuid, UuidError};
+use crate::datetime::DateTime;
+use crate::format_alias;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,7 +15,7 @@ pub struct Comment {
     pub alias: String,
     pub author_id: i32,
     pub title: Option<String>,
-    pub date: String,
+    pub date: DateTime,
     pub archived: bool,
     pub content: String,
     pub parent_id: i32,
@@ -71,7 +71,7 @@ impl Comment {
             ),
             author_id: comment.author_id as i32,
             title: comment.title,
-            date: format_datetime(&comment.date),
+            date: comment.date.into(),
             archived: comment.archived != 0,
             content: comment.content.unwrap_or_else(|| "".to_string()),
             parent_id: comment.parent_id.or(comment.uuid_id).unwrap() as i32,

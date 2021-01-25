@@ -2,8 +2,6 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use crate::{format_alias, format_datetime};
-
 use self::abstract_entity_revision::EntityRevisionFields;
 use self::abstract_entity_revision::{AbstractEntityRevision, EntityRevisionType};
 use self::applet_revision::AppletRevision;
@@ -15,6 +13,7 @@ use self::generic_entity_revision::GenericRevision;
 use self::video_revision::VideoRevision;
 use super::entity::Entity;
 use super::UuidError;
+use crate::format_alias;
 
 mod abstract_entity_revision;
 mod applet_revision;
@@ -78,7 +77,7 @@ impl EntityRevision {
                 id,
                 Some(&fields.get_or("title", &format!("{}", id))),
             ),
-            date: format_datetime(&revision.date),
+            date: revision.date.into(),
             author_id: revision.author_id as i32,
             repository_id: revision.repository_id as i32,
             changes: fields.get_or("changes", ""),

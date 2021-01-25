@@ -2,7 +2,8 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 
 use super::UuidError;
-use crate::{format_alias, format_datetime};
+use crate::datetime::DateTime;
+use crate::format_alias;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -13,8 +14,8 @@ pub struct User {
     pub trashed: bool,
     pub alias: String,
     pub username: String,
-    pub date: String,
-    pub last_login: Option<String>,
+    pub date: DateTime,
+    pub last_login: Option<DateTime>,
     pub description: Option<String>,
 }
 
@@ -41,8 +42,8 @@ impl User {
             trashed: user.trashed != 0,
             alias: format_alias(Self::get_context().as_deref(), id, Some(&user.username)),
             username: user.username,
-            date: format_datetime(&user.date),
-            last_login: user.last_login.map(|date| format_datetime(&date)),
+            date: user.date.into(),
+            last_login: user.last_login.map(|date| date.into()),
             description: user.description,
         })
     }

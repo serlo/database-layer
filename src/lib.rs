@@ -3,7 +3,6 @@ use std::env;
 use actix_service::ServiceFactory;
 use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
 use actix_web::{App, Error};
-use chrono::{DateTime, TimeZone};
 use dotenv::dotenv;
 use regex::Regex;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
@@ -12,6 +11,7 @@ use sqlx::{MySql, MySqlPool};
 use thiserror::Error;
 
 pub mod alias;
+pub mod datetime;
 pub mod event;
 pub mod health;
 pub mod license;
@@ -21,18 +21,6 @@ pub mod subscriptions;
 pub mod threads;
 pub mod user;
 pub mod uuid;
-
-pub fn format_datetime<Tz: TimeZone>(datetime: &DateTime<Tz>) -> String
-where
-    Tz::Offset: std::fmt::Display,
-{
-    // The datetime in database is persisted as UTC but is actually in local time. So we reinterpreted it here.
-    let naive_datetime = datetime.naive_utc();
-    chrono_tz::Europe::Berlin
-        .from_local_datetime(&naive_datetime)
-        .unwrap()
-        .to_rfc3339()
-}
 
 pub fn format_alias(prefix: Option<&str>, id: i32, suffix: Option<&str>) -> String {
     let prefix = prefix

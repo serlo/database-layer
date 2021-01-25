@@ -4,10 +4,9 @@ use sqlx::MySqlPool;
 
 use abstract_entity::{AbstractEntity, EntityType};
 
-use crate::{format_alias, format_datetime};
-
 use super::taxonomy_term::TaxonomyTerm;
 use super::UuidError;
+use crate::format_alias;
 
 mod abstract_entity;
 
@@ -125,7 +124,7 @@ impl Entity {
                 ),
             ),
             instance: entity.subdomain,
-            date: format_datetime(&entity.date),
+            date: entity.date.into(),
             license_id: entity.license_id,
             taxonomy_term_ids: taxonomy_terms.iter().map(|term| term.id as i32).collect(),
 

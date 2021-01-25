@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
-use super::UuidError;
 use serde::{Deserialize, Serialize};
+
+use super::UuidError;
+use crate::datetime::DateTime;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -11,7 +13,7 @@ pub struct AbstractEntityRevision {
     pub id: i32,
     pub trashed: bool,
     pub alias: String,
-    pub date: String,
+    pub date: DateTime,
     pub author_id: i32,
     pub repository_id: i32,
     pub changes: String,

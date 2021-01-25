@@ -2,11 +2,11 @@ use serde::Serialize;
 
 use super::abstract_event::AbstractEvent;
 
-#[derive(Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetThreadState {
     #[serde(flatten)]
-    abstract_event: AbstractEvent,
+    pub abstract_event: AbstractEvent,
 
     thread_id: i32,
     archived: bool,

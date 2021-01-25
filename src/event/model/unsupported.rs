@@ -2,11 +2,11 @@ use serde::Serialize;
 
 use super::abstract_event::AbstractEvent;
 
-#[derive(Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Unsupported {
     #[serde(flatten)]
-    abstract_event: AbstractEvent,
+    pub abstract_event: AbstractEvent,
 
     r#type: String,
     error: String,

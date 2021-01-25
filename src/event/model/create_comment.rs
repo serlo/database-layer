@@ -5,11 +5,11 @@ use serde::Serialize;
 use super::abstract_event::AbstractEvent;
 use super::EventError;
 
-#[derive(Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateComment {
     #[serde(flatten)]
-    abstract_event: AbstractEvent,
+    pub abstract_event: AbstractEvent,
 
     thread_id: i32,
     comment_id: i32,

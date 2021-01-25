@@ -1,6 +1,5 @@
 use std::convert::TryInto;
 
-use futures::try_join;
 use serde::Serialize;
 
 use super::abstract_event::{AbstractEvent, EventStringParameters, EventUuidParameters};
@@ -21,7 +20,7 @@ use super::unsupported::Unsupported;
 use super::EventError;
 use crate::database::Executor;
 
-#[derive(Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum Event {
     SetThreadState(SetThreadState),
@@ -98,9 +97,6 @@ impl Event {
         .await
         .map_err(|inner| EventError::DatabaseError { inner })?;
 
-        // let (string_parameters, uuid_parameters) = try_join!(string_parameters, uuid_parameters)
-        //     .map_err(|inner| EventError::DatabaseError { inner })?;
-
         let raw_typename = event.name;
         let uuid_id = event.uuid_id as i32;
 
@@ -154,5 +150,51 @@ impl Event {
         };
 
         Ok(event)
+    }
+
+    pub fn get_id(&self) -> i32 {
+        match self {
+            Event::SetThreadState(event) => event.abstract_event.id,
+            Event::CreateComment(event) => event.abstract_event.id,
+            Event::CreateThread(event) => event.abstract_event.id,
+            Event::CreateEntity(event) => event.abstract_event.id,
+            Event::SetLicense(event) => event.abstract_event.id,
+            Event::CreateEntityLink(event) => event.abstract_event.id,
+            Event::RemoveEntityLink(event) => event.abstract_event.id,
+            Event::CreateEntityRevision(event) => event.abstract_event.id,
+            Event::CheckoutRevision(event) => event.abstract_event.id,
+            Event::RejectRevision(event) => event.abstract_event.id,
+            Event::CreateTaxonomyLink(event) => event.abstract_event.id,
+            Event::RemoveTaxonomyLink(event) => event.abstract_event.id,
+            Event::CreateTaxonomyTerm(event) => event.abstract_event.id,
+            Event::SetTaxonomyTerm(event) => event.abstract_event.id,
+            Event::SetTaxonomyParent(event) => event.abstract_event.id,
+            Event::SetUuidState(event) => event.abstract_event.id,
+            Event::Unsupported(event) => event.abstract_event.id,
+        }
+    }
+}
+
+impl From<Event> for AbstractEvent {
+    fn from(event: Event) -> Self {
+        match event {
+            Event::SetThreadState(event) => event.abstract_event,
+            Event::CreateComment(event) => event.abstract_event,
+            Event::CreateThread(event) => event.abstract_event,
+            Event::CreateEntity(event) => event.abstract_event,
+            Event::SetLicense(event) => event.abstract_event,
+            Event::CreateEntityLink(event) => event.abstract_event,
+            Event::RemoveEntityLink(event) => event.abstract_event,
+            Event::CreateEntityRevision(event) => event.abstract_event,
+            Event::CheckoutRevision(event) => event.abstract_event,
+            Event::RejectRevision(event) => event.abstract_event,
+            Event::CreateTaxonomyLink(event) => event.abstract_event,
+            Event::RemoveTaxonomyLink(event) => event.abstract_event,
+            Event::CreateTaxonomyTerm(event) => event.abstract_event,
+            Event::SetTaxonomyTerm(event) => event.abstract_event,
+            Event::SetTaxonomyParent(event) => event.abstract_event,
+            Event::SetUuidState(event) => event.abstract_event,
+            Event::Unsupported(event) => event.abstract_event,
+        }
     }
 }

@@ -5,11 +5,11 @@ use serde::Serialize;
 use super::abstract_event::AbstractEvent;
 use super::EventError;
 
-#[derive(Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateEntityRevision {
     #[serde(flatten)]
-    abstract_event: AbstractEvent,
+    pub abstract_event: AbstractEvent,
 
     entity_id: i32,
     entity_revision_id: i32,

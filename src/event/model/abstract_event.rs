@@ -6,7 +6,7 @@ use super::event_type::EventType;
 use super::EventError;
 use crate::datetime::DateTime;
 
-#[derive(Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AbstractEvent {
     #[serde(rename(serialize = "__typename"))]
@@ -38,6 +38,7 @@ impl AbstractEvent {
     // }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct EventStringParameters(pub HashMap<String, String>);
 
 impl EventStringParameters {
@@ -49,6 +50,7 @@ impl EventStringParameters {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct EventUuidParameters(pub HashMap<String, i32>);
 
 impl EventUuidParameters {

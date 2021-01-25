@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 pub use self::event::Event;
+pub use self::set_uuid_state::SetUuidStateEventPayload;
 
 mod abstract_event;
 mod create_comment;

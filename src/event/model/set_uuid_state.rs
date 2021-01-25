@@ -2,15 +2,15 @@ use serde::Serialize;
 
 use super::abstract_event::AbstractEvent;
 use super::event_type::EventType;
-use super::EventError;
-use crate::database::{Acquire, Connection, Executor, Transaction};
-use crate::event::model::Event;
+use super::{Event, EventError};
+use crate::database::Executor;
+use crate::datetime::DateTime;
 
-#[derive(Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetUuidState {
     #[serde(flatten)]
-    abstract_event: AbstractEvent,
+    pub abstract_event: AbstractEvent,
 
     trashed: bool,
 }
@@ -32,14 +32,11 @@ pub struct SetUuidStateEventPayload {
     raw_typename: String,
     actor_id: i32,
     object_id: i32,
-    trashed: bool,
     instance: String,
 }
 
 impl SetUuidStateEventPayload {
     pub fn new(trashed: bool, actor_id: i32, object_id: i32, instance: &str) -> Self {
-        // TODO: handle datetime yourself
-
         let raw_typename = if trashed {
             "uuid/trash".to_string()
         } else {
@@ -51,7 +48,6 @@ impl SetUuidStateEventPayload {
             raw_typename,
             actor_id,
             object_id,
-            trashed,
             instance: instance.to_string(),
         }
     }
@@ -64,16 +60,18 @@ impl SetUuidStateEventPayload {
             .begin()
             .await
             .map_err(|inner| EventError::DatabaseError { inner })?;
+        let current_datetime = DateTime::now();
         sqlx::query!(
             r#"
-                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id)
-                    SELECT ?, e.id, ?, i.id
+                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)
+                    SELECT ?, e.id, ?, i.id, ?
                     FROM event e
                     JOIN instance i
                     WHERE e.name = ? AND i.subdomain = ?
             "#,
             self.actor_id,
             self.object_id,
+            current_datetime,
             self.raw_typename,
             self.instance
         )
@@ -96,26 +94,47 @@ impl SetUuidStateEventPayload {
 
 #[cfg(test)]
 mod tests {
+    use chrono::Duration;
+
+    use super::SetUuidState;
     use crate::create_database_pool;
-    use crate::event::model::set_uuid_state::SetUuidStateEventPayload;
-    use crate::event::model::Event;
+    use crate::datetime::DateTime;
+    use crate::event::model::abstract_event::AbstractEvent;
+    use crate::event::{Event, SetUuidStateEventPayload};
 
     #[actix_rt::test]
     async fn trigger_trash_event() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let set_uuid_state_event = SetUuidStateEventPayload::new(true, 1, 1855, "de");
+        let actor_id = 1;
+        let object_id = 1855;
+        let instance = "de".to_string();
+
+        let set_uuid_state_event =
+            SetUuidStateEventPayload::new(true, actor_id, object_id, &instance);
 
         let event = set_uuid_state_event.save(&mut transaction).await.unwrap();
-        if let Event::SetUuidState(set_uuid_state_event) = event {
-            let persisted_event =
-                Event::fetch(set_uuid_state_event.abstract_event.id, &mut transaction)
-                    .await
-                    .unwrap();
-        // assert_eq!(persisted_event, event);
+        let persisted_event = Event::fetch(event.get_id(), &mut transaction)
+            .await
+            .unwrap();
+        assert_eq!(persisted_event, event);
+
+        if let Event::SetUuidState(SetUuidState {
+            abstract_event:
+                AbstractEvent {
+                    actor_id: 1,
+                    object_id: 1855,
+                    date,
+                    ..
+                },
+            trashed: true,
+            ..
+        }) = persisted_event
+        {
+            assert!(DateTime::now().signed_duration_since(date) < Duration::minutes(1))
         } else {
-            panic!("Wrong event type");
+            panic!("Event does not fulfill assertions: {:?}", persisted_event)
         }
     }
 }

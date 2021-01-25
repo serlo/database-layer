@@ -4,8 +4,6 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use crate::format_datetime;
-
 use super::abstract_event::{AbstractEvent, EventStringParameters, EventUuidParameters};
 use super::create_comment::CreateComment;
 use super::create_entity::CreateEntity;
@@ -113,7 +111,7 @@ impl Event {
                 .map_err(|_error| EventError::InvalidType)?,
             id: event.id as i32,
             instance: event.subdomain.to_string(),
-            date: format_datetime(&event.date),
+            date: event.date.into(),
             actor_id: event.actor_id as i32,
             object_id: uuid_id,
             raw_typename,

@@ -1,8 +1,9 @@
 use std::env;
-use std::time::SystemTime;
 
 use sqlx::MySqlPool;
 use thiserror::Error;
+
+use crate::datetime::DateTime;
 
 pub struct User {}
 
@@ -19,11 +20,11 @@ impl User {
                 SELECT u.id
                     FROM user u
                     JOIN event_log e ON u.id = e.actor_id
-                    WHERE e.event_id = 5 AND e.date > DATE_SUB(FROM_UNIXTIME(?), Interval 90 day)
+                    WHERE e.event_id = 5 AND e.date > DATE_SUB(?, Interval 90 day)
                     GROUP BY u.id
                     HAVING count(e.event_id) > 10
             "#,
-            get_mysql_date_string()
+            Self::now()
         )
         .fetch_all(pool)
         .await
@@ -38,30 +39,25 @@ impl User {
                     FROM event_log e1
                     JOIN event_log e2 ON e1.uuid_id = e2.uuid_id AND (e1.event_id = 6 OR e1.event_id = 11) AND e2.event_id = 5 AND e1.date >= e2.date AND e1.actor_id != e2.actor_id
                     JOIN user u ON u.id = e1.actor_id
-                    WHERE e1.date > DATE_SUB(FROM_UNIXTIME(?), Interval 90 day)
+                    WHERE e1.date > DATE_SUB(?, Interval 90 day)
                     GROUP BY u.id
                     HAVING count(e1.event_id) > 10
             "#,
-            get_mysql_date_string()
+            Self::now()
         )
         .fetch_all(pool)
         .await
         .map_err(|inner| UserError::DatabaseError { inner })?;
         Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }
-}
 
-fn get_mysql_date_string() -> u64 {
-    // In the development database there are no recent edits so we use an old timestamp (2014-01-01).
-    // In production, we use the current time.
-    let environment = env::var("ENV").unwrap();
-    match environment.as_str() {
-        "development" => 1388534400,
-        _ => {
-            let duration = SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap();
-            duration.as_secs()
+    fn now() -> DateTime {
+        // In the development database there are no recent edits so we use an old timestamp (2014-01-01).
+        // In production, we use the current time.
+        let environment = env::var("ENV").unwrap();
+        match environment.as_str() {
+            "development" => DateTime::ymd(2014, 1, 1),
+            _ => DateTime::now(),
         }
     }
 }

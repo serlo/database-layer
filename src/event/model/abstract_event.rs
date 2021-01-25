@@ -4,6 +4,7 @@ use serde::Serialize;
 
 use super::event_type::EventType;
 use super::EventError;
+use crate::datetime::DateTime;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -12,7 +13,7 @@ pub struct AbstractEvent {
     pub __typename: EventType,
     pub id: i32,
     pub instance: String,
-    pub date: String,
+    pub date: DateTime,
     pub actor_id: i32,
     pub object_id: i32,
 

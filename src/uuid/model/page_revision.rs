@@ -2,7 +2,8 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 
 use super::UuidError;
-use crate::{format_alias, format_datetime};
+use crate::datetime::DateTime;
+use crate::format_alias;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -14,7 +15,7 @@ pub struct PageRevision {
     pub alias: String,
     pub title: String,
     pub content: String,
-    pub date: String,
+    pub date: DateTime,
     pub author_id: i32,
     pub repository_id: i32,
 }
@@ -45,7 +46,7 @@ impl PageRevision {
                 alias: format_alias(None, id, Some(&revision.title)),
                 title: revision.title,
                 content: revision.content,
-                date: format_datetime(&revision.date),
+                date: revision.date.into(),
                 author_id: revision.author_id as i32,
                 repository_id: revision.page_repository_id as i32,
             }

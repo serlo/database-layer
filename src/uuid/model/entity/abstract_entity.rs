@@ -5,6 +5,7 @@ use sqlx::mysql::MySqlTypeInfo;
 use sqlx::MySql;
 
 use super::UuidError;
+use crate::datetime::DateTime;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,7 +16,7 @@ pub struct AbstractEntity {
     pub trashed: bool,
     pub alias: String,
     pub instance: String,
-    pub date: String,
+    pub date: DateTime,
     pub license_id: i32,
     pub taxonomy_term_ids: Vec<i32>,
 

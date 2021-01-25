@@ -22,8 +22,16 @@ use super::unsupported::Unsupported;
 use super::EventError;
 
 #[derive(Serialize)]
+pub struct Event {
+    #[serde(flatten)]
+    abstract_event: AbstractEvent,
+    #[serde(flatten)]
+    concrete_event: ConcreteEvent,
+}
+
+#[derive(Serialize)]
 #[serde(untagged)]
-pub enum Event {
+pub enum ConcreteEvent {
     SetThreadState(SetThreadState),
     CreateComment(CreateComment),
     CreateThread(CreateThread),
@@ -120,28 +128,51 @@ impl Event {
             uuid_parameters,
         };
 
-        let event = match abstract_event.__typename {
-            EventType::CheckoutRevision => Event::CheckoutRevision(abstract_event.try_into()?),
-            EventType::CreateComment => Event::CreateComment(abstract_event.try_into()?),
-            EventType::CreateEntity => Event::CreateEntity(abstract_event.into()),
-            EventType::CreateEntityLink => Event::CreateEntityLink(abstract_event.try_into()?),
-            EventType::CreateEntityRevision => {
-                Event::CreateEntityRevision(abstract_event.try_into()?)
+        let abstract_event_ref = &abstract_event;
+
+        let concrete_event = match abstract_event_ref.__typename {
+            EventType::CheckoutRevision => {
+                ConcreteEvent::CheckoutRevision(abstract_event_ref.try_into()?)
             }
-            EventType::CreateTaxonomyLink => Event::CreateTaxonomyLink(abstract_event.try_into()?),
-            EventType::CreateTaxonomyTerm => Event::CreateTaxonomyTerm(abstract_event.into()),
-            EventType::CreateThread => Event::CreateThread(abstract_event.try_into()?),
-            EventType::RejectRevision => Event::RejectRevision(abstract_event.try_into()?),
-            EventType::RemoveEntityLink => Event::RemoveEntityLink(abstract_event.try_into()?),
-            EventType::RemoveTaxonomyLink => Event::RemoveTaxonomyLink(abstract_event.try_into()?),
-            EventType::SetLicense => Event::SetLicense(abstract_event.into()),
-            EventType::SetTaxonomyParent => Event::SetTaxonomyParent(abstract_event.try_into()?),
-            EventType::SetTaxonomyTerm => Event::SetTaxonomyTerm(abstract_event.into()),
-            EventType::SetThreadState => Event::SetThreadState(abstract_event.into()),
-            EventType::SetUuidState => Event::SetUuidState(abstract_event.into()),
-            EventType::Unsupported => Event::Unsupported(abstract_event.into()),
+            EventType::CreateComment => {
+                ConcreteEvent::CreateComment(abstract_event_ref.try_into()?)
+            }
+            EventType::CreateEntity => ConcreteEvent::CreateEntity(abstract_event_ref.into()),
+            EventType::CreateEntityLink => {
+                ConcreteEvent::CreateEntityLink(abstract_event_ref.try_into()?)
+            }
+            EventType::CreateEntityRevision => {
+                ConcreteEvent::CreateEntityRevision(abstract_event_ref.try_into()?)
+            }
+            EventType::CreateTaxonomyLink => {
+                ConcreteEvent::CreateTaxonomyLink(abstract_event_ref.try_into()?)
+            }
+            EventType::CreateTaxonomyTerm => {
+                ConcreteEvent::CreateTaxonomyTerm(abstract_event_ref.into())
+            }
+            EventType::CreateThread => ConcreteEvent::CreateThread(abstract_event_ref.try_into()?),
+            EventType::RejectRevision => {
+                ConcreteEvent::RejectRevision(abstract_event_ref.try_into()?)
+            }
+            EventType::RemoveEntityLink => {
+                ConcreteEvent::RemoveEntityLink(abstract_event_ref.try_into()?)
+            }
+            EventType::RemoveTaxonomyLink => {
+                ConcreteEvent::RemoveTaxonomyLink(abstract_event_ref.try_into()?)
+            }
+            EventType::SetLicense => ConcreteEvent::SetLicense(abstract_event_ref.into()),
+            EventType::SetTaxonomyParent => {
+                ConcreteEvent::SetTaxonomyParent(abstract_event_ref.try_into()?)
+            }
+            EventType::SetTaxonomyTerm => ConcreteEvent::SetTaxonomyTerm(abstract_event_ref.into()),
+            EventType::SetThreadState => ConcreteEvent::SetThreadState(abstract_event_ref.into()),
+            EventType::SetUuidState => ConcreteEvent::SetUuidState(abstract_event_ref.into()),
+            EventType::Unsupported => ConcreteEvent::Unsupported(abstract_event_ref.into()),
         };
 
-        Ok(event)
+        Ok(Event {
+            abstract_event,
+            concrete_event,
+        })
     }
 }

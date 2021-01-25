@@ -76,8 +76,10 @@ impl Uuid {
             Uuid::Attachment(attachment) => attachment.alias.to_string(),
             Uuid::BlogPost(blog) => blog.alias.to_string(),
             Uuid::Comment(comment) => comment.alias.to_string(),
-            Uuid::Entity(entity) => entity.get_alias(),
-            Uuid::EntityRevision(entity_revision) => entity_revision.get_alias(),
+            Uuid::Entity(entity) => entity.abstract_entity.alias.to_string(),
+            Uuid::EntityRevision(entity_revision) => {
+                entity_revision.abstract_entity_revision.alias.to_string()
+            }
             Uuid::Page(page) => page.alias.to_string(),
             Uuid::PageRevision(page_revision) => page_revision.alias.to_string(),
             Uuid::TaxonomyTerm(taxonomy_term) => taxonomy_term.alias.to_string(),

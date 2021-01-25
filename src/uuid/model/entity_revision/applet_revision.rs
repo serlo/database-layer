@@ -5,9 +5,6 @@ use super::abstract_entity_revision::AbstractEntityRevision;
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppletRevision {
-    #[serde(flatten)]
-    pub abstract_entity_revision: AbstractEntityRevision,
-
     url: String,
     title: String,
     content: String,
@@ -15,8 +12,8 @@ pub struct AppletRevision {
     meta_description: String,
 }
 
-impl From<AbstractEntityRevision> for AppletRevision {
-    fn from(abstract_entity_revision: AbstractEntityRevision) -> Self {
+impl From<&AbstractEntityRevision> for AppletRevision {
+    fn from(abstract_entity_revision: &AbstractEntityRevision) -> Self {
         let url = abstract_entity_revision.fields.get_or("url", "");
         let title = abstract_entity_revision.fields.get_or("title", "");
         let content = abstract_entity_revision.fields.get_or("content", "");
@@ -26,8 +23,6 @@ impl From<AbstractEntityRevision> for AppletRevision {
             .get_or("meta_description", "");
 
         AppletRevision {
-            abstract_entity_revision,
-
             url,
             title,
             content,

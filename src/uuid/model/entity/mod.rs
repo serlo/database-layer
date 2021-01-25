@@ -11,9 +11,17 @@ use crate::format_alias;
 mod abstract_entity;
 
 #[derive(Serialize)]
+pub struct Entity {
+    #[serde(flatten)]
+    pub abstract_entity: AbstractEntity,
+    #[serde(flatten)]
+    pub concrete_entity: ConcreteEntity,
+}
+
+#[derive(Serialize)]
 #[serde(untagged)]
-pub enum Entity {
-    Generic(AbstractEntity),
+pub enum ConcreteEntity {
+    Generic,
     Course(Course),
     CoursePage(CoursePage),
     ExerciseGroup(ExerciseGroup),
@@ -25,45 +33,30 @@ pub enum Entity {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Course {
-    #[serde(flatten)]
-    abstract_entity: AbstractEntity,
-
     page_ids: Vec<i32>,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CoursePage {
-    #[serde(flatten)]
-    abstract_entity: AbstractEntity,
-
     parent_id: i32,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExerciseGroup {
-    #[serde(flatten)]
-    abstract_entity: AbstractEntity,
-
     exercise_ids: Vec<i32>,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Exercise {
-    #[serde(flatten)]
-    abstract_entity: AbstractEntity,
-
     solution_id: Option<i32>,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupedExercise {
-    #[serde(flatten)]
-    abstract_entity: AbstractEntity,
-
     parent_id: i32,
     solution_id: Option<i32>,
 }
@@ -71,9 +64,6 @@ pub struct GroupedExercise {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Solution {
-    #[serde(flatten)]
-    abstract_entity: AbstractEntity,
-
     parent_id: i32,
 }
 
@@ -136,55 +126,37 @@ impl Entity {
                 .collect(),
         };
 
-        let entity = match abstract_entity.__typename {
+        let concrete_entity = match abstract_entity.__typename {
             EntityType::Course => {
                 let page_ids =
                     Self::find_children_by_id_and_type(id, EntityType::CoursePage, pool).await?;
 
-                Entity::Course(Course {
-                    abstract_entity,
-
-                    page_ids,
-                })
+                ConcreteEntity::Course(Course { page_ids })
             }
             EntityType::CoursePage => {
                 let parent_id = Self::find_parent_by_id(id, pool).await?;
 
-                Entity::CoursePage(CoursePage {
-                    abstract_entity,
-
-                    parent_id,
-                })
+                ConcreteEntity::CoursePage(CoursePage { parent_id })
             }
             EntityType::ExerciseGroup => {
                 let exercise_ids =
                     Self::find_children_by_id_and_type(id, EntityType::GroupedExercise, pool)
                         .await?;
 
-                Entity::ExerciseGroup(ExerciseGroup {
-                    abstract_entity,
-
-                    exercise_ids,
-                })
+                ConcreteEntity::ExerciseGroup(ExerciseGroup { exercise_ids })
             }
             EntityType::Exercise => {
                 let solution_id =
                     Self::find_child_by_id_and_type(id, EntityType::Solution, pool).await?;
 
-                Entity::Exercise(Exercise {
-                    abstract_entity,
-
-                    solution_id,
-                })
+                ConcreteEntity::Exercise(Exercise { solution_id })
             }
             EntityType::GroupedExercise => {
                 let parent_id = Self::find_parent_by_id(id, pool).await?;
                 let solution_id =
                     Self::find_child_by_id_and_type(id, EntityType::Solution, pool).await?;
 
-                Entity::GroupedExercise(GroupedExercise {
-                    abstract_entity,
-
+                ConcreteEntity::GroupedExercise(GroupedExercise {
                     parent_id,
                     solution_id,
                 })
@@ -192,16 +164,15 @@ impl Entity {
             EntityType::Solution => {
                 let parent_id = Self::find_parent_by_id(id, pool).await?;
 
-                Entity::Solution(Solution {
-                    abstract_entity,
-
-                    parent_id,
-                })
+                ConcreteEntity::Solution(Solution { parent_id })
             }
-            _ => Entity::Generic(abstract_entity),
+            _ => ConcreteEntity::Generic,
         };
 
-        Ok(entity)
+        Ok(Entity {
+            abstract_entity,
+            concrete_entity,
+        })
     }
 
     pub async fn fetch_canonical_subject(
@@ -288,21 +259,5 @@ impl Entity {
         Self::find_children_by_id_and_type(id, child_type, pool)
             .await
             .map(|children| children.first().cloned())
-    }
-
-    pub fn get_alias(&self) -> String {
-        match self {
-            Entity::Generic(abstract_entity) => abstract_entity.alias.to_string(),
-            Entity::Course(course) => course.abstract_entity.alias.to_string(),
-            Entity::CoursePage(course_page) => course_page.abstract_entity.alias.to_string(),
-            Entity::ExerciseGroup(exercise_group) => {
-                exercise_group.abstract_entity.alias.to_string()
-            }
-            Entity::Exercise(exercise) => exercise.abstract_entity.alias.to_string(),
-            Entity::GroupedExercise(grouped_exercise) => {
-                grouped_exercise.abstract_entity.alias.to_string()
-            }
-            Entity::Solution(solution) => solution.abstract_entity.alias.to_string(),
-        }
     }
 }

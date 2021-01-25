@@ -2,12 +2,7 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Subscriptions {
-    pub user_id: i32,
-    pub subscriptions: Vec<Subscription>,
-}
+pub struct Subscriptions(Vec<Subscription>);
 
 #[derive(Error, Debug)]
 pub enum SubscriptionsError {
@@ -15,32 +10,83 @@ pub enum SubscriptionsError {
     DatabaseError { inner: sqlx::Error },
 }
 
-#[derive(Serialize)]
 pub struct Subscription {
-    pub id: i32,
+    pub object_id: i32,
+    pub user_id: i32,
+    pub send_email: bool,
 }
 
 impl Subscriptions {
-    pub async fn fetch(
-        user_id: i32,
-        pool: &MySqlPool,
-    ) -> Result<Subscriptions, SubscriptionsError> {
+    pub async fn fetch_by_user(user_id: i32, pool: &MySqlPool) -> Result<Self, SubscriptionsError> {
         let subscriptions = sqlx::query!(
-            r#"SELECT uuid_id FROM subscription WHERE user_id = ?"#,
+            r#"SELECT uuid_id, user_id, notify_mailman FROM subscription WHERE user_id = ?"#,
             user_id
         )
         .fetch_all(pool)
         .await
         .map_err(|inner| SubscriptionsError::DatabaseError { inner })?;
 
-        let subscriptions: Vec<Subscription> = subscriptions
+        let subscriptions = subscriptions
             .iter()
             .map(|child| Subscription {
-                id: child.uuid_id as i32,
+                object_id: child.uuid_id as i32,
+                user_id: child.user_id as i32,
+                send_email: child.notify_mailman != 0,
             })
             .collect();
 
-        Ok(Subscriptions {
+        Ok(Subscriptions(subscriptions))
+    }
+
+    pub async fn fetch_by_object(
+        object_id: i32,
+        pool: &MySqlPool,
+    ) -> Result<Self, SubscriptionsError> {
+        let subscriptions = sqlx::query!(
+            r#"SELECT uuid_id, user_id, notify_mailman FROM subscription WHERE uuid_id = ?"#,
+            object_id
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|inner| SubscriptionsError::DatabaseError { inner })?;
+
+        let subscriptions = subscriptions
+            .iter()
+            .map(|child| Subscription {
+                object_id: child.uuid_id as i32,
+                user_id: child.user_id as i32,
+                send_email: child.notify_mailman != 0,
+            })
+            .collect();
+
+        Ok(Subscriptions(subscriptions))
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SubscriptionsByUser {
+    user_id: i32,
+    subscriptions: Vec<SubscriptionByUser>,
+}
+
+#[derive(Serialize)]
+pub struct SubscriptionByUser {
+    id: i32,
+}
+
+impl SubscriptionsByUser {
+    pub async fn fetch(user_id: i32, pool: &MySqlPool) -> Result<Self, SubscriptionsError> {
+        let subscriptions = Subscriptions::fetch_by_user(user_id, pool).await?;
+        let subscriptions = subscriptions
+            .0
+            .iter()
+            .map(|child| SubscriptionByUser {
+                id: child.object_id,
+            })
+            .collect();
+
+        Ok(SubscriptionsByUser {
             user_id,
             subscriptions,
         })

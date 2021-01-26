@@ -1,4 +1,4 @@
-pub use uuid::{Uuid, UuidError};
+pub use uuid::{SetUuidStateError, SetUuidStatePayload, Uuid, UuidError};
 
 mod attachment;
 mod blog_post;

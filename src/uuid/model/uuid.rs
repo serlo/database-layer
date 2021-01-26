@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use thiserror::Error;
 
@@ -7,6 +7,8 @@ use super::{
     entity_revision::EntityRevision, page::Page, page_revision::PageRevision,
     taxonomy_term::TaxonomyTerm, user::User,
 };
+use crate::database::Executor;
+use crate::event::{EventError, SetUuidStateEventPayload};
 
 #[derive(Serialize)]
 #[serde(untagged)]
@@ -20,6 +22,30 @@ pub enum Uuid {
     PageRevision(PageRevision),
     TaxonomyTerm(TaxonomyTerm),
     User(User),
+}
+
+#[derive(Error, Debug)]
+pub enum UuidError {
+    #[error("UUID cannot be fetched because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error(
+        "UUID cannot be fetched because its discriminator `{discriminator:?}` is not supported."
+    )]
+    UnsupportedDiscriminator { discriminator: String },
+    #[error("Entity cannot be fetched because its type `{name:?}` is not supported.")]
+    UnsupportedEntityType { name: String },
+    #[error("EntityRevision cannot be fetched because its type `{name:?}` is not supported.")]
+    UnsupportedEntityRevisionType { name: String },
+    #[error("Entity cannot be fetched because its parent is missing.")]
+    EntityMissingRequiredParent,
+    #[error("UUID cannot be fetched because it does not exist.")]
+    NotFound,
+}
+
+impl From<sqlx::Error> for UuidError {
+    fn from(inner: sqlx::Error) -> Self {
+        UuidError::DatabaseError { inner }
+    }
 }
 
 impl Uuid {
@@ -89,26 +115,151 @@ impl Uuid {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum UuidError {
-    #[error("UUID cannot be fetched because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error(
-        "UUID cannot be fetched because its discriminator `{discriminator:?}` is not supported."
-    )]
-    UnsupportedDiscriminator { discriminator: String },
-    #[error("Entity cannot be fetched because its type `{name:?}` is not supported.")]
-    UnsupportedEntityType { name: String },
-    #[error("EntityRevision cannot be fetched because its type `{name:?}` is not supported.")]
-    UnsupportedEntityRevisionType { name: String },
-    #[error("Entity cannot be fetched because its parent is missing.")]
-    EntityMissingRequiredParent,
-    #[error("UUID cannot be fetched because it does not exist.")]
-    NotFound,
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetUuidStatePayload {
+    ids: Vec<i32>,
+    user_id: i32,
+    trashed: bool,
+    instance: String,
 }
 
-impl From<sqlx::Error> for UuidError {
+#[derive(Error, Debug)]
+pub enum SetUuidStateError {
+    #[error("UUID state cannot be set because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("UUID state cannot be set because of an internal error: {inner:?}.")]
+    EventError { inner: EventError },
+}
+
+impl From<sqlx::Error> for SetUuidStateError {
     fn from(inner: sqlx::Error) -> Self {
-        UuidError::DatabaseError { inner }
+        SetUuidStateError::DatabaseError { inner }
+    }
+}
+
+impl From<EventError> for SetUuidStateError {
+    fn from(error: EventError) -> Self {
+        match error {
+            EventError::DatabaseError { inner } => inner.into(),
+            inner => SetUuidStateError::EventError { inner },
+        }
+    }
+}
+
+impl Uuid {
+    pub async fn set_uuid_state<'a, E>(
+        payload: SetUuidStatePayload,
+        executor: E,
+    ) -> Result<(), SetUuidStateError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        for id in payload.ids.into_iter() {
+            let uuid = sqlx::query!(
+                r#"
+                    SELECT id, trashed
+                        FROM uuid
+                        WHERE id = ?
+                "#,
+                id
+            )
+            .fetch_one(&mut transaction)
+            .await?;
+
+            if (uuid.trashed != 0) == payload.trashed {
+                continue;
+            }
+
+            sqlx::query!(
+                r#"
+                    UPDATE uuid
+                        SET trashed = ?
+                        WHERE id = ?
+                "#,
+                payload.trashed,
+                id
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            SetUuidStateEventPayload::new(payload.trashed, payload.user_id, id, &payload.instance)
+                .save(&mut transaction)
+                .await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::Duration;
+
+    use super::{SetUuidStatePayload, Uuid};
+    use crate::create_database_pool;
+    use crate::datetime::DateTime;
+    use crate::event::Event;
+
+    #[actix_rt::test]
+    async fn set_uuid_state_no_id() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Uuid::set_uuid_state(
+            SetUuidStatePayload {
+                ids: vec![],
+                user_id: 1,
+                trashed: true,
+                instance: "de".to_string(),
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+    }
+
+    #[actix_rt::test]
+    async fn set_uuid_state_single_id() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Uuid::set_uuid_state(
+            SetUuidStatePayload {
+                ids: vec![1855],
+                user_id: 1,
+                trashed: true,
+                instance: "de".to_string(),
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        // Verify that the object was trashed.
+        let uuid = sqlx::query!(r#"SELECT trashed FROM uuid WHERE id = ?"#, 1855)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap();
+        assert!(uuid.trashed != 0);
+
+        // Verify that the event was created.
+        let event = sqlx::query!(
+            r#"SELECT id FROM event_log WHERE uuid_id = ? ORDER BY date DESC"#,
+            1855
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap();
+        let event = Event::fetch_via_transaction(event.id as i32, &mut transaction)
+            .await
+            .unwrap();
+        assert!(
+            DateTime::now().signed_duration_since(event.abstract_event.date) < Duration::minutes(1)
+        )
     }
 }

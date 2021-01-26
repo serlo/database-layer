@@ -1,7 +1,7 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
-use super::model::{Uuid, UuidError};
+use super::model::{SetUuidStateError, SetUuidStatePayload, Uuid, UuidError};
 
 #[get("/uuid/{id}")]
 async fn uuid(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
@@ -34,6 +34,30 @@ async fn uuid(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respond
     }
 }
 
+#[post("/set-uuid-state")]
+async fn set_state(
+    payload: web::Json<SetUuidStatePayload>,
+    db_pool: web::Data<MySqlPool>,
+) -> impl Responder {
+    match Uuid::set_uuid_state(payload.into_inner(), db_pool.get_ref()).await {
+        Ok(_) => HttpResponse::Ok()
+            .content_type("application/json; charset=utf-8")
+            .json(vec![1 as i32]),
+        Err(e) => {
+            println!("/set-uuid-state/: {:?}", e);
+            match e {
+                SetUuidStateError::DatabaseError { .. } => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
+                SetUuidStateError::EventError { .. } => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
+            }
+        }
+    }
+}
+
 pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.service(uuid);
+    cfg.service(set_state);
 }

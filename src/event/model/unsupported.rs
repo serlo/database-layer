@@ -4,16 +4,16 @@ use super::abstract_event::AbstractEvent;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Unsupported {
+pub struct UnsupportedEvent {
     r#type: String,
     error: String,
 }
 
-impl From<&AbstractEvent> for Unsupported {
+impl From<&AbstractEvent> for UnsupportedEvent {
     fn from(abstract_event: &AbstractEvent) -> Self {
         let r#type = abstract_event.raw_typename.to_string();
 
-        Unsupported {
+        UnsupportedEvent {
             r#type,
             error: "unsupported".to_string(),
         }

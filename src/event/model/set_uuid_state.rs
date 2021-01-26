@@ -4,14 +4,14 @@ use super::abstract_event::AbstractEvent;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SetUuidState {
+pub struct SetUuidStateEvent {
     trashed: bool,
 }
 
-impl From<&AbstractEvent> for SetUuidState {
+impl From<&AbstractEvent> for SetUuidStateEvent {
     fn from(abstract_event: &AbstractEvent) -> Self {
         let trashed = abstract_event.raw_typename == "uuid/trash";
 
-        SetUuidState { trashed }
+        SetUuidStateEvent { trashed }
     }
 }

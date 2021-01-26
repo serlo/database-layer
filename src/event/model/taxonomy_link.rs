@@ -7,19 +7,19 @@ use super::EventError;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TaxonomyLink {
+pub struct TaxonomyLinkEvent {
     parent_id: i32,
     child_id: i32,
 }
 
-impl TryFrom<&AbstractEvent> for TaxonomyLink {
+impl TryFrom<&AbstractEvent> for TaxonomyLinkEvent {
     type Error = EventError;
 
     fn try_from(abstract_event: &AbstractEvent) -> Result<Self, Self::Error> {
         let parent_id = abstract_event.object_id;
         let child_id = abstract_event.uuid_parameters.try_get("object")?;
 
-        Ok(TaxonomyLink {
+        Ok(TaxonomyLinkEvent {
             parent_id,
             child_id,
         })

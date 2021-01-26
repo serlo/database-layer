@@ -7,13 +7,13 @@ use super::EventError;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Revision {
+pub struct RevisionEvent {
     repository_id: i32,
     revision_id: i32,
     reason: String,
 }
 
-impl TryFrom<&AbstractEvent> for Revision {
+impl TryFrom<&AbstractEvent> for RevisionEvent {
     type Error = EventError;
 
     fn try_from(abstract_event: &AbstractEvent) -> Result<Self, Self::Error> {
@@ -21,7 +21,7 @@ impl TryFrom<&AbstractEvent> for Revision {
         let revision_id = abstract_event.object_id;
         let reason = abstract_event.string_parameters.get_or("reason", "");
 
-        Ok(Revision {
+        Ok(RevisionEvent {
             repository_id,
             revision_id,
             reason,

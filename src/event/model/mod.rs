@@ -1,7 +1,21 @@
 use thiserror::Error;
 
-pub use self::abstract_event::AbstractEvent;
-pub use self::event::Event;
+pub use self::abstract_event::*;
+pub use self::create_comment::*;
+pub use self::create_entity::*;
+pub use self::create_entity_revision::*;
+pub use self::create_thread::*;
+pub use self::entity_link::*;
+pub use self::event::*;
+pub use self::event_type::*;
+pub use self::revision::*;
+pub use self::set_license::*;
+pub use self::set_taxonomy_parent::*;
+pub use self::set_thread_state::*;
+pub use self::set_uuid_state::*;
+pub use self::taxonomy_link::*;
+pub use self::taxonomy_term::*;
+pub use self::unsupported::*;
 
 mod abstract_event;
 mod create_comment;

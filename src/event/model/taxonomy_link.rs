@@ -5,7 +5,7 @@ use serde::Serialize;
 use super::abstract_event::AbstractEvent;
 use super::EventError;
 
-#[derive(Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaxonomyLinkEvent {
     parent_id: i32,

@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use super::abstract_event::AbstractEvent;
 
-#[derive(Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetLicenseEvent {
     repository_id: i32,

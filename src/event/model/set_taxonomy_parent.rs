@@ -5,7 +5,7 @@ use serde::Serialize;
 use super::abstract_event::AbstractEvent;
 use super::EventError;
 
-#[derive(Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetTaxonomyParentEvent {
     child_id: i32,

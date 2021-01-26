@@ -21,7 +21,7 @@ use super::unsupported::UnsupportedEvent;
 use super::EventError;
 use crate::database::Executor;
 
-#[derive(Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct Event {
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
@@ -29,7 +29,7 @@ pub struct Event {
     pub concrete_event: ConcreteEvent,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum ConcreteEvent {
     SetThreadState(SetThreadStateEvent),

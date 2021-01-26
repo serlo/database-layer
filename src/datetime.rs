@@ -38,7 +38,7 @@ use sqlx::MySql;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct DateTime(chrono::DateTime<Utc>);
 
 impl DateTime {

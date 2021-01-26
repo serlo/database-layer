@@ -43,7 +43,7 @@ impl TaxonomyTerm {
             .await
             .map_err(|error| match error {
                 sqlx::Error::RowNotFound => UuidError::NotFound,
-                inner => UuidError::DatabaseError { inner },
+                error => error.into(),
             })?;
 
         let entities_fut = sqlx::query!(
@@ -67,8 +67,7 @@ impl TaxonomyTerm {
         )
         .fetch_all(pool);
         let subject_fut = TaxonomyTerm::fetch_canonical_subject(id, pool);
-        let (entities, children, subject) = try_join!(entities_fut, children_fut, subject_fut)
-            .map_err(|inner| UuidError::DatabaseError { inner })?;
+        let (entities, children, subject) = try_join!(entities_fut, children_fut, subject_fut)?;
         let mut children_ids: Vec<i32> = entities
             .iter()
             .map(|child| child.entity_id as i32)

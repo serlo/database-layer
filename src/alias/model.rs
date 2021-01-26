@@ -23,6 +23,12 @@ pub enum AliasError {
     NotFound,
 }
 
+impl From<sqlx::Error> for AliasError {
+    fn from(inner: sqlx::Error) -> Self {
+        AliasError::DatabaseError { inner }
+    }
+}
+
 impl Alias {
     pub async fn fetch(path: &str, instance: &str, pool: &MySqlPool) -> Result<Alias, AliasError> {
         if path == "backend"
@@ -93,7 +99,7 @@ impl Alias {
                 .await
                 .map_err(|error| match error {
                     sqlx::Error::RowNotFound => AliasError::NotFound,
-                    inner => AliasError::DatabaseError { inner },
+                    error => error.into(),
                 })
                 .map(|user| user.id as i32)?
             }
@@ -115,7 +121,7 @@ impl Alias {
                     .await
                     .map_err(|error| match error {
                         sqlx::Error::RowNotFound => AliasError::NotFound,
-                        inner => AliasError::DatabaseError { inner },
+                        error => error.into(),
                     })
                     .map(|alias| alias.uuid_id as i32)?,
                 }

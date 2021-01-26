@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+pub use self::abstract_event::AbstractEvent;
 pub use self::event::Event;
 
 mod abstract_event;
@@ -29,4 +30,10 @@ pub enum EventError {
     MissingRequiredField,
     #[error("Event does not exist.")]
     NotFound,
+}
+
+impl From<sqlx::Error> for EventError {
+    fn from(inner: sqlx::Error) -> Self {
+        EventError::DatabaseError { inner }
+    }
 }

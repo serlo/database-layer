@@ -37,7 +37,7 @@ impl Page {
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => UuidError::NotFound,
-            inner => UuidError::DatabaseError { inner },
+            error => error.into(),
         })?;
 
         let revisions = sqlx::query!(
@@ -45,8 +45,7 @@ impl Page {
             id
         )
         .fetch_all(pool)
-        .await
-        .map_err(|inner| UuidError::DatabaseError { inner })?;
+        .await?;
 
         if revisions.is_empty() {
             Err(UuidError::NotFound)

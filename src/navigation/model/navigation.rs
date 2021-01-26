@@ -16,6 +16,12 @@ pub enum NavigationError {
     DatabaseError { inner: sqlx::Error },
 }
 
+impl From<sqlx::Error> for NavigationError {
+    fn from(inner: sqlx::Error) -> Self {
+        NavigationError::DatabaseError { inner }
+    }
+}
+
 impl Navigation {
     pub async fn fetch(instance: &str, pool: &MySqlPool) -> Result<Navigation, NavigationError> {
         let pages = sqlx::query!(
@@ -31,8 +37,7 @@ impl Navigation {
             instance
         )
         .fetch_all(pool)
-        .await
-        .map_err(|inner| NavigationError::DatabaseError { inner })?;
+        .await?;
 
         let mut data = Vec::with_capacity(pages.len());
 
@@ -41,7 +46,7 @@ impl Navigation {
                 Ok(navigation_child) => data.push(navigation_child),
                 Err(error) => match error {
                     NavigationChildError::DatabaseError { inner } => {
-                        return Err(NavigationError::DatabaseError { inner })
+                        return Err(inner.into())
                     }
                     NavigationChildError::NotVisible => {}
                     NavigationChildError::InvalidRoute => {}

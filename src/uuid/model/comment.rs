@@ -38,7 +38,7 @@ impl Comment {
             .await
             .map_err(|error| match error {
                 sqlx::Error::RowNotFound => UuidError::NotFound,
-                inner => UuidError::DatabaseError { inner },
+                error => error.into(),
             })?;
 
         let children = sqlx::query!(
@@ -50,8 +50,7 @@ impl Comment {
             id
         )
         .fetch_all(pool)
-        .await
-        .map_err(|inner| UuidError::DatabaseError { inner })?;
+        .await?;
 
         Ok(Comment {
             __typename: "Comment".to_string(),
@@ -95,7 +94,7 @@ impl Comment {
         .fetch_one(pool).await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => UuidError::NotFound,
-            inner => UuidError::DatabaseError { inner },
+            error => error.into(),
         })?;
         Uuid::fetch_context(object.id.unwrap() as i32, pool).await
     }

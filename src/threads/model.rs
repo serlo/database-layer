@@ -14,6 +14,12 @@ pub enum ThreadsError {
     DatabaseError { inner: sqlx::Error },
 }
 
+impl From<sqlx::Error> for ThreadsError {
+    fn from(inner: sqlx::Error) -> Self {
+        ThreadsError::DatabaseError { inner }
+    }
+}
+
 impl Threads {
     pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Threads, ThreadsError> {
         let result = sqlx::query!(
@@ -21,8 +27,7 @@ impl Threads {
             id
         )
         .fetch_all(pool)
-        .await
-        .map_err(|inner| ThreadsError::DatabaseError { inner })?;
+        .await?;
 
         let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();
 

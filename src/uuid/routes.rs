@@ -42,7 +42,7 @@ async fn set_state(
     match Uuid::set_uuid_state(payload.into_inner(), db_pool.get_ref()).await {
         Ok(_) => HttpResponse::Ok()
             .content_type("application/json; charset=utf-8")
-            .json(vec![1 as i32]),
+            .json(None::<String>),
         Err(e) => {
             println!("/set-uuid-state/: {:?}", e);
             match e {

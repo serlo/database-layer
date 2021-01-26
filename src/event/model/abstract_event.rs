@@ -72,7 +72,7 @@ impl AbstractEvent {
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => EventError::NotFound,
-            inner => EventError::DatabaseError { inner },
+            error => error.into(),
         })?;
 
         let string_parameters = sqlx::query!(
@@ -99,8 +99,7 @@ impl AbstractEvent {
         )
         .fetch_all(pool);
 
-        let (string_parameters, uuid_parameters) = try_join!(string_parameters, uuid_parameters)
-            .map_err(|inner| EventError::DatabaseError { inner })?;
+        let (string_parameters, uuid_parameters) = try_join!(string_parameters, uuid_parameters)?;
 
         let raw_typename = event.name;
         let uuid_id = event.uuid_id as i32;
@@ -137,10 +136,7 @@ impl AbstractEvent {
     where
         E: Executor<'a>,
     {
-        let mut transaction = executor
-            .begin()
-            .await
-            .map_err(|inner| EventError::DatabaseError { inner })?;
+        let mut transaction = executor.begin().await?;
 
         let event = sqlx::query!(
             r#"
@@ -157,7 +153,7 @@ impl AbstractEvent {
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => EventError::NotFound,
-            inner => EventError::DatabaseError { inner },
+            error => error.into(),
         })?;
 
         let string_parameters = sqlx::query!(
@@ -171,8 +167,7 @@ impl AbstractEvent {
             id
         )
         .fetch_all(&mut transaction)
-        .await
-        .map_err(|inner| EventError::DatabaseError { inner })?;
+        .await?;
 
         let uuid_parameters = sqlx::query!(
             r#"
@@ -185,8 +180,7 @@ impl AbstractEvent {
             id
         )
         .fetch_all(&mut transaction)
-        .await
-        .map_err(|inner| EventError::DatabaseError { inner })?;
+        .await?;
 
         let raw_typename = event.name;
         let uuid_id = event.uuid_id as i32;
@@ -218,10 +212,7 @@ impl AbstractEvent {
             uuid_parameters,
         };
 
-        transaction
-            .commit()
-            .await
-            .map_err(|inner| EventError::DatabaseError { inner })?;
+        transaction.commit().await?;
 
         Ok(abstract_event)
     }

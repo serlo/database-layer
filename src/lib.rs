@@ -91,11 +91,12 @@ pub async fn create_database_pool() -> Result<Pool<MySql>, ApplicationError> {
         .password(password)
         .database(database)
         .charset("latin1");
-    MySqlPoolOptions::new()
+    let pool = MySqlPoolOptions::new()
         .max_connections(database_max_connections)
         .connect_with(options)
-        .await
-        .map_err(|inner| ApplicationError::DatabaseError { inner })
+        .await?;
+
+    Ok(pool)
 }
 
 #[derive(Error, Debug)]
@@ -104,6 +105,12 @@ pub enum ApplicationError {
     DatabaseError { inner: sqlx::Error },
     #[error("Server error: {inner:?}.")]
     ServerError { inner: std::io::Error },
+}
+
+impl From<sqlx::Error> for ApplicationError {
+    fn from(inner: sqlx::Error) -> Self {
+        ApplicationError::DatabaseError { inner }
+    }
 }
 
 #[cfg(test)]

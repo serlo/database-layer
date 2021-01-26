@@ -217,8 +217,7 @@ impl Entity {
             id
         )
         .fetch_all(pool)
-        .await
-        .map_err(|inner| UuidError::DatabaseError { inner })?;
+        .await?;
         parents
             .iter()
             .map(|parent| parent.id as i32)
@@ -246,8 +245,7 @@ impl Entity {
             child_type,
         )
         .fetch_all(pool)
-        .await
-        .map_err(|inner| UuidError::DatabaseError { inner })?;
+        .await?;
         Ok(children.iter().map(|child| child.id as i32).collect())
     }
 

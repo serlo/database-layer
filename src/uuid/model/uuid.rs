@@ -29,7 +29,7 @@ impl Uuid {
             .await
             .map_err(|e| match e {
                 sqlx::Error::RowNotFound => UuidError::NotFound,
-                inner => UuidError::DatabaseError { inner },
+                error => error.into(),
             })?;
         match uuid.discriminator.as_str() {
             "attachment" => Ok(Uuid::Attachment(Attachment::fetch(id, pool).await?)),
@@ -53,7 +53,7 @@ impl Uuid {
             .await
             .map_err(|error| match error {
                 sqlx::Error::RowNotFound => UuidError::NotFound,
-                inner => UuidError::DatabaseError { inner },
+                error => error.into(),
             })?;
         let context = match uuid.discriminator.as_str() {
             "attachment" => Ok(Attachment::get_context()),
@@ -68,7 +68,8 @@ impl Uuid {
             "user" => Ok(User::get_context()),
             _ => Ok(None),
         };
-        context.map_err(|inner| UuidError::DatabaseError { inner })
+
+        Ok(context?)
     }
 
     pub fn get_alias(&self) -> String {

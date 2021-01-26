@@ -28,7 +28,7 @@ impl Attachment {
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => UuidError::NotFound,
-            inner => UuidError::DatabaseError { inner },
+            error => error.into(),
         })
         .map(|attachment| Attachment {
             id,

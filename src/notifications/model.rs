@@ -22,6 +22,12 @@ pub enum NotificationsError {
     DatabaseError { inner: sqlx::Error },
 }
 
+impl From<sqlx::Error> for NotificationsError {
+    fn from(inner: sqlx::Error) -> Self {
+        NotificationsError::DatabaseError { inner }
+    }
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Notification {
@@ -73,8 +79,7 @@ impl Notifications {
             user_id
         )
         .fetch_all(executor)
-        .await
-        .map_err(|inner| NotificationsError::DatabaseError { inner })?;
+        .await?;
 
         let notifications = notifications
             .iter()
@@ -98,10 +103,7 @@ impl Notifications {
     where
         E: Executor<'a>,
     {
-        let mut transaction = executor
-            .begin()
-            .await
-            .map_err(|inner| NotificationsError::DatabaseError { inner })?;
+        let mut transaction = executor.begin().await?;
 
         let AbstractEvent {
             actor_id,
@@ -120,7 +122,7 @@ impl Notifications {
                     .await
                     .map_err(|error| match error {
                         SubscriptionsError::DatabaseError { inner } => {
-                            NotificationsError::DatabaseError { inner }
+                            NotificationsError::from(inner)
                         }
                     })?;
             let subscriptions = subscriptions
@@ -139,10 +141,7 @@ impl Notifications {
             Self::create_notification(event, &subscriber, &mut transaction).await?;
         }
 
-        transaction
-            .commit()
-            .await
-            .map_err(|inner| NotificationsError::DatabaseError { inner })?;
+        transaction.commit().await?;
 
         Ok(())
     }
@@ -155,10 +154,7 @@ impl Notifications {
     where
         E: Executor<'a>,
     {
-        let mut transaction = executor
-            .begin()
-            .await
-            .map_err(|inner| NotificationsError::DatabaseError { inner })?;
+        let mut transaction = executor.begin().await?;
 
         sqlx::query!(
             r#"
@@ -170,8 +166,7 @@ impl Notifications {
             subscriber.send_email
         )
         .execute(&mut transaction)
-        .await
-        .map_err(|inner| NotificationsError::DatabaseError { inner })?;
+        .await?;
         sqlx::query!(
             r#"
                 INSERT INTO notification_event (notification_id, event_log_id)
@@ -180,13 +175,9 @@ impl Notifications {
             event.abstract_event.id,
         )
         .execute(&mut transaction)
-        .await
-        .map_err(|inner| NotificationsError::DatabaseError { inner })?;
+        .await?;
 
-        transaction
-            .commit()
-            .await
-            .map_err(|inner| NotificationsError::DatabaseError { inner })?;
+        transaction.commit().await?;
 
         Ok(())
     }

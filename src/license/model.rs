@@ -23,6 +23,12 @@ pub enum LicenseError {
     NotFound,
 }
 
+impl From<sqlx::Error> for LicenseError {
+    fn from(inner: sqlx::Error) -> Self {
+        LicenseError::DatabaseError { inner }
+    }
+}
+
 impl License {
     pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<License, LicenseError> {
         sqlx::query!(
@@ -38,7 +44,7 @@ impl License {
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => LicenseError::NotFound,
-            inner => LicenseError::DatabaseError { inner },
+            error => error.into(),
         })
         .map(|license| License {
             id,

@@ -31,3 +31,9 @@ pub enum EventError {
     #[error("Event does not exist.")]
     NotFound,
 }
+
+impl From<sqlx::Error> for EventError {
+    fn from(inner: sqlx::Error) -> Self {
+        EventError::DatabaseError { inner }
+    }
+}

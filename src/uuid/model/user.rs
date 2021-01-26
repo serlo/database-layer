@@ -34,7 +34,7 @@ impl User {
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => UuidError::NotFound,
-            inner => UuidError::DatabaseError { inner },
+            error => error.into(),
         })
         .map(|user| User {
             __typename: "User".to_string(),

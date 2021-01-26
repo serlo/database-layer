@@ -53,6 +53,12 @@ pub enum NavigationChildError {
     Unsupported,
 }
 
+impl From<sqlx::Error> for NavigationChildError {
+    fn from(inner: sqlx::Error) -> Self {
+        NavigationChildError::DatabaseError { inner }
+    }
+}
+
 impl NavigationChild {
     pub fn fetch(
         id: i32,
@@ -64,7 +70,7 @@ impl NavigationChild {
                     .await
                     .map_err(|error| match error {
                         RawNavigationChildError::DatabaseError { inner } => {
-                            NavigationChildError::DatabaseError { inner }
+                            NavigationChildError::from(inner)
                         }
                     })?;
 
@@ -83,9 +89,7 @@ impl NavigationChild {
                 match NavigationChild::fetch(child.id, pool).await {
                     Ok(navigation_child) => children.push(navigation_child),
                     Err(error) => match error {
-                        NavigationChildError::DatabaseError { inner } => {
-                            return Err(NavigationChildError::DatabaseError { inner })
-                        }
+                        NavigationChildError::DatabaseError { inner } => return Err(inner.into()),
                         NavigationChildError::NotVisible => {}
                         NavigationChildError::InvalidRoute => {}
                         NavigationChildError::MissingRequiredRouteParameter => {}
@@ -253,6 +257,12 @@ pub enum RawNavigationChildError {
     DatabaseError { inner: sqlx::Error },
 }
 
+impl From<sqlx::Error> for RawNavigationChildError {
+    fn from(inner: sqlx::Error) -> Self {
+        RawNavigationChildError::DatabaseError { inner }
+    }
+}
+
 impl RawNavigationChild {
     fn fetch(
         id: i32,
@@ -304,8 +314,7 @@ impl RawNavigationChild {
             )
                 .fetch_all(pool);
 
-            let (pages, params) = try_join!(pages_fut, params_fut)
-                .map_err(|inner| RawNavigationChildError::DatabaseError { inner })?;
+            let (pages, params) = try_join!(pages_fut, params_fut)?;
 
             let mut children = Vec::with_capacity(pages.len());
 

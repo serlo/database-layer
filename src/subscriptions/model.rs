@@ -11,6 +11,12 @@ pub enum SubscriptionsError {
     DatabaseError { inner: sqlx::Error },
 }
 
+impl From<sqlx::Error> for SubscriptionsError {
+    fn from(inner: sqlx::Error) -> Self {
+        SubscriptionsError::DatabaseError { inner }
+    }
+}
+
 pub struct Subscription {
     pub object_id: i32,
     pub user_id: i32,
@@ -24,8 +30,7 @@ impl Subscriptions {
             user_id
         )
         .fetch_all(pool)
-        .await
-        .map_err(|inner| SubscriptionsError::DatabaseError { inner })?;
+        .await?;
 
         let subscriptions = subscriptions
             .iter()
@@ -58,8 +63,7 @@ impl Subscriptions {
             object_id
         )
         .fetch_all(executor)
-        .await
-        .map_err(|inner| SubscriptionsError::DatabaseError { inner })?;
+        .await?;
 
         let subscriptions = subscriptions
             .iter()

@@ -13,6 +13,12 @@ pub enum UserError {
     DatabaseError { inner: sqlx::Error },
 }
 
+impl From<sqlx::Error> for UserError {
+    fn from(inner: sqlx::Error) -> Self {
+        UserError::DatabaseError { inner }
+    }
+}
+
 impl User {
     pub async fn fetch_active_authors(pool: &MySqlPool) -> Result<Vec<i32>, UserError> {
         let user_ids = sqlx::query!(
@@ -27,8 +33,7 @@ impl User {
             Self::now()
         )
         .fetch_all(pool)
-        .await
-        .map_err(|inner| UserError::DatabaseError { inner })?;
+        .await?;
         Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }
 
@@ -46,8 +51,7 @@ impl User {
             Self::now()
         )
         .fetch_all(pool)
-        .await
-        .map_err(|inner| UserError::DatabaseError { inner })?;
+        .await?;
         Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }
 

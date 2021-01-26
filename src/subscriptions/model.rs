@@ -1,8 +1,9 @@
+use crate::database::Executor;
 use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
-pub struct Subscriptions(Vec<Subscription>);
+pub struct Subscriptions(pub Vec<Subscription>);
 
 #[derive(Error, Debug)]
 pub enum SubscriptionsError {
@@ -42,11 +43,21 @@ impl Subscriptions {
         object_id: i32,
         pool: &MySqlPool,
     ) -> Result<Self, SubscriptionsError> {
+        Self::fetch_by_object_via_transaction(object_id, pool).await
+    }
+
+    pub async fn fetch_by_object_via_transaction<'a, E>(
+        object_id: i32,
+        executor: E,
+    ) -> Result<Self, SubscriptionsError>
+    where
+        E: Executor<'a>,
+    {
         let subscriptions = sqlx::query!(
             r#"SELECT uuid_id, user_id, notify_mailman FROM subscription WHERE uuid_id = ?"#,
             object_id
         )
-        .fetch_all(pool)
+        .fetch_all(executor)
         .await
         .map_err(|inner| SubscriptionsError::DatabaseError { inner })?;
 

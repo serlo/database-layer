@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+pub use self::abstract_event::AbstractEvent;
 pub use self::event::Event;
 
 mod abstract_event;

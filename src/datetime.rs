@@ -6,7 +6,6 @@ use std::fmt;
 
 use chrono::{Duration, TimeZone, Utc};
 use chrono_tz::Europe::Berlin;
-use serde::__private::Formatter;
 use serde::{Serialize, Serializer};
 use sqlx::database::HasArguments;
 use sqlx::encode::IsNull;
@@ -30,11 +29,14 @@ use sqlx::MySql;
 /// ```rust
 /// use serlo_org_database_layer::datetime::DateTime;
 ///
+/// # async fn fetch(pool: &sqlx::MySqlPool) -> Result<(), sqlx::Error> {
 /// let event = sqlx::query!(r#"SELECT date FROM event_log WHERE id = 1"#)
 ///     .fetch_one(pool)
 ///     .await?;
 ///
 /// let datetime: DateTime = event.date.into();
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Debug, PartialEq)]
 pub struct DateTime(chrono::DateTime<Utc>);
@@ -65,7 +67,7 @@ impl From<chrono::DateTime<Utc>> for DateTime {
 }
 
 impl fmt::Display for DateTime {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let datetime = Berlin.from_utc_datetime(&self.0.naive_utc());
         f.write_str(&datetime.to_rfc3339())
     }

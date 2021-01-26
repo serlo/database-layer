@@ -147,11 +147,16 @@ impl From<EventError> for SetUuidStateError {
     }
 }
 
+#[derive(Serialize)]
+pub struct SetUuidStateResponse {
+    success: bool,
+}
+
 impl Uuid {
     pub async fn set_uuid_state<'a, E>(
         payload: SetUuidStatePayload,
         executor: E,
-    ) -> Result<(), SetUuidStateError>
+    ) -> Result<SetUuidStateResponse, SetUuidStateError>
     where
         E: Executor<'a>,
     {
@@ -192,7 +197,7 @@ impl Uuid {
 
         transaction.commit().await?;
 
-        Ok(())
+        Ok(SetUuidStateResponse { success: true })
     }
 }
 

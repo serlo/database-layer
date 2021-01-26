@@ -40,9 +40,9 @@ async fn set_state(
     db_pool: web::Data<MySqlPool>,
 ) -> impl Responder {
     match Uuid::set_uuid_state(payload.into_inner(), db_pool.get_ref()).await {
-        Ok(_) => HttpResponse::Ok()
+        Ok(data) => HttpResponse::Ok()
             .content_type("application/json; charset=utf-8")
-            .json(None::<String>),
+            .json(data),
         Err(e) => {
             println!("/set-uuid-state/: {:?}", e);
             match e {

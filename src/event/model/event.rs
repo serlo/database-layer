@@ -4,24 +4,24 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 
 use super::abstract_event::AbstractEvent;
-use super::create_comment::CreateComment;
-use super::create_entity::CreateEntity;
-use super::create_entity_revision::CreateEntityRevision;
-use super::create_thread::CreateThread;
-use super::entity_link::EntityLink;
+use super::create_comment::CreateCommentEvent;
+use super::create_entity::CreateEntityEvent;
+use super::create_entity_revision::CreateEntityRevisionEvent;
+use super::create_thread::CreateThreadEvent;
+use super::entity_link::EntityLinkEvent;
 use super::event_type::EventType;
-use super::revision::Revision;
-use super::set_license::SetLicense;
-use super::set_taxonomy_parent::SetTaxonomyParent;
-use super::set_thread_state::SetThreadState;
-use super::set_uuid_state::SetUuidState;
-use super::taxonomy_link::TaxonomyLink;
-use super::taxonomy_term::TaxonomyTerm;
-use super::unsupported::Unsupported;
+use super::revision::RevisionEvent;
+use super::set_license::SetLicenseEvent;
+use super::set_taxonomy_parent::SetTaxonomyParentEvent;
+use super::set_thread_state::SetThreadStateEvent;
+use super::set_uuid_state::SetUuidStateEvent;
+use super::taxonomy_link::TaxonomyLinkEvent;
+use super::taxonomy_term::TaxonomyTermEvent;
+use super::unsupported::UnsupportedEvent;
 use super::EventError;
 use crate::database::Executor;
 
-#[derive(Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct Event {
     #[serde(flatten)]
     pub abstract_event: AbstractEvent,
@@ -29,26 +29,26 @@ pub struct Event {
     pub concrete_event: ConcreteEvent,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum ConcreteEvent {
-    SetThreadState(SetThreadState),
-    CreateComment(CreateComment),
-    CreateThread(CreateThread),
-    CreateEntity(CreateEntity),
-    SetLicense(SetLicense),
-    CreateEntityLink(EntityLink),
-    RemoveEntityLink(EntityLink),
-    CreateEntityRevision(CreateEntityRevision),
-    CheckoutRevision(Revision),
-    RejectRevision(Revision),
-    CreateTaxonomyLink(TaxonomyLink),
-    RemoveTaxonomyLink(TaxonomyLink),
-    CreateTaxonomyTerm(TaxonomyTerm),
-    SetTaxonomyTerm(TaxonomyTerm),
-    SetTaxonomyParent(SetTaxonomyParent),
-    SetUuidState(SetUuidState),
-    Unsupported(Unsupported),
+    SetThreadState(SetThreadStateEvent),
+    CreateComment(CreateCommentEvent),
+    CreateThread(CreateThreadEvent),
+    CreateEntity(CreateEntityEvent),
+    SetLicense(SetLicenseEvent),
+    CreateEntityLink(EntityLinkEvent),
+    RemoveEntityLink(EntityLinkEvent),
+    CreateEntityRevision(CreateEntityRevisionEvent),
+    CheckoutRevision(RevisionEvent),
+    RejectRevision(RevisionEvent),
+    CreateTaxonomyLink(TaxonomyLinkEvent),
+    RemoveTaxonomyLink(TaxonomyLinkEvent),
+    CreateTaxonomyTerm(TaxonomyTermEvent),
+    SetTaxonomyTerm(TaxonomyTermEvent),
+    SetTaxonomyParent(SetTaxonomyParentEvent),
+    SetUuidState(SetUuidStateEvent),
+    Unsupported(UnsupportedEvent),
 }
 
 impl Event {

@@ -199,7 +199,7 @@ mod tests {
             .await
             .unwrap();
 
-        // Make sure that the event really has no subscribers.
+        // Verify assumption that the event has no subscribers.
         let subscriptions = Subscriptions::fetch_by_object_via_transaction(
             event.abstract_event.object_id,
             &mut transaction,
@@ -212,7 +212,7 @@ mod tests {
             .await
             .unwrap();
 
-        // Make sure that no notifications where created.
+        // Verify that no notifications where created.
         let notifications = sqlx::query!(
             r#"SELECT * FROM notification_event WHERE event_log_id = ?"#,
             event.abstract_event.id
@@ -232,7 +232,7 @@ mod tests {
             .await
             .unwrap();
 
-        // Make sure that the event has a subscriber.
+        // Verify assumption that the event has a subscriber.
         let subscriptions = Subscriptions::fetch_by_object_via_transaction(
             event.abstract_event.object_id,
             &mut transaction,
@@ -255,7 +255,7 @@ mod tests {
             .await
             .unwrap();
 
-        // Make sure that the notification was created.
+        // Verify that the notification was created.
         let notifications = Notifications::fetch_via_transaction(subscriber, &mut transaction)
             .await
             .unwrap();
@@ -276,9 +276,7 @@ mod tests {
             .await
             .unwrap();
 
-        // uuids: 15466, 15468
-
-        // Make sure that the event has no direct subscriber.
+        // Verify the assumption that the event has no direct subscriber.
         let subscriptions = Subscriptions::fetch_by_object_via_transaction(
             event.abstract_event.object_id,
             &mut transaction,
@@ -287,7 +285,7 @@ mod tests {
         .unwrap();
         assert!(subscriptions.0.is_empty());
 
-        // Make sure that the event has indirect subscribers.
+        // Verify the assumption that the event has indirect subscribers.
         let subscriptions = Subscriptions::fetch_by_object_via_transaction(
             *event
                 .abstract_event
@@ -316,7 +314,7 @@ mod tests {
             .await
             .unwrap();
 
-        // Make sure that the notifications were created.
+        // Verify that the notifications were created.
         for subscriber in subscribers {
             let notifications = Notifications::fetch_via_transaction(subscriber, &mut transaction)
                 .await

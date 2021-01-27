@@ -13,7 +13,6 @@ use self::generic_entity_revision::GenericRevision;
 use self::video_revision::VideoRevision;
 use super::entity::Entity;
 use super::UuidError;
-use crate::format_alias;
 
 mod abstract_entity_revision;
 mod applet_revision;
@@ -80,10 +79,9 @@ impl EntityRevision {
             __typename: revision.name.parse()?,
             id,
             trashed: revision.trashed != 0,
-            alias: format_alias(
-                Self::fetch_canonical_subject(id, pool).await?.as_deref(),
-                id,
-                Some(&fields.get_or("title", &format!("{}", id))),
+            alias: format!(
+                "/entity/repository/compare/{}/{}",
+                revision.repository_id, id
             ),
             date: revision.date.into(),
             author_id: revision.author_id as i32,

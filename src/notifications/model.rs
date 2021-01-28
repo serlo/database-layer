@@ -195,8 +195,6 @@ pub struct SetNotificationStatePayload {
 pub enum SetNotificationStateError {
     #[error("Notification state cannot be set because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
-    #[error("Notifications cannot be fetched because of a database error: {inner:?}.")]
-    NotificationsError { inner: NotificationsError },
 }
 
 impl From<sqlx::Error> for SetNotificationStateError {
@@ -205,48 +203,27 @@ impl From<sqlx::Error> for SetNotificationStateError {
     }
 }
 
-impl From<NotificationsError> for SetNotificationStateError {
-    fn from(error: NotificationsError) -> Self {
-        match error {
-            NotificationsError::DatabaseError { inner } => inner.into(),
-        }
-    }
+#[derive(Serialize)]
+pub struct SetNofiticationStateResponse {
+    success: bool,
 }
 
 impl Notifications {
-    pub async fn set_notification_state<'a, E>(
+    pub async fn set_notification_state(
         payload: SetNotificationStatePayload,
-        executor: E,
         pool: &MySqlPool,
-    ) -> Result<Notifications, SetNotificationStateError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    ) -> Result<SetNofiticationStateResponse, SetNotificationStateError> {
+        let mut transaction = pool.begin().await?;
 
         for id in payload.ids.into_iter() {
             let seen = !payload.unread;
-            let notification = sqlx::query!(
-                r#"
-                    SELECT id, seen
-                        FROM notification
-                        WHERE id = ?
-                "#,
-                id
-            )
-            .fetch_one(&mut transaction)
-            .await?;
-
-            if (notification.seen != 0) == seen {
-                continue;
-            }
-
             sqlx::query!(
                 r#"
                     UPDATE notification
                         SET seen = ?
-                        WHERE id = ?
+                        WHERE seen != ? AND id = ?
                 "#,
+                seen,
                 seen,
                 id
             )
@@ -256,7 +233,7 @@ impl Notifications {
 
         transaction.commit().await?;
 
-        Ok(Notifications::fetch_via_transaction(payload.user_id, pool).await?)
+        Ok(SetNofiticationStateResponse { success: true })
     }
 }
 
@@ -270,7 +247,6 @@ mod tests {
     #[actix_rt::test]
     async fn set_notification_state_no_id() {
         let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
 
         Notifications::set_notification_state(
             SetNotificationStatePayload {
@@ -278,7 +254,6 @@ mod tests {
                 user_id: 1,
                 unread: true,
             },
-            &mut transaction,
             &pool,
         )
         .await
@@ -296,7 +271,6 @@ mod tests {
                 user_id: 1,
                 unread: false,
             },
-            &mut transaction,
             &pool,
         )
         .await
@@ -311,7 +285,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn set_notification_state_single_id_no_change_if_already_set() {
+    async fn set_notification_state_single_id_no_change() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
@@ -321,13 +295,12 @@ mod tests {
                 user_id: 1,
                 unread: true,
             },
-            &mut transaction,
             &pool,
         )
         .await
         .unwrap();
 
-        // Verify that the object was set to read (eqals seen = true).
+        // Verify that the object was not changed.
         let uuid = sqlx::query!(r#"SELECT seen FROM notification WHERE id = ?"#, 6522)
             .fetch_one(&mut transaction)
             .await
@@ -348,7 +321,6 @@ mod tests {
                 user_id: 1,
                 unread: true,
             },
-            &mut transaction,
             &pool,
         )
         .await

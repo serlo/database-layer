@@ -28,13 +28,7 @@ async fn set_state(
     payload: web::Json<SetNotificationStatePayload>,
     db_pool: web::Data<MySqlPool>,
 ) -> impl Responder {
-    match Notifications::set_notification_state(
-        payload.into_inner(),
-        db_pool.get_ref(),
-        db_pool.get_ref(),
-    )
-    .await
-    {
+    match Notifications::set_notification_state(payload.into_inner(), db_pool.get_ref()).await {
         Ok(data) => HttpResponse::Ok()
             .content_type("application/json; charset=utf-8")
             .json(data),
@@ -42,9 +36,6 @@ async fn set_state(
             println!("/set-notification-state/: {:?}", e);
             match e {
                 SetNotificationStateError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
-                }
-                SetNotificationStateError::NotificationsError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)
                 }
             }

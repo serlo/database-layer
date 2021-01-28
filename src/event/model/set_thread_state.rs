@@ -135,7 +135,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn unarchive_thread() {
+    async fn restore_thread() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 

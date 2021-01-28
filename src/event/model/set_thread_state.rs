@@ -31,11 +31,10 @@ pub struct SetThreadStateEventPayload {
     raw_typename: String,
     actor_id: i32,
     object_id: i32,
-    instance: String,
 }
 
 impl SetThreadStateEventPayload {
-    pub fn new(archived: bool, actor_id: i32, object_id: i32, instance: &str) -> Self {
+    pub fn new(archived: bool, actor_id: i32, object_id: i32) -> Self {
         let raw_typename = if archived {
             "discussion/comment/archive".to_string()
         } else {
@@ -47,7 +46,6 @@ impl SetThreadStateEventPayload {
             raw_typename,
             actor_id,
             object_id,
-            instance: instance.to_string(),
         }
     }
 
@@ -59,16 +57,16 @@ impl SetThreadStateEventPayload {
         sqlx::query!(
             r#"
                 INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)
-                    SELECT ?, e.id, ?, i.id, ?
+                    SELECT ?, e.id, ?, c.instance_id, ?
                     FROM event e
-                    JOIN instance i
-                    WHERE e.name = ? AND i.subdomain = ?
+                    JOIN comment c
+                    WHERE e.name = ? AND c.id = ?
             "#,
             self.actor_id,
             self.object_id,
             DateTime::now(),
             self.raw_typename,
-            self.instance
+            self.object_id,
         )
         .execute(&mut transaction)
         .await?;
@@ -103,7 +101,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let set_thread_state_event = SetThreadStateEventPayload::new(true, 16462, 17666, "de");
+        let set_thread_state_event = SetThreadStateEventPayload::new(true, 16462, 17666);
 
         let event = set_thread_state_event.save(&mut transaction).await.unwrap();
         let persisted_event =
@@ -140,7 +138,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let set_thread_state_event = SetThreadStateEventPayload::new(false, 15478, 17796, "de");
+        let set_thread_state_event = SetThreadStateEventPayload::new(false, 15478, 17796);
 
         let event = set_thread_state_event.save(&mut transaction).await.unwrap();
         let persisted_event =

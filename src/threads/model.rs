@@ -98,10 +98,7 @@ impl Threads {
             .execute(&mut transaction)
             .await?;
 
-            // TODO: get instance
-            let instance = "de";
-
-            SetThreadStateEventPayload::new(payload.archived, payload.user_id, id, instance)
+            SetThreadStateEventPayload::new(payload.archived, payload.user_id, id)
                 .save(&mut transaction)
                 .await?;
         }

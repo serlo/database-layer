@@ -42,7 +42,7 @@ async fn set_state(
     match Uuid::set_uuid_state(payload.into_inner(), db_pool.get_ref()).await {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(e) => {
-            println!("/set-uuid-state/: {:?}", e);
+            println!("/set-uuid-state: {:?}", e);
             match e {
                 SetUuidStateError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)

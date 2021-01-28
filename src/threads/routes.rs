@@ -29,7 +29,7 @@ async fn set_archive(
     match Threads::set_archive(payload.into_inner(), db_pool.get_ref()).await {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(e) => {
-            println!("/set-uuid-state/: {:?}", e);
+            println!("/thread/set-archive: {:?}", e);
             match e {
                 ThreadSetArchiveError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)

@@ -80,6 +80,31 @@ impl Threads {
         let mut transaction = executor.begin().await?;
 
         for id in payload.ids.into_iter() {
+            let result = sqlx::query!(
+                r#"
+                    SELECT archived FROM comment WHERE id = ?
+                "#,
+                id
+            )
+            .fetch_one(&mut transaction)
+            .await;
+
+            match result {
+                Ok(comment) => {
+                    // Comment has already the correct state, skip
+                    if (comment.archived != 0) == payload.archived {
+                        continue;
+                    }
+                }
+                Err(sqlx::Error::RowNotFound) => {
+                    // Comment not found, skip
+                    continue;
+                }
+                Err(inner) => {
+                    return Err(inner.into());
+                }
+            }
+
             sqlx::query!(
                 r#"
                     UPDATE comment
@@ -100,5 +125,110 @@ impl Threads {
         transaction.commit().await?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::Duration;
+
+    use super::{ThreadSetArchivePayload, Threads};
+    use crate::create_database_pool;
+    use crate::datetime::DateTime;
+    use crate::event::Event;
+
+    #[actix_rt::test]
+    async fn set_archive_no_id() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Threads::set_archive(
+            ThreadSetArchivePayload {
+                ids: vec![],
+                user_id: 1,
+                archived: true,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+    }
+
+    #[actix_rt::test]
+    async fn set_archive_single_id() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Threads::set_archive(
+            ThreadSetArchivePayload {
+                ids: vec![17666],
+                user_id: 1,
+                archived: true,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        // Verify that the thread was archived.
+        let thread = sqlx::query!(r#"SELECT archived FROM comment WHERE id = ?"#, 17666)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap();
+        assert!(thread.archived != 0);
+
+        // Verify that the event was created.
+        let event = sqlx::query!(
+            r#"SELECT id FROM event_log WHERE uuid_id = ? ORDER BY date DESC"#,
+            17666
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap();
+        let event = Event::fetch_via_transaction(event.id as i32, &mut transaction)
+            .await
+            .unwrap();
+        assert!(
+            DateTime::now().signed_duration_since(event.abstract_event.date) < Duration::minutes(1)
+        )
+    }
+
+    #[actix_rt::test]
+    async fn set_archive_single_id_same_state() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Threads::set_archive(
+            ThreadSetArchivePayload {
+                ids: vec![17666],
+                user_id: 1,
+                archived: false,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        // Verify that the thread is not archived.
+        let thread = sqlx::query!(r#"SELECT archived FROM comment WHERE id = ?"#, 17666)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap();
+        assert!(thread.archived == 0);
+
+        // Verify that no event was created.
+        let event = sqlx::query!(
+            r#"SELECT id FROM event_log WHERE uuid_id = ? ORDER BY date DESC"#,
+            17666
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap();
+        let event = Event::fetch_via_transaction(event.id as i32, &mut transaction)
+            .await
+            .unwrap();
+        assert!(
+            DateTime::now().signed_duration_since(event.abstract_event.date) > Duration::minutes(1)
+        )
     }
 }

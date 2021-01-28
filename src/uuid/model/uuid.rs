@@ -157,11 +157,36 @@ impl Uuid {
         let mut transaction = executor.begin().await?;
 
         for id in payload.ids.into_iter() {
+            let result = sqlx::query!(
+                r#"
+                    SELECT trashed FROM uuid WHERE id = ? AND discriminator != 'user'
+                "#,
+                id
+            )
+            .fetch_one(&mut transaction)
+            .await;
+
+            match result {
+                Ok(uuid) => {
+                    // UUID has already the correct state, skip
+                    if (uuid.trashed != 0) == payload.trashed {
+                        continue;
+                    }
+                }
+                Err(sqlx::Error::RowNotFound) => {
+                    // UUID not found, skip
+                    continue;
+                }
+                Err(inner) => {
+                    return Err(inner.into());
+                }
+            }
+
             sqlx::query!(
                 r#"
                     UPDATE uuid
                         SET trashed = ?
-                        WHERE id = ? AND discriminator != 'user'
+                        WHERE id = ?
                 "#,
                 payload.trashed,
                 id
@@ -242,6 +267,45 @@ mod tests {
             .unwrap();
         assert!(
             DateTime::now().signed_duration_since(event.abstract_event.date) < Duration::minutes(1)
+        )
+    }
+
+    #[actix_rt::test]
+    async fn set_uuid_state_single_id_same_state() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Uuid::set_uuid_state(
+            SetUuidStatePayload {
+                ids: vec![1855],
+                user_id: 1,
+                trashed: false,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        // Verify that the object is not trashed.
+        let uuid = sqlx::query!(r#"SELECT trashed FROM uuid WHERE id = ?"#, 1855)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap();
+        assert!(uuid.trashed == 0);
+
+        // Verify that no event was created.
+        let event = sqlx::query!(
+            r#"SELECT id FROM event_log WHERE uuid_id = ? ORDER BY date DESC"#,
+            1855
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap();
+        let event = Event::fetch_via_transaction(event.id as i32, &mut transaction)
+            .await
+            .unwrap();
+        assert!(
+            DateTime::now().signed_duration_since(event.abstract_event.date) > Duration::minutes(1)
         )
     }
 }

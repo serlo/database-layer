@@ -134,8 +134,7 @@ mod tests {
 
     use super::{ThreadSetArchivePayload, Threads};
     use crate::create_database_pool;
-    use crate::datetime::DateTime;
-    use crate::event::Event;
+    use crate::event::test_helpers::fetch_age_of_newest_event;
 
     #[actix_rt::test]
     async fn set_archive_no_id() {
@@ -178,19 +177,10 @@ mod tests {
         assert!(thread.archived != 0);
 
         // Verify that the event was created.
-        let event = sqlx::query!(
-            r#"SELECT id FROM event_log WHERE uuid_id = ? ORDER BY date DESC"#,
-            17666
-        )
-        .fetch_one(&mut transaction)
-        .await
-        .unwrap();
-        let event = Event::fetch_via_transaction(event.id as i32, &mut transaction)
+        let duration = fetch_age_of_newest_event(17666, &mut transaction)
             .await
             .unwrap();
-        assert!(
-            DateTime::now().signed_duration_since(event.abstract_event.date) < Duration::minutes(1)
-        )
+        assert!(duration < Duration::minutes(1));
     }
 
     #[actix_rt::test]
@@ -217,18 +207,9 @@ mod tests {
         assert!(thread.archived == 0);
 
         // Verify that no event was created.
-        let event = sqlx::query!(
-            r#"SELECT id FROM event_log WHERE uuid_id = ? ORDER BY date DESC"#,
-            17666
-        )
-        .fetch_one(&mut transaction)
-        .await
-        .unwrap();
-        let event = Event::fetch_via_transaction(event.id as i32, &mut transaction)
+        let duration = fetch_age_of_newest_event(17666, &mut transaction)
             .await
             .unwrap();
-        assert!(
-            DateTime::now().signed_duration_since(event.abstract_event.date) > Duration::minutes(1)
-        )
+        assert!(duration > Duration::minutes(1));
     }
 }

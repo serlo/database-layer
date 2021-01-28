@@ -155,6 +155,7 @@ mod tests {
                     actor_id: 15478,
                     object_id: 17796,
                     date,
+                    instance,
                     ..
                 },
             concrete_event:
@@ -164,6 +165,7 @@ mod tests {
                 }),
         } = event
         {
+            assert_eq!(instance, "de".to_string());
             assert!(DateTime::now().signed_duration_since(date) < Duration::minutes(1))
         } else {
             panic!("Event does not fulfill assertions: {:?}", event)

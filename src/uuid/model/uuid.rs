@@ -2,13 +2,14 @@ use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use thiserror::Error;
 
+use crate::database::Executor;
+use crate::event::{EventError, SetUuidStateEventPayload};
+
 use super::{
     attachment::Attachment, blog_post::BlogPost, comment::Comment, entity::Entity,
     entity_revision::EntityRevision, page::Page, page_revision::PageRevision,
     taxonomy_term::TaxonomyTerm, user::User,
 };
-use crate::database::Executor;
-use crate::event::{EventError, SetUuidStateEventPayload};
 
 #[derive(Serialize)]
 #[serde(untagged)]
@@ -209,10 +210,10 @@ impl Uuid {
 mod tests {
     use chrono::Duration;
 
-    use super::{SetUuidStatePayload, Uuid};
     use crate::create_database_pool;
-    use crate::datetime::DateTime;
-    use crate::event::Event;
+    use crate::event::test_helpers::fetch_age_of_newest_event;
+
+    use super::{SetUuidStatePayload, Uuid};
 
     #[actix_rt::test]
     async fn set_uuid_state_no_id() {
@@ -255,19 +256,10 @@ mod tests {
         assert!(uuid.trashed != 0);
 
         // Verify that the event was created.
-        let event = sqlx::query!(
-            r#"SELECT id FROM event_log WHERE uuid_id = ? ORDER BY date DESC"#,
-            1855
-        )
-        .fetch_one(&mut transaction)
-        .await
-        .unwrap();
-        let event = Event::fetch_via_transaction(event.id as i32, &mut transaction)
+        let duration = fetch_age_of_newest_event(1855, &mut transaction)
             .await
             .unwrap();
-        assert!(
-            DateTime::now().signed_duration_since(event.abstract_event.date) < Duration::minutes(1)
-        )
+        assert!(duration < Duration::minutes(1));
     }
 
     #[actix_rt::test]
@@ -294,18 +286,9 @@ mod tests {
         assert!(uuid.trashed == 0);
 
         // Verify that no event was created.
-        let event = sqlx::query!(
-            r#"SELECT id FROM event_log WHERE uuid_id = ? ORDER BY date DESC"#,
-            1855
-        )
-        .fetch_one(&mut transaction)
-        .await
-        .unwrap();
-        let event = Event::fetch_via_transaction(event.id as i32, &mut transaction)
+        let duration = fetch_age_of_newest_event(1855, &mut transaction)
             .await
             .unwrap();
-        assert!(
-            DateTime::now().signed_duration_since(event.abstract_event.date) > Duration::minutes(1)
-        )
+        assert!(duration > Duration::minutes(1));
     }
 }

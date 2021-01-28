@@ -84,9 +84,8 @@ impl Threads {
                 r#"
                     UPDATE comment
                         SET archived = ?
-                        WHERE archived != ? AND id = ?
+                        WHERE id = ?
                 "#,
-                payload.archived,
                 payload.archived,
                 id
             )

@@ -161,9 +161,8 @@ impl Uuid {
                 r#"
                     UPDATE uuid
                         SET trashed = ?
-                        WHERE trashed != ? AND id = ? AND discriminator != 'user'
+                        WHERE id = ? AND discriminator != 'user'
                 "#,
-                payload.trashed,
                 payload.trashed,
                 id
             )

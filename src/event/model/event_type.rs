@@ -86,11 +86,6 @@ pub enum EventType {
         deserialize = "uuid/trash"
     ))]
     SetUuidState,
-    #[serde(rename(
-        serialize = "UnsupportedNotificationEvent",
-        deserialize = "discussion/comment/restore"
-    ))]
-    Unsupported,
 }
 
 impl FromStr for EventType {

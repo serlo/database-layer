@@ -15,7 +15,6 @@ pub use self::set_thread_state::*;
 pub use self::set_uuid_state::*;
 pub use self::taxonomy_link::*;
 pub use self::taxonomy_term::*;
-pub use self::unsupported::*;
 
 mod abstract_event;
 mod create_comment;
@@ -32,7 +31,6 @@ mod set_thread_state;
 mod set_uuid_state;
 mod taxonomy_link;
 mod taxonomy_term;
-mod unsupported;
 
 #[derive(Error, Debug)]
 pub enum EventError {

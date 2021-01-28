@@ -17,7 +17,6 @@ use super::set_thread_state::SetThreadStateEvent;
 use super::set_uuid_state::SetUuidStateEvent;
 use super::taxonomy_link::TaxonomyLinkEvent;
 use super::taxonomy_term::TaxonomyTermEvent;
-use super::unsupported::UnsupportedEvent;
 use super::EventError;
 use crate::database::Executor;
 
@@ -48,7 +47,6 @@ pub enum ConcreteEvent {
     SetTaxonomyTerm(TaxonomyTermEvent),
     SetTaxonomyParent(SetTaxonomyParentEvent),
     SetUuidState(SetUuidStateEvent),
-    Unsupported(UnsupportedEvent),
 }
 
 impl Event {
@@ -108,7 +106,6 @@ impl TryFrom<AbstractEvent> for Event {
             EventType::SetTaxonomyTerm => ConcreteEvent::SetTaxonomyTerm(abstract_event_ref.into()),
             EventType::SetThreadState => ConcreteEvent::SetThreadState(abstract_event_ref.into()),
             EventType::SetUuidState => ConcreteEvent::SetUuidState(abstract_event_ref.into()),
-            EventType::Unsupported => ConcreteEvent::Unsupported(abstract_event_ref.into()),
         };
 
         Ok(Self {

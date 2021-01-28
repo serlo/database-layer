@@ -261,7 +261,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn set_notification_state_single_id() {
+    async fn set_notification_state_single_id_to_read() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
@@ -276,7 +276,7 @@ mod tests {
         .await
         .unwrap();
 
-        // Verify that the object was set to read (eqals seen = true).
+        // Verify that the object was set to read (seen is 1).
         let uuid = sqlx::query!(r#"SELECT seen FROM notification WHERE id = ?"#, 6522)
             .fetch_one(&mut transaction)
             .await
@@ -285,13 +285,13 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn set_notification_state_single_id_no_change() {
+    async fn set_notification_state_single_id_to_unread() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
         Notifications::set_notification_state(
             SetNotificationStatePayload {
-                ids: vec![6522],
+                ids: vec![1293],
                 user_id: 1,
                 unread: true,
             },
@@ -300,8 +300,8 @@ mod tests {
         .await
         .unwrap();
 
-        // Verify that the object was not changed.
-        let uuid = sqlx::query!(r#"SELECT seen FROM notification WHERE id = ?"#, 6522)
+        // Verify that the object was set to unread (seen is 0).
+        let uuid = sqlx::query!(r#"SELECT seen FROM notification WHERE id = ?"#, 1293)
             .fetch_one(&mut transaction)
             .await
             .unwrap();

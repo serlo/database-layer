@@ -26,11 +26,10 @@ pub struct SetUuidStateEventPayload {
     raw_typename: String,
     actor_id: i32,
     object_id: i32,
-    instance: String,
 }
 
 impl SetUuidStateEventPayload {
-    pub fn new(trashed: bool, actor_id: i32, object_id: i32, instance: &str) -> Self {
+    pub fn new(trashed: bool, actor_id: i32, object_id: i32) -> Self {
         let raw_typename = if trashed {
             "uuid/trash".to_string()
         } else {
@@ -42,7 +41,6 @@ impl SetUuidStateEventPayload {
             raw_typename,
             actor_id,
             object_id,
-            instance: instance.to_string(),
         }
     }
 
@@ -51,19 +49,51 @@ impl SetUuidStateEventPayload {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
+        let discriminator = sqlx::query!(
+            r#"
+                SELECT u.discriminator
+                    FROM uuid u
+                    
+                    WHERE id = ?
+            "#,
+            self.object_id,
+        )
+        .fetch_one(&mut transaction)
+        .await?;
+
         sqlx::query!(
             r#"
                 INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)
                     SELECT ?, e.id, ?, i.id, ?
                     FROM event e
-                    JOIN instance i
-                    WHERE e.name = ? AND i.subdomain = ?
+                    WHERE e.name = ?
+                    // TODO: Join
+
+                        SELECT instance_id FROM entity WHERE id = ?
+                    UNION
+                        SELECT instance_id FROM term WHERE id = ?
+                    UNION 
+                        SELECT instance_id FROM page_repository WHERE id = ?
+                    UNION 
+                        SELECT e.instance_id FROM entity e
+                            JOIN entity_revision er
+                            WHERE e.id = er.repository_id AND er.id = ?
+                    UNION 
+                        SELECT p.instance_id FROM page_repository p
+                            JOIN page_revision pr 
+                            WHERE p.id = pr.page_repository_id AND pr.id = ?
+                    )
+
             "#,
             self.actor_id,
             self.object_id,
             DateTime::now(),
             self.raw_typename,
-            self.instance
+            self.object_id,
+            self.object_id,
+            self.object_id,
+            self.object_id,
+            self.object_id,
         )
         .execute(&mut transaction)
         .await?;

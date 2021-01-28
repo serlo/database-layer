@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::database::Executor;
@@ -18,7 +18,7 @@ pub struct Notifications {
 
 #[derive(Error, Debug)]
 pub enum NotificationsError {
-    #[error("Navigation cannot be fetched because of a database error: {inner:?}.")]
+    #[error("Notifications cannot be fetched because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
 }
 
@@ -180,6 +180,83 @@ impl Notifications {
         transaction.commit().await?;
 
         Ok(())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetNotificationStatePayload {
+    ids: Vec<i32>,
+    user_id: i32,
+    unread: bool,
+}
+
+#[derive(Error, Debug)]
+pub enum SetNotificationStateError {
+    #[error("Notification state cannot be set because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("Notifications cannot be fetched because of a database error: {inner:?}.")]
+    NotificationsError { inner: NotificationsError },
+}
+
+impl From<sqlx::Error> for SetNotificationStateError {
+    fn from(inner: sqlx::Error) -> Self {
+        SetNotificationStateError::DatabaseError { inner }
+    }
+}
+
+impl From<NotificationsError> for SetNotificationStateError {
+    fn from(error: NotificationsError) -> Self {
+        match error {
+            NotificationsError::DatabaseError { inner } => inner.into(),
+        }
+    }
+}
+
+impl Notifications {
+    pub async fn set_notification_state<'a, E>(
+        payload: SetNotificationStatePayload,
+        executor: E,
+        pool: &MySqlPool,
+    ) -> Result<Notifications, SetNotificationStateError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        for id in payload.ids.into_iter() {
+            let seen = !payload.unread;
+            let notification = sqlx::query!(
+                r#"
+                    SELECT id, seen
+                        FROM notification
+                        WHERE id = ?
+                "#,
+                id
+            )
+            .fetch_one(&mut transaction)
+            .await?;
+
+            if (notification.seen != 0) == seen {
+                continue;
+            }
+
+            sqlx::query!(
+                r#"
+                    UPDATE notification
+                        SET seen = ?
+                        WHERE id = ?
+                "#,
+                seen,
+                id
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(Notifications::fetch_via_transaction(payload.user_id, pool).await?)
     }
 }
 

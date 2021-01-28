@@ -1,7 +1,7 @@
 use actix_web::{get, post, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
-use super::model::{ThreadSetAchiveError, ThreadSetAchivePayload, Threads, ThreadsError};
+use super::model::{ThreadSetArchiveError, ThreadSetArchivePayload, Threads, ThreadsError};
 
 #[get("/threads/{id}")]
 async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
@@ -23,7 +23,7 @@ async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Resp
 
 #[post("/thread/set-archive")]
 async fn set_archive(
-    payload: web::Json<ThreadSetAchivePayload>,
+    payload: web::Json<ThreadSetArchivePayload>,
     db_pool: web::Data<MySqlPool>,
 ) -> impl Responder {
     match Threads::set_archive(payload.into_inner(), db_pool.get_ref()).await {
@@ -31,10 +31,10 @@ async fn set_archive(
         Err(e) => {
             println!("/set-uuid-state/: {:?}", e);
             match e {
-                ThreadSetAchiveError::DatabaseError { .. } => {
+                ThreadSetArchiveError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)
                 }
-                ThreadSetAchiveError::EventError { .. } => {
+                ThreadSetArchiveError::EventError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)
                 }
             }

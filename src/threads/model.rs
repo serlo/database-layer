@@ -40,40 +40,40 @@ impl Threads {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ThreadSetAchivePayload {
+pub struct ThreadSetArchivePayload {
     ids: Vec<i32>,
     user_id: i32,
     archived: bool,
 }
 
 #[derive(Error, Debug)]
-pub enum ThreadSetAchiveError {
+pub enum ThreadSetArchiveError {
     #[error("Thread archived state cannot be set because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
     #[error("Thread archived state cannot be set because of an internal error: {inner:?}.")]
     EventError { inner: EventError },
 }
 
-impl From<sqlx::Error> for ThreadSetAchiveError {
+impl From<sqlx::Error> for ThreadSetArchiveError {
     fn from(inner: sqlx::Error) -> Self {
-        ThreadSetAchiveError::DatabaseError { inner }
+        ThreadSetArchiveError::DatabaseError { inner }
     }
 }
 
-impl From<EventError> for ThreadSetAchiveError {
+impl From<EventError> for ThreadSetArchiveError {
     fn from(error: EventError) -> Self {
         match error {
             EventError::DatabaseError { inner } => inner.into(),
-            inner => ThreadSetAchiveError::EventError { inner },
+            inner => ThreadSetArchiveError::EventError { inner },
         }
     }
 }
 
 impl Threads {
     pub async fn set_archive<'a, E>(
-        payload: ThreadSetAchivePayload,
+        payload: ThreadSetArchivePayload,
         executor: E,
-    ) -> Result<(), ThreadSetAchiveError>
+    ) -> Result<(), ThreadSetArchiveError>
     where
         E: Executor<'a>,
     {

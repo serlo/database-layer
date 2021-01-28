@@ -121,7 +121,6 @@ pub struct SetUuidStatePayload {
     ids: Vec<i32>,
     user_id: i32,
     trashed: bool,
-    instance: String,
 }
 
 #[derive(Error, Debug)]
@@ -147,57 +146,38 @@ impl From<EventError> for SetUuidStateError {
     }
 }
 
-#[derive(Serialize)]
-pub struct SetUuidStateResponse {
-    success: bool,
-}
-
 impl Uuid {
     pub async fn set_uuid_state<'a, E>(
         payload: SetUuidStatePayload,
         executor: E,
-    ) -> Result<SetUuidStateResponse, SetUuidStateError>
+    ) -> Result<(), SetUuidStateError>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
 
         for id in payload.ids.into_iter() {
-            let uuid = sqlx::query!(
-                r#"
-                    SELECT id, trashed
-                        FROM uuid
-                        WHERE id = ?
-                "#,
-                id
-            )
-            .fetch_one(&mut transaction)
-            .await?;
-
-            if (uuid.trashed != 0) == payload.trashed {
-                continue;
-            }
-
             sqlx::query!(
                 r#"
                     UPDATE uuid
                         SET trashed = ?
-                        WHERE id = ?
+                        WHERE trashed != ? AND id = ? AND discriminator != 'user'
                 "#,
+                payload.trashed,
                 payload.trashed,
                 id
             )
             .execute(&mut transaction)
             .await?;
 
-            SetUuidStateEventPayload::new(payload.trashed, payload.user_id, id, &payload.instance)
+            SetUuidStateEventPayload::new(payload.trashed, payload.user_id, id)
                 .save(&mut transaction)
                 .await?;
         }
 
         transaction.commit().await?;
 
-        Ok(SetUuidStateResponse { success: true })
+        Ok(())
     }
 }
 
@@ -220,7 +200,6 @@ mod tests {
                 ids: vec![],
                 user_id: 1,
                 trashed: true,
-                instance: "de".to_string(),
             },
             &mut transaction,
         )
@@ -238,7 +217,6 @@ mod tests {
                 ids: vec![1855],
                 user_id: 1,
                 trashed: true,
-                instance: "de".to_string(),
             },
             &mut transaction,
         )

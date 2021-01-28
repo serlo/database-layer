@@ -49,50 +49,35 @@ impl SetUuidStateEventPayload {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        let discriminator = sqlx::query!(
-            r#"
-                SELECT u.discriminator
-                    FROM uuid u
-                    
-                    WHERE id = ?
-            "#,
-            self.object_id,
-        )
-        .fetch_one(&mut transaction)
-        .await?;
 
         sqlx::query!(
             r#"
                 INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)
                     SELECT ?, e.id, ?, i.id, ?
                     FROM event e
-                    WHERE e.name = ?
-                    // TODO: Join
-
-                        SELECT instance_id FROM entity WHERE id = ?
-                    UNION
-                        SELECT instance_id FROM term WHERE id = ?
-                    UNION 
-                        SELECT instance_id FROM page_repository WHERE id = ?
-                    UNION 
-                        SELECT e.instance_id FROM entity e
-                            JOIN entity_revision er
-                            WHERE e.id = er.repository_id AND er.id = ?
-                    UNION 
-                        SELECT p.instance_id FROM page_repository p
-                            JOIN page_revision pr 
-                            WHERE p.id = pr.page_repository_id AND pr.id = ?
-                    )
-
+                    JOIN (
+                        SELECT id, instance_id FROM attachment_container
+                        UNION ALL
+                        SELECT id, instance_id FROM blog_post
+                        UNION ALL
+                        SELECT id, instance_id FROM comment
+                        UNION ALL
+                        SELECT id, instance_id FROM entity
+                        UNION ALL
+                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id
+                        UNION ALL
+                        SELECT id, instance_id FROM page_repository
+                        UNION ALL
+                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id
+                        UNION ALL
+                        SELECT id, instance_id FROM term) u
+                    JOIN instance i ON i.id = u.instance_id
+                    WHERE e.name = ? AND u.id = ?
             "#,
             self.actor_id,
             self.object_id,
             DateTime::now(),
             self.raw_typename,
-            self.object_id,
-            self.object_id,
-            self.object_id,
-            self.object_id,
             self.object_id,
         )
         .execute(&mut transaction)
@@ -128,7 +113,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let set_uuid_state_event = SetUuidStateEventPayload::new(true, 1, 1855, "de");
+        let set_uuid_state_event = SetUuidStateEventPayload::new(true, 1, 1855);
 
         let event = set_uuid_state_event.save(&mut transaction).await.unwrap();
         let persisted_event =
@@ -160,7 +145,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let set_uuid_state_event = SetUuidStateEventPayload::new(false, 1, 1855, "de");
+        let set_uuid_state_event = SetUuidStateEventPayload::new(false, 1, 1855);
 
         let event = set_uuid_state_event.save(&mut transaction).await.unwrap();
         let persisted_event =

@@ -146,16 +146,11 @@ impl From<EventError> for SetUuidStateError {
     }
 }
 
-#[derive(Serialize)]
-pub struct SetUuidStateResponse {
-    success: bool,
-}
-
 impl Uuid {
     pub async fn set_uuid_state<'a, E>(
         payload: SetUuidStatePayload,
         executor: E,
-    ) -> Result<SetUuidStateResponse, SetUuidStateError>
+    ) -> Result<(), SetUuidStateError>
     where
         E: Executor<'a>,
     {
@@ -166,7 +161,7 @@ impl Uuid {
                 r#"
                     UPDATE uuid
                         SET trashed = ?
-                        WHERE trashed != ? AND id = ? AND discriminator != 'user' AND AND discriminator != 'comment'
+                        WHERE trashed != ? AND id = ? AND discriminator != 'user'
                 "#,
                 payload.trashed,
                 payload.trashed,
@@ -182,7 +177,7 @@ impl Uuid {
 
         transaction.commit().await?;
 
-        Ok(SetUuidStateResponse { success: true })
+        Ok(())
     }
 }
 

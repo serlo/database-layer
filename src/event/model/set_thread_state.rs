@@ -134,7 +134,6 @@ mod tests {
         }
     }
 
-    // unsupported?
     #[actix_rt::test]
     async fn unarchive_thread() {
         let pool = create_database_pool().await.unwrap();

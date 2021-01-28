@@ -33,7 +33,7 @@ async fn set_state(
             .content_type("application/json; charset=utf-8")
             .json(data),
         Err(e) => {
-            println!("/set-notification-state/: {:?}", e);
+            println!("/set-notification-state: {:?}", e);
             match e {
                 SetNotificationStateError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)

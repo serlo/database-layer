@@ -7,7 +7,7 @@ pub enum EventType {
     #[serde(rename(
         serialize = "SetThreadStateNotificationEvent",
         deserialize = "discussion/comment/archive",
-        deserialize = "discussion/comment/restore"
+        deserialize = "discussion/restore"
     ))]
     SetThreadState,
     #[serde(rename(
@@ -86,11 +86,6 @@ pub enum EventType {
         deserialize = "uuid/trash"
     ))]
     SetUuidState,
-    #[serde(rename(
-        serialize = "UnsupportedNotificationEvent",
-        deserialize = "discussion/restore"
-    ))]
-    Unsupported,
 }
 
 impl FromStr for EventType {

@@ -1,7 +1,7 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
-use super::model::{Threads, ThreadsError};
+use super::model::{ThreadSetArchiveError, ThreadSetArchivePayload, Threads, ThreadsError};
 
 #[get("/threads/{id}")]
 async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
@@ -21,6 +21,28 @@ async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Resp
     }
 }
 
+#[post("/thread/set-archive")]
+async fn set_archive(
+    payload: web::Json<ThreadSetArchivePayload>,
+    db_pool: web::Data<MySqlPool>,
+) -> impl Responder {
+    match Threads::set_archive(payload.into_inner(), db_pool.get_ref()).await {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(e) => {
+            println!("/thread/set-archive: {:?}", e);
+            match e {
+                ThreadSetArchiveError::DatabaseError { .. } => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
+                ThreadSetArchiveError::EventError { .. } => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
+            }
+        }
+    }
+}
+
 pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.service(threads);
+    cfg.service(set_archive);
 }

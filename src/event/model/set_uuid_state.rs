@@ -37,7 +37,7 @@ impl SetUuidStateEventPayload {
         };
 
         SetUuidStateEventPayload {
-            __typename: EventType::SetThreadState,
+            __typename: EventType::SetUuidState,
             raw_typename,
             actor_id,
             object_id,

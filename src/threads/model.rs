@@ -69,16 +69,11 @@ impl From<EventError> for ThreadSetAchiveError {
     }
 }
 
-#[derive(Serialize)]
-pub struct ThreadSetAchiveResponse {
-    success: bool,
-}
-
 impl Threads {
     pub async fn set_archive<'a, E>(
         payload: ThreadSetAchivePayload,
         executor: E,
-    ) -> Result<ThreadSetAchiveResponse, ThreadSetAchiveError>
+    ) -> Result<(), ThreadSetAchiveError>
     where
         E: Executor<'a>,
     {
@@ -105,6 +100,6 @@ impl Threads {
 
         transaction.commit().await?;
 
-        Ok(ThreadSetAchiveResponse { success: true })
+        Ok(())
     }
 }

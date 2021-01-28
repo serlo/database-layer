@@ -27,9 +27,7 @@ async fn set_archive(
     db_pool: web::Data<MySqlPool>,
 ) -> impl Responder {
     match Threads::set_archive(payload.into_inner(), db_pool.get_ref()).await {
-        Ok(data) => HttpResponse::Ok()
-            .content_type("application/json; charset=utf-8")
-            .json(data),
+        Ok(_) => HttpResponse::Ok().finish(),
         Err(e) => {
             println!("/set-uuid-state/: {:?}", e);
             match e {

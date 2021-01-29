@@ -65,8 +65,6 @@ jobs:
           toolchain: stable
           override: true
           profile: minimal
-      - run: docker ps
-      - run: docker-compose logs mysql
       - run: ./.github/wait-for-mysql.sh
       - uses: actions-rs/cargo@v1
         with:

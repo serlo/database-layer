@@ -3,7 +3,7 @@ WORKDIR /usr/src/app
 COPY src src
 COPY Cargo.lock .
 COPY Cargo.toml .
-ENV DATABASE_URL="mysql://root:secret@host.docker.internal:3306/serlo"
+COPY sqlx-data.json .
 RUN cargo build --release
 
 FROM debian:buster-slim

@@ -16,6 +16,7 @@
     "mysql:import-anonymous-data": "ts-node scripts/mysql-import-anonymous-data",
     "mysql:rollback": "ts-node scripts/mysql-rollback",
     "pacts": "jest --config jest.config-pacts.js",
+    "sqlx:prepare": "cargo sqlx prepare -- --lib",
     "test": "jest",
     "test:staging": "DATABASE_ENV=staging jest"
   },

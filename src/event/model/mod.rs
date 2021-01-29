@@ -38,6 +38,8 @@ pub enum EventError {
     DatabaseError { inner: sqlx::Error },
     #[error("Event cannot be fetched because its type is invalid.")]
     InvalidType,
+    #[error("Event cannot be fetched because its instance is invalid.")]
+    InvalidInstance,
     #[error("Event cannot be fetched because a required field is missing.")]
     MissingRequiredField,
     #[error("Event does not exist.")]

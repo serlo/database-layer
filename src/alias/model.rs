@@ -3,13 +3,14 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
+use crate::instance::Instance;
 use crate::uuid::{Uuid, UuidError};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Alias {
     pub id: i32,
-    pub instance: String,
+    pub instance: Instance,
     pub path: String,
 }
 
@@ -17,6 +18,8 @@ pub struct Alias {
 pub enum AliasError {
     #[error("Alias cannot be fetched because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
+    #[error("Alias cannot be fetched because its instance is invalid.")]
+    InvalidInstance,
     #[error("Alias is a legacy route.")]
     LegacyRoute,
     #[error("Alias cannot be fetched because it does not exist.")]
@@ -30,7 +33,11 @@ impl From<sqlx::Error> for AliasError {
 }
 
 impl Alias {
-    pub async fn fetch(path: &str, instance: &str, pool: &MySqlPool) -> Result<Alias, AliasError> {
+    pub async fn fetch(
+        path: &str,
+        instance: Instance,
+        pool: &MySqlPool,
+    ) -> Result<Self, AliasError> {
         if path == "backend"
             || path == "debugger"
             || path == "horizon"
@@ -128,20 +135,20 @@ impl Alias {
             }
         };
 
-        Uuid::fetch(id, pool)
-            .await
-            .map(|uuid| Alias {
-                id,
-                instance: instance.to_string(),
-                path: uuid.get_alias(),
-            })
-            .map_err(|error| match error {
-                UuidError::DatabaseError { inner } => AliasError::DatabaseError { inner },
-                UuidError::UnsupportedDiscriminator { .. } => AliasError::NotFound,
-                UuidError::UnsupportedEntityType { .. } => AliasError::NotFound,
-                UuidError::UnsupportedEntityRevisionType { .. } => AliasError::NotFound,
-                UuidError::EntityMissingRequiredParent => AliasError::NotFound,
-                UuidError::NotFound => AliasError::NotFound,
-            })
+        let uuid = Uuid::fetch(id, pool).await.map_err(|error| match error {
+            UuidError::DatabaseError { inner } => AliasError::DatabaseError { inner },
+            UuidError::InvalidInstance => AliasError::InvalidInstance,
+            UuidError::UnsupportedDiscriminator { .. } => AliasError::NotFound,
+            UuidError::UnsupportedEntityType { .. } => AliasError::NotFound,
+            UuidError::UnsupportedEntityRevisionType { .. } => AliasError::NotFound,
+            UuidError::EntityMissingRequiredParent => AliasError::NotFound,
+            UuidError::NotFound => AliasError::NotFound,
+        })?;
+
+        Ok(Alias {
+            id,
+            instance,
+            path: uuid.get_alias(),
+        })
     }
 }

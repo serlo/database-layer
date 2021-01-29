@@ -17,6 +17,9 @@ async fn event(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respon
                     HttpResponse::InternalServerError().json(None::<String>)
                 }
                 EventError::InvalidType => HttpResponse::NotFound().json(None::<String>),
+                EventError::InvalidInstance => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
                 EventError::MissingRequiredField => HttpResponse::NotFound().json(None::<String>),
                 EventError::NotFound => HttpResponse::NotFound().json(None::<String>),
             }

@@ -113,7 +113,10 @@ impl Entity {
                         .as_str(),
                 ),
             ),
-            instance: entity.subdomain,
+            instance: entity
+                .subdomain
+                .parse()
+                .map_err(|_| UuidError::InvalidInstance)?,
             date: entity.date.into(),
             license_id: entity.license_id,
             taxonomy_term_ids: taxonomy_terms.iter().map(|term| term.id as i32).collect(),

@@ -8,6 +8,7 @@ use super::event_type::EventType;
 use super::EventError;
 use crate::database::Executor;
 use crate::datetime::DateTime;
+use crate::instance::Instance;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -15,7 +16,7 @@ pub struct AbstractEvent {
     #[serde(rename(serialize = "__typename"))]
     pub __typename: EventType,
     pub id: i32,
-    pub instance: String,
+    pub instance: Instance,
     pub date: DateTime,
     pub actor_id: i32,
     pub object_id: i32,
@@ -119,11 +120,12 @@ impl AbstractEvent {
         let uuid_parameters = EventUuidParameters(uuid_parameters);
 
         Ok(AbstractEvent {
-            __typename: raw_typename
-                .parse()
-                .map_err(|_error| EventError::InvalidType)?,
+            __typename: raw_typename.parse().map_err(|_| EventError::InvalidType)?,
             id: event.id as i32,
-            instance: event.subdomain.to_string(),
+            instance: event
+                .subdomain
+                .parse()
+                .map_err(|_| EventError::InvalidInstance)?,
             date: event.date.into(),
             actor_id: event.actor_id as i32,
             object_id: uuid_id,
@@ -200,11 +202,12 @@ impl AbstractEvent {
         let uuid_parameters = EventUuidParameters(uuid_parameters);
 
         let abstract_event = AbstractEvent {
-            __typename: raw_typename
-                .parse()
-                .map_err(|_error| EventError::InvalidType)?,
+            __typename: raw_typename.parse().map_err(|_| EventError::InvalidType)?,
             id: event.id as i32,
-            instance: event.subdomain.to_string(),
+            instance: event
+                .subdomain
+                .parse()
+                .map_err(|_| EventError::InvalidInstance)?,
             date: event.date.into(),
             actor_id: event.actor_id as i32,
             object_id: uuid_id,

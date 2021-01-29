@@ -16,6 +16,9 @@ async fn uuid(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respond
                 UuidError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)
                 }
+                UuidError::InvalidInstance => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
                 UuidError::UnsupportedDiscriminator { .. } => {
                     HttpResponse::NotFound().json(None::<String>)
                 }

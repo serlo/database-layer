@@ -2,11 +2,13 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
+use crate::instance::Instance;
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct License {
     pub id: i32,
-    pub instance: String,
+    pub instance: Instance,
     pub default: bool,
     pub title: String,
     pub url: String,
@@ -19,6 +21,8 @@ pub struct License {
 pub enum LicenseError {
     #[error("License cannot be fetched because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
+    #[error("License cannot be fetched because its instance is invalid.")]
+    InvalidInstance,
     #[error("License cannot be fetched because it does not exist.")]
     NotFound,
 }
@@ -31,7 +35,7 @@ impl From<sqlx::Error> for LicenseError {
 
 impl License {
     pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<License, LicenseError> {
-        sqlx::query!(
+        let license = sqlx::query!(
             r#"
                 SELECT l.default, l.title, l.url, l.content, l.agreement, l.icon_href, i.subdomain
                     FROM license l
@@ -45,10 +49,14 @@ impl License {
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => LicenseError::NotFound,
             error => error.into(),
-        })
-        .map(|license| License {
+        })?;
+
+        Ok(License {
             id,
-            instance: license.subdomain,
+            instance: license
+                .subdomain
+                .parse()
+                .map_err(|_| LicenseError::InvalidInstance)?,
             default: license.default == Some(1),
             title: license.title,
             url: license.url,

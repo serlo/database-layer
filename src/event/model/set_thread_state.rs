@@ -95,6 +95,7 @@ mod tests {
     use crate::create_database_pool;
     use crate::datetime::DateTime;
     use crate::event::{AbstractEvent, ConcreteEvent, Event};
+    use crate::instance::Instance;
 
     #[actix_rt::test]
     async fn archive_thread() {
@@ -116,8 +117,8 @@ mod tests {
                 AbstractEvent {
                     actor_id: 16462,
                     object_id: 17666,
+                    instance: Instance::De,
                     date,
-                    instance,
                     ..
                 },
             concrete_event:
@@ -127,7 +128,6 @@ mod tests {
                 }),
         } = event
         {
-            assert_eq!(instance, "de".to_string());
             assert!(DateTime::now().signed_duration_since(date) < Duration::minutes(1))
         } else {
             panic!("Event does not fulfill assertions: {:?}", event)
@@ -154,8 +154,8 @@ mod tests {
                 AbstractEvent {
                     actor_id: 15478,
                     object_id: 17796,
+                    instance: Instance::De,
                     date,
-                    instance,
                     ..
                 },
             concrete_event:
@@ -165,7 +165,6 @@ mod tests {
                 }),
         } = event
         {
-            assert_eq!(instance, "de".to_string());
             assert!(DateTime::now().signed_duration_since(date) < Duration::minutes(1))
         } else {
             panic!("Event does not fulfill assertions: {:?}", event)

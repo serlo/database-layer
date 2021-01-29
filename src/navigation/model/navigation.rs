@@ -3,11 +3,12 @@ use sqlx::MySqlPool;
 use thiserror::Error;
 
 use super::navigation_child::{NavigationChild, NavigationChildError};
+use crate::instance::Instance;
 
 #[derive(Serialize)]
 pub struct Navigation {
     pub data: Vec<NavigationChild>,
-    pub instance: String,
+    pub instance: Instance,
 }
 
 #[derive(Error, Debug)]
@@ -23,7 +24,10 @@ impl From<sqlx::Error> for NavigationError {
 }
 
 impl Navigation {
-    pub async fn fetch(instance: &str, pool: &MySqlPool) -> Result<Navigation, NavigationError> {
+    pub async fn fetch(
+        instance: Instance,
+        pool: &MySqlPool,
+    ) -> Result<Navigation, NavigationError> {
         let pages = sqlx::query!(
             r#"
                 SELECT p.id
@@ -45,9 +49,7 @@ impl Navigation {
             match NavigationChild::fetch(page.id, pool).await {
                 Ok(navigation_child) => data.push(navigation_child),
                 Err(error) => match error {
-                    NavigationChildError::DatabaseError { inner } => {
-                        return Err(inner.into())
-                    }
+                    NavigationChildError::DatabaseError { inner } => return Err(inner.into()),
                     NavigationChildError::NotVisible => {}
                     NavigationChildError::InvalidRoute => {}
                     NavigationChildError::MissingRequiredRouteParameter => {}
@@ -56,9 +58,6 @@ impl Navigation {
             }
         }
 
-        Ok(Navigation {
-            data,
-            instance: instance.to_string(),
-        })
+        Ok(Navigation { data, instance })
     }
 }

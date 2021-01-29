@@ -29,6 +29,8 @@ pub enum Uuid {
 pub enum UuidError {
     #[error("UUID cannot be fetched because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
+    #[error("UUID cannot be fetched because its instance is invalid.")]
+    InvalidInstance,
     #[error(
         "UUID cannot be fetched because its discriminator `{discriminator:?}` is not supported."
     )]

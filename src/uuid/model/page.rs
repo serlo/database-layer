@@ -4,6 +4,7 @@ use sqlx::MySqlPool;
 use super::UuidError;
 use crate::datetime::DateTime;
 use crate::format_alias;
+use crate::instance::Instance;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -13,7 +14,7 @@ pub struct Page {
     pub id: i32,
     pub trashed: bool,
     pub alias: String,
-    pub instance: String,
+    pub instance: Instance,
     pub current_revision_id: Option<i32>,
     pub revision_ids: Vec<i32>,
     pub date: DateTime,
@@ -56,7 +57,10 @@ impl Page {
                 trashed: page.trashed != 0,
                 // TODO:
                 alias: format_alias(None, id, page.title.as_deref()),
-                instance: page.subdomain,
+                instance: page
+                    .subdomain
+                    .parse()
+                    .map_err(|_| UuidError::InvalidInstance)?,
                 current_revision_id: page.current_revision_id,
                 revision_ids: revisions
                     .iter()

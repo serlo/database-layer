@@ -5,6 +5,7 @@ use sqlx::MySqlPool;
 
 use super::UuidError;
 use crate::format_alias;
+use crate::instance::Instance;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -16,7 +17,7 @@ pub struct TaxonomyTerm {
     pub alias: String,
     #[serde(rename(serialize = "type"))]
     pub term_type: String,
-    pub instance: String,
+    pub instance: Instance,
     pub name: String,
     pub description: Option<String>,
     pub weight: i32,
@@ -79,7 +80,10 @@ impl TaxonomyTerm {
             trashed: taxonomy_term.trashed != 0,
             alias: format_alias(subject.as_deref(), id, Some(&taxonomy_term.name)),
             term_type: normalize_type(taxonomy_term.term_type.as_str()),
-            instance: taxonomy_term.subdomain,
+            instance: taxonomy_term
+                .subdomain
+                .parse()
+                .map_err(|_| UuidError::InvalidInstance)?,
             name: taxonomy_term.name,
             description: taxonomy_term.description,
             weight: taxonomy_term.weight.unwrap_or(0),

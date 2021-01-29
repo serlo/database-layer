@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, PartialEq, Deserialize, Serialize)]
@@ -88,7 +86,7 @@ pub enum EventType {
     SetUuidState,
 }
 
-impl FromStr for EventType {
+impl std::str::FromStr for EventType {
     type Err = serde_json::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {

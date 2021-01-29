@@ -16,6 +16,9 @@ async fn license(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Resp
                 LicenseError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)
                 }
+                LicenseError::InvalidInstance => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
                 LicenseError::NotFound => HttpResponse::NotFound().json(None::<String>),
             }
         }

@@ -1,0 +1,2116 @@
+{
+  "db": "MySQL",
+  "04912efa922c870efb5268ef2a98a82dfa657b084a50c91b89031388c514de65": {
+    "query": "SELECT LAST_INSERT_ID() as id",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 161
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "09965570050adbd7f9f7b6e158a1b5e95d13eab605d25b207bc9898dd9a6fe47": {
+    "query": "\n                SELECT id\n                    FROM comment\n                    WHERE parent_id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "0f7ddd3073657eb646caeed7f49e8ff4592d21b27f46fc8921f60ff0d6107930": {
+    "query": "\n                SELECT u.id\n                    FROM user u\n                    JOIN event_log e ON u.id = e.actor_id\n                    WHERE e.event_id = 5 AND e.date > DATE_SUB(?, Interval 90 day)\n                    GROUP BY u.id\n                    HAVING count(e.event_id) > 10\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "12ed467d6c81bc00bddc5a10220b65925488fc0521f1e62a81308d2296a961fe": {
+    "query": "\n                SELECT u.trashed, i.subdomain, p.current_revision_id, p.license_id, r.title\n                    FROM page_repository p\n                    JOIN uuid u ON u.id = p.id\n                    JOIN instance i ON i.id = p.instance_id\n                    LEFT JOIN page_revision r ON r.id = p.current_revision_id\n                    WHERE p.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "subdomain",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "current_revision_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "license_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 9
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "title",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4096
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        true
+      ]
+    }
+  },
+  "1ee1dd9cee6adc4c510cd46ae79e143e8b04f696bd68b41a6e55871c64ecbf23": {
+    "query": "SELECT id, date FROM page_revision WHERE page_repository_id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "date",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "20390c36424ab33505a4108cd6ad9beb86a9d52bdac48f09b41b9f5c322b8760": {
+    "query": "\n                SELECT n.id, n.seen, e.event_log_id\n                    FROM notification n\n                    JOIN notification_event e ON n.id = e.notification_id\n                    WHERE n.user_id = ?\n                    ORDER BY n.date DESC, n.id DESC\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "seen",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "event_log_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "21cb0c08e0fb1f84ccc2ad3175467fdcb06a4f8dfa6f12c367567c70fadbdd33": {
+    "query": "\n                SELECT field, value\n                    FROM entity_revision_field\n                    WHERE entity_revision_id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "field",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "value",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4113
+            },
+            "char_set": 224,
+            "max_size": 4294967295
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "2594f7eb0db4993eb684ae6fdf173a8999df485653a8544733a6ce29da94842d": {
+    "query": "\n                SELECT t.name, u.trashed, r.date, r.author_id, r.repository_id\n                    FROM entity_revision r\n                    JOIN uuid u ON u.id = r.id\n                    JOIN entity e ON e.id = r.repository_id\n                    JOIN type t ON t.id = e.type_id\n                    WHERE r.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4101
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "date",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "author_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "repository_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "2b40b2053d2083dbdc2ba4229260ef613c0b10e606099d083ffe75dc2117e4ac": {
+    "query": "SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "2b6628debe91dbe22e806e5070eabee80cc3190251ce4127043973189b0aec3b": {
+    "query": "\n                SELECT u.id\n                    FROM event_log e1\n                    JOIN event_log e2 ON e1.uuid_id = e2.uuid_id AND (e1.event_id = 6 OR e1.event_id = 11) AND e2.event_id = 5 AND e1.date >= e2.date AND e1.actor_id != e2.actor_id\n                    JOIN user u ON u.id = e1.actor_id\n                    WHERE e1.date > DATE_SUB(?, Interval 90 day)\n                    GROUP BY u.id\n                    HAVING count(e1.event_id) > 10\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "3c53faa4669ab4e83898639d4c51a92a6be3c24b57914864aa0509f75cb61506": {
+    "query": "\n                SELECT l.id, l.actor_id, l.uuid_id, l.date, i.subdomain, e.name\n                    FROM event_log l\n                    LEFT JOIN event_parameter p ON l.id = p.log_id\n                    JOIN instance i ON l.instance_id = i.id\n                    JOIN event e ON l.event_id = e.id\n                    WHERE l.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "actor_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "uuid_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "date",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "subdomain",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4101
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "3d851e069d05f7dfa2cb6c8628905361908a70fc144088534f20455053e94ffd": {
+    "query": "DELETE FROM notification_event WHERE event_log_id = ?",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
+    }
+  },
+  "40b8240c7dcab061ae6b38b169366923a24f07408a7c8f3dc94cf57af746733b": {
+    "query": "\n                    UPDATE uuid\n                        SET trashed = ?\n                        WHERE id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "436603084c0bc754c6d6baa29d1eb0d64f1ee26047a4b905585949e5ea544b15": {
+    "query": "\n                SELECT trashed, username, date, last_login, description\n                    FROM user\n                    JOIN uuid ON user.id = uuid.id\n                    WHERE user.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "username",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 5
+            },
+            "char_set": 224,
+            "max_size": 128
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "date",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "last_login",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "description",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 16
+            },
+            "char_set": 224,
+            "max_size": 262140
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true
+      ]
+    }
+  },
+  "453904559bd92eda1b2dceb36d70331093bfaf3d939ef687132738a3357a1c57": {
+    "query": "SELECT term_taxonomy_id as id FROM term_taxonomy_entity WHERE entity_id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "4a16769bbf6692e80b38d9eec15eaeceb3d8b99315639131d8dadc7ea1f8166e": {
+    "query": "\n                SELECT u.trashed, term.name, type.name as term_type, instance.subdomain, term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id\n                    FROM term_taxonomy\n                    JOIN term ON term.id = term_taxonomy.term_id\n                    JOIN taxonomy ON taxonomy.id = term_taxonomy.taxonomy_id\n                    JOIN type ON type.id = taxonomy.type_id\n                    JOIN instance ON instance.id = taxonomy.instance_id\n                    JOIN uuid u ON u.id = term_taxonomy.id\n                    WHERE term_taxonomy.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "term_type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4101
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "subdomain",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "description",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 16
+            },
+            "char_set": 224,
+            "max_size": 262140
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "weight",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "parent_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 8
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  "4bd4cb77bc482eddecb3feb2065aab19c8e282612f2b01d46fbdaa36939337fa": {
+    "query": "\n                SELECT l.default, l.title, l.url, l.content, l.agreement, l.icon_href, i.subdomain\n                    FROM license l\n                    JOIN instance i ON i.id = l.instance_id\n                    WHERE l.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "default",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "title",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "url",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "content",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 16
+            },
+            "char_set": 224,
+            "max_size": 262140
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "agreement",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4113
+            },
+            "char_set": 224,
+            "max_size": 262140
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "icon_href",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "subdomain",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        true,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false
+      ]
+    }
+  },
+  "544017b3c945f404442a6aacf8519449608b8b1cfacb8cf07b3495b313be09da": {
+    "query": "SELECT discriminator FROM uuid WHERE id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "discriminator",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 180
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "55117bfb55d1944c81b7d34dcb1f7e3fec919d631b78a80bd2e79f197f6a8098": {
+    "query": "\n                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)\n                    SELECT ?, e.id, ?, i.id, ?\n                    FROM event e\n                    JOIN instance i\n                    WHERE e.name = ? AND i.subdomain = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": []
+    }
+  },
+  "65d605e2dbfb889b8efc8300283a96aae8696bb8f61aab612e652bc765211d30": {
+    "query": "\n                INSERT INTO notification_event (notification_id, event_log_id)\n                    SELECT LAST_INSERT_ID(), ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
+    }
+  },
+  "6b8b0b59e5d78d874c22c2cba9a59d3c780dcb3717de0d20347e859a93d0ed4b": {
+    "query": "\n                SELECT l.parent_id as id\n                    FROM entity_link l\n                    WHERE l.child_id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "6c156182d8d632b92c2fa86383bded8d27331cda584a92fb73b9dc3a342f8287": {
+    "query": "\n                    SELECT name, value FROM\n                        (\n                        # Level 1\n                        SELECT k.name, p.value, p.page_id\n                            FROM navigation_parameter p\n                            JOIN navigation_parameter_key k ON k.id = p.key_id\n                            WHERE p.parent_id IS NULL AND value != ''\n                        UNION ALL\n                        # Level 2\n                        SELECT CONCAT(k1.name, '.', k2.name) as name, p2.value, p2.page_id\n                            FROM navigation_parameter p1\n                            JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                            JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                            JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                            WHERE p1.parent_id IS NULL AND p2.value != ''\n                        UNION ALL\n                        # Level 3\n                        SELECT CONCAT(k1.name, '.', k2.name, '.', k3.name) as name, p3.value, p3.page_id\n                            FROM navigation_parameter p1\n                            JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                            JOIN navigation_parameter p3 ON p3.parent_id = p2.id\n                            JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                            JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                            JOIN navigation_parameter_key k3 ON k3.id = p3.key_id\n                            WHERE p1.parent_id IS NULL AND p3.value != ''\n                        ) u\n                        WHERE page_id = ?\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 16
+            },
+            "char_set": 224,
+            "max_size": 9204
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "value",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        true,
+        true
+      ]
+    }
+  },
+  "778d1aadfabd36aae4aabf449a61958b23a6f7f4b8c25844adcdd064acf7681a": {
+    "query": "\n                    SELECT u.trashed, i.subdomain\n                        FROM uuid u\n                        JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT id, instance_id FROM term) c ON c.id = u.id\n                        JOIN instance i ON i.id = c.instance_id\n                        WHERE u.id = ? AND discriminator != 'user'\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "subdomain",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "82b00efea292355014db2ec2656ba2d883a0059bc7c2be01a4b4d28881ccc4bd": {
+    "query": "\n                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)\n                    SELECT ?, e.id, ?, c.instance_id, ?\n                    FROM event e\n                    JOIN comment c\n                    WHERE e.name = ? AND c.id = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": []
+    }
+  },
+  "82e05bbc646bebf37b97af3f23e8599937749cb7ecf4b03bfd079ec152651862": {
+    "query": "\n                    SELECT archived FROM comment WHERE id = ?\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "archived",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "8c6254d3b848f9b5a7a3e63dcef728d4149f5cbf0148a32d0c6bc3cdbb027da2": {
+    "query": "SELECT seen FROM notification WHERE id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "seen",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "900e9873093aaed1342fd71fa8731b616ae89a1f996bdd6bc9fce7a215a2a1ce": {
+    "query": "SELECT * FROM notification_event WHERE event_log_id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "notification_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "event_log_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "911ea66921a64de401503189cf88681dfd600d01b1992a7de141668b1c93c371": {
+    "query": "\n                SELECT uuid_id as id\n                    FROM (\n                        SELECT id, uuid_id FROM comment c\n                        UNION ALL\n                        SELECT c.id, p.uuid_id FROM comment p LEFT JOIN comment c ON c.parent_id = p.id\n                    ) t\n                    WHERE id = ? AND uuid_id IS NOT NULL\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        true
+      ]
+    }
+  },
+  "946cb29201730400fa27ad703aab47a0268fadb1d6a4fe37e92789fef15eed02": {
+    "query": "\n                SELECT c.id\n                    FROM entity_link l\n                    JOIN entity c on c.id = l.child_id\n                    JOIN type t ON t.id = c.type_id\n                    WHERE l.parent_id = ? AND t.name = ?\n                    ORDER BY l.order ASC\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "a400f2b325f4baa03878fd49187085fb2b95d0ca886494a2fca05f1ec65b7ed1": {
+    "query": "SELECT repository_id FROM entity_revision WHERE id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "repository_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "a5e01431021937b287812fe675926cf2617ca942c23030d4c128b34249cae078": {
+    "query": "\n                SELECT t.name, u.trashed, i.subdomain, e.date, e.current_revision_id, e.license_id, f1.value as title, f2.value as fallback_title\n                    FROM entity e\n                    JOIN uuid u ON u.id = e.id\n                    JOIN instance i ON i.id = e.instance_id\n                    JOIN type t ON t.id = e.type_id\n                    LEFT JOIN entity_revision_field f1 ON f1.entity_revision_id = e.current_revision_id AND f1.field = 'title'\n                    LEFT JOIN entity_revision_field f2 on f2.entity_revision_id = (SELECT id FROM entity_revision WHERE repository_id = ? LIMIT 1) AND f2.field = 'title'\n                    WHERE e.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4101
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "subdomain",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "date",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "current_revision_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "license_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "title",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4112
+            },
+            "char_set": 224,
+            "max_size": 4294967295
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "fallback_title",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4112
+            },
+            "char_set": 224,
+            "max_size": 4294967295
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        true
+      ]
+    }
+  },
+  "a8c1f1e6eabd7d37743886aa444e0d44960c782491c7aa5f2b8efaafc410c9a7": {
+    "query": "\n                        SELECT id\n                            FROM user\n                            WHERE username = ?\n                    ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "a9f097c56ff24b15e9ce11ae55916b395dff1d80769580210f30b19cdfadc3e2": {
+    "query": "\n                    UPDATE notification\n                        SET seen = ?\n                        WHERE seen != ? AND id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
+  "ae9b2c26d6739811e7afca6ae3b1d264912819f48fdd60fa3a5065bc3d755327": {
+    "query": "\n                    SELECT id, seen\n                        FROM notification\n                        WHERE id = ?\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "seen",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "b67a6cd1168e030043fc309da009c241d88b7543ce11598b7e183086dd2f5077": {
+    "query": "\n                SELECT entity_id\n                    FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n                    ORDER BY position ASC\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "entity_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "b74d0670cdaaf1f324c8af8b7e0a3fcdcfbdd7b84f2af263cbbb1e2ff0c84fa8": {
+    "query": "SELECT id FROM event_log WHERE uuid_id = ? ORDER BY date DESC",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "bca5c70eda3bdad181a899aed3d99e9bc8985480e894d8770b9375f1a28a66da": {
+    "query": "\n                SELECT p.id\n                    FROM navigation_page p\n                    JOIN navigation_container c ON c.id = p.container_id\n                    JOIN instance i ON i.id = c.instance_id\n                    JOIN type t ON t.id = c.type_id\n                    WHERE i.subdomain = ? AND t.name = 'default' AND p.parent_id IS NULL\n                    ORDER BY p.position, p.id\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "be2ec9977c322c7baff512b985e031d2574bbcb31cd86e62bcca6cc86de5b81d": {
+    "query": "SELECT trashed FROM uuid WHERE id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "befb2d78ae7737e9d6e6a667301a984576cd5c451682394635e9e6c61b1b9669": {
+    "query": "\n                SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id, c.uuid_id, p.title as parent_title\n                    FROM comment c\n                    LEFT JOIN comment p ON p.id = c.parent_id\n                    JOIN uuid u ON u.id = c.id\n                    WHERE c.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "author_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "title",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "date",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "archived",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "content",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 16
+            },
+            "char_set": 224,
+            "max_size": 4294967295
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "parent_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 8
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "uuid_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 8
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 8,
+          "name": "parent_title",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  "bfbfcccba2b907995d565789bdd039e9750ee37a435e31df3be4ce7d42c87f51": {
+    "query": "\n                    UPDATE comment\n                        SET archived = ?\n                        WHERE id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "c0a1da42bf156d170f8187ec69ead3e4a2f12de338201677b5421d5b291f28be": {
+    "query": "SELECT id FROM entity_revision WHERE repository_id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "c4402e45331abf62863a21179899bef13c7d01fdf4884c17823a4e0b81ef0a4c": {
+    "query": "SELECT uuid_id, user_id, notify_mailman FROM subscription WHERE user_id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "uuid_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "user_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "notify_mailman",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "c5908676b971a5d00bcbdf12c274853a8f72b3933ed5605a557eb13d68514c4d": {
+    "query": "\n                    SELECT p.id\n                        FROM navigation_page p\n                        WHERE p.parent_id = ?\n                        ORDER BY p.position, p.id\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "c59169ef14ada9959cae905ce9f60992497174d2f8cb57332d855974f911040a": {
+    "query": "\n                SELECT u.trashed, f.name\n                    FROM attachment_file f\n                    JOIN attachment_container c ON c.id = f.attachment_id\n                    JOIN uuid u ON u.id = c.id\n                    WHERE c.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "c633d2265603ec3b5d33d6dff61fb7e4e43a3b55f2b97c345e63bbbc9e683998": {
+    "query": "SELECT archived FROM comment WHERE id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "archived",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "c8b4c137c46ca9c5a5df78a2f3aa679f9d7b528e086e16ac6d92a1fc4fd091da": {
+    "query": "\n                SELECT id\n                    FROM term_taxonomy\n                    WHERE parent_id = ?\n                    ORDER BY weight ASC\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "c8e12f8f03c485c39e667da6abc892f0090f06f25172bbcfd05dbf4272630f97": {
+    "query": "\n                            SELECT a.uuid_id FROM url_alias a\n                                JOIN instance i on i.id = a.instance_id\n                                WHERE i.subdomain = ? AND a.alias = ?\n                                ORDER BY a.timestamp DESC\n                        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "uuid_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "d4c1b33938809466906554f5bc60faadae4d6e5781bb9acc02f47c7385960e3a": {
+    "query": "\n                SELECT n.name, s.value\n                    FROM event_parameter p\n                    JOIN event_parameter_name n ON n.id = p.name_id\n                    JOIN event_parameter_string s ON s.event_parameter_id = p.id\n                    WHERE p.name_id = n.id AND p.log_id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "value",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4113
+            },
+            "char_set": 224,
+            "max_size": 262140
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "d96a45d0d014aece234428d2b3deeb6740e956e7c1d0f380d2bdbc258180d5aa": {
+    "query": "\n                INSERT INTO notification (user_id, date, email)\n                    VALUES (?, ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
+  "dd1b7b672c5e386ab4319b213697960bcb5fd22407f9e710657af27b592c4a9a": {
+    "query": "\n                SELECT t.name\n                    FROM term_taxonomy t0\n                    LEFT JOIN term_taxonomy t1 ON t1.parent_id = t0.id\n                    LEFT JOIN term_taxonomy t2 ON t2.parent_id = t1.id\n                    LEFT JOIN term_taxonomy t3 ON t3.parent_id = t2.id\n                    LEFT JOIN term_taxonomy t4 ON t4.parent_id = t3.id\n                    LEFT JOIN term_taxonomy t5 ON t5.parent_id = t4.id\n                    LEFT JOIN term_taxonomy t6 ON t6.parent_id = t5.id\n                    LEFT JOIN term_taxonomy t7 ON t7.parent_id = t6.id\n                    LEFT JOIN term_taxonomy t8 ON t8.parent_id = t7.id\n                    LEFT JOIN term_taxonomy t9 ON t9.parent_id = t8.id\n                    LEFT JOIN term_taxonomy t10 ON t10.parent_id = t9.id\n                    LEFT JOIN term_taxonomy t11 ON t11.parent_id = t10.id\n                    LEFT JOIN term_taxonomy t12 ON t12.parent_id = t11.id\n                    LEFT JOIN term_taxonomy t13 ON t13.parent_id = t12.id\n                    LEFT JOIN term_taxonomy t14 ON t14.parent_id = t13.id\n                    LEFT JOIN term_taxonomy t15 ON t15.parent_id = t14.id\n                    LEFT JOIN term_taxonomy t16 ON t16.parent_id = t15.id\n                    LEFT JOIN term_taxonomy t17 ON t17.parent_id = t16.id\n                    LEFT JOIN term_taxonomy t18 ON t18.parent_id = t17.id\n                    LEFT JOIN term_taxonomy t19 ON t19.parent_id = t18.id\n                    LEFT JOIN term_taxonomy t20 ON t20.parent_id = t19.id\n                    JOIN term t on t1.term_id = t.id\n                    WHERE\n                        t0.parent_id IS NULL AND\n                        (\n                            t1.id = ? OR t2.id = ? OR t3.id = ? OR t4.id = ? OR t5.id = ? OR t6.id = ? OR t7.id = ? OR t8.id = ? OR t9.id = ? OR t10.id = ? OR\n                            t11.id = ? OR t12.id = ? OR t13.id = ? OR t14.id = ? OR t15.id = ? OR t16.id = ? OR t17.id = ? OR t18.id = ? OR t19.id = ? OR t20.id = ?\n                        )\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 20
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "de8954840e9300a85d37e36f88909aac12801755043e241637bca623ed0ed245": {
+    "query": "\n                SELECT term_taxonomy_id as id\n                    FROM (\n                        SELECT term_taxonomy_id, entity_id FROM term_taxonomy_entity\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l ON t.entity_id = l.parent_id\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l2.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l1 ON t.entity_id = l1.parent_id\n                            JOIN entity_link l2 ON l2.parent_id = l1.child_id\n                    ) u\n                    WHERE entity_id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "e48ab97ec5329aa75500b78dd7d88f030b6aeb92b4ec5fa207dc15217e8b89f9": {
+    "query": "SELECT uuid_id, user_id, notify_mailman FROM subscription WHERE uuid_id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "uuid_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "user_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "notify_mailman",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "eab60436cfd92b0c020c76538e356d51010f726042e8499e2dff8bfbd7770ecd": {
+    "query": "\n                SELECT u.trashed, r.title, r.content, r.date, r.author_id, r.page_repository_id\n                    FROM page_revision r\n                    JOIN uuid u ON u.id = r.id\n                    WHERE r.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "title",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "content",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4113
+            },
+            "char_set": 224,
+            "max_size": 4294967295
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "date",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "author_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "page_repository_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "efc0ab4bd3f789c0cce63a358761f13a56e0455dac5527bf499feb72883c62ae": {
+    "query": "\n                SELECT n.name, u.uuid_id\n                    FROM event_parameter p\n                    JOIN event_parameter_name n ON n.id = p.name_id\n                    JOIN event_parameter_uuid u ON u.event_parameter_id = p.id\n                    WHERE p.name_id = n.id AND p.log_id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "uuid_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "fc396ad2007a39fd9cc34588c754e057b39082c1a312abdaa4b33cb94946d93e": {
+    "query": "\n                SELECT u.trashed, b.title\n                    FROM blog_post b\n                    JOIN uuid u ON u.id = b.id\n                    WHERE b.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "title",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  }
+}

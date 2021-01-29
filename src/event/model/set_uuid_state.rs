@@ -3,9 +3,9 @@ use serde::Serialize;
 use super::abstract_event::AbstractEvent;
 use super::event_type::EventType;
 use super::{Event, EventError};
-use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::notifications::{Notifications, NotificationsError};
+use crate::{database::Executor, instance::Instance};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -26,10 +26,11 @@ pub struct SetUuidStateEventPayload {
     raw_typename: String,
     actor_id: i32,
     object_id: i32,
+    instance: Instance,
 }
 
 impl SetUuidStateEventPayload {
-    pub fn new(trashed: bool, actor_id: i32, object_id: i32) -> Self {
+    pub fn new(trashed: bool, actor_id: i32, object_id: i32, instance: Instance) -> Self {
         let raw_typename = if trashed {
             "uuid/trash".to_string()
         } else {
@@ -41,6 +42,7 @@ impl SetUuidStateEventPayload {
             raw_typename,
             actor_id,
             object_id,
+            instance,
         }
     }
 
@@ -55,30 +57,14 @@ impl SetUuidStateEventPayload {
                 INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)
                     SELECT ?, e.id, ?, i.id, ?
                     FROM event e
-                    JOIN (
-                        SELECT id, instance_id FROM attachment_container
-                        UNION ALL
-                        SELECT id, instance_id FROM blog_post
-                        UNION ALL
-                        SELECT id, instance_id FROM comment
-                        UNION ALL
-                        SELECT id, instance_id FROM entity
-                        UNION ALL
-                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id
-                        UNION ALL
-                        SELECT id, instance_id FROM page_repository
-                        UNION ALL
-                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id
-                        UNION ALL
-                        SELECT id, instance_id FROM term) u
-                    JOIN instance i ON i.id = u.instance_id
-                    WHERE e.name = ? AND u.id = ?
+                    JOIN instance i
+                    WHERE e.name = ? AND i.subdomain = ?
             "#,
             self.actor_id,
             self.object_id,
             DateTime::now(),
             self.raw_typename,
-            self.object_id,
+            self.instance
         )
         .execute(&mut transaction)
         .await?;
@@ -107,13 +93,14 @@ mod tests {
     use crate::create_database_pool;
     use crate::datetime::DateTime;
     use crate::event::{AbstractEvent, ConcreteEvent, Event};
+    use crate::instance::Instance;
 
     #[actix_rt::test]
     async fn trash_event() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let set_uuid_state_event = SetUuidStateEventPayload::new(true, 1, 1855);
+        let set_uuid_state_event = SetUuidStateEventPayload::new(true, 1, 1855, Instance::De);
 
         let event = set_uuid_state_event.save(&mut transaction).await.unwrap();
         let persisted_event =
@@ -145,7 +132,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let set_uuid_state_event = SetUuidStateEventPayload::new(false, 1, 1855);
+        let set_uuid_state_event = SetUuidStateEventPayload::new(false, 1, 1855, Instance::De);
 
         let event = set_uuid_state_event.save(&mut transaction).await.unwrap();
         let persisted_event =

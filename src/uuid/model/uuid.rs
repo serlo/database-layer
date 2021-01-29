@@ -4,6 +4,7 @@ use thiserror::Error;
 
 use crate::database::Executor;
 use crate::event::{EventError, SetUuidStateEventPayload};
+use crate::instance::Instance;
 
 use super::{
     attachment::Attachment, blog_post::BlogPost, comment::Comment, entity::Entity,
@@ -162,19 +163,43 @@ impl Uuid {
         for id in payload.ids.into_iter() {
             let result = sqlx::query!(
                 r#"
-                    SELECT trashed FROM uuid WHERE id = ? AND discriminator != 'user'
+                    SELECT u.trashed, i.subdomain
+                        FROM uuid u
+                        JOIN (
+                        SELECT id, instance_id FROM attachment_container
+                        UNION ALL
+                        SELECT id, instance_id FROM blog_post
+                        UNION ALL
+                        SELECT id, instance_id FROM comment
+                        UNION ALL
+                        SELECT id, instance_id FROM entity
+                        UNION ALL
+                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id
+                        UNION ALL
+                        SELECT id, instance_id FROM page_repository
+                        UNION ALL
+                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id
+                        UNION ALL
+                        SELECT id, instance_id FROM term) c ON c.id = u.id
+                        JOIN instance i ON i.id = c.instance_id
+                        WHERE u.id = ? AND discriminator != 'user'
                 "#,
                 id
             )
             .fetch_one(&mut transaction)
             .await;
 
-            match result {
+            let instance: Instance = match result {
                 Ok(uuid) => {
                     // UUID has already the correct state, skip
                     if (uuid.trashed != 0) == payload.trashed {
                         continue;
                     }
+                    uuid.subdomain
+                        .parse()
+                        .map_err(|_| SetUuidStateError::EventError {
+                            inner: EventError::InvalidInstance,
+                        })?
                 }
                 Err(sqlx::Error::RowNotFound) => {
                     // UUID not found, skip
@@ -183,7 +208,7 @@ impl Uuid {
                 Err(inner) => {
                     return Err(inner.into());
                 }
-            }
+            };
 
             sqlx::query!(
                 r#"
@@ -197,7 +222,7 @@ impl Uuid {
             .execute(&mut transaction)
             .await?;
 
-            SetUuidStateEventPayload::new(payload.trashed, payload.user_id, id)
+            SetUuidStateEventPayload::new(payload.trashed, payload.user_id, id, instance)
                 .save(&mut transaction)
                 .await?;
         }

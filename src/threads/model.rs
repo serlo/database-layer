@@ -135,13 +135,158 @@ impl Threads {
     }
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThreadCommentThreadPayload {
+    thread_id: i32,
+    content: String,
+    user_id: i32,
+}
+
+#[derive(Error, Debug)]
+pub enum ThreadCommentThreadError {
+    #[error("Comment could not be saved because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("Comment could not be saved because of a database error: {inner:?}.")]
+    EventError { inner: EventError },
+}
+
+impl From<sqlx::Error> for ThreadCommentThreadError {
+    fn from(inner: sqlx::Error) -> Self {
+        ThreadCommentThreadError::DatabaseError { inner }
+    }
+}
+
+impl From<EventError> for ThreadCommentThreadError {
+    fn from(error: EventError) -> Self {
+        match error {
+            EventError::DatabaseError { inner } => inner.into(),
+            inner => ThreadCommentThreadError::EventError { inner },
+        }
+    }
+}
+
+impl Threads {
+    pub async fn comment_thread<'a, E>(
+        payload: ThreadCommentThreadPayload,
+        executor: E,
+    ) -> Result<(), ThreadCommentThreadError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let thread = sqlx::query!(
+            r#"
+                SELECT instance_id, archived
+                    FROM comment
+                    WHERE id = ?
+            "#,
+            payload.thread_id
+        )
+        .fetch_one(&mut transaction)
+        .await;
+
+        if thread.is_err() {
+            return match thread {
+                Err(sqlx::Error::RowNotFound) => {
+                    // Comment not found, skip
+                    Ok(()) // TODO: should be error
+                }
+                Err(inner) => Err(inner.into()),
+                Ok(_) => Ok(()),
+            };
+        }
+        let thread = thread.unwrap();
+        if thread.archived != 0 {
+            // archived thread: skip
+            return Ok(()); // should maybe be an error?
+        }
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (trashed, discriminator)
+                    VALUES (0, 'comment')
+            "#
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        println!("this is where it fails:");
+
+        sqlx::query!(
+            r#"
+                INSERT INTO comment ( id , date , archived , title , content , uuid_id , parent_id , author_id , instance_id )
+                    SELECT LAST_INSERT_ID(), NOW(), 0, NULL, ?, NULL, ?, ?, ?
+            "#,
+            payload.content,
+            payload.thread_id,
+            payload.user_id,
+            thread.instance_id
+        )
+        .fetch_one(&mut transaction)
+        .await?;
+
+        // TODO: Event & Event Parameter!
+        // SetThreadStateEventPayload::new(payload.archived, payload.user_id, id)
+        //     .save(&mut transaction)
+        //     .await?;
+
+        // TODO: Subscriptions?
+
+        transaction.commit().await?;
+
+        Ok(())
+
+        // TODO: Tests
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::Duration;
 
-    use super::{ThreadSetArchivePayload, Threads};
+    use super::{ThreadCommentThreadPayload, ThreadSetArchivePayload, Threads};
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
+
+    #[actix_rt::test]
+    async fn comment_thread_non_existing_thread() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Threads::comment_thread(
+            ThreadCommentThreadPayload {
+                thread_id: 3, //does not exist
+                user_id: 1,
+                content: "content-test".to_string(),
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+    }
+
+    #[actix_rt::test]
+    async fn comment_thread_debug() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let result = Threads::comment_thread(
+            ThreadCommentThreadPayload {
+                thread_id: 17774,
+                user_id: 1,
+                content: "content-test".to_string(),
+            },
+            &mut transaction,
+        )
+        .await;
+
+        println!("{:?}", result);
+
+        //make sure output shows
+        assert_eq!(1, 0);
+    }
 
     #[actix_rt::test]
     async fn set_archive_no_id() {

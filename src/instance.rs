@@ -30,14 +30,8 @@ impl sqlx::Type<MySql> for Instance {
 }
 impl<'q> sqlx::Encode<'q, MySql> for Instance {
     fn encode_by_ref(&self, buf: &mut <MySql as HasArguments<'q>>::ArgumentBuffer) -> IsNull {
-        let decoded = match self {
-            Instance::De => "de",
-            Instance::En => "en",
-            Instance::Es => "es",
-            Instance::Fr => "fr",
-            Instance::Hi => "hi",
-            Instance::Ta => "ta",
-        };
+        let decoded = serde_json::to_value(self).unwrap();
+        let decoded = decoded.as_str().unwrap();
         decoded.encode_by_ref(buf)
     }
 }

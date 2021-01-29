@@ -1,8 +1,10 @@
-name: Pacts
+name: Pact Broker
 on:
-  pull_request:
+  push:
+    branches:
+      - master
 jobs:
-  test:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -27,3 +29,7 @@ jobs:
       - run: cargo run &
       - run: ./.github/wait-for-server.sh
       - run: yarn pacts
+        env:
+          PACT_BROKER_USERNAME: ${{ secrets.PACT_BROKER_USERNAME }}
+          PACT_BROKER_PASSWORD: ${{ secrets.PACT_BROKER_PASSWORD }}
+          PUBLISH_VERIFICATION_RESULT: true

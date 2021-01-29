@@ -13,9 +13,7 @@ async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Resp
         Err(e) => {
             println!("/threads/{}: {:?}", id, e);
             match e {
-                ThreadsError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
-                }
+                ThreadsError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
             }
         }
     }
@@ -32,10 +30,10 @@ async fn set_archive(
             println!("/thread/set-archive: {:?}", e);
             match e {
                 ThreadSetArchiveError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
+                    HttpResponse::InternalServerError().finish()
                 }
                 ThreadSetArchiveError::EventError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
+                    HttpResponse::InternalServerError().finish()
                 }
             }
         }

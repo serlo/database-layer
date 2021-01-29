@@ -18,7 +18,7 @@ async fn navigation(
             println!("/navigation/{:?}: {:?}", instance, e);
             match e {
                 NavigationError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
+                    HttpResponse::InternalServerError().finish()
                 }
             }
         }

@@ -13,12 +13,8 @@ async fn uuid(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Respond
         Err(e) => {
             println!("/uuid/{}: {:?}", id, e);
             match e {
-                UuidError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
-                }
-                UuidError::InvalidInstance => {
-                    HttpResponse::InternalServerError().json(None::<String>)
-                }
+                UuidError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
+                UuidError::InvalidInstance => HttpResponse::InternalServerError().finish(),
                 UuidError::UnsupportedDiscriminator { .. } => {
                     HttpResponse::NotFound().json(None::<String>)
                 }
@@ -48,10 +44,10 @@ async fn set_state(
             println!("/set-uuid-state: {:?}", e);
             match e {
                 SetUuidStateError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
+                    HttpResponse::InternalServerError().finish()
                 }
                 SetUuidStateError::EventError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
+                    HttpResponse::InternalServerError().finish()
                 }
             }
         }

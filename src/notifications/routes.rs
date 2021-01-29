@@ -16,7 +16,7 @@ async fn notifications(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -
             println!("/notifications/{}: {:?}", user_id, e);
             match e {
                 NotificationsError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
+                    HttpResponse::InternalServerError().finish()
                 }
             }
         }
@@ -36,7 +36,7 @@ async fn set_state(
             println!("/set-notification-state: {:?}", e);
             match e {
                 SetNotificationStateError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
+                    HttpResponse::InternalServerError().finish()
                 }
             }
         }

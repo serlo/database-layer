@@ -13,12 +13,8 @@ async fn license(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Resp
         Err(e) => {
             println!("/license/{}: {:?}", id, e);
             match e {
-                LicenseError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
-                }
-                LicenseError::InvalidInstance => {
-                    HttpResponse::InternalServerError().json(None::<String>)
-                }
+                LicenseError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
+                LicenseError::InvalidInstance => HttpResponse::InternalServerError().finish(),
                 LicenseError::NotFound => HttpResponse::NotFound().json(None::<String>),
             }
         }

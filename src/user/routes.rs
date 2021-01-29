@@ -12,9 +12,7 @@ async fn active_authors(db_pool: web::Data<MySqlPool>) -> impl Responder {
         Err(e) => {
             println!("/user/active-authors: {:?}", e);
             match e {
-                UserError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
-                }
+                UserError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
             }
         }
     }
@@ -29,9 +27,7 @@ async fn active_reviewers(db_pool: web::Data<MySqlPool>) -> impl Responder {
         Err(e) => {
             println!("/user/active-reviewers: {:?}", e);
             match e {
-                UserError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
-                }
+                UserError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
             }
         }
     }

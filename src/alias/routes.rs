@@ -17,12 +17,8 @@ async fn alias(
         Err(e) => {
             println!("/alias/{:?}/{}: {:?}", instance, path, e);
             match e {
-                AliasError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
-                }
-                AliasError::InvalidInstance => {
-                    HttpResponse::InternalServerError().json(None::<String>)
-                }
+                AliasError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
+                AliasError::InvalidInstance => HttpResponse::InternalServerError().finish(),
                 AliasError::LegacyRoute => HttpResponse::NotFound().json(None::<String>),
                 AliasError::NotFound => HttpResponse::NotFound().json(None::<String>),
             }

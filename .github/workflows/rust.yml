@@ -19,7 +19,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          override: ture
+          override: true
           profile: minimal
       - run: echo "SQLX_OFFLINE=true" >> $GITHUB_ENV
       - uses: actions-rs/cargo@v1
@@ -33,7 +33,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          override: ture
+          override: true
           profile: minimal
           components: clippy
       - run: echo "SQLX_OFFLINE=true" >> $GITHUB_ENV
@@ -48,10 +48,26 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          override: ture
+          override: true
           profile: minimal
           components: rustfmt
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: docker-compose up -d
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+      - run: docker ps
+      - run: docker-compose logs mysql
+      - run: ./.github/wait-for-mysql.sh
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test

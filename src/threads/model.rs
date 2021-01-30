@@ -3,7 +3,7 @@ use sqlx::MySqlPool;
 use thiserror::Error;
 
 use crate::database::Executor;
-use crate::event::{EventError, SetThreadStateEventPayload};
+use crate::event::{CreateCommentEventPayload, EventError, SetThreadStateEventPayload};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -227,10 +227,19 @@ impl Threads {
         .fetch_one(&mut transaction)
         .await?;
 
-        // TODO: Event & Event Parameter!
-        // SetThreadStateEventPayload::new(payload.archived, payload.user_id, id)
-        //     .save(&mut transaction)
-        //     .await?;
+        let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?;
+        let comment_id = value.id as i32;
+
+        CreateCommentEventPayload::new(
+            payload.thread_id,
+            comment_id,
+            payload.user_id,
+            thread.instance_id,
+        )
+        .save(&mut transaction)
+        .await?;
 
         // TODO: Subscriptions?
 

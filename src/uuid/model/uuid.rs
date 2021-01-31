@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use thiserror::Error;
@@ -50,6 +51,17 @@ impl From<sqlx::Error> for UuidError {
     fn from(inner: sqlx::Error) -> Self {
         UuidError::DatabaseError { inner }
     }
+}
+
+#[async_trait]
+pub trait UuidFetcher {
+    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, UuidError>
+    where
+        Self: Sized;
+    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, UuidError>
+    where
+        E: Executor<'a>,
+        Self: Sized;
 }
 
 impl Uuid {

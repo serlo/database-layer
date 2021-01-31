@@ -1,8 +1,11 @@
+use async_trait::async_trait;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
 use super::UuidError;
+use crate::database::Executor;
 use crate::format_alias;
+use crate::uuid::model::uuid::UuidFetcher;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -12,8 +15,16 @@ pub struct Attachment {
     pub alias: String,
 }
 
-impl Attachment {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Attachment, UuidError> {
+#[async_trait]
+impl UuidFetcher for Attachment {
+    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Attachment, UuidError> {
+        Self::fetch_via_transaction(id, pool).await
+    }
+
+    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, UuidError>
+    where
+        E: Executor<'a>,
+    {
         sqlx::query!(
             r#"
                 SELECT u.trashed, f.name
@@ -24,7 +35,7 @@ impl Attachment {
             "#,
             id
         )
-        .fetch_one(pool)
+        .fetch_one(executor)
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => UuidError::NotFound,
@@ -40,7 +51,9 @@ impl Attachment {
             ),
         })
     }
+}
 
+impl Attachment {
     pub fn get_context() -> Option<String> {
         Some("attachment".to_string())
     }

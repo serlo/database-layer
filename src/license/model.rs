@@ -2,6 +2,7 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
+use crate::database::Executor;
 use crate::instance::Instance;
 
 #[derive(Serialize)]
@@ -34,7 +35,14 @@ impl From<sqlx::Error> for LicenseError {
 }
 
 impl License {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<License, LicenseError> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, LicenseError> {
+        Self::fetch_via_transaction(id, pool).await
+    }
+
+    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, LicenseError>
+    where
+        E: Executor<'a>,
+    {
         let license = sqlx::query!(
             r#"
                 SELECT l.default, l.title, l.url, l.content, l.agreement, l.icon_href, i.subdomain
@@ -44,14 +52,14 @@ impl License {
             "#,
             id
         )
-        .fetch_one(pool)
+        .fetch_one(executor)
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => LicenseError::NotFound,
             error => error.into(),
         })?;
 
-        Ok(License {
+        Ok(Self {
             id,
             instance: license
                 .subdomain

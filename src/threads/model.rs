@@ -214,33 +214,18 @@ impl Threads {
         .execute(&mut transaction)
         .await?;
 
-        // just for debug, should be part of next query
-        let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
-            .await?;
-        let uuid_id = value.id as i32;
-
-        println!("{:?}", uuid_id);
-        println!("{:?}", DateTime::now());
-        println!("{:?}", payload.content);
-        println!("{:?}", payload.thread_id);
-        println!("{:?}", payload.user_id);
-        println!("{:?}", thread.instance_id);
-        println!("this is where it fails:");
-
         sqlx::query!(
             r#"
                 INSERT INTO comment ( id , date , archived , title , content , uuid_id , parent_id , author_id , instance_id )
-                    VALUES (?, ?, 0, NULL, ?, NULL, ?, ?, ?)
+                    VALUES (LAST_INSERT_ID(), ?, 0, NULL, ?, NULL, ?, ?, ?)
             "#,
-            uuid_id,
             DateTime::now(),
             payload.content,
             payload.thread_id,
             payload.user_id,
             thread.instance_id
         )
-        .fetch_one(&mut transaction)
+        .execute(&mut transaction)
         .await?;
 
         let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
@@ -271,8 +256,6 @@ impl Threads {
         transaction.commit().await?;
 
         Ok(())
-
-        // TODO: Finish tests
     }
 }
 
@@ -283,6 +266,36 @@ mod tests {
     use super::{ThreadCommentThreadPayload, ThreadSetArchivePayload, Threads};
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
+
+    #[actix_rt::test]
+    async fn comment_thread() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Threads::comment_thread(
+            ThreadCommentThreadPayload {
+                thread_id: 17774,
+                user_id: 1,
+                content: "content-test".to_string(),
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        let comment = sqlx::query!(
+            r#"
+                SELECT content, author_id FROM comment WHERE parent_id = ?
+            "#,
+            17774
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap();
+
+        assert_eq!(comment.content, Some("content-test".to_string()));
+        assert_eq!(comment.author_id, 1);
+    }
 
     #[actix_rt::test]
     async fn comment_thread_non_existing_thread() {
@@ -299,27 +312,6 @@ mod tests {
         )
         .await
         .unwrap();
-    }
-
-    #[actix_rt::test]
-    async fn comment_thread_debug() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        let result = Threads::comment_thread(
-            ThreadCommentThreadPayload {
-                thread_id: 17774,
-                user_id: 1,
-                content: "content-test".to_string(),
-            },
-            &mut transaction,
-        )
-        .await;
-
-        println!("{:?}", result);
-
-        //make sure output shows
-        assert_eq!(1, 0);
     }
 
     #[actix_rt::test]

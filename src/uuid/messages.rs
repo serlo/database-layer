@@ -1,8 +1,10 @@
-use actix_web::{HttpResponse, Responder};
+use actix_web::HttpResponse;
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
 use super::model::{Uuid, UuidError};
+use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -10,8 +12,9 @@ pub enum UuidMessage {
     UuidQuery(UuidQuery),
 }
 
-impl UuidMessage {
-    pub async fn handle(&self, pool: &MySqlPool) -> impl Responder {
+#[async_trait]
+impl MessageResponder for UuidMessage {
+    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
         match self {
             UuidMessage::UuidQuery(message) => message.handle(pool).await,
         }
@@ -23,8 +26,9 @@ pub struct UuidQuery {
     pub id: i32,
 }
 
-impl UuidQuery {
-    pub async fn handle(&self, pool: &MySqlPool) -> impl Responder {
+#[async_trait]
+impl MessageResponder for UuidQuery {
+    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
         let id = self.id;
         match Uuid::fetch(id, pool).await {
             Ok(uuid) => HttpResponse::Ok()

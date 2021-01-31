@@ -3,6 +3,7 @@ use sqlx::MySqlPool;
 
 use super::messages::UuidQuery;
 use super::model::{SetUuidStateError, SetUuidStatePayload, Uuid};
+use crate::message::MessageResponder;
 
 #[get("/uuid/{id}")]
 async fn uuid(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {

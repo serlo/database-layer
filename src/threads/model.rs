@@ -24,17 +24,24 @@ impl From<sqlx::Error> for ThreadsError {
 }
 
 impl Threads {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Threads, ThreadsError> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, ThreadsError> {
+        Self::fetch_via_transaction(id, pool).await
+    }
+
+    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, ThreadsError>
+    where
+        E: Executor<'a>,
+    {
         let result = sqlx::query!(
             r#"SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC"#,
             id
         )
-        .fetch_all(pool)
+        .fetch_all(executor)
         .await?;
 
         let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();
 
-        Ok(Threads { first_comment_ids })
+        Ok(Self { first_comment_ids })
     }
 }
 

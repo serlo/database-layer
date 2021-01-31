@@ -149,6 +149,8 @@ pub struct ThreadCommentThreadPayload {
 pub enum ThreadCommentThreadError {
     #[error("Comment could not be saved because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
+    #[error("Comment could not be saved because thread is archived")]
+    ThreadArchivedError,
     #[error("Comment could not be saved because of a database error: {inner:?}.")]
     EventError { inner: EventError },
 }
@@ -187,22 +189,10 @@ impl Threads {
             payload.thread_id
         )
         .fetch_one(&mut transaction)
-        .await;
+        .await?;
 
-        if thread.is_err() {
-            return match thread {
-                Err(sqlx::Error::RowNotFound) => {
-                    // Comment not found, skip
-                    Ok(()) // TODO: should be error?
-                }
-                Err(inner) => Err(inner.into()),
-                Ok(_) => Ok(()),
-            };
-        }
-        let thread = thread.unwrap();
         if thread.archived != 0 {
-            // archived thread: skip
-            return Ok(()); // should maybe be an error?
+            return Err(ThreadCommentThreadError::ThreadArchivedError);
         }
 
         sqlx::query!(
@@ -302,7 +292,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        Threads::comment_thread(
+        let result = Threads::comment_thread(
             ThreadCommentThreadPayload {
                 thread_id: 3, //does not exist
                 user_id: 1,
@@ -310,8 +300,9 @@ mod tests {
             },
             &mut transaction,
         )
-        .await
-        .unwrap();
+        .await;
+
+        assert!(result.is_err())
     }
 
     #[actix_rt::test]

@@ -56,6 +56,9 @@ async fn comment_thread(
                 ThreadCommentThreadError::DatabaseError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)
                 }
+                ThreadCommentThreadError::ThreadArchivedError { .. } => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
                 ThreadCommentThreadError::EventError { .. } => {
                     HttpResponse::InternalServerError().json(None::<String>)
                 }

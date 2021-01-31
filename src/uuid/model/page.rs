@@ -104,10 +104,8 @@ impl UuidFetcher for Page {
         let page = fetch_one_page!(id, &mut transaction).await;
         let revisions = fetch_all_revisions!(id, &mut transaction).await;
 
-        let result = to_page!(id, page, revisions);
-
         transaction.commit().await?;
 
-        result
+        to_page!(id, page, revisions)
     }
 }

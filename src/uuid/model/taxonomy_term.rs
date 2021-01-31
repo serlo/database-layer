@@ -1,9 +1,11 @@
+use async_trait::async_trait;
 use convert_case::{Case, Casing};
-use futures::try_join;
+use futures::join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::{ConcreteUuid, Uuid, UuidError};
+use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
+use crate::database::Executor;
 use crate::format_alias;
 use crate::instance::Instance;
 
@@ -22,9 +24,9 @@ pub struct TaxonomyTerm {
     pub children_ids: Vec<i32>,
 }
 
-impl TaxonomyTerm {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
-        let taxonomy_term = sqlx::query!(
+macro_rules! fetch_one_taxonomy_term {
+    ($id: expr, $executor: expr) => {
+        sqlx::query!(
             r#"
                 SELECT u.trashed, term.name, type.name as term_type, instance.subdomain, term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id
                     FROM term_taxonomy
@@ -35,49 +37,70 @@ impl TaxonomyTerm {
                     JOIN uuid u ON u.id = term_taxonomy.id
                     WHERE term_taxonomy.id = ?
             "#,
-            id
+            $id
         )
-        .fetch_one(pool)
-            .await
-            .map_err(|error| match error {
-                sqlx::Error::RowNotFound => UuidError::NotFound,
-                error => error.into(),
-            })?;
+        .fetch_one($executor)
+    };
+}
 
-        let entities_fut = sqlx::query!(
+macro_rules! fetch_all_entities {
+    ($id: expr, $executor: expr) => {
+        sqlx::query!(
             r#"
                 SELECT entity_id
                     FROM term_taxonomy_entity
                     WHERE term_taxonomy_id = ?
                     ORDER BY position ASC
             "#,
-            id
+            $id
         )
-        .fetch_all(pool);
-        let children_fut = sqlx::query!(
+        .fetch_all($executor)
+    };
+}
+
+macro_rules! fetch_all_children {
+    ($id: expr, $executor: expr) => {
+        sqlx::query!(
             r#"
                 SELECT id
                     FROM term_taxonomy
                     WHERE parent_id = ?
                     ORDER BY weight ASC
             "#,
-            id
+            $id
         )
-        .fetch_all(pool);
-        let subject_fut = TaxonomyTerm::fetch_canonical_subject(id, pool);
-        let (entities, children, subject) = try_join!(entities_fut, children_fut, subject_fut)?;
+        .fetch_all($executor)
+    };
+}
+
+macro_rules! fetch_subject {
+    ($id: expr, $executor: expr) => {
+        TaxonomyTerm::fetch_canonical_subject($id, $executor)
+    };
+}
+
+macro_rules! to_taxonomy_term {
+    ($id: expr, $taxonomy_term: expr, $entities: expr, $children: expr, $subject: expr) => {{
+        let taxonomy_term = $taxonomy_term.map_err(|error| match error {
+            sqlx::Error::RowNotFound => UuidError::NotFound,
+            error => error.into(),
+        })?;
+        let entities = $entities?;
+        let children = $children?;
+        let subject = $subject?;
+
         let mut children_ids: Vec<i32> = entities
             .iter()
             .map(|child| child.entity_id as i32)
             .collect();
         children_ids.extend(children.iter().map(|child| child.id as i32));
         Ok(Uuid {
-            id,
+            id: $id,
             trashed: taxonomy_term.trashed != 0,
-            alias: format_alias(subject.as_deref(), id, Some(&taxonomy_term.name)),
+            alias: format_alias(subject.as_deref(), $id, Some(&taxonomy_term.name)),
             concrete_uuid: ConcreteUuid::TaxonomyTerm(TaxonomyTerm {
                 __typename: "TaxonomyTerm".to_string(),
-                term_type: normalize_type(taxonomy_term.term_type.as_str()),
+                term_type: TaxonomyTerm::normalize_type(taxonomy_term.term_type.as_str()),
                 instance: taxonomy_term
                     .subdomain
                     .parse()
@@ -89,12 +112,48 @@ impl TaxonomyTerm {
                 children_ids,
             }),
         })
+    }};
+}
+
+#[async_trait]
+impl UuidFetcher for TaxonomyTerm {
+    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
+        let taxonomy_term = fetch_one_taxonomy_term!(id, pool);
+        let entities = fetch_all_entities!(id, pool);
+        let children = fetch_all_children!(id, pool);
+        let subject = fetch_subject!(id, pool);
+
+        let (taxonomy_term, entities, children, subject) =
+            join!(taxonomy_term, entities, children, subject);
+
+        to_taxonomy_term!(id, taxonomy_term, entities, children, subject)
     }
 
-    pub async fn fetch_canonical_subject(
+    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let taxonomy_term = fetch_one_taxonomy_term!(id, &mut transaction).await;
+        let entities = fetch_all_entities!(id, &mut transaction).await;
+        let children = fetch_all_children!(id, &mut transaction).await;
+        let subject = fetch_subject!(id, &mut transaction).await;
+
+        transaction.commit().await?;
+
+        to_taxonomy_term!(id, taxonomy_term, entities, children, subject)
+    }
+}
+
+impl TaxonomyTerm {
+    pub async fn fetch_canonical_subject<'a, E>(
         id: i32,
-        pool: &MySqlPool,
-    ) -> Result<Option<String>, sqlx::Error> {
+        executor: E,
+    ) -> Result<Option<String>, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
         // Yes, this is super hacky. Didn't find a better way to handle recursion in MySQL 5 (in production, the max depth is around 10 at the moment)
         let subjects = sqlx::query!(
             r#"
@@ -148,15 +207,15 @@ impl TaxonomyTerm {
             id,
             id,
             id
-        ).fetch_one(pool).await;
+        ).fetch_one(executor).await;
         match subjects {
             Ok(subject) => Ok(Some(subject.name)),
             Err(sqlx::Error::RowNotFound) => Ok(None),
             Err(inner) => Err(inner),
         }
     }
-}
 
-fn normalize_type(typename: &str) -> String {
-    typename.to_case(Case::Camel)
+    fn normalize_type(typename: &str) -> String {
+        typename.to_case(Case::Camel)
+    }
 }

@@ -1,3 +1,4 @@
+use crate::datetime::DateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use thiserror::Error;
@@ -213,13 +214,27 @@ impl Threads {
         .execute(&mut transaction)
         .await?;
 
+        // just for debug, should be part of next query
+        let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?;
+        let uuid_id = value.id as i32;
+
+        println!("{:?}", uuid_id);
+        println!("{:?}", DateTime::now());
+        println!("{:?}", payload.content);
+        println!("{:?}", payload.thread_id);
+        println!("{:?}", payload.user_id);
+        println!("{:?}", thread.instance_id);
         println!("this is where it fails:");
 
         sqlx::query!(
             r#"
                 INSERT INTO comment ( id , date , archived , title , content , uuid_id , parent_id , author_id , instance_id )
-                    SELECT LAST_INSERT_ID(), NOW(), 0, NULL, ?, NULL, ?, ?, ?
+                    VALUES (?, ?, 0, NULL, ?, NULL, ?, ?, ?)
             "#,
+            uuid_id,
+            DateTime::now(),
             payload.content,
             payload.thread_id,
             payload.user_id,
@@ -257,7 +272,7 @@ impl Threads {
 
         Ok(())
 
-        // TODO: Tests
+        // TODO: Finish tests
     }
 }
 

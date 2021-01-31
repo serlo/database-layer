@@ -1,7 +1,7 @@
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::UuidError;
+use super::{ConcreteUuid, Uuid, UuidError};
 use crate::datetime::DateTime;
 use crate::format_alias;
 
@@ -10,9 +10,6 @@ use crate::format_alias;
 pub struct User {
     #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
-    pub id: i32,
-    pub trashed: bool,
-    pub alias: String,
     pub username: String,
     pub date: DateTime,
     pub last_login: Option<DateTime>,
@@ -20,7 +17,7 @@ pub struct User {
 }
 
 impl User {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<User, UuidError> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
         sqlx::query!(
             r#"
                 SELECT trashed, username, date, last_login, description
@@ -36,15 +33,17 @@ impl User {
             sqlx::Error::RowNotFound => UuidError::NotFound,
             error => error.into(),
         })
-        .map(|user| User {
-            __typename: "User".to_string(),
+        .map(|user| Uuid {
             id,
             trashed: user.trashed != 0,
             alias: format_alias(Self::get_context().as_deref(), id, Some(&user.username)),
-            username: user.username,
-            date: user.date.into(),
-            last_login: user.last_login.map(|date| date.into()),
-            description: user.description,
+            concrete_uuid: ConcreteUuid::User(User {
+                __typename: "User".to_string(),
+                username: user.username,
+                date: user.date.into(),
+                last_login: user.last_login.map(|date| date.into()),
+                description: user.description,
+            }),
         })
     }
 

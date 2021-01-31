@@ -1,26 +1,19 @@
 use async_trait::async_trait;
-use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::{UuidError, UuidFetcher};
+use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
 use crate::format_alias;
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BlogPost {
-    pub id: i32,
-    pub trashed: bool,
-    pub alias: String,
-}
+pub struct BlogPost {}
 
 #[async_trait]
 impl UuidFetcher for BlogPost {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, UuidError> {
+    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
         Self::fetch_via_transaction(id, pool).await
     }
 
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, UuidError>
+    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
     where
         E: Executor<'a>,
     {
@@ -39,7 +32,7 @@ impl UuidFetcher for BlogPost {
             sqlx::Error::RowNotFound => UuidError::NotFound,
             error => error.into(),
         })
-        .map(|blog| Self {
+        .map(|blog| Uuid {
             id,
             trashed: blog.trashed != 0,
             alias: format_alias(
@@ -47,6 +40,7 @@ impl UuidFetcher for BlogPost {
                 id,
                 Some(blog.title.as_str()),
             ),
+            concrete_uuid: ConcreteUuid::BlogPost,
         })
     }
 }

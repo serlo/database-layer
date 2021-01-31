@@ -3,7 +3,7 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::UuidError;
+use super::{ConcreteUuid, Uuid, UuidError};
 use crate::format_alias;
 use crate::instance::Instance;
 
@@ -12,9 +12,6 @@ use crate::instance::Instance;
 pub struct TaxonomyTerm {
     #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
-    pub id: i32,
-    pub trashed: bool,
-    pub alias: String,
     #[serde(rename(serialize = "type"))]
     pub term_type: String,
     pub instance: Instance,
@@ -26,7 +23,7 @@ pub struct TaxonomyTerm {
 }
 
 impl TaxonomyTerm {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<TaxonomyTerm, UuidError> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
         let taxonomy_term = sqlx::query!(
             r#"
                 SELECT u.trashed, term.name, type.name as term_type, instance.subdomain, term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id
@@ -74,21 +71,23 @@ impl TaxonomyTerm {
             .map(|child| child.entity_id as i32)
             .collect();
         children_ids.extend(children.iter().map(|child| child.id as i32));
-        Ok(TaxonomyTerm {
-            __typename: "TaxonomyTerm".to_string(),
+        Ok(Uuid {
             id,
             trashed: taxonomy_term.trashed != 0,
             alias: format_alias(subject.as_deref(), id, Some(&taxonomy_term.name)),
-            term_type: normalize_type(taxonomy_term.term_type.as_str()),
-            instance: taxonomy_term
-                .subdomain
-                .parse()
-                .map_err(|_| UuidError::InvalidInstance)?,
-            name: taxonomy_term.name,
-            description: taxonomy_term.description,
-            weight: taxonomy_term.weight.unwrap_or(0),
-            parent_id: taxonomy_term.parent_id.map(|id| id as i32),
-            children_ids,
+            concrete_uuid: ConcreteUuid::TaxonomyTerm(TaxonomyTerm {
+                __typename: "TaxonomyTerm".to_string(),
+                term_type: normalize_type(taxonomy_term.term_type.as_str()),
+                instance: taxonomy_term
+                    .subdomain
+                    .parse()
+                    .map_err(|_| UuidError::InvalidInstance)?,
+                name: taxonomy_term.name,
+                description: taxonomy_term.description,
+                weight: taxonomy_term.weight.unwrap_or(0),
+                parent_id: taxonomy_term.parent_id.map(|id| id as i32),
+                children_ids,
+            }),
         })
     }
 

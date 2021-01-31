@@ -12,7 +12,7 @@ use self::event_revision::EventRevision;
 use self::generic_entity_revision::GenericRevision;
 use self::video_revision::VideoRevision;
 use super::entity::Entity;
-use super::UuidError;
+use super::{ConcreteUuid, Uuid, UuidError};
 
 mod abstract_entity_revision;
 mod applet_revision;
@@ -44,7 +44,7 @@ pub enum ConcreteEntityRevision {
 }
 
 impl EntityRevision {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<EntityRevision, UuidError> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
         let revision_fut = sqlx::query!(
             r#"
                 SELECT t.name, u.trashed, r.date, r.author_id, r.repository_id
@@ -77,12 +77,6 @@ impl EntityRevision {
 
         let abstract_entity_revision = AbstractEntityRevision {
             __typename: revision.name.parse()?,
-            id,
-            trashed: revision.trashed != 0,
-            alias: format!(
-                "/entity/repository/compare/{}/{}",
-                revision.repository_id, id
-            ),
             date: revision.date.into(),
             author_id: revision.author_id as i32,
             repository_id: revision.repository_id as i32,
@@ -125,9 +119,17 @@ impl EntityRevision {
             }
         };
 
-        Ok(EntityRevision {
-            abstract_entity_revision,
-            concrete_entity_revision,
+        Ok(Uuid {
+            id,
+            trashed: revision.trashed != 0,
+            alias: format!(
+                "/entity/repository/compare/{}/{}",
+                revision.repository_id, id
+            ),
+            concrete_uuid: ConcreteUuid::EntityRevision(EntityRevision {
+                abstract_entity_revision,
+                concrete_entity_revision,
+            }),
         })
     }
 

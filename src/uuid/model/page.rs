@@ -1,7 +1,7 @@
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::UuidError;
+use super::{ConcreteUuid, Uuid, UuidError};
 use crate::datetime::DateTime;
 use crate::format_alias;
 use crate::instance::Instance;
@@ -11,9 +11,6 @@ use crate::instance::Instance;
 pub struct Page {
     #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
-    pub id: i32,
-    pub trashed: bool,
-    pub alias: String,
     pub instance: Instance,
     pub current_revision_id: Option<i32>,
     pub revision_ids: Vec<i32>,
@@ -22,7 +19,7 @@ pub struct Page {
 }
 
 impl Page {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Page, UuidError> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
         let page = sqlx::query!(
             r#"
                 SELECT u.trashed, i.subdomain, p.current_revision_id, p.license_id, r.title
@@ -51,24 +48,26 @@ impl Page {
         if revisions.is_empty() {
             Err(UuidError::NotFound)
         } else {
-            Ok(Page {
-                __typename: "Page".to_string(),
+            Ok(Uuid {
                 id,
                 trashed: page.trashed != 0,
                 // TODO:
                 alias: format_alias(None, id, page.title.as_deref()),
-                instance: page
-                    .subdomain
-                    .parse()
-                    .map_err(|_| UuidError::InvalidInstance)?,
-                current_revision_id: page.current_revision_id,
-                revision_ids: revisions
-                    .iter()
-                    .rev()
-                    .map(|revision| revision.id as i32)
-                    .collect(),
-                date: revisions[0].date.into(),
-                license_id: page.license_id,
+                concrete_uuid: ConcreteUuid::Page(Page {
+                    __typename: "Page".to_string(),
+                    instance: page
+                        .subdomain
+                        .parse()
+                        .map_err(|_| UuidError::InvalidInstance)?,
+                    current_revision_id: page.current_revision_id,
+                    revision_ids: revisions
+                        .iter()
+                        .rev()
+                        .map(|revision| revision.id as i32)
+                        .collect(),
+                    date: revisions[0].date.into(),
+                    license_id: page.license_id,
+                }),
             })
         }
     }

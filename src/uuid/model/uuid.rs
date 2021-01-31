@@ -14,10 +14,19 @@ use super::{
 };
 
 #[derive(Serialize)]
+pub struct Uuid {
+    pub id: i32,
+    pub trashed: bool,
+    pub alias: String,
+    #[serde(flatten)]
+    pub concrete_uuid: ConcreteUuid,
+}
+
+#[derive(Serialize)]
 #[serde(untagged)]
-pub enum Uuid {
-    Attachment(Attachment),
-    BlogPost(BlogPost),
+pub enum ConcreteUuid {
+    Attachment,
+    BlogPost,
     Comment(Comment),
     Entity(Entity),
     EntityRevision(EntityRevision),
@@ -55,17 +64,17 @@ impl From<sqlx::Error> for UuidError {
 
 #[async_trait]
 pub trait UuidFetcher {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, UuidError>
+    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError>
     where
         Self: Sized;
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, UuidError>
+    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
     where
         E: Executor<'a>,
         Self: Sized;
 }
 
 impl Uuid {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, UuidError> {
         let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
             .fetch_one(pool)
             .await
@@ -74,15 +83,15 @@ impl Uuid {
                 error => error.into(),
             })?;
         match uuid.discriminator.as_str() {
-            "attachment" => Ok(Uuid::Attachment(Attachment::fetch(id, pool).await?)),
-            "blogPost" => Ok(Uuid::BlogPost(BlogPost::fetch(id, pool).await?)),
-            "comment" => Ok(Uuid::Comment(Comment::fetch(id, pool).await?)),
-            "entity" => Ok(Uuid::Entity(Entity::fetch(id, pool).await?)),
-            "entityRevision" => Ok(Uuid::EntityRevision(EntityRevision::fetch(id, pool).await?)),
-            "page" => Ok(Uuid::Page(Page::fetch(id, pool).await?)),
-            "pageRevision" => Ok(Uuid::PageRevision(PageRevision::fetch(id, pool).await?)),
-            "taxonomyTerm" => Ok(Uuid::TaxonomyTerm(TaxonomyTerm::fetch(id, pool).await?)),
-            "user" => Ok(Uuid::User(User::fetch(id, pool).await?)),
+            "attachment" => Ok(Attachment::fetch(id, pool).await?),
+            "blogPost" => Ok(BlogPost::fetch(id, pool).await?),
+            "comment" => Ok(Comment::fetch(id, pool).await?),
+            "entity" => Ok(Entity::fetch(id, pool).await?),
+            "entityRevision" => Ok(EntityRevision::fetch(id, pool).await?),
+            "page" => Ok(Page::fetch(id, pool).await?),
+            "pageRevision" => Ok(PageRevision::fetch(id, pool).await?),
+            "taxonomyTerm" => Ok(TaxonomyTerm::fetch(id, pool).await?),
+            "user" => Ok(User::fetch(id, pool).await?),
             _ => Err(UuidError::UnsupportedDiscriminator {
                 discriminator: uuid.discriminator,
             }),
@@ -115,19 +124,7 @@ impl Uuid {
     }
 
     pub fn get_alias(&self) -> String {
-        match self {
-            Uuid::Attachment(attachment) => attachment.alias.to_string(),
-            Uuid::BlogPost(blog) => blog.alias.to_string(),
-            Uuid::Comment(comment) => comment.alias.to_string(),
-            Uuid::Entity(entity) => entity.abstract_entity.alias.to_string(),
-            Uuid::EntityRevision(entity_revision) => {
-                entity_revision.abstract_entity_revision.alias.to_string()
-            }
-            Uuid::Page(page) => page.alias.to_string(),
-            Uuid::PageRevision(page_revision) => page_revision.alias.to_string(),
-            Uuid::TaxonomyTerm(taxonomy_term) => taxonomy_term.alias.to_string(),
-            Uuid::User(user) => user.alias.to_string(),
-        }
+        self.alias.clone()
     }
 }
 

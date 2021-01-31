@@ -1,7 +1,7 @@
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::{Uuid, UuidError};
+use super::{ConcreteUuid, Uuid, UuidError};
 use crate::datetime::DateTime;
 use crate::format_alias;
 
@@ -10,9 +10,6 @@ use crate::format_alias;
 pub struct Comment {
     #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
-    pub id: i32,
-    pub trashed: bool,
-    pub alias: String,
     pub author_id: i32,
     pub title: Option<String>,
     pub date: DateTime,
@@ -23,7 +20,7 @@ pub struct Comment {
 }
 
 impl Comment {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Comment, UuidError> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
         let comment = sqlx::query!(
             r#"
                 SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id, c.uuid_id, p.title as parent_title
@@ -52,8 +49,7 @@ impl Comment {
         .fetch_all(pool)
         .await?;
 
-        Ok(Comment {
-            __typename: "Comment".to_string(),
+        Ok(Uuid {
             id,
             trashed: comment.trashed != 0,
             alias: format_alias(
@@ -68,13 +64,16 @@ impl Comment {
                         .as_str(),
                 ),
             ),
-            author_id: comment.author_id as i32,
-            title: comment.title,
-            date: comment.date.into(),
-            archived: comment.archived != 0,
-            content: comment.content.unwrap_or_else(|| "".to_string()),
-            parent_id: comment.parent_id.or(comment.uuid_id).unwrap() as i32,
-            children_ids: children.iter().map(|child| child.id as i32).collect(),
+            concrete_uuid: ConcreteUuid::Comment(Self {
+                __typename: "Comment".to_string(),
+                author_id: comment.author_id as i32,
+                title: comment.title,
+                date: comment.date.into(),
+                archived: comment.archived != 0,
+                content: comment.content.unwrap_or_else(|| "".to_string()),
+                parent_id: comment.parent_id.or(comment.uuid_id).unwrap() as i32,
+                children_ids: children.iter().map(|child| child.id as i32).collect(),
+            }),
         })
     }
 

@@ -5,7 +5,7 @@ use sqlx::MySqlPool;
 use abstract_entity::{AbstractEntity, EntityType};
 
 use super::taxonomy_term::TaxonomyTerm;
-use super::UuidError;
+use super::{ConcreteUuid, Uuid, UuidError};
 use crate::format_alias;
 
 mod abstract_entity;
@@ -68,7 +68,7 @@ pub struct Solution {
 }
 
 impl Entity {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Entity, UuidError> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
         let entity_fut = sqlx::query!(
             r#"
                 SELECT t.name, u.trashed, i.subdomain, e.date, e.current_revision_id, e.license_id, f1.value as title, f2.value as fallback_title
@@ -100,19 +100,6 @@ impl Entity {
 
         let abstract_entity = AbstractEntity {
             __typename: entity.name.parse::<EntityType>()?,
-            id,
-            trashed: entity.trashed != 0,
-            alias: format_alias(
-                subject.as_deref(),
-                id,
-                Some(
-                    entity
-                        .title
-                        .or(entity.fallback_title)
-                        .unwrap_or(format!("{}", id))
-                        .as_str(),
-                ),
-            ),
             instance: entity
                 .subdomain
                 .parse()
@@ -172,9 +159,24 @@ impl Entity {
             _ => ConcreteEntity::Generic,
         };
 
-        Ok(Entity {
-            abstract_entity,
-            concrete_entity,
+        Ok(Uuid {
+            id,
+            trashed: entity.trashed != 0,
+            alias: format_alias(
+                subject.as_deref(),
+                id,
+                Some(
+                    entity
+                        .title
+                        .or(entity.fallback_title)
+                        .unwrap_or(format!("{}", id))
+                        .as_str(),
+                ),
+            ),
+            concrete_uuid: ConcreteUuid::Entity(Entity {
+                abstract_entity,
+                concrete_entity,
+            }),
         })
     }
 

@@ -108,7 +108,7 @@ macro_rules! fetch_all_uuid_parameters {
 }
 
 macro_rules! to_abstract_event {
-    ($event:expr, $string_parameters:expr, $uuid_parameters:expr) => {{
+    ($event: expr, $string_parameters: expr, $uuid_parameters: expr) => {{
         let event = $event.map_err(|error| match error {
             sqlx::Error::RowNotFound => EventError::NotFound,
             error => error.into(),

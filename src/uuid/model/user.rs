@@ -1,7 +1,9 @@
+use async_trait::async_trait;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::{ConcreteUuid, Uuid, UuidError};
+use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
+use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::format_alias;
 
@@ -16,8 +18,16 @@ pub struct User {
     pub description: Option<String>,
 }
 
-impl User {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
+#[async_trait]
+impl UuidFetcher for User {
+    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
+        Self::fetch_via_transaction(id, pool).await
+    }
+
+    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
+    where
+        E: Executor<'a>,
+    {
         sqlx::query!(
             r#"
                 SELECT trashed, username, date, last_login, description
@@ -27,7 +37,7 @@ impl User {
             "#,
             id
         )
-        .fetch_one(pool)
+        .fetch_one(executor)
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => UuidError::NotFound,
@@ -46,7 +56,9 @@ impl User {
             }),
         })
     }
+}
 
+impl User {
     pub fn get_context() -> Option<String> {
         Some("user".to_string())
     }

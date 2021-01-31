@@ -4,6 +4,7 @@ use thiserror::Error;
 
 use crate::database::Executor;
 use crate::event::{CreateCommentEventPayload, EventError, SetThreadStateEventPayload};
+use crate::subscriptions::{Subscriptions, SubscriptionsError};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -191,7 +192,7 @@ impl Threads {
             return match thread {
                 Err(sqlx::Error::RowNotFound) => {
                     // Comment not found, skip
-                    Ok(()) // TODO: should be error
+                    Ok(()) // TODO: should be error?
                 }
                 Err(inner) => Err(inner.into()),
                 Ok(_) => Ok(()),
@@ -241,7 +242,16 @@ impl Threads {
         .save(&mut transaction)
         .await?;
 
-        // TODO: Subscriptions?
+        Subscriptions::create_subscription(
+            payload.thread_id,
+            payload.user_id,
+            true,
+            &mut transaction,
+        )
+        .await
+        .map_err(|error| match error {
+            SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
+        })?;
 
         transaction.commit().await?;
 

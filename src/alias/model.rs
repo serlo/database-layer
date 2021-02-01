@@ -4,7 +4,7 @@ use sqlx::MySqlPool;
 use thiserror::Error;
 
 use crate::instance::Instance;
-use crate::uuid::{Uuid, UuidError};
+use crate::uuid::{Uuid, UuidError, UuidFetcher};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

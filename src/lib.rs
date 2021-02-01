@@ -17,8 +17,10 @@ pub mod event;
 pub mod health;
 pub mod instance;
 pub mod license;
+pub mod message;
 pub mod navigation;
 pub mod notifications;
+pub mod routes;
 pub mod subscriptions;
 pub mod threads;
 pub mod user;
@@ -54,6 +56,7 @@ where
     >,
 {
     app.data(pool)
+        .configure(routes::init)
         .configure(alias::init)
         .configure(event::init)
         .configure(health::init)

@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
@@ -5,7 +6,8 @@ use sqlx::MySqlPool;
 use abstract_entity::{AbstractEntity, EntityType};
 
 use super::taxonomy_term::TaxonomyTerm;
-use super::UuidError;
+use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
+use crate::database::Executor;
 use crate::format_alias;
 
 mod abstract_entity;
@@ -67,9 +69,9 @@ pub struct Solution {
     parent_id: i32,
 }
 
-impl Entity {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Entity, UuidError> {
-        let entity_fut = sqlx::query!(
+macro_rules! fetch_one_entity {
+    ($id: expr, $executor: expr) => {
+        sqlx::query!(
             r#"
                 SELECT t.name, u.trashed, i.subdomain, e.date, e.current_revision_id, e.license_id, f1.value as title, f2.value as fallback_title
                     FROM entity e
@@ -80,49 +82,47 @@ impl Entity {
                     LEFT JOIN entity_revision_field f2 on f2.entity_revision_id = (SELECT id FROM entity_revision WHERE repository_id = ? LIMIT 1) AND f2.field = 'title'
                     WHERE e.id = ?
             "#,
-            id,
-            id
+            $id,
+            $id
         )
-            .fetch_one(pool);
-        let revisions_fut = sqlx::query!(
-            r#"SELECT id FROM entity_revision WHERE repository_id = ?"#,
-            id
-        )
-        .fetch_all(pool);
-        let taxonomy_terms_fut = sqlx::query!(
-            r#"SELECT term_taxonomy_id as id FROM term_taxonomy_entity WHERE entity_id = ?"#,
-            id
-        )
-        .fetch_all(pool);
-        let subject_fut = Self::fetch_canonical_subject(id, pool);
-        let (entity, revisions, taxonomy_terms, subject) =
-            try_join!(entity_fut, revisions_fut, taxonomy_terms_fut, subject_fut)?;
+        .fetch_one($executor)
+    }
+}
 
+macro_rules! fetch_all_revisions {
+    ($id: expr, $executor: expr) => {
+        sqlx::query!(
+            r#"SELECT id FROM entity_revision WHERE repository_id = ?"#,
+            $id
+        )
+        .fetch_all($executor)
+    };
+}
+
+macro_rules! fetch_all_taxonomy_terms_parents {
+    ($id: expr, $executor: expr) => {
+        sqlx::query!(
+            r#"SELECT term_taxonomy_id as id FROM term_taxonomy_entity WHERE entity_id = ?"#,
+            $id
+        )
+        .fetch_all($executor);
+    };
+}
+
+macro_rules! to_entity {
+    ($id: expr, $entity: expr, $revisions: expr, $taxonomy_terms: expr, $subject: expr, $executor: expr) => {{
         let abstract_entity = AbstractEntity {
-            __typename: entity.name.parse::<EntityType>()?,
-            id,
-            trashed: entity.trashed != 0,
-            alias: format_alias(
-                subject.as_deref(),
-                id,
-                Some(
-                    entity
-                        .title
-                        .or(entity.fallback_title)
-                        .unwrap_or(format!("{}", id))
-                        .as_str(),
-                ),
-            ),
-            instance: entity
+            __typename: $entity.name.parse::<EntityType>()?,
+            instance: $entity
                 .subdomain
                 .parse()
                 .map_err(|_| UuidError::InvalidInstance)?,
-            date: entity.date.into(),
-            license_id: entity.license_id,
-            taxonomy_term_ids: taxonomy_terms.iter().map(|term| term.id as i32).collect(),
+            date: $entity.date.into(),
+            license_id: $entity.license_id,
+            taxonomy_term_ids: $taxonomy_terms.iter().map(|term| term.id as i32).collect(),
 
-            current_revision_id: entity.current_revision_id,
-            revision_ids: revisions
+            current_revision_id: $entity.current_revision_id,
+            revision_ids: $revisions
                 .iter()
                 .rev()
                 .map(|revision| revision.id as i32)
@@ -132,32 +132,36 @@ impl Entity {
         let concrete_entity = match abstract_entity.__typename {
             EntityType::Course => {
                 let page_ids =
-                    Self::find_children_by_id_and_type(id, EntityType::CoursePage, pool).await?;
+                    Entity::find_children_by_id_and_type($id, EntityType::CoursePage, $executor)
+                        .await?;
 
                 ConcreteEntity::Course(Course { page_ids })
             }
             EntityType::CoursePage => {
-                let parent_id = Self::find_parent_by_id(id, pool).await?;
+                let parent_id = Entity::find_parent_by_id($id, $executor).await?;
 
                 ConcreteEntity::CoursePage(CoursePage { parent_id })
             }
             EntityType::ExerciseGroup => {
-                let exercise_ids =
-                    Self::find_children_by_id_and_type(id, EntityType::GroupedExercise, pool)
-                        .await?;
+                let exercise_ids = Entity::find_children_by_id_and_type(
+                    $id,
+                    EntityType::GroupedExercise,
+                    $executor,
+                )
+                .await?;
 
                 ConcreteEntity::ExerciseGroup(ExerciseGroup { exercise_ids })
             }
             EntityType::Exercise => {
                 let solution_id =
-                    Self::find_child_by_id_and_type(id, EntityType::Solution, pool).await?;
+                    Entity::find_child_by_id_and_type($id, EntityType::Solution, $executor).await?;
 
                 ConcreteEntity::Exercise(Exercise { solution_id })
             }
             EntityType::GroupedExercise => {
-                let parent_id = Self::find_parent_by_id(id, pool).await?;
+                let parent_id = Entity::find_parent_by_id($id, $executor).await?;
                 let solution_id =
-                    Self::find_child_by_id_and_type(id, EntityType::Solution, pool).await?;
+                    Entity::find_child_by_id_and_type($id, EntityType::Solution, $executor).await?;
 
                 ConcreteEntity::GroupedExercise(GroupedExercise {
                     parent_id,
@@ -165,24 +169,38 @@ impl Entity {
                 })
             }
             EntityType::Solution => {
-                let parent_id = Self::find_parent_by_id(id, pool).await?;
+                let parent_id = Entity::find_parent_by_id($id, $executor).await?;
 
                 ConcreteEntity::Solution(Solution { parent_id })
             }
             _ => ConcreteEntity::Generic,
         };
 
-        Ok(Entity {
-            abstract_entity,
-            concrete_entity,
+        Ok(Uuid {
+            id: $id,
+            trashed: $entity.trashed != 0,
+            alias: format_alias(
+                $subject.as_deref(),
+                $id,
+                Some(
+                    $entity
+                        .title
+                        .or($entity.fallback_title)
+                        .unwrap_or(format!("{}", $id))
+                        .as_str(),
+                ),
+            ),
+            concrete_uuid: ConcreteUuid::Entity(Entity {
+                abstract_entity,
+                concrete_entity,
+            }),
         })
-    }
+    }};
+}
 
-    pub async fn fetch_canonical_subject(
-        id: i32,
-        pool: &MySqlPool,
-    ) -> Result<Option<String>, sqlx::Error> {
-        let taxonomy_terms = sqlx::query!(
+macro_rules! fetch_all_taxonomy_terms_ancestors {
+    ($id: expr, $executor: expr) => {
+        sqlx::query!(
             r#"
                 SELECT term_taxonomy_id as id
                     FROM (
@@ -199,18 +217,84 @@ impl Entity {
                     ) u
                     WHERE entity_id = ?
             "#,
-            id
+            $id
         )
-        .fetch_all(pool)
-        .await?;
-        let subject = match taxonomy_terms.first() {
-            Some(term) => TaxonomyTerm::fetch_canonical_subject(term.id as i32, pool).await?,
+        .fetch_all($executor)
+    };
+}
+
+macro_rules! fetch_canonical_subject {
+    ($taxonomy_terms: expr, $executor: expr) => {
+        match $taxonomy_terms.first() {
+            Some(term) => TaxonomyTerm::fetch_canonical_subject(term.id as i32, $executor).await?,
             _ => None,
-        };
+        }
+    };
+}
+
+#[async_trait]
+impl UuidFetcher for Entity {
+    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
+        let entity = fetch_one_entity!(id, pool);
+        let revisions = fetch_all_revisions!(id, pool);
+        let taxonomy_terms = fetch_all_taxonomy_terms_parents!(id, pool);
+        let subject = Entity::fetch_canonical_subject(id, pool);
+        let (entity, revisions, taxonomy_terms, subject) =
+            try_join!(entity, revisions, taxonomy_terms, subject)?;
+
+        to_entity!(id, entity, revisions, taxonomy_terms, subject, pool)
+    }
+
+    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+        let entity = fetch_one_entity!(id, &mut transaction).await?;
+        let revisions = fetch_all_revisions!(id, &mut transaction).await?;
+        let taxonomy_terms = fetch_all_taxonomy_terms_parents!(id, &mut transaction).await?;
+        let subject = Entity::fetch_canonical_subject_via_transaction(id, &mut transaction).await?;
+        let result = to_entity!(
+            id,
+            entity,
+            revisions,
+            taxonomy_terms,
+            subject,
+            &mut transaction
+        );
+        transaction.commit().await?;
+        result
+    }
+}
+
+impl Entity {
+    pub async fn fetch_canonical_subject(
+        id: i32,
+        pool: &MySqlPool,
+    ) -> Result<Option<String>, sqlx::Error> {
+        let taxonomy_terms = fetch_all_taxonomy_terms_ancestors!(id, pool).await?;
+        let subject = fetch_canonical_subject!(taxonomy_terms, pool);
         Ok(subject)
     }
 
-    async fn find_parent_by_id(id: i32, pool: &MySqlPool) -> Result<i32, UuidError> {
+    pub async fn fetch_canonical_subject_via_transaction<'a, E>(
+        id: i32,
+        executor: E,
+    ) -> Result<Option<String>, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+        let taxonomy_terms = fetch_all_taxonomy_terms_ancestors!(id, &mut transaction).await?;
+        let subject = fetch_canonical_subject!(taxonomy_terms, &mut transaction);
+        transaction.commit().await?;
+        Ok(subject)
+    }
+
+    async fn find_parent_by_id<'a, E>(id: i32, executor: E) -> Result<i32, UuidError>
+    where
+        E: Executor<'a>,
+    {
         let parents = sqlx::query!(
             r#"
                 SELECT l.parent_id as id
@@ -219,7 +303,7 @@ impl Entity {
             "#,
             id
         )
-        .fetch_all(pool)
+        .fetch_all(executor)
         .await?;
         parents
             .iter()
@@ -230,11 +314,14 @@ impl Entity {
             .map(|parent_id| *parent_id)
     }
 
-    async fn find_children_by_id_and_type(
+    async fn find_children_by_id_and_type<'a, E>(
         id: i32,
         child_type: EntityType,
-        pool: &MySqlPool,
-    ) -> Result<Vec<i32>, UuidError> {
+        executor: E,
+    ) -> Result<Vec<i32>, UuidError>
+    where
+        E: Executor<'a>,
+    {
         let children = sqlx::query!(
             r#"
                 SELECT c.id
@@ -247,17 +334,20 @@ impl Entity {
             id,
             child_type,
         )
-        .fetch_all(pool)
+        .fetch_all(executor)
         .await?;
         Ok(children.iter().map(|child| child.id as i32).collect())
     }
 
-    async fn find_child_by_id_and_type(
+    async fn find_child_by_id_and_type<'a, E>(
         id: i32,
         child_type: EntityType,
-        pool: &MySqlPool,
-    ) -> Result<Option<i32>, UuidError> {
-        Self::find_children_by_id_and_type(id, child_type, pool)
+        executor: E,
+    ) -> Result<Option<i32>, UuidError>
+    where
+        E: Executor<'a>,
+    {
+        Self::find_children_by_id_and_type(id, child_type, executor)
             .await
             .map(|children| children.first().cloned())
     }

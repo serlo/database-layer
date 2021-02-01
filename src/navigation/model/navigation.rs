@@ -2,7 +2,8 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
-use super::navigation_child::{NavigationChild, NavigationChildError};
+use super::navigation_child::NavigationChild;
+use crate::database::Executor;
 use crate::instance::Instance;
 
 #[derive(Serialize)]
@@ -23,40 +24,53 @@ impl From<sqlx::Error> for NavigationError {
     }
 }
 
+macro_rules! fetch_all_pages {
+    ($instance: expr, $executor: expr) => {
+        sqlx::query!(
+            r#"
+                    SELECT p.id
+                        FROM navigation_page p
+                        JOIN navigation_container c ON c.id = p.container_id
+                        JOIN instance i ON i.id = c.instance_id
+                        JOIN type t ON t.id = c.type_id
+                        WHERE i.subdomain = ? AND t.name = 'default' AND p.parent_id IS NULL
+                        ORDER BY p.position, p.id
+                "#,
+            $instance
+        )
+        .fetch_all($executor)
+    };
+}
+
 impl Navigation {
     pub async fn fetch(
         instance: Instance,
         pool: &MySqlPool,
     ) -> Result<Navigation, NavigationError> {
-        let pages = sqlx::query!(
-            r#"
-                SELECT p.id
-                    FROM navigation_page p
-                    JOIN navigation_container c ON c.id = p.container_id
-                    JOIN instance i ON i.id = c.instance_id
-                    JOIN type t ON t.id = c.type_id
-                    WHERE i.subdomain = ? AND t.name = 'default' AND p.parent_id IS NULL
-                    ORDER BY p.position, p.id
-            "#,
-            instance
-        )
-        .fetch_all(pool)
-        .await?;
+        let pages = fetch_all_pages!(instance, pool).await?;
 
-        let mut data = Vec::with_capacity(pages.len());
+        let ids: Vec<i32> = pages.iter().map(|page| page.id).collect();
+        let data = NavigationChild::bulk_fetch(&ids, pool).await?;
 
-        for page in pages.iter() {
-            match NavigationChild::fetch(page.id, pool).await {
-                Ok(navigation_child) => data.push(navigation_child),
-                Err(error) => match error {
-                    NavigationChildError::DatabaseError { inner } => return Err(inner.into()),
-                    NavigationChildError::NotVisible => {}
-                    NavigationChildError::InvalidRoute => {}
-                    NavigationChildError::MissingRequiredRouteParameter => {}
-                    NavigationChildError::Unsupported => {}
-                },
-            }
-        }
+        Ok(Navigation { data, instance })
+    }
+
+    #[allow(dead_code)]
+    pub async fn fetch_via_transaction<'a, E>(
+        instance: Instance,
+        executor: E,
+    ) -> Result<Navigation, NavigationError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let pages = fetch_all_pages!(instance, &mut transaction).await?;
+
+        let ids: Vec<i32> = pages.iter().map(|page| page.id).collect();
+        let data = NavigationChild::bulk_fetch_via_transaction(&ids, &mut transaction).await?;
+
+        transaction.commit().await?;
 
         Ok(Navigation { data, instance })
     }

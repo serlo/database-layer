@@ -3,6 +3,7 @@ use std::env;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
+use crate::database::Executor;
 use crate::datetime::DateTime;
 
 pub struct User {}
@@ -21,6 +22,15 @@ impl From<sqlx::Error> for UserError {
 
 impl User {
     pub async fn fetch_active_authors(pool: &MySqlPool) -> Result<Vec<i32>, UserError> {
+        Self::fetch_active_authors_via_transaction(pool).await
+    }
+
+    pub async fn fetch_active_authors_via_transaction<'a, E>(
+        executor: E,
+    ) -> Result<Vec<i32>, UserError>
+    where
+        E: Executor<'a>,
+    {
         let user_ids = sqlx::query!(
             r#"
                 SELECT u.id
@@ -32,12 +42,21 @@ impl User {
             "#,
             Self::now()
         )
-        .fetch_all(pool)
+        .fetch_all(executor)
         .await?;
         Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }
 
     pub async fn fetch_active_reviewers(pool: &MySqlPool) -> Result<Vec<i32>, UserError> {
+        Self::fetch_active_reviewers_via_transaction(pool).await
+    }
+
+    pub async fn fetch_active_reviewers_via_transaction<'a, E>(
+        executor: E,
+    ) -> Result<Vec<i32>, UserError>
+    where
+        E: Executor<'a>,
+    {
         let user_ids = sqlx::query!(
             r#"
                 SELECT u.id
@@ -50,13 +69,13 @@ impl User {
             "#,
             Self::now()
         )
-        .fetch_all(pool)
-        .await?;
+            .fetch_all(executor)
+            .await?;
         Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }
 
     fn now() -> DateTime {
-        // In the development database there are no recent edits so we use an old timestamp (2014-01-01).
+        // In the development database there are no recent edits so we use an old timestamp.
         // In production, we use the current time.
         let environment = env::var("ENV").unwrap();
         match environment.as_str() {

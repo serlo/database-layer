@@ -1,7 +1,9 @@
+use async_trait::async_trait;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::UuidError;
+use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
+use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::format_alias;
 
@@ -10,9 +12,6 @@ use crate::format_alias;
 pub struct PageRevision {
     #[serde(rename(serialize = "__typename"))]
     pub __typename: String,
-    pub id: i32,
-    pub trashed: bool,
-    pub alias: String,
     pub title: String,
     pub content: String,
     pub date: DateTime,
@@ -20,8 +19,16 @@ pub struct PageRevision {
     pub repository_id: i32,
 }
 
-impl PageRevision {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<PageRevision, UuidError> {
+#[async_trait]
+impl UuidFetcher for PageRevision {
+    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
+        Self::fetch_via_transaction(id, pool).await
+    }
+
+    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
+    where
+        E: Executor<'a>,
+    {
         sqlx::query!(
             r#"
                 SELECT u.trashed, r.title, r.content, r.date, r.author_id, r.page_repository_id
@@ -31,24 +38,26 @@ impl PageRevision {
             "#,
             id
         )
-        .fetch_one(pool)
+        .fetch_one(executor)
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => UuidError::NotFound,
             error => error.into(),
         })
         .map(|revision| {
-            PageRevision {
-                __typename: "PageRevision".to_string(),
+            Uuid {
                 id,
                 trashed: revision.trashed != 0,
                 // TODO:
                 alias: format_alias(None, id, Some(&revision.title)),
-                title: revision.title,
-                content: revision.content,
-                date: revision.date.into(),
-                author_id: revision.author_id as i32,
-                repository_id: revision.page_repository_id as i32,
+                concrete_uuid: ConcreteUuid::PageRevision(PageRevision {
+                    __typename: "PageRevision".to_string(),
+                    title: revision.title,
+                    content: revision.content,
+                    date: revision.date.into(),
+                    author_id: revision.author_id as i32,
+                    repository_id: revision.page_repository_id as i32,
+                }),
             }
         })
     }

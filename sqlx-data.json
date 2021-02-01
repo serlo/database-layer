@@ -1,5 +1,30 @@
 {
   "db": "MySQL",
+  "01ec0b909247a28fa877dbb37da8db45610b8d2b460d68a429ca12919e5a2737": {
+    "query": "\n                    SELECT p.id\n                        FROM navigation_page p\n                        JOIN navigation_container c ON c.id = p.container_id\n                        JOIN instance i ON i.id = c.instance_id\n                        JOIN type t ON t.id = c.type_id\n                        WHERE i.subdomain = ? AND t.name = 'default' AND p.parent_id IS NULL\n                        ORDER BY p.position, p.id\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "04912efa922c870efb5268ef2a98a82dfa657b084a50c91b89031388c514de65": {
     "query": "SELECT LAST_INSERT_ID() as id",
     "describe": {
@@ -22,6 +47,44 @@
       },
       "nullable": [
         false
+      ]
+    }
+  },
+  "0775fb20c50e22a43297a12e8959dc4e6c7527a64d40dfbe885f616acf252865": {
+    "query": "\n                SELECT name, value FROM\n                    (\n                    # Level 1\n                    SELECT k.name, p.value, p.page_id\n                        FROM navigation_parameter p\n                        JOIN navigation_parameter_key k ON k.id = p.key_id\n                        WHERE p.parent_id IS NULL AND value != ''\n                    UNION ALL\n                    # Level 2\n                    SELECT CONCAT(k1.name, '.', k2.name) as name, p2.value, p2.page_id\n                        FROM navigation_parameter p1\n                        JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                        JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                        JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                        WHERE p1.parent_id IS NULL AND p2.value != ''\n                    UNION ALL\n                    # Level 3\n                    SELECT CONCAT(k1.name, '.', k2.name, '.', k3.name) as name, p3.value, p3.page_id\n                        FROM navigation_parameter p1\n                        JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                        JOIN navigation_parameter p3 ON p3.parent_id = p2.id\n                        JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                        JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                        JOIN navigation_parameter_key k3 ON k3.id = p3.key_id\n                        WHERE p1.parent_id IS NULL AND p3.value != ''\n                    ) u\n                    WHERE page_id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 16
+            },
+            "char_set": 224,
+            "max_size": 9204
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "value",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        true,
+        true
       ]
     }
   },
@@ -237,6 +300,31 @@
       "nullable": [
         false,
         false,
+        false
+      ]
+    }
+  },
+  "21217736c5678117cb512824386f3368c1a0920e88b41b78655039038c2cdb6c": {
+    "query": "\n                SELECT p.id\n                    FROM navigation_page p\n                    WHERE p.parent_id = ?\n                    ORDER BY p.position, p.id\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
         false
       ]
     }
@@ -494,16 +582,6 @@
         false,
         false
       ]
-    }
-  },
-  "3d851e069d05f7dfa2cb6c8628905361908a70fc144088534f20455053e94ffd": {
-    "query": "DELETE FROM notification_event WHERE event_log_id = ?",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": []
     }
   },
   "40b8240c7dcab061ae6b38b169366923a24f07408a7c8f3dc94cf57af746733b": {
@@ -894,44 +972,6 @@
       ]
     }
   },
-  "6c156182d8d632b92c2fa86383bded8d27331cda584a92fb73b9dc3a342f8287": {
-    "query": "\n                    SELECT name, value FROM\n                        (\n                        # Level 1\n                        SELECT k.name, p.value, p.page_id\n                            FROM navigation_parameter p\n                            JOIN navigation_parameter_key k ON k.id = p.key_id\n                            WHERE p.parent_id IS NULL AND value != ''\n                        UNION ALL\n                        # Level 2\n                        SELECT CONCAT(k1.name, '.', k2.name) as name, p2.value, p2.page_id\n                            FROM navigation_parameter p1\n                            JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                            JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                            JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                            WHERE p1.parent_id IS NULL AND p2.value != ''\n                        UNION ALL\n                        # Level 3\n                        SELECT CONCAT(k1.name, '.', k2.name, '.', k3.name) as name, p3.value, p3.page_id\n                            FROM navigation_parameter p1\n                            JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                            JOIN navigation_parameter p3 ON p3.parent_id = p2.id\n                            JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                            JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                            JOIN navigation_parameter_key k3 ON k3.id = p3.key_id\n                            WHERE p1.parent_id IS NULL AND p3.value != ''\n                        ) u\n                        WHERE page_id = ?\n                ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "name",
-          "type_info": {
-            "type": "Blob",
-            "flags": {
-              "bits": 16
-            },
-            "char_set": 224,
-            "max_size": 9204
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "value",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 0
-            },
-            "char_set": 224,
-            "max_size": 1020
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        true,
-        true
-      ]
-    }
-  },
   "778d1aadfabd36aae4aabf449a61958b23a6f7f4b8c25844adcdd064acf7681a": {
     "query": "\n                    SELECT u.trashed, i.subdomain\n                        FROM uuid u\n                        JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT id, instance_id FROM term) c ON c.id = u.id\n                        JOIN instance i ON i.id = c.instance_id\n                        WHERE u.id = ? AND discriminator != 'user'\n                ",
     "describe": {
@@ -1001,82 +1041,6 @@
         "Right": 1
       },
       "nullable": [
-        false
-      ]
-    }
-  },
-  "8c6254d3b848f9b5a7a3e63dcef728d4149f5cbf0148a32d0c6bc3cdbb027da2": {
-    "query": "SELECT seen FROM notification WHERE id = ?",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "seen",
-          "type_info": {
-            "type": "Tiny",
-            "flags": {
-              "bits": 1
-            },
-            "char_set": 63,
-            "max_size": 1
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
-  "900e9873093aaed1342fd71fa8731b616ae89a1f996bdd6bc9fce7a215a2a1ce": {
-    "query": "SELECT * FROM notification_event WHERE event_log_id = ?",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "notification_id",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        },
-        {
-          "ordinal": 2,
-          "name": "event_log_id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false,
-        false,
         false
       ]
     }
@@ -1307,44 +1271,6 @@
       "nullable": []
     }
   },
-  "ae9b2c26d6739811e7afca6ae3b1d264912819f48fdd60fa3a5065bc3d755327": {
-    "query": "\n                    SELECT id, seen\n                        FROM notification\n                        WHERE id = ?\n                ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "seen",
-          "type_info": {
-            "type": "Tiny",
-            "flags": {
-              "bits": 1
-            },
-            "char_set": 63,
-            "max_size": 1
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
   "b67a6cd1168e030043fc309da009c241d88b7543ce11598b7e183086dd2f5077": {
     "query": "\n                SELECT entity_id\n                    FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n                    ORDER BY position ASC\n            ",
     "describe": {
@@ -1359,81 +1285,6 @@
             },
             "char_set": 63,
             "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
-  "b74d0670cdaaf1f324c8af8b7e0a3fcdcfbdd7b84f2af263cbbb1e2ff0c84fa8": {
-    "query": "SELECT id FROM event_log WHERE uuid_id = ? ORDER BY date DESC",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
-  "bca5c70eda3bdad181a899aed3d99e9bc8985480e894d8770b9375f1a28a66da": {
-    "query": "\n                SELECT p.id\n                    FROM navigation_page p\n                    JOIN navigation_container c ON c.id = p.container_id\n                    JOIN instance i ON i.id = c.instance_id\n                    JOIN type t ON t.id = c.type_id\n                    WHERE i.subdomain = ? AND t.name = 'default' AND p.parent_id IS NULL\n                    ORDER BY p.position, p.id\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
-  "be2ec9977c322c7baff512b985e031d2574bbcb31cd86e62bcca6cc86de5b81d": {
-    "query": "SELECT trashed FROM uuid WHERE id = ?",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "trashed",
-          "type_info": {
-            "type": "Tiny",
-            "flags": {
-              "bits": 1
-            },
-            "char_set": 63,
-            "max_size": 1
           }
         }
       ],
@@ -1660,31 +1511,6 @@
       ]
     }
   },
-  "c5908676b971a5d00bcbdf12c274853a8f72b3933ed5605a557eb13d68514c4d": {
-    "query": "\n                    SELECT p.id\n                        FROM navigation_page p\n                        WHERE p.parent_id = ?\n                        ORDER BY p.position, p.id\n                ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
   "c59169ef14ada9959cae905ce9f60992497174d2f8cb57332d855974f911040a": {
     "query": "\n                SELECT u.trashed, f.name\n                    FROM attachment_file f\n                    JOIN attachment_container c ON c.id = f.attachment_id\n                    JOIN uuid u ON u.id = c.id\n                    WHERE c.id = ?\n            ",
     "describe": {
@@ -1719,31 +1545,6 @@
       },
       "nullable": [
         false,
-        false
-      ]
-    }
-  },
-  "c633d2265603ec3b5d33d6dff61fb7e4e43a3b55f2b97c345e63bbbc9e683998": {
-    "query": "SELECT archived FROM comment WHERE id = ?",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "archived",
-          "type_info": {
-            "type": "Tiny",
-            "flags": {
-              "bits": 1
-            },
-            "char_set": 63,
-            "max_size": 1
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
         false
       ]
     }

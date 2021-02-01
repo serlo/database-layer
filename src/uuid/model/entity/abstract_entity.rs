@@ -13,9 +13,6 @@ use crate::instance::Instance;
 pub struct AbstractEntity {
     #[serde(rename(serialize = "__typename"))]
     pub __typename: EntityType,
-    pub id: i32,
-    pub trashed: bool,
-    pub alias: String,
     pub instance: Instance,
     pub date: DateTime,
     pub license_id: i32,

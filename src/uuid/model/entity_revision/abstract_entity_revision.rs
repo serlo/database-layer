@@ -10,9 +10,6 @@ use crate::datetime::DateTime;
 pub struct AbstractEntityRevision {
     #[serde(rename(serialize = "__typename"))]
     pub __typename: EntityRevisionType,
-    pub id: i32,
-    pub trashed: bool,
-    pub alias: String,
     pub date: DateTime,
     pub author_id: i32,
     pub repository_id: i32,

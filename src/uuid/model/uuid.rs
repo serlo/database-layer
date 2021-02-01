@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use thiserror::Error;
@@ -13,10 +14,19 @@ use super::{
 };
 
 #[derive(Serialize)]
+pub struct Uuid {
+    pub id: i32,
+    pub trashed: bool,
+    pub alias: String,
+    #[serde(flatten)]
+    pub concrete_uuid: ConcreteUuid,
+}
+
+#[derive(Serialize)]
 #[serde(untagged)]
-pub enum Uuid {
-    Attachment(Attachment),
-    BlogPost(BlogPost),
+pub enum ConcreteUuid {
+    Attachment,
+    BlogPost,
     Comment(Comment),
     Entity(Entity),
     EntityRevision(EntityRevision),
@@ -52,8 +62,20 @@ impl From<sqlx::Error> for UuidError {
     }
 }
 
-impl Uuid {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
+#[async_trait]
+pub trait UuidFetcher {
+    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError>
+    where
+        Self: Sized;
+    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
+    where
+        E: Executor<'a>,
+        Self: Sized;
+}
+
+#[async_trait]
+impl UuidFetcher for Uuid {
+    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, UuidError> {
         let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
             .fetch_one(pool)
             .await
@@ -62,21 +84,55 @@ impl Uuid {
                 error => error.into(),
             })?;
         match uuid.discriminator.as_str() {
-            "attachment" => Ok(Uuid::Attachment(Attachment::fetch(id, pool).await?)),
-            "blogPost" => Ok(Uuid::BlogPost(BlogPost::fetch(id, pool).await?)),
-            "comment" => Ok(Uuid::Comment(Comment::fetch(id, pool).await?)),
-            "entity" => Ok(Uuid::Entity(Entity::fetch(id, pool).await?)),
-            "entityRevision" => Ok(Uuid::EntityRevision(EntityRevision::fetch(id, pool).await?)),
-            "page" => Ok(Uuid::Page(Page::fetch(id, pool).await?)),
-            "pageRevision" => Ok(Uuid::PageRevision(PageRevision::fetch(id, pool).await?)),
-            "taxonomyTerm" => Ok(Uuid::TaxonomyTerm(TaxonomyTerm::fetch(id, pool).await?)),
-            "user" => Ok(Uuid::User(User::fetch(id, pool).await?)),
+            "attachment" => Ok(Attachment::fetch(id, pool).await?),
+            "blogPost" => Ok(BlogPost::fetch(id, pool).await?),
+            "comment" => Ok(Comment::fetch(id, pool).await?),
+            "entity" => Ok(Entity::fetch(id, pool).await?),
+            "entityRevision" => Ok(EntityRevision::fetch(id, pool).await?),
+            "page" => Ok(Page::fetch(id, pool).await?),
+            "pageRevision" => Ok(PageRevision::fetch(id, pool).await?),
+            "taxonomyTerm" => Ok(TaxonomyTerm::fetch(id, pool).await?),
+            "user" => Ok(User::fetch(id, pool).await?),
             _ => Err(UuidError::UnsupportedDiscriminator {
                 discriminator: uuid.discriminator,
             }),
         }
     }
 
+    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, UuidError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+        let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
+            .fetch_one(&mut transaction)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::RowNotFound => UuidError::NotFound,
+                error => error.into(),
+            })?;
+        let entity = match uuid.discriminator.as_str() {
+            "attachment" => Ok(Attachment::fetch_via_transaction(id, &mut transaction).await?),
+            "blogPost" => Ok(BlogPost::fetch_via_transaction(id, &mut transaction).await?),
+            "comment" => Ok(Comment::fetch_via_transaction(id, &mut transaction).await?),
+            "entity" => Ok(Entity::fetch_via_transaction(id, &mut transaction).await?),
+            "entityRevision" => {
+                Ok(EntityRevision::fetch_via_transaction(id, &mut transaction).await?)
+            }
+            "page" => Ok(Page::fetch_via_transaction(id, &mut transaction).await?),
+            "pageRevision" => Ok(PageRevision::fetch_via_transaction(id, &mut transaction).await?),
+            "taxonomyTerm" => Ok(TaxonomyTerm::fetch_via_transaction(id, &mut transaction).await?),
+            "user" => Ok(User::fetch_via_transaction(id, &mut transaction).await?),
+            _ => Err(UuidError::UnsupportedDiscriminator {
+                discriminator: uuid.discriminator,
+            }),
+        };
+        transaction.commit().await?;
+        entity
+    }
+}
+
+impl Uuid {
     pub async fn fetch_context(id: i32, pool: &MySqlPool) -> Result<Option<String>, UuidError> {
         let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
             .fetch_one(pool)
@@ -98,24 +154,45 @@ impl Uuid {
             "user" => Ok(User::get_context()),
             _ => Ok(None),
         };
+        Ok(context?)
+    }
 
+    pub async fn fetch_context_via_transaction<'a, E>(
+        id: i32,
+        executor: E,
+    ) -> Result<Option<String>, UuidError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+        let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
+            .fetch_one(&mut transaction)
+            .await
+            .map_err(|error| match error {
+                sqlx::Error::RowNotFound => UuidError::NotFound,
+                error => error.into(),
+            })?;
+        let context = match uuid.discriminator.as_str() {
+            "attachment" => Ok(Attachment::get_context()),
+            "blogPost" => Ok(BlogPost::get_context()),
+            // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
+            "comment" => Ok(None),
+            "entity" => Entity::fetch_canonical_subject_via_transaction(id, &mut transaction).await,
+            "entityRevision" => {
+                EntityRevision::fetch_canonical_subject_via_transaction(id, &mut transaction).await
+            }
+            "page" => Ok(None),         // TODO:
+            "pageRevision" => Ok(None), // TODO:
+            "taxonomyTerm" => TaxonomyTerm::fetch_canonical_subject(id, &mut transaction).await,
+            "user" => Ok(User::get_context()),
+            _ => Ok(None),
+        };
+        transaction.commit().await?;
         Ok(context?)
     }
 
     pub fn get_alias(&self) -> String {
-        match self {
-            Uuid::Attachment(attachment) => attachment.alias.to_string(),
-            Uuid::BlogPost(blog) => blog.alias.to_string(),
-            Uuid::Comment(comment) => comment.alias.to_string(),
-            Uuid::Entity(entity) => entity.abstract_entity.alias.to_string(),
-            Uuid::EntityRevision(entity_revision) => {
-                entity_revision.abstract_entity_revision.alias.to_string()
-            }
-            Uuid::Page(page) => page.alias.to_string(),
-            Uuid::PageRevision(page_revision) => page_revision.alias.to_string(),
-            Uuid::TaxonomyTerm(taxonomy_term) => taxonomy_term.alias.to_string(),
-            Uuid::User(user) => user.alias.to_string(),
-        }
+        self.alias.clone()
     }
 }
 

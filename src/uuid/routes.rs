@@ -1,36 +1,15 @@
 use actix_web::{get, post, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
-use super::model::{SetUuidStateError, SetUuidStatePayload, Uuid, UuidError};
+use super::messages::UuidQuery;
+use super::model::{SetUuidStateError, SetUuidStatePayload, Uuid};
+use crate::message::MessageResponder;
 
 #[get("/uuid/{id}")]
 async fn uuid(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let id = id.into_inner();
-    match Uuid::fetch(id, db_pool.get_ref()).await {
-        Ok(uuid) => HttpResponse::Ok()
-            .content_type("application/json; charset=utf-8")
-            .json(uuid),
-        Err(e) => {
-            println!("/uuid/{}: {:?}", id, e);
-            match e {
-                UuidError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
-                UuidError::InvalidInstance => HttpResponse::InternalServerError().finish(),
-                UuidError::UnsupportedDiscriminator { .. } => {
-                    HttpResponse::NotFound().json(None::<String>)
-                }
-                UuidError::UnsupportedEntityType { .. } => {
-                    HttpResponse::NotFound().json(None::<String>)
-                }
-                UuidError::UnsupportedEntityRevisionType { .. } => {
-                    HttpResponse::NotFound().json(None::<String>)
-                }
-                UuidError::EntityMissingRequiredParent => {
-                    HttpResponse::NotFound().json(None::<String>)
-                }
-                UuidError::NotFound => HttpResponse::NotFound().json(None::<String>),
-            }
-        }
-    }
+    let message = UuidQuery { id };
+    message.handle(db_pool.get_ref()).await
 }
 
 #[post("/set-uuid-state")]

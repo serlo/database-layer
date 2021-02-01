@@ -97,7 +97,9 @@ impl Uuid {
             }),
         }
     }
+}
 
+impl Uuid {
     pub async fn fetch_context(id: i32, pool: &MySqlPool) -> Result<Option<String>, UuidError> {
         let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
             .fetch_one(pool)
@@ -119,7 +121,40 @@ impl Uuid {
             "user" => Ok(User::get_context()),
             _ => Ok(None),
         };
+        Ok(context?)
+    }
 
+    pub async fn fetch_context_via_transaction<'a, E>(
+        id: i32,
+        executor: E,
+    ) -> Result<Option<String>, UuidError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+        let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
+            .fetch_one(&mut transaction)
+            .await
+            .map_err(|error| match error {
+                sqlx::Error::RowNotFound => UuidError::NotFound,
+                error => error.into(),
+            })?;
+        let context = match uuid.discriminator.as_str() {
+            "attachment" => Ok(Attachment::get_context()),
+            "blogPost" => Ok(BlogPost::get_context()),
+            // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
+            "comment" => Ok(None),
+            "entity" => Entity::fetch_canonical_subject_via_transaction(id, &mut transaction).await,
+            "entityRevision" => {
+                EntityRevision::fetch_canonical_subject_via_transaction(id, &mut transaction).await
+            }
+            "page" => Ok(None),         // TODO:
+            "pageRevision" => Ok(None), // TODO:
+            "taxonomyTerm" => TaxonomyTerm::fetch_canonical_subject(id, &mut transaction).await,
+            "user" => Ok(User::get_context()),
+            _ => Ok(None),
+        };
+        transaction.commit().await?;
         Ok(context?)
     }
 

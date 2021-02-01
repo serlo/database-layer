@@ -73,8 +73,9 @@ pub trait UuidFetcher {
         Self: Sized;
 }
 
-impl Uuid {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, UuidError> {
+#[async_trait]
+impl UuidFetcher for Uuid {
+    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, UuidError> {
         let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
             .fetch_one(pool)
             .await
@@ -96,6 +97,38 @@ impl Uuid {
                 discriminator: uuid.discriminator,
             }),
         }
+    }
+
+    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, UuidError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+        let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
+            .fetch_one(&mut transaction)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::RowNotFound => UuidError::NotFound,
+                error => error.into(),
+            })?;
+        let entity = match uuid.discriminator.as_str() {
+            "attachment" => Ok(Attachment::fetch_via_transaction(id, &mut transaction).await?),
+            "blogPost" => Ok(BlogPost::fetch_via_transaction(id, &mut transaction).await?),
+            "comment" => Ok(Comment::fetch_via_transaction(id, &mut transaction).await?),
+            "entity" => Ok(Entity::fetch_via_transaction(id, &mut transaction).await?),
+            "entityRevision" => {
+                Ok(EntityRevision::fetch_via_transaction(id, &mut transaction).await?)
+            }
+            "page" => Ok(Page::fetch_via_transaction(id, &mut transaction).await?),
+            "pageRevision" => Ok(PageRevision::fetch_via_transaction(id, &mut transaction).await?),
+            "taxonomyTerm" => Ok(TaxonomyTerm::fetch_via_transaction(id, &mut transaction).await?),
+            "user" => Ok(User::fetch_via_transaction(id, &mut transaction).await?),
+            _ => Err(UuidError::UnsupportedDiscriminator {
+                discriminator: uuid.discriminator,
+            }),
+        };
+        transaction.commit().await?;
+        entity
     }
 }
 

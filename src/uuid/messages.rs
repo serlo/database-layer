@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
-use super::model::{Uuid, UuidError};
+use super::model::{Uuid, UuidError, UuidFetcher};
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]

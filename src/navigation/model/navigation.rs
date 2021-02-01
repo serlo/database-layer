@@ -55,6 +55,7 @@ impl Navigation {
         Ok(Navigation { data, instance })
     }
 
+    #[allow(dead_code)]
     pub async fn fetch_via_transaction<'a, E>(
         instance: Instance,
         executor: E,

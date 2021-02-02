@@ -1,11 +1,11 @@
-use crate::datetime::DateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use thiserror::Error;
 
 use crate::database::Executor;
+use crate::datetime::DateTime;
 use crate::event::{CreateCommentEventPayload, EventError, SetThreadStateEventPayload};
-use crate::subscriptions::{Subscriptions, SubscriptionsError};
+use crate::subscriptions::{Subscription, SubscriptionsError};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -206,7 +206,7 @@ impl Threads {
 
         sqlx::query!(
             r#"
-                INSERT INTO comment ( id , date , archived , title , content , uuid_id , parent_id , author_id , instance_id )
+                INSERT INTO comment (id, date, archived, title, content, uuid_id, parent_id, author_id, instance_id )
                     VALUES (LAST_INSERT_ID(), ?, 0, NULL, ?, NULL, ?, ?, ?)
             "#,
             DateTime::now(),
@@ -232,16 +232,17 @@ impl Threads {
         .save(&mut transaction)
         .await?;
 
-        Subscriptions::create_subscription(
-            payload.thread_id,
-            payload.user_id,
-            true,
-            &mut transaction,
-        )
-        .await
-        .map_err(|error| match error {
-            SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
-        })?;
+        let subscription = Subscription {
+            object_id: payload.thread_id,
+            user_id: payload.user_id,
+            send_email: true,
+        };
+        subscription
+            .save(&mut transaction)
+            .await
+            .map_err(|error| match error {
+                SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
+            })?;
 
         transaction.commit().await?;
 

@@ -5,6 +5,7 @@ use thiserror::Error;
 use crate::database::Executor;
 use crate::datetime::DateTime;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct Subscriptions(pub Vec<Subscription>);
 
 #[derive(Error, Debug)]
@@ -19,6 +20,7 @@ impl From<sqlx::Error> for SubscriptionsError {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct Subscription {
     pub object_id: i32,
     pub user_id: i32,
@@ -78,13 +80,10 @@ impl Subscriptions {
 
         Ok(Subscriptions(subscriptions))
     }
+}
 
-    pub async fn create_subscription<'a, E>(
-        object_id: i32,
-        user_id: i32,
-        send_email: bool,
-        executor: E,
-    ) -> Result<(), SubscriptionsError>
+impl Subscription {
+    pub async fn save<'a, E>(&self, executor: E) -> Result<(), SubscriptionsError>
     where
         E: Executor<'a>,
     {
@@ -96,12 +95,12 @@ impl Subscriptions {
                 WHERE NOT EXISTS
                 (SELECT id FROM subscription WHERE uuid_id = ? AND user_id = ?)
             "#,
-            object_id,
-            user_id,
-            send_email,
+            self.object_id,
+            self.user_id,
+            self.send_email,
             DateTime::now(),
-            object_id,
-            user_id,
+            self.object_id,
+            self.user_id,
         )
         .execute(&mut transaction)
         .await?;
@@ -147,6 +146,8 @@ mod tests {
     use crate::create_database_pool;
     use crate::subscriptions::Subscriptions;
 
+    use super::Subscription;
+
     #[actix_rt::test]
     async fn create_subscription_new() {
         let pool = create_database_pool().await.unwrap();
@@ -158,18 +159,19 @@ mod tests {
             .unwrap();
         assert!(subscriptions.0.is_empty());
 
-        Subscriptions::create_subscription(1555, 1, true, &mut transaction)
-            .await
-            .unwrap();
+        let subscription = Subscription {
+            object_id: 1555,
+            user_id: 1,
+            send_email: true,
+        };
+        subscription.save(&mut transaction).await.unwrap();
 
         // Verify that subscription was created.
         let subscriptions = Subscriptions::fetch_by_object_via_transaction(1555, &mut transaction)
             .await
             .unwrap();
 
-        assert_eq!(subscriptions.0[0].object_id, 1555);
-        assert_eq!(subscriptions.0[0].user_id, 1);
-        assert_eq!(subscriptions.0[0].send_email, true);
+        assert_eq!(subscriptions.0[0], subscription);
     }
 
     #[actix_rt::test]
@@ -179,24 +181,21 @@ mod tests {
 
         // get existing results for comparison
         let existing_subscriptions =
-            sqlx::query!(r#"SELECT * FROM subscription WHERE uuid_id = ?"#, 1565)
-                .fetch_all(&mut transaction)
+            Subscriptions::fetch_by_object_via_transaction(1565, &mut transaction)
                 .await
                 .unwrap();
 
-        Subscriptions::create_subscription(1565, 1, true, &mut transaction)
-            .await
-            .unwrap();
+        let subscription = Subscription {
+            object_id: 1565,
+            user_id: 1,
+            send_email: true,
+        };
+        subscription.save(&mut transaction).await.unwrap();
 
         // Verify that subscription was not changed.
-        let subscriptions = sqlx::query!(r#"SELECT * FROM subscription WHERE uuid_id = ?"#, 1565)
-            .fetch_all(&mut transaction)
+        let subscriptions = Subscriptions::fetch_by_object_via_transaction(1565, &mut transaction)
             .await
             .unwrap();
-
-        assert_eq!(existing_subscriptions[0].id, subscriptions[0].id);
-        assert_eq!(existing_subscriptions[0].date, subscriptions[0].date);
-        assert_eq!(existing_subscriptions[1].id, subscriptions[1].id);
-        assert_eq!(existing_subscriptions[1].date, subscriptions[1].date);
+        assert_eq!(existing_subscriptions, subscriptions);
     }
 }

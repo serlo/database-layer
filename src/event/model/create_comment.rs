@@ -1,5 +1,6 @@
-use serde::Serialize;
 use std::convert::TryFrom;
+
+use serde::Serialize;
 
 use super::event_type::EventType;
 use crate::database::Executor;
@@ -34,7 +35,7 @@ pub struct CreateCommentEventPayload {
     actor_id: i32,
     object_id: i32,
     instance_id: i32,
-    uuid_parameter: i32,
+    thread_id: i32,
 }
 
 impl CreateCommentEventPayload {
@@ -47,7 +48,7 @@ impl CreateCommentEventPayload {
             actor_id,
             object_id,
             instance_id,
-            uuid_parameter: thread_id,
+            thread_id,
         }
     }
 
@@ -81,7 +82,7 @@ impl CreateCommentEventPayload {
         // insert event_parameter
         sqlx::query!(
             r#"
-                INSERT INTO event_parameter ( log_id , name_id )
+                INSERT INTO event_parameter (log_id, name_id)
                     SELECT ?, id
                     FROM event_parameter_name
                     WHERE name = ?
@@ -100,10 +101,10 @@ impl CreateCommentEventPayload {
         // insert event_parameter_uuid
         sqlx::query!(
             r#"
-                INSERT INTO event_parameter_uuid ( uuid_id, event_parameter_id )
-                    VALUES ( ? , ? )
+                INSERT INTO event_parameter_uuid (uuid_id, event_parameter_id)
+                    VALUES (? , ?)
             "#,
-            self.uuid_parameter,
+            self.thread_id,
             parameter_id
         )
         .execute(&mut transaction)

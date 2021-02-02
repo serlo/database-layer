@@ -164,7 +164,7 @@ mod tests {
                 }),
         } = event
         {
-            assert_eq!(uuid_parameters.get(&"discussion").unwrap(), 16740);
+            assert_eq!(uuid_parameters.get("discussion").unwrap(), 16740);
             assert!(DateTime::now().signed_duration_since(date) < Duration::minutes(1))
         } else {
             panic!("Event does not fulfill assertions: {:?}", event)

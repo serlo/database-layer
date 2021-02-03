@@ -143,6 +143,8 @@ pub struct ThreadCommentThreadPayload {
     thread_id: i32,
     content: String,
     user_id: i32,
+    subscribe: bool,
+    send_email: bool,
 }
 
 #[derive(Error, Debug)]
@@ -232,17 +234,19 @@ impl Threads {
         .save(&mut transaction)
         .await?;
 
-        let subscription = Subscription {
-            object_id: payload.thread_id,
-            user_id: payload.user_id,
-            send_email: true,
-        };
-        subscription
-            .save(&mut transaction)
-            .await
-            .map_err(|error| match error {
-                SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
-            })?;
+        if payload.subscribe {
+            let subscription = Subscription {
+                object_id: payload.thread_id,
+                user_id: payload.user_id,
+                send_email: payload.send_email,
+            };
+            subscription
+                .save(&mut transaction)
+                .await
+                .map_err(|error| match error {
+                    SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
+                })?;
+        }
 
         transaction.commit().await?;
 
@@ -268,6 +272,8 @@ mod tests {
                 thread_id: 17774,
                 user_id: 1,
                 content: "content-test".to_string(),
+                subscribe: true,
+                send_email: false,
             },
             &mut transaction,
         )
@@ -298,6 +304,8 @@ mod tests {
                 thread_id: 3, //does not exist
                 user_id: 1,
                 content: "content-test".to_string(),
+                subscribe: true,
+                send_email: false,
             },
             &mut transaction,
         )

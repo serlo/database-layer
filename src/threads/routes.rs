@@ -54,13 +54,13 @@ async fn comment_thread(
             println!("/thread/comment-thread: {:?}", e);
             match e {
                 ThreadCommentThreadError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
+                    HttpResponse::InternalServerError().finish()
                 }
                 ThreadCommentThreadError::ThreadArchivedError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
+                    HttpResponse::InternalServerError().finish()
                 }
                 ThreadCommentThreadError::EventError { .. } => {
-                    HttpResponse::InternalServerError().json(None::<String>)
+                    HttpResponse::InternalServerError().finish()
                 }
             }
         }

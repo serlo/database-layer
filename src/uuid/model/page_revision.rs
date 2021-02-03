@@ -7,7 +7,7 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::format_alias;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PageRevision {
     #[serde(rename(serialize = "__typename"))]

@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use super::abstract_entity_revision::AbstractEntityRevision;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppletRevision {
     url: String,

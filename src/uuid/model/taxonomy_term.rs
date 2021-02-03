@@ -9,7 +9,7 @@ use crate::database::Executor;
 use crate::format_alias;
 use crate::instance::Instance;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaxonomyTerm {
     #[serde(rename(serialize = "__typename"))]

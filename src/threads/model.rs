@@ -147,11 +147,11 @@ pub struct ThreadCommentThreadPayload {
 
 #[derive(Error, Debug)]
 pub enum ThreadCommentThreadError {
-    #[error("Comment could not be saved because of a database error: {inner:?}.")]
+    #[error("Comment cannot be saved because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
-    #[error("Comment could not be saved because thread is archived")]
+    #[error("Comment cannot be saved because thread is archived.")]
     ThreadArchivedError,
-    #[error("Comment could not be saved because of a database error: {inner:?}.")]
+    #[error("Comment cannot be saved because of an event error: {inner:?}.")]
     EventError { inner: EventError },
 }
 

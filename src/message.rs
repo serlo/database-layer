@@ -5,6 +5,7 @@ use sqlx::MySqlPool;
 
 use crate::alias::AliasMessage;
 use crate::event::EventMessage;
+use crate::license::LicenseMessage;
 use crate::uuid::UuidMessage;
 
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]
@@ -18,6 +19,7 @@ pub trait MessageResponder {
 pub enum Message {
     AliasMessage(AliasMessage),
     EventMessage(EventMessage),
+    LicenseMessage(LicenseMessage),
     UuidMessage(UuidMessage),
 }
 
@@ -27,6 +29,7 @@ impl MessageResponder for Message {
         match self {
             Message::AliasMessage(message) => message.handle(pool).await,
             Message::EventMessage(message) => message.handle(pool).await,
+            Message::LicenseMessage(message) => message.handle(pool).await,
             Message::UuidMessage(message) => message.handle(pool).await,
         }
     }

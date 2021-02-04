@@ -5,7 +5,7 @@ use thiserror::Error;
 use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::event::{CreateCommentEventPayload, EventError, SetThreadStateEventPayload};
-use crate::subscriptions::{Subscription, SubscriptionsError};
+use crate::subscription::{Subscription, SubscriptionsError};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

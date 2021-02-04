@@ -8,6 +8,7 @@ use crate::event::EventMessage;
 use crate::license::LicenseMessage;
 use crate::navigation::NavigationMessage;
 use crate::notification::NotificationMessage;
+use crate::subscription::SubscriptionMessage;
 use crate::uuid::UuidMessage;
 
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]
@@ -24,6 +25,7 @@ pub enum Message {
     LicenseMessage(LicenseMessage),
     NavigationMessage(NavigationMessage),
     NotificationMessage(NotificationMessage),
+    SubscriptionMessage(SubscriptionMessage),
     UuidMessage(UuidMessage),
 }
 
@@ -36,6 +38,7 @@ impl MessageResponder for Message {
             Message::LicenseMessage(message) => message.handle(pool).await,
             Message::NavigationMessage(message) => message.handle(pool).await,
             Message::NotificationMessage(message) => message.handle(pool).await,
+            Message::SubscriptionMessage(message) => message.handle(pool).await,
             Message::UuidMessage(message) => message.handle(pool).await,
         }
     }

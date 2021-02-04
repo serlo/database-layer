@@ -142,7 +142,7 @@ impl SubscriptionsByUser {
 #[cfg(test)]
 mod tests {
     use crate::create_database_pool;
-    use crate::subscriptions::Subscriptions;
+    use crate::subscription::Subscriptions;
 
     use super::Subscription;
 

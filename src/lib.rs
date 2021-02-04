@@ -21,7 +21,7 @@ pub mod message;
 pub mod navigation;
 pub mod notification;
 pub mod routes;
-pub mod subscriptions;
+pub mod subscription;
 pub mod threads;
 pub mod user;
 pub mod uuid;
@@ -63,7 +63,7 @@ where
         .configure(license::init)
         .configure(navigation::init)
         .configure(notification::init)
-        .configure(subscriptions::init)
+        .configure(subscription::init)
         .configure(threads::init)
         .configure(user::init)
         .configure(uuid::init)

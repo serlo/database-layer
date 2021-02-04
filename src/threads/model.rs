@@ -261,6 +261,8 @@ pub struct ThreadStartThreadPayload {
     content: String,
     object_id: i32,
     user_id: i32,
+    subscribe: bool,
+    send_email: bool,
 }
 
 #[derive(Error, Debug)]
@@ -359,11 +361,19 @@ impl Threads {
             .save(&mut transaction)
             .await?;
 
-        Subscriptions::create_subscription(thread_id, payload.user_id, true, &mut transaction)
-            .await
-            .map_err(|error| match error {
-                SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
-            })?;
+        if payload.subscribe {
+            let subscription = Subscription {
+                object_id: thread_id,
+                user_id: payload.user_id,
+                send_email: payload.send_email,
+            };
+            subscription
+                .save(&mut transaction)
+                .await
+                .map_err(|error| match error {
+                    SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
+                })?;
+        }
 
         transaction.commit().await?;
 
@@ -392,6 +402,8 @@ mod tests {
                 content: "content-test".to_string(),
                 object_id: 1565,
                 user_id: 1,
+                subscribe: true,
+                send_email: false,
             },
             &mut transaction,
         )
@@ -424,6 +436,8 @@ mod tests {
                 content: "content-test".to_string(),
                 object_id: 999999,
                 user_id: 1,
+                subscribe: true,
+                send_email: false,
             },
             &mut transaction,
         )

@@ -706,6 +706,16 @@
       ]
     }
   },
+  "479da477a6086eb83ad57e26139d6d4cb1ca5396ce55f1e80c52f3511eee5ea6": {
+    "query": "\n                INSERT INTO comment ( id , date , archived , title , content , uuid_id , parent_id , author_id , instance_id )\n                    VALUES (LAST_INSERT_ID(), ?, 0, ?, ?, ?, NULL, ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 6
+      },
+      "nullable": []
+    }
+  },
   "4a16769bbf6692e80b38d9eec15eaeceb3d8b99315639131d8dadc7ea1f8166e": {
     "query": "\n                SELECT u.trashed, term.name, type.name as term_type, instance.subdomain, term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id\n                    FROM term_taxonomy\n                    JOIN term ON term.id = term_taxonomy.term_id\n                    JOIN taxonomy ON taxonomy.id = term_taxonomy.taxonomy_id\n                    JOIN type ON type.id = taxonomy.type_id\n                    JOIN instance ON instance.id = taxonomy.instance_id\n                    JOIN uuid u ON u.id = term_taxonomy.id\n                    WHERE term_taxonomy.id = ?\n            ",
     "describe": {
@@ -912,6 +922,16 @@
       ]
     }
   },
+  "525ffd56e36d8393e6501687a300d2a5f077d5f4ecf9ba112d7727f95a10599f": {
+    "query": "\n                INSERT INTO event_parameter_uuid ( uuid_id, event_parameter_id )\n                    VALUES ( ? , ? )\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
   "544017b3c945f404442a6aacf8519449608b8b1cfacb8cf07b3495b313be09da": {
     "query": "SELECT discriminator FROM uuid WHERE id = ?",
     "describe": {
@@ -945,6 +965,31 @@
         "Right": 5
       },
       "nullable": []
+    }
+  },
+  "58815d39c7d5139c9de61bdf56378fc1f333e86fdd9193ebea3333bec41d1a22": {
+    "query": "\n                SELECT i.id as instance_id\n                    FROM uuid\n                    JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT id, instance_id FROM term) u\n                    JOIN instance i ON i.id = u.instance_id\n                    WHERE u.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "instance_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
     }
   },
   "59220da9f5e4677a6fdc380eca9b95923728d0efd09277eb85290b3b4aafa118": {
@@ -1783,6 +1828,16 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "e0b399b3e5f0da30a7a4c7a6971ecd963be33064d82d2956cf2cf803ac8cb67a": {
+    "query": "\n                INSERT INTO event_parameter ( log_id , name_id )\n                    SELECT ?, id\n                    FROM event_parameter_name\n                    WHERE name = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
     }
   },
   "e301aa5d422549cc37a921cfb491915ffe39e03b48bfc5dd7d2c6316a3fca185": {

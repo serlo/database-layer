@@ -1,12 +1,13 @@
-use serde::Serialize;
 use std::convert::TryFrom;
 
+use serde::Serialize;
+
 use super::abstract_event::AbstractEvent;
+use super::event::Event;
 use super::event_type::EventType;
 use super::EventError;
 use crate::database::Executor;
 use crate::datetime::DateTime;
-use crate::event::Event;
 use crate::notifications::{Notifications, NotificationsError};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -84,7 +85,7 @@ impl CreateThreadEventPayload {
         // insert event_parameter
         sqlx::query!(
             r#"
-                INSERT INTO event_parameter ( log_id , name_id )
+                INSERT INTO event_parameter (log_id, name_id)
                     SELECT ?, id
                     FROM event_parameter_name
                     WHERE name = ?
@@ -103,8 +104,8 @@ impl CreateThreadEventPayload {
         // insert event_parameter_uuid
         sqlx::query!(
             r#"
-                INSERT INTO event_parameter_uuid ( uuid_id, event_parameter_id )
-                    VALUES ( ? , ? )
+                INSERT INTO event_parameter_uuid (uuid_id, event_parameter_id)
+                    VALUES (?, ?)
             "#,
             self.uuid_parameter,
             parameter_id
@@ -166,7 +167,7 @@ mod tests {
                 }),
         } = event
         {
-            assert_eq!(uuid_parameters.get(&"on").unwrap(), 1292);
+            assert_eq!(uuid_parameters.get("on").unwrap(), 1292);
             assert!(DateTime::now().signed_duration_since(date) < Duration::minutes(1))
         } else {
             panic!("Event does not fulfill assertions: {:?}", event)

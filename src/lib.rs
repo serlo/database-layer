@@ -19,7 +19,7 @@ pub mod instance;
 pub mod license;
 pub mod message;
 pub mod navigation;
-pub mod notifications;
+pub mod notification;
 pub mod routes;
 pub mod subscriptions;
 pub mod threads;
@@ -62,7 +62,7 @@ where
         .configure(health::init)
         .configure(license::init)
         .configure(navigation::init)
-        .configure(notifications::init)
+        .configure(notification::init)
         .configure(subscriptions::init)
         .configure(threads::init)
         .configure(user::init)

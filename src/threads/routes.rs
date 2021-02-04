@@ -3,7 +3,8 @@ use sqlx::MySqlPool;
 
 use super::model::{
     ThreadCommentThreadError, ThreadCommentThreadPayload, ThreadSetArchiveError,
-    ThreadSetArchivePayload, Threads, ThreadsError,
+    ThreadSetArchivePayload, ThreadStartThreadError, ThreadStartThreadPayload, Threads,
+    ThreadsError,
 };
 
 #[get("/threads/{id}")]
@@ -43,6 +44,27 @@ async fn set_archive(
     }
 }
 
+#[post("/thread/start-thread")]
+async fn start_thread(
+    payload: web::Json<ThreadStartThreadPayload>,
+    db_pool: web::Data<MySqlPool>,
+) -> impl Responder {
+    match Threads::start_thread(payload.into_inner(), db_pool.get_ref()).await {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(e) => {
+            println!("/thread/comment-thread: {:?}", e);
+            match e {
+                ThreadStartThreadError::DatabaseError { .. } => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
+                ThreadStartThreadError::EventError { .. } => {
+                    HttpResponse::InternalServerError().json(None::<String>)
+                }
+            }
+        }
+    }
+}
+
 #[post("/thread/comment-thread")]
 async fn comment_thread(
     payload: web::Json<ThreadCommentThreadPayload>,
@@ -71,4 +93,5 @@ pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.service(threads);
     cfg.service(set_archive);
     cfg.service(comment_thread);
+    cfg.service(start_thread);
 }

@@ -235,8 +235,137 @@ impl Threads {
         .await?;
 
         if payload.subscribe {
+            for object_id in [payload.thread_id, comment_id].iter() {
+                let subscription = Subscription {
+                    object_id: *object_id,
+                    user_id: payload.user_id,
+                    send_email: payload.send_email,
+                };
+                subscription
+                    .save(&mut transaction)
+                    .await
+                    .map_err(|error| match error {
+                        SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
+                    })?;
+            }
+        }
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThreadStartThreadPayload {
+    title: String,
+    content: String,
+    object_id: i32,
+    user_id: i32,
+    subscribe: bool,
+    send_email: bool,
+}
+
+#[derive(Error, Debug)]
+pub enum ThreadStartThreadError {
+    #[error("Thread could not be created because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("Thread could not be created because of a database error: {inner:?}.")]
+    EventError { inner: EventError },
+}
+
+impl From<sqlx::Error> for ThreadStartThreadError {
+    fn from(inner: sqlx::Error) -> Self {
+        ThreadStartThreadError::DatabaseError { inner }
+    }
+}
+
+impl From<EventError> for ThreadStartThreadError {
+    fn from(error: EventError) -> Self {
+        match error {
+            EventError::DatabaseError { inner } => inner.into(),
+            inner => ThreadStartThreadError::EventError { inner },
+        }
+    }
+}
+
+impl Threads {
+    pub async fn start_thread<'a, E>(
+        payload: ThreadStartThreadPayload,
+        executor: E,
+    ) -> Result<(), ThreadStartThreadError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let result = sqlx::query!(
+            r#"
+                SELECT i.id as instance_id
+                    FROM uuid
+                    JOIN (
+                        SELECT id, instance_id FROM attachment_container
+                        UNION ALL
+                        SELECT id, instance_id FROM blog_post
+                        UNION ALL
+                        SELECT id, instance_id FROM comment
+                        UNION ALL
+                        SELECT id, instance_id FROM entity
+                        UNION ALL
+                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id
+                        UNION ALL
+                        SELECT id, instance_id FROM page_repository
+                        UNION ALL
+                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id
+                        UNION ALL
+                        SELECT id, instance_id FROM term) u
+                    JOIN instance i ON i.id = u.instance_id
+                    WHERE u.id = ?
+            "#,
+            payload.object_id
+        )
+        .fetch_one(&mut transaction)
+        .await?;
+
+        let instance_id = result.instance_id as i32;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (trashed, discriminator)
+                    VALUES (0, 'comment')
+            "#
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO comment ( id , date , archived , title , content , uuid_id , parent_id , author_id , instance_id )
+                    VALUES (LAST_INSERT_ID(), ?, 0, ?, ?, ?, NULL, ?, ?)
+            "#,
+            DateTime::now(),
+            payload.title,
+            payload.content,
+            payload.object_id,
+            payload.user_id,
+            instance_id
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?;
+        let thread_id = value.id as i32;
+
+        CreateCommentEventPayload::new(thread_id, payload.object_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
+
+        if payload.subscribe {
             let subscription = Subscription {
-                object_id: payload.thread_id,
+                object_id: thread_id,
                 user_id: payload.user_id,
                 send_email: payload.send_email,
             };
@@ -258,9 +387,66 @@ impl Threads {
 mod tests {
     use chrono::Duration;
 
-    use super::{ThreadCommentThreadPayload, ThreadSetArchivePayload, Threads};
+    use super::{
+        ThreadCommentThreadPayload, ThreadSetArchivePayload, ThreadStartThreadPayload, Threads,
+    };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
+
+    #[actix_rt::test]
+    async fn start_thread() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Threads::start_thread(
+            ThreadStartThreadPayload {
+                title: "title".to_string(),
+                content: "content-test".to_string(),
+                object_id: 1565,
+                user_id: 1,
+                subscribe: true,
+                send_email: false,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        let thread = sqlx::query!(
+            r#"
+                SELECT title, content, author_id FROM comment WHERE uuid_id = ?
+            "#,
+            1565
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap();
+
+        assert_eq!(thread.content, Some("content-test".to_string()));
+        assert_eq!(thread.title, Some("title".to_string()));
+        assert_eq!(thread.author_id, 1);
+    }
+
+    #[actix_rt::test]
+    async fn start_thread_non_existing_uuid() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let result = Threads::start_thread(
+            ThreadStartThreadPayload {
+                title: "title-test".to_string(),
+                content: "content-test".to_string(),
+                object_id: 999999,
+                user_id: 1,
+                subscribe: true,
+                send_email: false,
+            },
+            &mut transaction,
+        )
+        .await;
+
+        assert!(result.is_err())
+    }
 
     #[actix_rt::test]
     async fn comment_thread() {

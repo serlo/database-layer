@@ -3,48 +3,44 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
-use super::model::{Alias, AliasError};
+use super::model::{Navigation, NavigationError};
 use crate::instance::Instance;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
-pub enum AliasMessage {
-    AliasQuery(AliasQuery),
+pub enum NavigationMessage {
+    NavigationQuery(NavigationQuery),
 }
 
 #[async_trait]
-impl MessageResponder for AliasMessage {
+impl MessageResponder for NavigationMessage {
     async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
         match self {
-            AliasMessage::AliasQuery(message) => message.handle(pool).await,
+            NavigationMessage::NavigationQuery(message) => message.handle(pool).await,
         }
     }
 }
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AliasQuery {
+pub struct NavigationQuery {
     pub instance: Instance,
-    pub path: String,
 }
 
 #[async_trait]
-impl MessageResponder for AliasQuery {
+impl MessageResponder for NavigationQuery {
     async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
-        match Alias::fetch(self.path.as_str(), self.instance.clone(), pool).await {
+        match Navigation::fetch(self.instance.clone(), pool).await {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),
             Err(e) => {
-                println!("/alias/{:?}/{}: {:?}", self.instance, self.path, e);
+                println!("/navigation/{:?}: {:?}", self.instance, e);
                 match e {
-                    AliasError::DatabaseError { .. } => {
+                    NavigationError::DatabaseError { .. } => {
                         HttpResponse::InternalServerError().finish()
                     }
-                    AliasError::InvalidInstance => HttpResponse::InternalServerError().finish(),
-                    AliasError::LegacyRoute => HttpResponse::NotFound().json(None::<String>),
-                    AliasError::NotFound => HttpResponse::NotFound().json(None::<String>),
                 }
             }
         }

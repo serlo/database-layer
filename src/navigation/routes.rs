@@ -1,8 +1,9 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, web, Responder};
 use sqlx::MySqlPool;
 
-use super::model::{Navigation, NavigationError};
+use super::messages::NavigationQuery;
 use crate::instance::Instance;
+use crate::message::MessageResponder;
 
 #[get("/navigation/{instance}")]
 async fn navigation(
@@ -10,19 +11,8 @@ async fn navigation(
     db_pool: web::Data<MySqlPool>,
 ) -> impl Responder {
     let instance = instance.into_inner();
-    match Navigation::fetch(instance.clone(), db_pool.get_ref()).await {
-        Ok(data) => HttpResponse::Ok()
-            .content_type("application/json; charset=utf-8")
-            .json(data),
-        Err(e) => {
-            println!("/navigation/{:?}: {:?}", instance, e);
-            match e {
-                NavigationError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().finish()
-                }
-            }
-        }
-    }
+    let message = NavigationQuery { instance };
+    message.handle(db_pool.get_ref()).await
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {

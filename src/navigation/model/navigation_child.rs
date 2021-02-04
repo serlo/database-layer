@@ -1,15 +1,13 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::convert::TryInto;
-use std::future::Future;
-use std::pin::Pin;
 
-use crate::database::Executor;
 use futures::try_join;
 use regex::Regex;
 use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
+
+use crate::database::Executor;
 
 #[derive(Serialize)]
 #[serde(untagged)]
@@ -196,110 +194,10 @@ impl TryFrom<(RawNavigationChild, Vec<NavigationChild>)> for NavigationChild {
     }
 }
 
-impl NavigationChild {
-    pub async fn bulk_fetch(ids: &[i32], pool: &MySqlPool) -> Result<Vec<Self>, sqlx::Error> {
-        let mut children = Vec::with_capacity(ids.len());
-        for id in ids.iter() {
-            match NavigationChild::fetch(*id, pool).await {
-                Ok(navigation_child) => children.push(navigation_child),
-                Err(error) => match error {
-                    NavigationChildError::DatabaseError { inner } => return Err(inner),
-                    NavigationChildError::NotVisible => {}
-                    NavigationChildError::InvalidRoute => {}
-                    NavigationChildError::MissingRequiredRouteParameter => {}
-                    NavigationChildError::Unsupported => {}
-                },
-            }
-        }
-        Ok(children)
-    }
-
-    pub fn fetch(
-        id: i32,
-        pool: &MySqlPool,
-    ) -> Pin<Box<dyn Future<Output = Result<NavigationChild, NavigationChildError>> + '_>> {
-        Box::pin(async move {
-            let raw_navigation_child = RawNavigationChild::fetch(id, pool).await?;
-
-            if !raw_navigation_child.is_visible() {
-                return Err(NavigationChildError::NotVisible);
-            }
-
-            let ids: Vec<i32> = raw_navigation_child
-                .children
-                .iter()
-                .map(|child| child.id)
-                .collect();
-            let children = Self::bulk_fetch(&ids, pool).await?;
-
-            (raw_navigation_child, children).try_into()
-        })
-    }
-
-    pub async fn bulk_fetch_via_transaction<'a, E>(
-        ids: &[i32],
-        executor: E,
-    ) -> Result<Vec<Self>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
-
-        let mut children = Vec::with_capacity(ids.len());
-        for id in ids.iter() {
-            match NavigationChild::fetch_via_transaction(*id, &mut transaction).await {
-                Ok(navigation_child) => children.push(navigation_child),
-                Err(error) => match error {
-                    NavigationChildError::DatabaseError { inner } => return Err(inner),
-                    NavigationChildError::NotVisible => {}
-                    NavigationChildError::InvalidRoute => {}
-                    NavigationChildError::MissingRequiredRouteParameter => {}
-                    NavigationChildError::Unsupported => {}
-                },
-            }
-        }
-
-        transaction.commit().await?;
-
-        Ok(children)
-    }
-
-    pub fn fetch_via_transaction<'e, 'c, E>(
-        id: i32,
-        executor: E,
-    ) -> Pin<Box<dyn Future<Output = Result<NavigationChild, NavigationChildError>> + 'c>>
-    where
-        'c: 'e,
-        E: 'c + Executor<'e>,
-    {
-        Box::pin(async move {
-            let mut transaction = executor.begin().await?;
-
-            let raw_navigation_child =
-                RawNavigationChild::fetch_via_transaction(id, &mut transaction).await?;
-
-            if !raw_navigation_child.is_visible() {
-                return Err(NavigationChildError::NotVisible);
-            }
-
-            let ids: Vec<i32> = raw_navigation_child
-                .children
-                .iter()
-                .map(|child| child.id)
-                .collect();
-            let children = Self::bulk_fetch_via_transaction(&ids, &mut transaction).await?;
-
-            transaction.commit().await?;
-
-            (raw_navigation_child, children).try_into()
-        })
-    }
-}
-
-struct RawNavigationChild {
-    id: i32,
-    children: Vec<RawNavigationChild>,
-    parameters: RawNavigationChildParameters,
+pub struct RawNavigationChild {
+    pub id: i32,
+    pub children: Vec<i32>,
+    pub parameters: RawNavigationChildParameters,
 }
 
 #[derive(Debug)]
@@ -324,14 +222,6 @@ pub enum RawNavigationChildError {
 impl From<sqlx::Error> for RawNavigationChildError {
     fn from(inner: sqlx::Error) -> Self {
         Self::DatabaseError { inner }
-    }
-}
-
-impl From<RawNavigationChildError> for NavigationChildError {
-    fn from(error: RawNavigationChildError) -> Self {
-        match error {
-            RawNavigationChildError::DatabaseError { inner } => Self::DatabaseError { inner },
-        }
     }
 }
 
@@ -389,7 +279,8 @@ macro_rules! fetch_all_parameters {
 }
 
 macro_rules! to_raw_navigation_child {
-    ($id: expr, $children: expr, $params: expr) => {{
+    ($id: expr, $pages: expr, $params: expr) => {{
+        let children = $pages.iter().map(|page| page.id).collect();
         let parameters = $params
             .into_iter()
             .filter_map(|param| Some((param.name?, param.value?)))
@@ -398,61 +289,44 @@ macro_rules! to_raw_navigation_child {
 
         RawNavigationChild {
             id: $id,
-            children: $children,
+            children,
             parameters,
         }
     }};
 }
 
 impl RawNavigationChild {
-    fn fetch(
+    pub async fn fetch(
         id: i32,
         pool: &MySqlPool,
-    ) -> Pin<Box<dyn Future<Output = Result<RawNavigationChild, RawNavigationChildError>> + '_>>
-    {
-        Box::pin(async move {
-            let pages = fetch_all_children!(id, pool);
-            let params = fetch_all_parameters!(id, pool);
+    ) -> Result<RawNavigationChild, RawNavigationChildError> {
+        let pages = fetch_all_children!(id, pool);
+        let params = fetch_all_parameters!(id, pool);
 
-            let (pages, params) = try_join!(pages, params)?;
+        let (pages, params) = try_join!(pages, params)?;
 
-            let mut children = Vec::with_capacity(pages.len());
-            for page in pages.iter() {
-                children.push(RawNavigationChild::fetch(page.id, pool).await?);
-            }
-
-            let raw_navigation_child = to_raw_navigation_child!(id, children, params);
-            Ok(raw_navigation_child)
-        })
+        let raw_navigation_child = to_raw_navigation_child!(id, pages, params);
+        Ok(raw_navigation_child)
     }
 
-    fn fetch_via_transaction<'e, 'c, E>(
+    pub async fn fetch_via_transaction<'e, 'c, E>(
         id: i32,
         executor: E,
-    ) -> Pin<Box<dyn Future<Output = Result<RawNavigationChild, RawNavigationChildError>> + 'c>>
+    ) -> Result<RawNavigationChild, RawNavigationChildError>
     where
         'c: 'e,
         E: 'c + Executor<'e>,
     {
-        Box::pin(async move {
-            let mut transaction = executor.begin().await?;
+        let mut transaction = executor.begin().await?;
 
-            let pages = fetch_all_children!(id, &mut transaction).await?;
-            let params = fetch_all_parameters!(id, &mut transaction).await?;
+        let pages = fetch_all_children!(id, &mut transaction).await?;
+        let params = fetch_all_parameters!(id, &mut transaction).await?;
 
-            let mut children = Vec::with_capacity(pages.len());
-            for page in pages.iter() {
-                children.push(
-                    RawNavigationChild::fetch_via_transaction(page.id, &mut transaction).await?,
-                );
-            }
+        let raw_navigation_child = to_raw_navigation_child!(id, pages, params);
 
-            let raw_navigation_child = to_raw_navigation_child!(id, children, params);
+        transaction.commit().await?;
 
-            transaction.commit().await?;
-
-            Ok(raw_navigation_child)
-        })
+        Ok(raw_navigation_child)
     }
 
     pub fn is_visible(&self) -> bool {

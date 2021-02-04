@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
+use crate::alias::AliasMessage;
 use crate::uuid::UuidMessage;
 
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]
@@ -14,6 +15,7 @@ pub trait MessageResponder {
 #[derive(Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Message {
+    AliasMessage(AliasMessage),
     UuidMessage(UuidMessage),
 }
 
@@ -21,6 +23,7 @@ pub enum Message {
 impl MessageResponder for Message {
     async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
         match self {
+            Message::AliasMessage(message) => message.handle(pool).await,
             Message::UuidMessage(message) => message.handle(pool).await,
         }
     }

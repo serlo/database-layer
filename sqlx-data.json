@@ -1725,16 +1725,6 @@
       ]
     }
   },
-  "d712fad9b2e9f86649f77d3052392963e2695801da403174b86def97b6e977c6": {
-    "query": "\n            INSERT INTO subscription (uuid_id, user_id, notify_mailman, date)\n                SELECT ?, ?, ?, ?\n                WHERE NOT EXISTS\n                (SELECT id FROM subscription WHERE uuid_id = ? AND user_id = ?)\n            ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 6
-      },
-      "nullable": []
-    }
-  },
   "d96a45d0d014aece234428d2b3deeb6740e956e7c1d0f380d2bdbc258180d5aa": {
     "query": "\n                INSERT INTO notification (user_id, date, email)\n                    VALUES (?, ?, ?)\n            ",
     "describe": {
@@ -1793,6 +1783,16 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "e301aa5d422549cc37a921cfb491915ffe39e03b48bfc5dd7d2c6316a3fca185": {
+    "query": "\n                INSERT INTO subscription (uuid_id, user_id, notify_mailman, date)\n                    VALUES (?, ?, ?, ?)\n                    ON DUPLICATE KEY UPDATE notify_mailman = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": []
     }
   },
   "e48ab97ec5329aa75500b78dd7d88f030b6aeb92b4ec5fa207dc15217e8b89f9": {

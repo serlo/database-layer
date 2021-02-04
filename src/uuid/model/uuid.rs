@@ -199,9 +199,9 @@ impl Uuid {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetUuidStatePayload {
-    ids: Vec<i32>,
-    user_id: i32,
-    trashed: bool,
+    pub ids: Vec<i32>,
+    pub user_id: i32,
+    pub trashed: bool,
 }
 
 #[derive(Error, Debug)]

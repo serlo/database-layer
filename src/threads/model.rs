@@ -235,17 +235,19 @@ impl Threads {
         .await?;
 
         if payload.subscribe {
-            let subscription = Subscription {
-                object_id: payload.thread_id,
-                user_id: payload.user_id,
-                send_email: payload.send_email,
-            };
-            subscription
-                .save(&mut transaction)
-                .await
-                .map_err(|error| match error {
-                    SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
-                })?;
+            for object_id in [payload.thread_id, comment_id].iter() {
+                let subscription = Subscription {
+                    object_id: *object_id,
+                    user_id: payload.user_id,
+                    send_email: payload.send_email,
+                };
+                subscription
+                    .save(&mut transaction)
+                    .await
+                    .map_err(|error| match error {
+                        SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
+                    })?;
+            }
         }
 
         transaction.commit().await?;

@@ -922,16 +922,6 @@
       ]
     }
   },
-  "525ffd56e36d8393e6501687a300d2a5f077d5f4ecf9ba112d7727f95a10599f": {
-    "query": "\n                INSERT INTO event_parameter_uuid ( uuid_id, event_parameter_id )\n                    VALUES ( ? , ? )\n            ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 2
-      },
-      "nullable": []
-    }
-  },
   "544017b3c945f404442a6aacf8519449608b8b1cfacb8cf07b3495b313be09da": {
     "query": "SELECT discriminator FROM uuid WHERE id = ?",
     "describe": {
@@ -1357,6 +1347,16 @@
         true,
         true
       ]
+    }
+  },
+  "a7b97e48269c6b08d92d10667c82e8cc23dde0b0a45db2a4117b94ddd086da4a": {
+    "query": "\n                INSERT INTO event_parameter_uuid (uuid_id, event_parameter_id)\n                    VALUES (?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
     }
   },
   "a8c1f1e6eabd7d37743886aa444e0d44960c782491c7aa5f2b8efaafc410c9a7": {
@@ -1828,16 +1828,6 @@
       "nullable": [
         false
       ]
-    }
-  },
-  "e0b399b3e5f0da30a7a4c7a6971ecd963be33064d82d2956cf2cf803ac8cb67a": {
-    "query": "\n                INSERT INTO event_parameter ( log_id , name_id )\n                    SELECT ?, id\n                    FROM event_parameter_name\n                    WHERE name = ?\n            ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 2
-      },
-      "nullable": []
     }
   },
   "e301aa5d422549cc37a921cfb491915ffe39e03b48bfc5dd7d2c6316a3fca185": {

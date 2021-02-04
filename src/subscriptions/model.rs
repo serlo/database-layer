@@ -1,8 +1,11 @@
-use crate::database::Executor;
 use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
+use crate::database::Executor;
+use crate::datetime::DateTime;
+
+#[derive(Debug, Eq, PartialEq)]
 pub struct Subscriptions(pub Vec<Subscription>);
 
 #[derive(Error, Debug)]
@@ -17,6 +20,7 @@ impl From<sqlx::Error> for SubscriptionsError {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct Subscription {
     pub object_id: i32,
     pub user_id: i32,
@@ -78,6 +82,33 @@ impl Subscriptions {
     }
 }
 
+impl Subscription {
+    pub async fn save<'a, E>(&self, executor: E) -> Result<(), SubscriptionsError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+        sqlx::query!(
+            r#"
+                INSERT INTO subscription (uuid_id, user_id, notify_mailman, date)
+                    VALUES (?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE notify_mailman = ?
+            "#,
+            self.object_id,
+            self.user_id,
+            self.send_email,
+            DateTime::now(),
+            self.send_email,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SubscriptionsByUser {
@@ -105,5 +136,71 @@ impl SubscriptionsByUser {
             user_id,
             subscriptions,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::create_database_pool;
+    use crate::subscriptions::Subscriptions;
+
+    use super::Subscription;
+
+    #[actix_rt::test]
+    async fn create_subscription_new() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        // Verify assumption that the user is not subscribed to object (no subscriptions actually)
+        let subscriptions = Subscriptions::fetch_by_object_via_transaction(1555, &mut transaction)
+            .await
+            .unwrap();
+        assert!(subscriptions.0.is_empty());
+
+        let subscription = Subscription {
+            object_id: 1555,
+            user_id: 1,
+            send_email: true,
+        };
+        subscription.save(&mut transaction).await.unwrap();
+
+        // Verify that subscription was created.
+        let subscriptions = Subscriptions::fetch_by_object_via_transaction(1555, &mut transaction)
+            .await
+            .unwrap();
+
+        assert_eq!(subscriptions.0[0], subscription);
+    }
+
+    #[actix_rt::test]
+    async fn create_subscription_already_existing() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        // get existing results for comparison
+        let existing_subscriptions =
+            Subscriptions::fetch_by_object_via_transaction(1565, &mut transaction)
+                .await
+                .unwrap();
+
+        let subscription = Subscription {
+            object_id: 1565,
+            user_id: 1,
+            send_email: false,
+        };
+        subscription.save(&mut transaction).await.unwrap();
+
+        // Verify that subscription was changed.
+        let subscriptions = Subscriptions::fetch_by_object_via_transaction(1565, &mut transaction)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            subscriptions.0[0],
+            Subscription {
+                send_email: false,
+                ..existing_subscriptions.0[0]
+            }
+        )
     }
 }

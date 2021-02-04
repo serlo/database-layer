@@ -367,6 +367,16 @@
       ]
     }
   },
+  "240528d5b3a13de5585272c5c6b4a684c4ca77a3df12dd92fece7b748b422f00": {
+    "query": "\n                INSERT INTO event_parameter (log_id, name_id)\n                    SELECT ?, id\n                    FROM event_parameter_name\n                    WHERE name = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
   "2594f7eb0db4993eb684ae6fdf173a8999df485653a8544733a6ce29da94842d": {
     "query": "\n                SELECT t.name, u.trashed, r.date, r.author_id, r.repository_id\n                    FROM entity_revision r\n                    JOIN uuid u ON u.id = r.id\n                    JOIN entity e ON e.id = r.repository_id\n                    JOIN type t ON t.id = e.type_id\n                    WHERE r.id = ?\n            ",
     "describe": {
@@ -937,6 +947,44 @@
       "nullable": []
     }
   },
+  "59220da9f5e4677a6fdc380eca9b95923728d0efd09277eb85290b3b4aafa118": {
+    "query": "\n                SELECT instance_id, archived\n                    FROM comment\n                    WHERE id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "instance_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "archived",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "65d605e2dbfb889b8efc8300283a96aae8696bb8f61aab612e652bc765211d30": {
     "query": "\n                INSERT INTO notification_event (notification_id, event_log_id)\n                    SELECT LAST_INSERT_ID(), ?\n            ",
     "describe": {
@@ -970,6 +1018,26 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "719654ca360621d4b33c2fd42bfec51fc21059a00d5b9f23eb56e3992c4a25d4": {
+    "query": "\n                INSERT INTO comment (id, date, archived, title, content, uuid_id, parent_id, author_id, instance_id )\n                    VALUES (LAST_INSERT_ID(), ?, 0, NULL, ?, NULL, ?, ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": []
+    }
+  },
+  "769713eded2a80cb23fd93a3767bc1aa4cbc7446e97f4f87d595e922fd143841": {
+    "query": "\n                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)\n                    SELECT ?, id, ?, ?, ?\n                    FROM event\n                    WHERE name = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": []
     }
   },
   "778d1aadfabd36aae4aabf449a61958b23a6f7f4b8c25844adcdd064acf7681a": {
@@ -1043,6 +1111,16 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "87b99c353a3ccda694aaef3e4bd9d122313e7293997b7903d333327296a1118f": {
+    "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, 'comment')\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": []
     }
   },
   "911ea66921a64de401503189cf88681dfd600d01b1992a7de141668b1c93c371": {
@@ -1267,6 +1345,16 @@
       "columns": [],
       "parameters": {
         "Right": 3
+      },
+      "nullable": []
+    }
+  },
+  "b0cb5a20c4692bf60fdce29596049f4150b5531c1f97d3482a63daf7e5c9ea11": {
+    "query": "\n                INSERT INTO event_parameter_uuid (uuid_id, event_parameter_id)\n                    VALUES (? , ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
       },
       "nullable": []
     }
@@ -1695,6 +1783,16 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "e301aa5d422549cc37a921cfb491915ffe39e03b48bfc5dd7d2c6316a3fca185": {
+    "query": "\n                INSERT INTO subscription (uuid_id, user_id, notify_mailman, date)\n                    VALUES (?, ?, ?, ?)\n                    ON DUPLICATE KEY UPDATE notify_mailman = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": []
     }
   },
   "e48ab97ec5329aa75500b78dd7d88f030b6aeb92b4ec5fa207dc15217e8b89f9": {

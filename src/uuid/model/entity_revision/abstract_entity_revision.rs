@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::UuidError;
 use crate::datetime::DateTime;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AbstractEntityRevision {
     #[serde(rename(serialize = "__typename"))]
@@ -19,7 +19,7 @@ pub struct AbstractEntityRevision {
     pub fields: EntityRevisionFields,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "kebab-case"))]
 pub enum EntityRevisionType {
     #[serde(rename(serialize = "AppletRevision"))]
@@ -62,6 +62,7 @@ impl std::str::FromStr for EntityRevisionType {
     }
 }
 
+#[derive(Debug)]
 pub struct EntityRevisionFields(pub HashMap<String, String>);
 
 impl EntityRevisionFields {

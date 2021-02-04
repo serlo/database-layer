@@ -25,7 +25,7 @@ mod event_revision;
 mod generic_entity_revision;
 mod video_revision;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct EntityRevision {
     #[serde(flatten)]
     pub abstract_entity_revision: AbstractEntityRevision,
@@ -33,7 +33,7 @@ pub struct EntityRevision {
     pub concrete_entity_revision: ConcreteEntityRevision,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum ConcreteEntityRevision {
     Generic(GenericRevision),

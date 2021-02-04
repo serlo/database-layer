@@ -8,7 +8,7 @@ use super::UuidError;
 use crate::datetime::DateTime;
 use crate::instance::Instance;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AbstractEntity {
     #[serde(rename(serialize = "__typename"))]
@@ -22,7 +22,7 @@ pub struct AbstractEntity {
     pub revision_ids: Vec<i32>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "kebab-case"))]
 pub enum EntityType {
     Applet,

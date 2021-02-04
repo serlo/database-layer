@@ -12,7 +12,7 @@ use crate::format_alias;
 
 mod abstract_entity;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Entity {
     #[serde(flatten)]
     pub abstract_entity: AbstractEntity,
@@ -20,7 +20,7 @@ pub struct Entity {
     pub concrete_entity: ConcreteEntity,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum ConcreteEntity {
     Generic,
@@ -32,38 +32,38 @@ pub enum ConcreteEntity {
     Solution(Solution),
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Course {
     page_ids: Vec<i32>,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CoursePage {
     parent_id: i32,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExerciseGroup {
     exercise_ids: Vec<i32>,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Exercise {
     solution_id: Option<i32>,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupedExercise {
     parent_id: i32,
     solution_id: Option<i32>,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Solution {
     parent_id: i32,

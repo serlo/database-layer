@@ -42,7 +42,7 @@ pub enum EventError {
     InvalidInstance,
     #[error("Event cannot be fetched because a required field is missing.")]
     MissingRequiredField,
-    #[error("Event does not exist.")]
+    #[error("Event cannot be fetched because it does not exist.")]
     NotFound,
 }
 

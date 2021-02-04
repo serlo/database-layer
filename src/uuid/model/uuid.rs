@@ -13,7 +13,7 @@ use super::{
     taxonomy_term::TaxonomyTerm, user::User,
 };
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Uuid {
     pub id: i32,
     pub trashed: bool,
@@ -22,7 +22,7 @@ pub struct Uuid {
     pub concrete_uuid: ConcreteUuid,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum ConcreteUuid {
     Attachment,

@@ -1,7 +1,10 @@
 use actix_web::{get, post, web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 
-use super::model::{ThreadSetArchiveError, ThreadSetArchivePayload, Threads, ThreadsError};
+use super::model::{
+    ThreadCommentThreadError, ThreadCommentThreadPayload, ThreadSetArchiveError,
+    ThreadSetArchivePayload, Threads, ThreadsError,
+};
 
 #[get("/threads/{id}")]
 async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
@@ -40,7 +43,32 @@ async fn set_archive(
     }
 }
 
+#[post("/thread/comment-thread")]
+async fn comment_thread(
+    payload: web::Json<ThreadCommentThreadPayload>,
+    db_pool: web::Data<MySqlPool>,
+) -> impl Responder {
+    match Threads::comment_thread(payload.into_inner(), db_pool.get_ref()).await {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(e) => {
+            println!("/thread/comment-thread: {:?}", e);
+            match e {
+                ThreadCommentThreadError::DatabaseError { .. } => {
+                    HttpResponse::InternalServerError().finish()
+                }
+                ThreadCommentThreadError::ThreadArchivedError { .. } => {
+                    HttpResponse::InternalServerError().finish()
+                }
+                ThreadCommentThreadError::EventError { .. } => {
+                    HttpResponse::InternalServerError().finish()
+                }
+            }
+        }
+    }
+}
+
 pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.service(threads);
     cfg.service(set_archive);
+    cfg.service(comment_thread);
 }

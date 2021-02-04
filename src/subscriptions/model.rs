@@ -90,17 +90,15 @@ impl Subscription {
         let mut transaction = executor.begin().await?;
         sqlx::query!(
             r#"
-            INSERT INTO subscription (uuid_id, user_id, notify_mailman, date)
-                SELECT ?, ?, ?, ?
-                WHERE NOT EXISTS
-                (SELECT id FROM subscription WHERE uuid_id = ? AND user_id = ?)
+                INSERT INTO subscription (uuid_id, user_id, notify_mailman, date)
+                    VALUES (?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE notify_mailman = ?
             "#,
             self.object_id,
             self.user_id,
             self.send_email,
             DateTime::now(),
-            self.object_id,
-            self.user_id,
+            self.send_email,
         )
         .execute(&mut transaction)
         .await?;
@@ -188,14 +186,21 @@ mod tests {
         let subscription = Subscription {
             object_id: 1565,
             user_id: 1,
-            send_email: true,
+            send_email: false,
         };
         subscription.save(&mut transaction).await.unwrap();
 
-        // Verify that subscription was not changed.
+        // Verify that subscription was changed.
         let subscriptions = Subscriptions::fetch_by_object_via_transaction(1565, &mut transaction)
             .await
             .unwrap();
-        assert_eq!(existing_subscriptions, subscriptions);
+
+        assert_eq!(
+            subscriptions.0[0],
+            Subscription {
+                send_email: false,
+                ..existing_subscriptions.0[0]
+            }
+        )
     }
 }

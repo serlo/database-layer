@@ -207,8 +207,6 @@ impl Subscription {
     }
 }
 
-// TODO: add tests
-
 #[cfg(test)]
 mod tests {
     use crate::create_database_pool;

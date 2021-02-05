@@ -77,7 +77,9 @@ impl MessageResponder for ThreadCreateThreadMutation {
             send_email: self.send_email,
         };
         match Threads::start_thread(payload, pool).await {
-            Ok(_) => HttpResponse::Ok().finish(),
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(data),
             Err(e) => {
                 println!("/thread/start-thread: {:?}", e);
                 match e {
@@ -85,6 +87,9 @@ impl MessageResponder for ThreadCreateThreadMutation {
                         HttpResponse::InternalServerError().json(None::<String>)
                     }
                     ThreadStartThreadError::EventError { .. } => {
+                        HttpResponse::InternalServerError().json(None::<String>)
+                    }
+                    ThreadStartThreadError::UuidError { .. } => {
                         HttpResponse::InternalServerError().json(None::<String>)
                     }
                 }
@@ -114,7 +119,9 @@ impl MessageResponder for ThreadCreateCommentMutation {
             send_email: self.send_email,
         };
         match Threads::comment_thread(payload, pool).await {
-            Ok(_) => HttpResponse::Ok().finish(),
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(data),
             Err(e) => {
                 println!("/thread/comment-thread: {:?}", e);
                 match e {
@@ -125,6 +132,9 @@ impl MessageResponder for ThreadCreateCommentMutation {
                         HttpResponse::InternalServerError().finish()
                     }
                     ThreadCommentThreadError::EventError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    ThreadCommentThreadError::UuidError { .. } => {
                         HttpResponse::InternalServerError().finish()
                     }
                 }

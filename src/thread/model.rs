@@ -49,10 +49,10 @@ impl Threads {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ThreadSetArchivePayload {
-    ids: Vec<i32>,
-    user_id: i32,
-    archived: bool,
+pub struct ThreadSetArchivedPayload {
+    pub ids: Vec<i32>,
+    pub user_id: i32,
+    pub archived: bool,
 }
 
 #[derive(Error, Debug)]
@@ -80,7 +80,7 @@ impl From<EventError> for ThreadSetArchiveError {
 
 impl Threads {
     pub async fn set_archive<'a, E>(
-        payload: ThreadSetArchivePayload,
+        payload: ThreadSetArchivedPayload,
         executor: E,
     ) -> Result<(), ThreadSetArchiveError>
     where
@@ -140,11 +140,11 @@ impl Threads {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadCommentThreadPayload {
-    thread_id: i32,
-    content: String,
-    user_id: i32,
-    subscribe: bool,
-    send_email: bool,
+    pub thread_id: i32,
+    pub content: String,
+    pub user_id: i32,
+    pub subscribe: bool,
+    pub send_email: bool,
 }
 
 #[derive(Error, Debug)]
@@ -259,12 +259,12 @@ impl Threads {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadStartThreadPayload {
-    title: String,
-    content: String,
-    object_id: i32,
-    user_id: i32,
-    subscribe: bool,
-    send_email: bool,
+    pub title: String,
+    pub content: String,
+    pub object_id: i32,
+    pub user_id: i32,
+    pub subscribe: bool,
+    pub send_email: bool,
 }
 
 #[derive(Error, Debug)]
@@ -388,7 +388,7 @@ mod tests {
     use chrono::Duration;
 
     use super::{
-        ThreadCommentThreadPayload, ThreadSetArchivePayload, ThreadStartThreadPayload, Threads,
+        ThreadCommentThreadPayload, ThreadSetArchivedPayload, ThreadStartThreadPayload, Threads,
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
@@ -506,7 +506,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::set_archive(
-            ThreadSetArchivePayload {
+            ThreadSetArchivedPayload {
                 ids: vec![],
                 user_id: 1,
                 archived: true,
@@ -523,7 +523,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::set_archive(
-            ThreadSetArchivePayload {
+            ThreadSetArchivedPayload {
                 ids: vec![17666],
                 user_id: 1,
                 archived: true,
@@ -553,7 +553,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::set_archive(
-            ThreadSetArchivePayload {
+            ThreadSetArchivedPayload {
                 ids: vec![17666],
                 user_id: 1,
                 archived: false,

@@ -195,7 +195,7 @@ impl Subscription {
                 send_email: payload.send_email,
             };
 
-            if payload.subscribe == true {
+            if payload.subscribe {
                 subscription.save(&mut transaction).await?;
             } else {
                 subscription.remove(&mut transaction).await?;

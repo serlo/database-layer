@@ -6,6 +6,7 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::event::{CreateCommentEventPayload, EventError, SetThreadStateEventPayload};
 use crate::subscription::{Subscription, SubscriptionsError};
+use crate::uuid::{Uuid, UuidError, UuidFetcher};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -149,12 +150,14 @@ pub struct ThreadCommentThreadPayload {
 
 #[derive(Error, Debug)]
 pub enum ThreadCommentThreadError {
-    #[error("Comment cannot be saved because of a database error: {inner:?}.")]
+    #[error("Comment cannot be created because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
-    #[error("Comment cannot be saved because thread is archived.")]
+    #[error("Comment cannot be created because thread is archived.")]
     ThreadArchivedError,
-    #[error("Comment cannot be saved because of an event error: {inner:?}.")]
+    #[error("Comment cannot be created because of an event error: {inner:?}.")]
     EventError { inner: EventError },
+    #[error("Comment cannot be created because of an uuid error: {inner:?}.")]
+    UuidError { inner: UuidError },
 }
 
 impl From<sqlx::Error> for ThreadCommentThreadError {
@@ -172,11 +175,20 @@ impl From<EventError> for ThreadCommentThreadError {
     }
 }
 
+impl From<UuidError> for ThreadCommentThreadError {
+    fn from(error: UuidError) -> Self {
+        match error {
+            UuidError::DatabaseError { inner } => inner.into(),
+            inner => ThreadCommentThreadError::UuidError { inner },
+        }
+    }
+}
+
 impl Threads {
     pub async fn comment_thread<'a, E>(
         payload: ThreadCommentThreadPayload,
         executor: E,
-    ) -> Result<(), ThreadCommentThreadError>
+    ) -> Result<Uuid, ThreadCommentThreadError>
     where
         E: Executor<'a>,
     {
@@ -250,9 +262,11 @@ impl Threads {
             }
         }
 
+        let comment = Uuid::fetch_via_transaction(comment_id, &mut transaction).await?;
+
         transaction.commit().await?;
 
-        Ok(())
+        Ok(comment)
     }
 }
 
@@ -271,8 +285,10 @@ pub struct ThreadStartThreadPayload {
 pub enum ThreadStartThreadError {
     #[error("Thread could not be created because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
-    #[error("Thread could not be created because of a database error: {inner:?}.")]
+    #[error("Thread could not be created because of an event error: {inner:?}.")]
     EventError { inner: EventError },
+    #[error("Thread could not be created because of an uuid error: {inner:?}.")]
+    UuidError { inner: UuidError },
 }
 
 impl From<sqlx::Error> for ThreadStartThreadError {
@@ -290,11 +306,20 @@ impl From<EventError> for ThreadStartThreadError {
     }
 }
 
+impl From<UuidError> for ThreadStartThreadError {
+    fn from(error: UuidError) -> Self {
+        match error {
+            UuidError::DatabaseError { inner } => inner.into(),
+            inner => ThreadStartThreadError::UuidError { inner },
+        }
+    }
+}
+
 impl Threads {
     pub async fn start_thread<'a, E>(
         payload: ThreadStartThreadPayload,
         executor: E,
-    ) -> Result<(), ThreadStartThreadError>
+    ) -> Result<Uuid, ThreadStartThreadError>
     where
         E: Executor<'a>,
     {
@@ -377,9 +402,11 @@ impl Threads {
                 })?;
         }
 
+        let comment = Uuid::fetch_via_transaction(thread_id, &mut transaction).await?;
+
         transaction.commit().await?;
 
-        Ok(())
+        Ok(comment)
     }
 }
 

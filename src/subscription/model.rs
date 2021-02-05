@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use thiserror::Error;
 
@@ -83,7 +83,7 @@ impl Subscriptions {
 }
 
 impl Subscription {
-    pub async fn save<'a, E>(&self, executor: E) -> Result<(), SubscriptionsError>
+    pub async fn save<'a, E>(&self, executor: E) -> Result<(), SubscriptionChangeError>
     where
         E: Executor<'a>,
     {
@@ -99,6 +99,24 @@ impl Subscription {
             self.send_email,
             DateTime::now(),
             self.send_email,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
+
+    pub async fn remove<'a, E>(&self, executor: E) -> Result<(), SubscriptionChangeError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+        sqlx::query!(
+            r#"DELETE FROM subscription WHERE uuid_id = ? AND user_id = ?"#,
+            self.object_id,
+            self.user_id,
         )
         .execute(&mut transaction)
         .await?;
@@ -138,6 +156,58 @@ impl SubscriptionsByUser {
         })
     }
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SubscriptionChangePayload {
+    pub ids: Vec<i32>,
+    pub user_id: i32,
+    pub subscribe: bool,
+    pub send_email: bool,
+}
+
+#[derive(Error, Debug)]
+pub enum SubscriptionChangeError {
+    #[error("Subscription cannot be changed because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+}
+
+impl From<sqlx::Error> for SubscriptionChangeError {
+    fn from(inner: sqlx::Error) -> Self {
+        SubscriptionChangeError::DatabaseError { inner }
+    }
+}
+
+impl Subscription {
+    pub async fn change_subscription<'a, E>(
+        payload: SubscriptionChangePayload,
+        executor: E,
+    ) -> Result<(), SubscriptionChangeError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        for id in payload.ids.into_iter() {
+            let subscription = Subscription {
+                object_id: id,
+                user_id: payload.user_id,
+                send_email: payload.send_email,
+            };
+
+            if payload.subscribe == true {
+                subscription.save(&mut transaction).await?;
+            } else {
+                subscription.remove(&mut transaction).await?;
+            }
+        }
+        transaction.commit().await?;
+
+        Ok(())
+    }
+}
+
+// TODO: add tests
 
 #[cfg(test)]
 mod tests {
@@ -213,5 +283,43 @@ mod tests {
                 ..existing_subscription
             }
         )
+    }
+
+    #[actix_rt::test]
+    async fn remove_subscription() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        // get existing results for comparison
+        let existing_subscriptions =
+            Subscriptions::fetch_by_object_via_transaction(1565, &mut transaction)
+                .await
+                .unwrap();
+
+        let subscription = Subscription {
+            object_id: 1565,
+            user_id: 1,
+            send_email: false,
+        };
+        subscription.remove(&mut transaction).await.unwrap();
+
+        // Verify that subscription was changed.
+        let subscriptions = Subscriptions::fetch_by_object_via_transaction(1565, &mut transaction)
+            .await
+            .unwrap();
+
+        let existing_subscription = existing_subscriptions
+            .0
+            .into_iter()
+            .find(|subscription| subscription.user_id == 1);
+
+        assert!(existing_subscription.is_some());
+
+        let subscription = subscriptions
+            .0
+            .into_iter()
+            .find(|subscription| subscription.user_id == 1);
+
+        assert!(subscription.is_none());
     }
 }

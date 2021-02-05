@@ -195,11 +195,22 @@ mod tests {
             .await
             .unwrap();
 
+        let subscription = subscriptions
+            .0
+            .into_iter()
+            .find(|subscription| subscription.user_id == 1)
+            .unwrap();
+        let existing_subscription = existing_subscriptions
+            .0
+            .into_iter()
+            .find(|subscription| subscription.user_id == 1)
+            .unwrap();
+
         assert_eq!(
-            subscriptions.0[0],
+            subscription,
             Subscription {
                 send_email: false,
-                ..existing_subscriptions.0[0]
+                ..existing_subscription
             }
         )
     }

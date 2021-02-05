@@ -1,14 +1,14 @@
 use actix_web::{get, post, web, Responder};
 use sqlx::MySqlPool;
 
-use super::messages::ThreadsQuery;
+use super::messages::{
+    ThreadCreateCommentMutation, ThreadCreateThreadMutation, ThreadSetThreadArchivedMutation,
+    ThreadsQuery,
+};
 use super::model::{
     ThreadCommentThreadPayload, ThreadSetArchivedPayload, ThreadStartThreadPayload,
 };
 use crate::message::MessageResponder;
-use crate::thread::messages::{
-    ThreadCreateCommentMutation, ThreadCreateThreadMutation, ThreadSetThreadArchivedMutation,
-};
 
 #[get("/threads/{id}")]
 async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {

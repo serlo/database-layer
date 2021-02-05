@@ -3,13 +3,12 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
-use super::model::{Threads, ThreadsError};
-use crate::message::MessageResponder;
-use crate::thread::model::{
-    ThreadCommentThreadError, ThreadCommentThreadPayload, ThreadStartThreadError,
-    ThreadStartThreadPayload,
+use super::model::{
+    ThreadCommentThreadError, ThreadCommentThreadPayload, ThreadSetArchiveError,
+    ThreadSetArchivedPayload, ThreadStartThreadError, ThreadStartThreadPayload, Threads,
+    ThreadsError,
 };
-use crate::thread::{ThreadSetArchiveError, ThreadSetArchivedPayload};
+use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]

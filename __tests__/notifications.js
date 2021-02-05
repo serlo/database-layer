@@ -8,7 +8,7 @@ const limit = process.env.LIMIT
   ? parseInt(process.env.LIMIT)
   : Number.POSITIVE_INFINITY
 
-test('notifications', async () => {
+test('notification', async () => {
   let failures = []
 
   const { values } = getUuidFixtures().find(

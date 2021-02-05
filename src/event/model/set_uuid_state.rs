@@ -4,7 +4,7 @@ use super::abstract_event::AbstractEvent;
 use super::event_type::EventType;
 use super::{Event, EventError};
 use crate::datetime::DateTime;
-use crate::notifications::{Notifications, NotificationsError};
+use crate::notification::{Notifications, NotificationsError};
 use crate::{database::Executor, instance::Instance};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]

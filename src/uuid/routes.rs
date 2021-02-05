@@ -1,8 +1,8 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, post, web, Responder};
 use sqlx::MySqlPool;
 
-use super::messages::UuidQuery;
-use super::model::{SetUuidStateError, SetUuidStatePayload, Uuid};
+use super::messages::{UuidQuery, UuidSetStateMutation};
+use super::model::SetUuidStatePayload;
 use crate::message::MessageResponder;
 
 #[get("/uuid/{id}")]
@@ -17,20 +17,13 @@ async fn set_state(
     payload: web::Json<SetUuidStatePayload>,
     db_pool: web::Data<MySqlPool>,
 ) -> impl Responder {
-    match Uuid::set_uuid_state(payload.into_inner(), db_pool.get_ref()).await {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(e) => {
-            println!("/set-uuid-state: {:?}", e);
-            match e {
-                SetUuidStateError::DatabaseError { .. } => {
-                    HttpResponse::InternalServerError().finish()
-                }
-                SetUuidStateError::EventError { .. } => {
-                    HttpResponse::InternalServerError().finish()
-                }
-            }
-        }
-    }
+    let payload = payload.into_inner();
+    let message = UuidSetStateMutation {
+        ids: payload.ids.clone(),
+        user_id: payload.user_id,
+        trashed: payload.trashed,
+    };
+    message.handle(db_pool.get_ref()).await
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {

@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::database::Executor;
 use crate::event::{AbstractEvent, Event};
-use crate::subscriptions::{Subscriptions, SubscriptionsError};
+use crate::subscription::{Subscriptions, SubscriptionsError};
 use sqlx::MySqlPool;
 
 #[derive(Serialize)]
@@ -186,9 +186,9 @@ impl Notifications {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetNotificationStatePayload {
-    ids: Vec<i32>,
-    user_id: i32,
-    unread: bool,
+    pub ids: Vec<i32>,
+    pub user_id: i32,
+    pub unread: bool,
 }
 
 #[derive(Error, Debug)]
@@ -242,7 +242,7 @@ mod tests {
     use super::{Notifications, SetNotificationStatePayload};
     use crate::create_database_pool;
     use crate::event::Event;
-    use crate::subscriptions::Subscriptions;
+    use crate::subscription::Subscriptions;
 
     #[actix_rt::test]
     async fn set_notification_state_no_id() {

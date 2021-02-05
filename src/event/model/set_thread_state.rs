@@ -5,7 +5,7 @@ use super::event_type::EventType;
 use super::{Event, EventError};
 use crate::database::Executor;
 use crate::datetime::DateTime;
-use crate::notifications::{Notifications, NotificationsError};
+use crate::notification::{Notifications, NotificationsError};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

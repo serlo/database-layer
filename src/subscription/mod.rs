@@ -1,4 +1,4 @@
-pub use messages::AliasMessage;
+pub use messages::SubscriptionMessage;
 pub use model::*;
 pub use routes::init;
 

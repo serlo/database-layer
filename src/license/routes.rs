@@ -1,24 +1,14 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, web, Responder};
 use sqlx::MySqlPool;
 
-use super::model::{License, LicenseError};
+use super::messages::LicenseQuery;
+use crate::message::MessageResponder;
 
 #[get("/license/{id}")]
 async fn license(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let id = id.into_inner();
-    match License::fetch(id, db_pool.get_ref()).await {
-        Ok(data) => HttpResponse::Ok()
-            .content_type("application/json; charset=utf-8")
-            .json(data),
-        Err(e) => {
-            println!("/license/{}: {:?}", id, e);
-            match e {
-                LicenseError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
-                LicenseError::InvalidInstance => HttpResponse::InternalServerError().finish(),
-                LicenseError::NotFound => HttpResponse::NotFound().json(None::<String>),
-            }
-        }
-    }
+    let message = LicenseQuery { id };
+    message.handle(db_pool.get_ref()).await
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {

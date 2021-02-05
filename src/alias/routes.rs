@@ -1,8 +1,9 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, web, Responder};
 use sqlx::MySqlPool;
 
-use super::model::{Alias, AliasError};
+use super::messages::AliasQuery;
 use crate::instance::Instance;
+use crate::message::MessageResponder;
 
 #[get("/alias/{instance}/{path:.*}")]
 async fn alias(
@@ -10,20 +11,8 @@ async fn alias(
     db_pool: web::Data<MySqlPool>,
 ) -> impl Responder {
     let (instance, path) = params.into_inner();
-    match Alias::fetch(&path, instance.clone(), db_pool.get_ref()).await {
-        Ok(data) => HttpResponse::Ok()
-            .content_type("application/json; charset=utf-8")
-            .json(data),
-        Err(e) => {
-            println!("/alias/{:?}/{}: {:?}", instance, path, e);
-            match e {
-                AliasError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
-                AliasError::InvalidInstance => HttpResponse::InternalServerError().finish(),
-                AliasError::LegacyRoute => HttpResponse::NotFound().json(None::<String>),
-                AliasError::NotFound => HttpResponse::NotFound().json(None::<String>),
-            }
-        }
-    }
+    let message = AliasQuery { instance, path };
+    message.handle(db_pool.get_ref()).await
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {

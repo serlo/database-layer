@@ -13,7 +13,7 @@ use crate::message::MessageResponder;
 #[serde(tag = "type", content = "payload")]
 pub enum SubscriptionMessage {
     SubscriptionsQuery(SubscriptionsQuery),
-    SubscriptionChangeMutation(SubscriptionChangeMutation),
+    SubscriptionSetMutation(SubscriptionSetMutation),
 }
 
 #[async_trait]
@@ -21,7 +21,7 @@ impl MessageResponder for SubscriptionMessage {
     async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
         match self {
             SubscriptionMessage::SubscriptionsQuery(message) => message.handle(pool).await,
-            SubscriptionMessage::SubscriptionChangeMutation(message) => message.handle(pool).await,
+            SubscriptionMessage::SubscriptionSetMutation(message) => message.handle(pool).await,
         }
     }
 }
@@ -51,9 +51,9 @@ impl MessageResponder for SubscriptionsQuery {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubscriptionChangeMutation {
+pub struct SubscriptionSetMutation {
     pub ids: Vec<i32>,
     pub user_id: i32,
     pub subscribe: bool,
@@ -61,7 +61,7 @@ pub struct SubscriptionChangeMutation {
 }
 
 #[async_trait]
-impl MessageResponder for SubscriptionChangeMutation {
+impl MessageResponder for SubscriptionSetMutation {
     async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
         let payload = SubscriptionChangePayload {
             ids: self.ids.clone(),
@@ -72,10 +72,10 @@ impl MessageResponder for SubscriptionChangeMutation {
         match Subscription::change_subscription(payload, pool).await {
             Ok(_) => HttpResponse::Ok().finish(),
             Err(e) => {
-                println!("/subscription/change-subscription: {:?}", e); //remove fake path when we move to messages completely
+                println!("{:?}: {:?}", self, e);
                 match e {
                     SubscriptionChangeError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().json(None::<String>)
+                        HttpResponse::InternalServerError().finish()
                     }
                 }
             }

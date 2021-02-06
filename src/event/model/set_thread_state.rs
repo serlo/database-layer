@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use super::abstract_event::AbstractEvent;
-use super::event_type::EventType;
+use super::event_type::RawEventType;
 use super::{Event, EventError};
 use crate::database::Executor;
 use crate::datetime::DateTime;
@@ -17,7 +17,7 @@ pub struct SetThreadStateEvent {
 impl From<&AbstractEvent> for SetThreadStateEvent {
     fn from(abstract_event: &AbstractEvent) -> Self {
         let thread_id = abstract_event.object_id;
-        let archived = abstract_event.raw_typename == "discussion/comment/archive";
+        let archived = abstract_event.raw_typename == RawEventType::ArchiveThread;
 
         SetThreadStateEvent {
             thread_id,
@@ -27,8 +27,7 @@ impl From<&AbstractEvent> for SetThreadStateEvent {
 }
 
 pub struct SetThreadStateEventPayload {
-    __typename: EventType,
-    raw_typename: String,
+    raw_typename: RawEventType,
     actor_id: i32,
     object_id: i32,
 }
@@ -36,13 +35,12 @@ pub struct SetThreadStateEventPayload {
 impl SetThreadStateEventPayload {
     pub fn new(archived: bool, actor_id: i32, object_id: i32) -> Self {
         let raw_typename = if archived {
-            "discussion/comment/archive".to_string()
+            RawEventType::ArchiveThread
         } else {
-            "discussion/restore".to_string()
+            RawEventType::RestoreThread
         };
 
         SetThreadStateEventPayload {
-            __typename: EventType::SetThreadState,
             raw_typename,
             actor_id,
             object_id,

@@ -12,6 +12,7 @@ pub use uuid::*;
 mod attachment;
 mod blog_post;
 mod comment;
+mod discriminator;
 mod entity;
 mod entity_revision;
 mod page;

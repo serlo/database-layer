@@ -3,7 +3,8 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use abstract_entity::{AbstractEntity, EntityType};
+use abstract_entity::AbstractEntity;
+pub use entity_type::EntityType;
 
 use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
@@ -11,6 +12,7 @@ use crate::database::Executor;
 use crate::format_alias;
 
 mod abstract_entity;
+mod entity_type;
 
 #[derive(Debug, Serialize)]
 pub struct Entity {

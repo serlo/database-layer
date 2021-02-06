@@ -2,10 +2,12 @@ use std::convert::TryFrom;
 
 use serde::Serialize;
 
-use super::event_type::EventType;
+use super::abstract_event::AbstractEvent;
+use super::event::Event;
+use super::event_type::RawEventType;
+use super::EventError;
 use crate::database::Executor;
 use crate::datetime::DateTime;
-use crate::event::{AbstractEvent, Event, EventError};
 use crate::notification::{Notifications, NotificationsError};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -30,8 +32,7 @@ impl TryFrom<&AbstractEvent> for CreateCommentEvent {
 }
 
 pub struct CreateCommentEventPayload {
-    __typename: EventType,
-    raw_typename: String,
+    raw_typename: RawEventType,
     actor_id: i32,
     object_id: i32,
     instance_id: i32,
@@ -40,10 +41,9 @@ pub struct CreateCommentEventPayload {
 
 impl CreateCommentEventPayload {
     pub fn new(thread_id: i32, object_id: i32, actor_id: i32, instance_id: i32) -> Self {
-        let raw_typename = "discussion/comment/create".to_string();
+        let raw_typename = RawEventType::CreateComment;
 
         CreateCommentEventPayload {
-            __typename: EventType::CreateComment,
             raw_typename,
             actor_id,
             object_id,

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::UuidError;
 use crate::datetime::DateTime;
+use crate::uuid::EntityType;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -22,43 +23,51 @@ pub struct AbstractEntityRevision {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "kebab-case"))]
 pub enum EntityRevisionType {
-    #[serde(rename(serialize = "AppletRevision"))]
+    #[serde(rename = "AppletRevision")]
     Applet,
-    #[serde(rename(serialize = "ArticleRevision"))]
+    #[serde(rename = "ArticleRevision")]
     Article,
-    #[serde(rename(serialize = "CourseRevision"))]
+    #[serde(rename = "CourseRevision")]
     Course,
-    #[serde(rename(serialize = "CoursePageRevision"))]
+    #[serde(rename = "CoursePageRevision")]
     CoursePage,
-    #[serde(rename(serialize = "EventRevision"))]
+    #[serde(rename = "EventRevision")]
     Event,
-    #[serde(rename(serialize = "ExerciseRevision", deserialize = "text-exercise"))]
+    #[serde(rename = "ExerciseRevision")]
     Exercise,
-    #[serde(rename(
-        serialize = "ExerciseGroupRevision",
-        deserialize = "text-exercise-group"
-    ))]
+    #[serde(rename = "ExerciseGroupRevision")]
     ExerciseGroup,
-    #[serde(rename(
-        serialize = "GroupedExerciseRevision",
-        deserialize = "grouped-text-exercise"
-    ))]
+    #[serde(rename = "GroupedExerciseRevision")]
     GroupedExercise,
-    #[serde(rename(serialize = "SolutionRevision", deserialize = "text-solution"))]
+    #[serde(rename = "SolutionRevision")]
     Solution,
-    #[serde(rename(serialize = "VideoRevision"))]
+    #[serde(rename = "VideoRevision")]
     Video,
+}
+
+impl From<EntityType> for EntityRevisionType {
+    fn from(entity_type: EntityType) -> Self {
+        match entity_type {
+            EntityType::Applet => Self::Applet,
+            EntityType::Article => Self::Article,
+            EntityType::Course => Self::Course,
+            EntityType::CoursePage => Self::CoursePage,
+            EntityType::Event => Self::Event,
+            EntityType::Exercise => Self::Exercise,
+            EntityType::ExerciseGroup => Self::ExerciseGroup,
+            EntityType::GroupedExercise => Self::GroupedExercise,
+            EntityType::Solution => Self::Solution,
+            EntityType::Video => Self::Video,
+        }
+    }
 }
 
 impl std::str::FromStr for EntityRevisionType {
     type Err = UuidError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_value(serde_json::value::Value::String(s.to_string())).map_err(|_e| {
-            UuidError::UnsupportedEntityRevisionType {
-                name: s.to_string(),
-            }
-        })
+        let entity_type = EntityType::from_str(s)?;
+        Ok(entity_type.into())
     }
 }
 

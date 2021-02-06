@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use super::abstract_event::AbstractEvent;
 use super::event::Event;
-use super::event_type::EventType;
+use super::event_type::RawEventType;
 use super::EventError;
 use crate::database::Executor;
 use crate::datetime::DateTime;
@@ -32,8 +32,7 @@ impl TryFrom<&AbstractEvent> for CreateThreadEvent {
 }
 
 pub struct CreateThreadEventPayload {
-    __typename: EventType,
-    raw_typename: String,
+    raw_typename: RawEventType,
     actor_id: i32,
     thread_id: i32,
     instance_id: i32,
@@ -42,10 +41,9 @@ pub struct CreateThreadEventPayload {
 
 impl CreateThreadEventPayload {
     pub fn new(thread_id: i32, object_id: i32, actor_id: i32, instance_id: i32) -> Self {
-        let raw_typename = "discussion/create".to_string();
+        let raw_typename = RawEventType::CreateThread;
 
         CreateThreadEventPayload {
-            __typename: EventType::CreateThread,
             raw_typename,
             actor_id,
             thread_id,

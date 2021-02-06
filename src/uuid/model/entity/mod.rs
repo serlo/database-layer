@@ -4,7 +4,7 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 
 use abstract_entity::AbstractEntity;
-use entity_type::EntityType;
+pub use entity_type::EntityType;
 
 use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};

@@ -4,7 +4,7 @@ use futures::join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::event_type::EventType;
+use super::event_type::{EventType, RawEventType};
 use super::EventError;
 use crate::database::Executor;
 use crate::datetime::DateTime;
@@ -22,7 +22,7 @@ pub struct AbstractEvent {
     pub object_id: i32,
 
     #[serde(skip)]
-    pub raw_typename: String,
+    pub raw_typename: RawEventType,
     #[serde(skip)]
     pub string_parameters: EventStringParameters,
     #[serde(skip)]
@@ -116,7 +116,7 @@ macro_rules! to_abstract_event {
         let string_parameters = $string_parameters?;
         let uuid_parameters = $uuid_parameters?;
 
-        let raw_typename = event.name;
+        let raw_typename: RawEventType = event.name.parse().map_err(|_| EventError::InvalidType)?;
         let uuid_id = event.uuid_id as i32;
 
         let string_parameters = string_parameters
@@ -132,7 +132,7 @@ macro_rules! to_abstract_event {
         let uuid_parameters = EventUuidParameters(uuid_parameters);
 
         AbstractEvent {
-            __typename: raw_typename.parse().map_err(|_| EventError::InvalidType)?,
+            __typename: raw_typename.clone().into(),
             id: event.id as i32,
             instance: event
                 .subdomain

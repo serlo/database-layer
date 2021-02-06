@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use super::abstract_event::AbstractEvent;
-use super::event_type::EventType;
+use super::event_type::RawEventType;
 use super::{Event, EventError};
 use crate::datetime::DateTime;
 use crate::notification::{Notifications, NotificationsError};
@@ -15,15 +15,14 @@ pub struct SetUuidStateEvent {
 
 impl From<&AbstractEvent> for SetUuidStateEvent {
     fn from(abstract_event: &AbstractEvent) -> Self {
-        let trashed = abstract_event.raw_typename == "uuid/trash";
+        let trashed = abstract_event.raw_typename == RawEventType::TrashUuid;
 
         SetUuidStateEvent { trashed }
     }
 }
 
 pub struct SetUuidStateEventPayload {
-    __typename: EventType,
-    raw_typename: String,
+    raw_typename: RawEventType,
     actor_id: i32,
     object_id: i32,
     instance: Instance,
@@ -32,13 +31,12 @@ pub struct SetUuidStateEventPayload {
 impl SetUuidStateEventPayload {
     pub fn new(trashed: bool, actor_id: i32, object_id: i32, instance: Instance) -> Self {
         let raw_typename = if trashed {
-            "uuid/trash".to_string()
+            RawEventType::TrashUuid
         } else {
-            "uuid/restore".to_string()
+            RawEventType::RestoreUuid
         };
 
         SetUuidStateEventPayload {
-            __typename: EventType::SetUuidState,
             raw_typename,
             actor_id,
             object_id,

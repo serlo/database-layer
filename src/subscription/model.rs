@@ -209,21 +209,20 @@ impl Subscription {
 
 #[cfg(test)]
 mod tests {
+    use super::{Subscription, Subscriptions, SubscriptionsError};
     use crate::create_database_pool;
-    use crate::subscription::Subscriptions;
-
-    use super::Subscription;
+    use crate::database::Executor;
 
     #[actix_rt::test]
     async fn create_subscription_new() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        // Verify assumption that the user is not subscribed to object (no subscriptions actually)
-        let subscriptions = Subscriptions::fetch_by_object_via_transaction(1555, &mut transaction)
+        // Verify assumption that the user is not subscribed to object
+        let subscription = fetch_subscription_by_user_and_object(1, 1555, &mut transaction)
             .await
             .unwrap();
-        assert!(subscriptions.0.is_empty());
+        assert!(subscription.is_none());
 
         let subscription = Subscription {
             object_id: 1555,
@@ -232,12 +231,11 @@ mod tests {
         };
         subscription.save(&mut transaction).await.unwrap();
 
-        // Verify that subscription was created.
-        let subscriptions = Subscriptions::fetch_by_object_via_transaction(1555, &mut transaction)
+        // Verify that user is now subscribed to object
+        let new_subscription = fetch_subscription_by_user_and_object(1, 1555, &mut transaction)
             .await
             .unwrap();
-
-        assert_eq!(subscriptions.0[0], subscription);
+        assert_eq!(new_subscription, Some(subscription));
     }
 
     #[actix_rt::test]
@@ -245,10 +243,11 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        // get existing results for comparison
-        let existing_subscriptions =
-            Subscriptions::fetch_by_object_via_transaction(1565, &mut transaction)
+        // Get existing subscription for comparison
+        let existing_subscription =
+            fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
                 .await
+                .unwrap()
                 .unwrap();
 
         let subscription = Subscription {
@@ -258,28 +257,16 @@ mod tests {
         };
         subscription.save(&mut transaction).await.unwrap();
 
-        // Verify that subscription was changed.
-        let subscriptions = Subscriptions::fetch_by_object_via_transaction(1565, &mut transaction)
+        // Verify that subscription was changed
+        let subscription = fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
             .await
             .unwrap();
-
-        let subscription = subscriptions
-            .0
-            .into_iter()
-            .find(|subscription| subscription.user_id == 1)
-            .unwrap();
-        let existing_subscription = existing_subscriptions
-            .0
-            .into_iter()
-            .find(|subscription| subscription.user_id == 1)
-            .unwrap();
-
         assert_eq!(
             subscription,
-            Subscription {
+            Some(Subscription {
                 send_email: false,
                 ..existing_subscription
-            }
+            })
         )
     }
 
@@ -288,11 +275,12 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        // get existing results for comparison
-        let existing_subscriptions =
-            Subscriptions::fetch_by_object_via_transaction(1565, &mut transaction)
+        // Verify assumption that the user is subscribed to object
+        let existing_subscription =
+            fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
                 .await
                 .unwrap();
+        assert!(existing_subscription.is_some());
 
         let subscription = Subscription {
             object_id: 1565,
@@ -301,23 +289,27 @@ mod tests {
         };
         subscription.remove(&mut transaction).await.unwrap();
 
-        // Verify that subscription was changed.
-        let subscriptions = Subscriptions::fetch_by_object_via_transaction(1565, &mut transaction)
+        // Verify that user is no longer subscribed to object
+        let subscription = fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
             .await
             .unwrap();
+        assert!(subscription.is_none());
+    }
 
-        let existing_subscription = existing_subscriptions
-            .0
-            .into_iter()
-            .find(|subscription| subscription.user_id == 1);
-
-        assert!(existing_subscription.is_some());
-
+    async fn fetch_subscription_by_user_and_object<'a, E>(
+        user_id: i32,
+        object_id: i32,
+        executor: E,
+    ) -> Result<Option<Subscription>, SubscriptionsError>
+    where
+        E: Executor<'a>,
+    {
+        let subscriptions =
+            Subscriptions::fetch_by_object_via_transaction(object_id, executor).await?;
         let subscription = subscriptions
             .0
             .into_iter()
-            .find(|subscription| subscription.user_id == 1);
-
-        assert!(subscription.is_none());
+            .find(|subscription| subscription.user_id == user_id);
+        Ok(subscription)
     }
 }

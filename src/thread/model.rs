@@ -5,7 +5,7 @@ use thiserror::Error;
 use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::event::{CreateCommentEventPayload, EventError, SetThreadStateEventPayload};
-use crate::subscription::{Subscription, SubscriptionsError};
+use crate::subscription::{Subscription, SubscriptionChangeError};
 use crate::uuid::{Uuid, UuidError, UuidFetcher};
 
 #[derive(Serialize)]
@@ -257,7 +257,7 @@ impl Threads {
                     .save(&mut transaction)
                     .await
                     .map_err(|error| match error {
-                        SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
+                        SubscriptionChangeError::DatabaseError { inner } => EventError::from(inner),
                     })?;
             }
         }
@@ -398,7 +398,7 @@ impl Threads {
                 .save(&mut transaction)
                 .await
                 .map_err(|error| match error {
-                    SubscriptionsError::DatabaseError { inner } => EventError::from(inner),
+                    SubscriptionChangeError::DatabaseError { inner } => EventError::from(inner),
                 })?;
         }
 

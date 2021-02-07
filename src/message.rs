@@ -69,8 +69,7 @@ impl MessageResponderNew for Message {
             Message::SubscriptionMessage(message) => message.handle_new(connection).await,
             Message::ThreadMessage(message) => message.handle_new(connection).await,
             Message::UserMessage(message) => message.handle_new(connection).await,
-            // Message::UuidMessage(message) => message.handle_new(connection).await,
-            _ => unimplemented!(),
+            Message::UuidMessage(message) => message.handle_new(connection).await,
         }
     }
 }

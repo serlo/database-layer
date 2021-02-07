@@ -8,7 +8,8 @@ use super::model::{
     ThreadSetArchivedPayload, ThreadStartThreadError, ThreadStartThreadPayload, Threads,
     ThreadsError,
 };
-use crate::message::MessageResponder;
+use crate::database::Connection;
+use crate::message::{MessageResponder, MessageResponderNew};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -29,6 +30,21 @@ impl MessageResponder for ThreadMessage {
     }
 }
 
+#[async_trait]
+impl MessageResponderNew for ThreadMessage {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        match self {
+            ThreadMessage::ThreadsQuery(message) => message.handle_new(connection).await,
+            ThreadMessage::ThreadCreateThreadMutation(message) => {
+                message.handle_new(connection).await
+            }
+            ThreadMessage::ThreadCreateCommentMutation(message) => {
+                message.handle_new(connection).await
+            }
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadsQuery {
@@ -39,6 +55,31 @@ pub struct ThreadsQuery {
 impl MessageResponder for ThreadsQuery {
     async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
         match Threads::fetch(self.id, pool).await {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(data),
+            Err(e) => {
+                println!("/threads/{}: {:?}", self.id, e);
+                match e {
+                    ThreadsError::DatabaseError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[async_trait]
+impl MessageResponderNew for ThreadsQuery {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let threads = match connection {
+            Connection::Pool(pool) => Threads::fetch(self.id, pool).await,
+            Connection::Transaction(transaction) => {
+                Threads::fetch_via_transaction(self.id, transaction).await
+            }
+        };
+        match threads {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),
@@ -98,6 +139,45 @@ impl MessageResponder for ThreadCreateThreadMutation {
     }
 }
 
+#[async_trait]
+impl MessageResponderNew for ThreadCreateThreadMutation {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let payload = ThreadStartThreadPayload {
+            title: self.title.clone(),
+            content: self.content.clone(),
+            object_id: self.object_id,
+            user_id: self.user_id,
+            subscribe: self.subscribe,
+            send_email: self.send_email,
+        };
+        let response = match connection {
+            Connection::Pool(pool) => Threads::start_thread(payload, pool).await,
+            Connection::Transaction(transaction) => {
+                Threads::start_thread(payload, transaction).await
+            }
+        };
+        match response {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(data),
+            Err(e) => {
+                println!("/thread/start-thread: {:?}", e);
+                match e {
+                    ThreadStartThreadError::DatabaseError { .. } => {
+                        HttpResponse::InternalServerError().json(None::<String>)
+                    }
+                    ThreadStartThreadError::EventError { .. } => {
+                        HttpResponse::InternalServerError().json(None::<String>)
+                    }
+                    ThreadStartThreadError::UuidError { .. } => {
+                        HttpResponse::InternalServerError().json(None::<String>)
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadCreateCommentMutation {
@@ -119,6 +199,47 @@ impl MessageResponder for ThreadCreateCommentMutation {
             send_email: self.send_email,
         };
         match Threads::comment_thread(payload, pool).await {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(data),
+            Err(e) => {
+                println!("/thread/comment-thread: {:?}", e);
+                match e {
+                    ThreadCommentThreadError::DatabaseError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    ThreadCommentThreadError::ThreadArchivedError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    ThreadCommentThreadError::EventError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    ThreadCommentThreadError::UuidError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[async_trait]
+impl MessageResponderNew for ThreadCreateCommentMutation {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let payload = ThreadCommentThreadPayload {
+            thread_id: self.thread_id,
+            content: self.content.clone(),
+            user_id: self.user_id,
+            subscribe: self.subscribe,
+            send_email: self.send_email,
+        };
+        let response = match connection {
+            Connection::Pool(pool) => Threads::comment_thread(payload, pool).await,
+            Connection::Transaction(transaction) => {
+                Threads::comment_thread(payload, transaction).await
+            }
+        };
+        match response {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),

@@ -61,7 +61,7 @@ impl MessageResponder for Message {
 impl MessageResponderNew for Message {
     async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
         match self {
-            // Message::AliasMessage(message) => message.handle_new(connection).await,
+            Message::AliasMessage(message) => message.handle_new(connection).await,
             // Message::EventMessage(message) => message.handle_new(connection).await,
             Message::LicenseMessage(message) => message.handle_new(connection).await,
             // Message::NavigationMessage(message) => message.handle_new(connection).await,

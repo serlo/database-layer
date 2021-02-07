@@ -56,3 +56,21 @@ impl MessageResponder for Message {
         }
     }
 }
+
+#[async_trait]
+impl MessageResponderNew for Message {
+    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+        match self {
+            // Message::AliasMessage(message) => message.handle_new(connection).await,
+            // Message::EventMessage(message) => message.handle_new(connection).await,
+            Message::LicenseMessage(message) => message.handle_new(connection).await,
+            // Message::NavigationMessage(message) => message.handle_new(connection).await,
+            // Message::NotificationMessage(message) => message.handle_new(connection).await,
+            // Message::SubscriptionMessage(message) => message.handle_new(connection).await,
+            // Message::ThreadMessage(message) => message.handle_new(connection).await,
+            // Message::UserMessage(message) => message.handle_new(connection).await,
+            // Message::UuidMessage(message) => message.handle_new(connection).await,
+            _ => unimplemented!(),
+        }
+    }
+}

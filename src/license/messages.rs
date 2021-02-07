@@ -22,6 +22,15 @@ impl MessageResponder for LicenseMessage {
     }
 }
 
+#[async_trait]
+impl MessageResponderNew for LicenseMessage {
+    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+        match self {
+            LicenseMessage::LicenseQuery(message) => message.handle_new(connection).await,
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LicenseQuery {

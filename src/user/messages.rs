@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
 use super::model::{User, UserError};
-use crate::message::MessageResponder;
+use crate::database::Connection;
+use crate::message::{MessageResponder, MessageResponderNew};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -19,6 +20,16 @@ impl MessageResponder for UserMessage {
         match self {
             UserMessage::ActiveAuthorsQuery(message) => message.handle(pool).await,
             UserMessage::ActiveReviewersQuery(message) => message.handle(pool).await,
+        }
+    }
+}
+
+#[async_trait]
+impl MessageResponderNew for UserMessage {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        match self {
+            UserMessage::ActiveAuthorsQuery(message) => message.handle_new(connection).await,
+            UserMessage::ActiveReviewersQuery(message) => message.handle_new(connection).await,
         }
     }
 }
@@ -44,6 +55,29 @@ impl MessageResponder for ActiveAuthorsQuery {
     }
 }
 
+#[async_trait]
+impl MessageResponderNew for ActiveAuthorsQuery {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let active_authors = match connection {
+            Connection::Pool(pool) => User::fetch_active_authors(pool).await,
+            Connection::Transaction(transaction) => {
+                User::fetch_active_authors_via_transaction(transaction).await
+            }
+        };
+        match active_authors {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(data),
+            Err(e) => {
+                println!("/user/active-authors: {:?}", e);
+                match e {
+                    UserError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
+                }
+            }
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActiveReviewersQuery {}
@@ -52,6 +86,29 @@ pub struct ActiveReviewersQuery {}
 impl MessageResponder for ActiveReviewersQuery {
     async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
         match User::fetch_active_reviewers(pool).await {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(data),
+            Err(e) => {
+                println!("/user/active-reviewers: {:?}", e);
+                match e {
+                    UserError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
+                }
+            }
+        }
+    }
+}
+
+#[async_trait]
+impl MessageResponderNew for ActiveReviewersQuery {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let active_reviewers = match connection {
+            Connection::Pool(pool) => User::fetch_active_reviewers(pool).await,
+            Connection::Transaction(transaction) => {
+                User::fetch_active_reviewers_via_transaction(transaction).await
+            }
+        };
+        match active_reviewers {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),

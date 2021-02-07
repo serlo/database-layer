@@ -117,14 +117,11 @@ impl Notifications {
         object_ids.extend(event.abstract_event.uuid_parameters.values());
 
         for object_id in object_ids {
-            let subscriptions =
-                Subscriptions::fetch_by_object_via_transaction(object_id, &mut transaction)
-                    .await
-                    .map_err(|error| match error {
-                        SubscriptionsError::DatabaseError { inner } => {
-                            NotificationsError::from(inner)
-                        }
-                    })?;
+            let subscriptions = Subscriptions::fetch_by_object(object_id, &mut transaction)
+                .await
+                .map_err(|error| match error {
+                    SubscriptionsError::DatabaseError { inner } => NotificationsError::from(inner),
+                })?;
             let subscriptions = subscriptions
                 .0
                 .iter()
@@ -357,12 +354,10 @@ mod tests {
             .unwrap();
 
         // Verify assumption that the event has no subscribers.
-        let subscriptions = Subscriptions::fetch_by_object_via_transaction(
-            event.abstract_event.object_id,
-            &mut transaction,
-        )
-        .await
-        .unwrap();
+        let subscriptions =
+            Subscriptions::fetch_by_object(event.abstract_event.object_id, &mut transaction)
+                .await
+                .unwrap();
         assert!(subscriptions.0.is_empty());
 
         Notifications::create_notifications(&event, &mut transaction)
@@ -390,12 +385,10 @@ mod tests {
             .unwrap();
 
         // Verify assumption that the event has a subscriber.
-        let subscriptions = Subscriptions::fetch_by_object_via_transaction(
-            event.abstract_event.object_id,
-            &mut transaction,
-        )
-        .await
-        .unwrap();
+        let subscriptions =
+            Subscriptions::fetch_by_object(event.abstract_event.object_id, &mut transaction)
+                .await
+                .unwrap();
         assert_eq!(subscriptions.0.len(), 1);
         let subscriber = subscriptions.0[0].user_id;
 
@@ -434,16 +427,14 @@ mod tests {
             .unwrap();
 
         // Verify the assumption that the event has no direct subscriber.
-        let subscriptions = Subscriptions::fetch_by_object_via_transaction(
-            event.abstract_event.object_id,
-            &mut transaction,
-        )
-        .await
-        .unwrap();
+        let subscriptions =
+            Subscriptions::fetch_by_object(event.abstract_event.object_id, &mut transaction)
+                .await
+                .unwrap();
         assert!(subscriptions.0.is_empty());
 
         // Verify the assumption that the event has indirect subscribers.
-        let subscriptions = Subscriptions::fetch_by_object_via_transaction(
+        let subscriptions = Subscriptions::fetch_by_object(
             *event
                 .abstract_event
                 .uuid_parameters

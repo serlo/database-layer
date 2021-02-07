@@ -28,12 +28,15 @@ pub struct Subscription {
 }
 
 impl Subscriptions {
-    pub async fn fetch_by_user(user_id: i32, pool: &MySqlPool) -> Result<Self, SubscriptionsError> {
+    pub async fn fetch_by_user<'a, E>(user_id: i32, executor: E) -> Result<Self, SubscriptionsError>
+    where
+        E: Executor<'a>,
+    {
         let subscriptions = sqlx::query!(
             r#"SELECT uuid_id, user_id, notify_mailman FROM subscription WHERE user_id = ?"#,
             user_id
         )
-        .fetch_all(pool)
+        .fetch_all(executor)
         .await?;
 
         let subscriptions = subscriptions
@@ -48,14 +51,7 @@ impl Subscriptions {
         Ok(Subscriptions(subscriptions))
     }
 
-    pub async fn fetch_by_object(
-        object_id: i32,
-        pool: &MySqlPool,
-    ) -> Result<Self, SubscriptionsError> {
-        Self::fetch_by_object_via_transaction(object_id, pool).await
-    }
-
-    pub async fn fetch_by_object_via_transaction<'a, E>(
+    pub async fn fetch_by_object<'a, E>(
         object_id: i32,
         executor: E,
     ) -> Result<Self, SubscriptionsError>
@@ -142,7 +138,17 @@ pub struct SubscriptionByUser {
 
 impl SubscriptionsByUser {
     pub async fn fetch(user_id: i32, pool: &MySqlPool) -> Result<Self, SubscriptionsError> {
-        let subscriptions = Subscriptions::fetch_by_user(user_id, pool).await?;
+        Self::fetch_via_transaction(user_id, pool).await
+    }
+
+    pub async fn fetch_via_transaction<'a, E>(
+        user_id: i32,
+        executor: E,
+    ) -> Result<Self, SubscriptionsError>
+    where
+        E: Executor<'a>,
+    {
+        let subscriptions = Subscriptions::fetch_by_user(user_id, executor).await?;
         let subscriptions = subscriptions
             .0
             .iter()
@@ -306,8 +312,7 @@ mod tests {
     where
         E: Executor<'a>,
     {
-        let subscriptions =
-            Subscriptions::fetch_by_object_via_transaction(object_id, executor).await?;
+        let subscriptions = Subscriptions::fetch_by_object(object_id, executor).await?;
         let subscription = subscriptions
             .0
             .into_iter()

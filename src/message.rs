@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
 use crate::alias::AliasMessage;
-use crate::database::ConnectionLike;
+use crate::database::Connection;
 use crate::event::EventMessage;
 use crate::license::LicenseMessage;
 use crate::navigation::NavigationMessage;
@@ -23,7 +23,7 @@ pub trait MessageResponder {
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]
 #[async_trait]
 pub trait MessageResponderNew {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse;
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse;
 }
 
 #[derive(Deserialize, Serialize)]
@@ -59,7 +59,7 @@ impl MessageResponder for Message {
 
 #[async_trait]
 impl MessageResponderNew for Message {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             Message::AliasMessage(message) => message.handle_new(connection).await,
             Message::EventMessage(message) => message.handle_new(connection).await,

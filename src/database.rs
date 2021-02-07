@@ -47,7 +47,7 @@ pub trait Executor<'a>: sqlx::Executor<'a, Database = sqlx::MySql> + Acquire<'a>
 impl<'a, E> Executor<'a> for E where E: sqlx::Executor<'a, Database = sqlx::MySql> + Acquire<'a> {}
 
 #[derive(Debug)]
-pub enum ConnectionLike<'c, 'e>
+pub enum Connection<'c, 'e>
 where
     'c: 'e,
 {

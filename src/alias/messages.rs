@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
 use super::model::{Alias, AliasError};
-use crate::database::ConnectionLike;
+use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::{MessageResponder, MessageResponderNew};
 
@@ -25,7 +25,7 @@ impl MessageResponder for AliasMessage {
 
 #[async_trait]
 impl MessageResponderNew for AliasMessage {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             AliasMessage::AliasQuery(message) => message.handle_new(connection).await,
         }
@@ -63,12 +63,12 @@ impl MessageResponder for AliasQuery {
 
 #[async_trait]
 impl MessageResponderNew for AliasQuery {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let path = self.path.as_str();
         let instance = self.instance.clone();
         let alias = match connection {
-            ConnectionLike::Pool(pool) => Alias::fetch(path, instance, pool).await,
-            ConnectionLike::Transaction(transaction) => {
+            Connection::Pool(pool) => Alias::fetch(path, instance, pool).await,
+            Connection::Transaction(transaction) => {
                 Alias::fetch_via_transaction(path, instance, transaction).await
             }
         };

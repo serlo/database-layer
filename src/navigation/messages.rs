@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
 use super::model::{Navigation, NavigationError};
-use crate::database::ConnectionLike;
+use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::{MessageResponder, MessageResponderNew};
 
@@ -25,7 +25,7 @@ impl MessageResponder for NavigationMessage {
 
 #[async_trait]
 impl MessageResponderNew for NavigationMessage {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             NavigationMessage::NavigationQuery(message) => message.handle_new(connection).await,
         }
@@ -59,11 +59,11 @@ impl MessageResponder for NavigationQuery {
 
 #[async_trait]
 impl MessageResponderNew for NavigationQuery {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let instance = self.instance.clone();
         let navigation = match connection {
-            ConnectionLike::Pool(pool) => Navigation::fetch(instance, pool).await,
-            ConnectionLike::Transaction(transaction) => {
+            Connection::Pool(pool) => Navigation::fetch(instance, pool).await,
+            Connection::Transaction(transaction) => {
                 Navigation::fetch_via_transaction(instance, transaction).await
             }
         };

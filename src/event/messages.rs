@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
 use super::model::{Event, EventError};
-use crate::database::ConnectionLike;
+use crate::database::Connection;
 use crate::message::{MessageResponder, MessageResponderNew};
 
 #[derive(Deserialize, Serialize)]
@@ -24,7 +24,7 @@ impl MessageResponder for EventMessage {
 
 #[async_trait]
 impl MessageResponderNew for EventMessage {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             EventMessage::EventQuery(message) => message.handle_new(connection).await,
         }
@@ -64,10 +64,10 @@ impl MessageResponder for EventQuery {
 
 #[async_trait]
 impl MessageResponderNew for EventQuery {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let event = match connection {
-            ConnectionLike::Pool(pool) => Event::fetch(self.id, pool).await,
-            ConnectionLike::Transaction(transaction) => {
+            Connection::Pool(pool) => Event::fetch(self.id, pool).await,
+            Connection::Transaction(transaction) => {
                 Event::fetch_via_transaction(self.id, transaction).await
             }
         };

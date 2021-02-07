@@ -6,7 +6,7 @@ use sqlx::MySqlPool;
 use super::model::{
     Notifications, NotificationsError, SetNotificationStateError, SetNotificationStatePayload,
 };
-use crate::database::ConnectionLike;
+use crate::database::Connection;
 use crate::message::{MessageResponder, MessageResponderNew};
 
 #[derive(Deserialize, Serialize)]
@@ -30,7 +30,7 @@ impl MessageResponder for NotificationMessage {
 
 #[async_trait]
 impl MessageResponderNew for NotificationMessage {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             NotificationMessage::NotificationsQuery(message) => {
                 message.handle_new(connection).await
@@ -69,10 +69,10 @@ impl MessageResponder for NotificationsQuery {
 
 #[async_trait]
 impl MessageResponderNew for NotificationsQuery {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let notifications = match connection {
-            ConnectionLike::Pool(pool) => Notifications::fetch(self.user_id, pool).await,
-            ConnectionLike::Transaction(transaction) => {
+            Connection::Pool(pool) => Notifications::fetch(self.user_id, pool).await,
+            Connection::Transaction(transaction) => {
                 Notifications::fetch_via_transaction(self.user_id, transaction).await
             }
         };
@@ -126,17 +126,15 @@ impl MessageResponder for NotificationSetStateMutation {
 
 #[async_trait]
 impl MessageResponderNew for NotificationSetStateMutation {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = SetNotificationStatePayload {
             ids: self.ids.clone(),
             user_id: self.user_id,
             unread: self.unread,
         };
         let response = match connection {
-            ConnectionLike::Pool(pool) => {
-                Notifications::set_notification_state(payload, pool).await
-            }
-            ConnectionLike::Transaction(transaction) => {
+            Connection::Pool(pool) => Notifications::set_notification_state(payload, pool).await,
+            Connection::Transaction(transaction) => {
                 Notifications::set_notification_state(payload, transaction).await
             }
         };

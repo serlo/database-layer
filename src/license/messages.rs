@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
 use super::model::{License, LicenseError};
-use crate::database::ConnectionLike;
+use crate::database::Connection;
 use crate::message::{MessageResponder, MessageResponderNew};
 
 #[derive(Deserialize, Serialize)]
@@ -24,7 +24,7 @@ impl MessageResponder for LicenseMessage {
 
 #[async_trait]
 impl MessageResponderNew for LicenseMessage {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             LicenseMessage::LicenseQuery(message) => message.handle_new(connection).await,
         }
@@ -60,10 +60,10 @@ impl MessageResponder for LicenseQuery {
 
 #[async_trait]
 impl MessageResponderNew for LicenseQuery {
-    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let license = match connection {
-            ConnectionLike::Pool(pool) => License::fetch(self.id, pool).await,
-            ConnectionLike::Transaction(transaction) => {
+            Connection::Pool(pool) => License::fetch(self.id, pool).await,
+            Connection::Transaction(transaction) => {
                 License::fetch_via_transaction(self.id, transaction).await
             }
         };

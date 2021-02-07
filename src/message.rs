@@ -64,7 +64,7 @@ impl MessageResponderNew for Message {
             Message::AliasMessage(message) => message.handle_new(connection).await,
             Message::EventMessage(message) => message.handle_new(connection).await,
             Message::LicenseMessage(message) => message.handle_new(connection).await,
-            // Message::NavigationMessage(message) => message.handle_new(connection).await,
+            Message::NavigationMessage(message) => message.handle_new(connection).await,
             // Message::NotificationMessage(message) => message.handle_new(connection).await,
             // Message::SubscriptionMessage(message) => message.handle_new(connection).await,
             // Message::ThreadMessage(message) => message.handle_new(connection).await,

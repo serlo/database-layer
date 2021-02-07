@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
 use super::model::{License, LicenseError};
-use crate::message::MessageResponder;
+use crate::database::ConnectionLike;
+use crate::message::{MessageResponder, MessageResponderNew};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -31,6 +32,33 @@ pub struct LicenseQuery {
 impl MessageResponder for LicenseQuery {
     async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
         match License::fetch(self.id, pool).await {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(data),
+            Err(e) => {
+                println!("/license/{}: {:?}", self.id, e);
+                match e {
+                    LicenseError::DatabaseError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    LicenseError::InvalidInstance => HttpResponse::InternalServerError().finish(),
+                    LicenseError::NotFound => HttpResponse::NotFound().json(None::<String>),
+                }
+            }
+        }
+    }
+}
+
+#[async_trait]
+impl MessageResponderNew for LicenseQuery {
+    async fn handle_new(&self, connection: ConnectionLike<'_, '_>) -> HttpResponse {
+        let license = match connection {
+            ConnectionLike::Pool(pool) => License::fetch(self.id, pool).await,
+            ConnectionLike::Transaction(transaction) => {
+                License::fetch_via_transaction(self.id, transaction).await
+            }
+        };
+        match license {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),

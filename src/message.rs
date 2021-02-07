@@ -41,23 +41,6 @@ pub enum Message {
 }
 
 #[async_trait]
-impl MessageResponder for Message {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
-        match self {
-            Message::AliasMessage(message) => message.handle(pool).await,
-            Message::EventMessage(message) => message.handle(pool).await,
-            Message::LicenseMessage(message) => message.handle(pool).await,
-            Message::NavigationMessage(message) => message.handle(pool).await,
-            Message::NotificationMessage(message) => message.handle(pool).await,
-            Message::SubscriptionMessage(message) => message.handle(pool).await,
-            Message::ThreadMessage(message) => message.handle(pool).await,
-            Message::UserMessage(message) => message.handle(pool).await,
-            Message::UuidMessage(message) => message.handle(pool).await,
-        }
-    }
-}
-
-#[async_trait]
 impl MessageResponderNew for Message {
     async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {

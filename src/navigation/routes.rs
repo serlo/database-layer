@@ -2,8 +2,9 @@ use actix_web::{get, web, Responder};
 use sqlx::MySqlPool;
 
 use super::messages::NavigationQuery;
+use crate::database::Connection;
 use crate::instance::Instance;
-use crate::message::MessageResponder;
+use crate::message::MessageResponderNew;
 
 #[get("/navigation/{instance}")]
 async fn navigation(
@@ -12,7 +13,8 @@ async fn navigation(
 ) -> impl Responder {
     let instance = instance.into_inner();
     let message = NavigationQuery { instance };
-    message.handle(db_pool.get_ref()).await
+    let connection = Connection::Pool(db_pool.get_ref());
+    message.handle_new(connection).await
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {

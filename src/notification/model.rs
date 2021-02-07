@@ -209,11 +209,14 @@ pub struct SetNofiticationStateResponse {
 }
 
 impl Notifications {
-    pub async fn set_notification_state(
+    pub async fn set_notification_state<'a, E>(
         payload: SetNotificationStatePayload,
-        pool: &MySqlPool,
-    ) -> Result<SetNofiticationStateResponse, SetNotificationStateError> {
-        let mut transaction = pool.begin().await?;
+        executor: E,
+    ) -> Result<SetNofiticationStateResponse, SetNotificationStateError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
 
         for id in payload.ids.into_iter() {
             let seen = !payload.unread;
@@ -247,6 +250,7 @@ mod tests {
     #[actix_rt::test]
     async fn set_notification_state_no_id() {
         let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
 
         Notifications::set_notification_state(
             SetNotificationStatePayload {
@@ -254,7 +258,7 @@ mod tests {
                 user_id: 1,
                 unread: true,
             },
-            &pool,
+            &mut transaction,
         )
         .await
         .unwrap();
@@ -271,7 +275,7 @@ mod tests {
                 user_id: 1,
                 unread: false,
             },
-            &pool,
+            &mut transaction,
         )
         .await
         .unwrap();
@@ -295,7 +299,7 @@ mod tests {
                 user_id: 1,
                 unread: true,
             },
-            &pool,
+            &mut transaction,
         )
         .await
         .unwrap();
@@ -321,7 +325,7 @@ mod tests {
                 user_id: 1,
                 unread: true,
             },
-            &pool,
+            &mut transaction,
         )
         .await
         .unwrap();

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::model::{User, UserError};
 use crate::database::Connection;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -14,11 +14,11 @@ pub enum UserMessage {
 }
 
 #[async_trait]
-impl MessageResponderNew for UserMessage {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for UserMessage {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            UserMessage::ActiveAuthorsQuery(message) => message.handle_new(connection).await,
-            UserMessage::ActiveReviewersQuery(message) => message.handle_new(connection).await,
+            UserMessage::ActiveAuthorsQuery(message) => message.handle(connection).await,
+            UserMessage::ActiveReviewersQuery(message) => message.handle(connection).await,
         }
     }
 }
@@ -28,8 +28,8 @@ impl MessageResponderNew for UserMessage {
 pub struct ActiveAuthorsQuery {}
 
 #[async_trait]
-impl MessageResponderNew for ActiveAuthorsQuery {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for ActiveAuthorsQuery {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let active_authors = match connection {
             Connection::Pool(pool) => User::fetch_active_authors(pool).await,
             Connection::Transaction(transaction) => {
@@ -55,8 +55,8 @@ impl MessageResponderNew for ActiveAuthorsQuery {
 pub struct ActiveReviewersQuery {}
 
 #[async_trait]
-impl MessageResponderNew for ActiveReviewersQuery {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for ActiveReviewersQuery {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let active_reviewers = match connection {
             Connection::Pool(pool) => User::fetch_active_reviewers(pool).await,
             Connection::Transaction(transaction) => {

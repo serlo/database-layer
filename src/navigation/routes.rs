@@ -4,7 +4,7 @@ use sqlx::MySqlPool;
 use super::messages::NavigationQuery;
 use crate::database::Connection;
 use crate::instance::Instance;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[get("/navigation/{instance}")]
 async fn navigation(
@@ -14,7 +14,7 @@ async fn navigation(
     let instance = instance.into_inner();
     let message = NavigationQuery { instance };
     let connection = Connection::Pool(db_pool.get_ref());
-    message.handle_new(connection).await
+    message.handle(connection).await
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {

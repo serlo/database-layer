@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::model::{Uuid, UuidError, UuidFetcher};
 use crate::database::Connection;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 use crate::uuid::{SetUuidStateError, SetUuidStatePayload};
 
 #[derive(Deserialize, Serialize)]
@@ -15,11 +15,11 @@ pub enum UuidMessage {
 }
 
 #[async_trait]
-impl MessageResponderNew for UuidMessage {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for UuidMessage {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            UuidMessage::UuidQuery(message) => message.handle_new(connection).await,
-            UuidMessage::UuidSetStateMutation(message) => message.handle_new(connection).await,
+            UuidMessage::UuidQuery(message) => message.handle(connection).await,
+            UuidMessage::UuidSetStateMutation(message) => message.handle(connection).await,
         }
     }
 }
@@ -31,8 +31,8 @@ pub struct UuidQuery {
 }
 
 #[async_trait]
-impl MessageResponderNew for UuidQuery {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for UuidQuery {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let uuid = match connection {
             Connection::Pool(pool) => Uuid::fetch(self.id, pool).await,
             Connection::Transaction(transaction) => {
@@ -76,8 +76,8 @@ pub struct UuidSetStateMutation {
 }
 
 #[async_trait]
-impl MessageResponderNew for UuidSetStateMutation {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for UuidSetStateMutation {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = SetUuidStatePayload {
             ids: self.ids.clone(),
             user_id: self.user_id,

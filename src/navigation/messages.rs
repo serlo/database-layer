@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::model::{Navigation, NavigationError};
 use crate::database::Connection;
 use crate::instance::Instance;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -14,10 +14,10 @@ pub enum NavigationMessage {
 }
 
 #[async_trait]
-impl MessageResponderNew for NavigationMessage {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for NavigationMessage {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            NavigationMessage::NavigationQuery(message) => message.handle_new(connection).await,
+            NavigationMessage::NavigationQuery(message) => message.handle(connection).await,
         }
     }
 }
@@ -29,8 +29,8 @@ pub struct NavigationQuery {
 }
 
 #[async_trait]
-impl MessageResponderNew for NavigationQuery {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for NavigationQuery {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let instance = self.instance.clone();
         let navigation = match connection {
             Connection::Pool(pool) => Navigation::fetch(instance, pool).await,

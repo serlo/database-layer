@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::model::{Alias, AliasError};
 use crate::database::Connection;
 use crate::instance::Instance;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -14,10 +14,10 @@ pub enum AliasMessage {
 }
 
 #[async_trait]
-impl MessageResponderNew for AliasMessage {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for AliasMessage {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            AliasMessage::AliasQuery(message) => message.handle_new(connection).await,
+            AliasMessage::AliasQuery(message) => message.handle(connection).await,
         }
     }
 }
@@ -30,8 +30,8 @@ pub struct AliasQuery {
 }
 
 #[async_trait]
-impl MessageResponderNew for AliasQuery {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for AliasQuery {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let path = self.path.as_str();
         let instance = self.instance.clone();
         let alias = match connection {

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::model::{License, LicenseError};
 use crate::database::Connection;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -13,10 +13,10 @@ pub enum LicenseMessage {
 }
 
 #[async_trait]
-impl MessageResponderNew for LicenseMessage {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for LicenseMessage {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            LicenseMessage::LicenseQuery(message) => message.handle_new(connection).await,
+            LicenseMessage::LicenseQuery(message) => message.handle(connection).await,
         }
     }
 }
@@ -28,8 +28,8 @@ pub struct LicenseQuery {
 }
 
 #[async_trait]
-impl MessageResponderNew for LicenseQuery {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for LicenseQuery {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let license = match connection {
             Connection::Pool(pool) => License::fetch(self.id, pool).await,
             Connection::Transaction(transaction) => {

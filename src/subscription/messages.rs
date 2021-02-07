@@ -7,7 +7,7 @@ use super::model::{
     SubscriptionsError,
 };
 use crate::database::Connection;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -17,14 +17,12 @@ pub enum SubscriptionMessage {
 }
 
 #[async_trait]
-impl MessageResponderNew for SubscriptionMessage {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for SubscriptionMessage {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            SubscriptionMessage::SubscriptionsQuery(message) => {
-                message.handle_new(connection).await
-            }
+            SubscriptionMessage::SubscriptionsQuery(message) => message.handle(connection).await,
             SubscriptionMessage::SubscriptionSetMutation(message) => {
-                message.handle_new(connection).await
+                message.handle(connection).await
             }
         }
     }
@@ -37,8 +35,8 @@ pub struct SubscriptionsQuery {
 }
 
 #[async_trait]
-impl MessageResponderNew for SubscriptionsQuery {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for SubscriptionsQuery {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let subscriptions = match connection {
             Connection::Pool(pool) => SubscriptionsByUser::fetch(self.user_id, pool).await,
             Connection::Transaction(transaction) => {
@@ -71,8 +69,8 @@ pub struct SubscriptionSetMutation {
 }
 
 #[async_trait]
-impl MessageResponderNew for SubscriptionSetMutation {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for SubscriptionSetMutation {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = SubscriptionChangePayload {
             ids: self.ids.clone(),
             user_id: self.user_id,

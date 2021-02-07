@@ -8,7 +8,7 @@ use super::model::{
     ThreadsError,
 };
 use crate::database::Connection;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -20,18 +20,14 @@ pub enum ThreadMessage {
 }
 
 #[async_trait]
-impl MessageResponderNew for ThreadMessage {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for ThreadMessage {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            ThreadMessage::ThreadsQuery(message) => message.handle_new(connection).await,
-            ThreadMessage::ThreadCreateThreadMutation(message) => {
-                message.handle_new(connection).await
-            }
-            ThreadMessage::ThreadCreateCommentMutation(message) => {
-                message.handle_new(connection).await
-            }
+            ThreadMessage::ThreadsQuery(message) => message.handle(connection).await,
+            ThreadMessage::ThreadCreateThreadMutation(message) => message.handle(connection).await,
+            ThreadMessage::ThreadCreateCommentMutation(message) => message.handle(connection).await,
             ThreadMessage::ThreadSetThreadArchivedMutation(message) => {
-                message.handle_new(connection).await
+                message.handle(connection).await
             }
         }
     }
@@ -44,8 +40,8 @@ pub struct ThreadsQuery {
 }
 
 #[async_trait]
-impl MessageResponderNew for ThreadsQuery {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for ThreadsQuery {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let threads = match connection {
             Connection::Pool(pool) => Threads::fetch(self.id, pool).await,
             Connection::Transaction(transaction) => {
@@ -80,8 +76,8 @@ pub struct ThreadCreateThreadMutation {
 }
 
 #[async_trait]
-impl MessageResponderNew for ThreadCreateThreadMutation {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for ThreadCreateThreadMutation {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = ThreadStartThreadPayload {
             title: self.title.clone(),
             content: self.content.clone(),
@@ -129,8 +125,8 @@ pub struct ThreadCreateCommentMutation {
 }
 
 #[async_trait]
-impl MessageResponderNew for ThreadCreateCommentMutation {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for ThreadCreateCommentMutation {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = ThreadCommentThreadPayload {
             thread_id: self.thread_id,
             content: self.content.clone(),
@@ -178,8 +174,8 @@ pub struct ThreadSetThreadArchivedMutation {
 }
 
 #[async_trait]
-impl MessageResponderNew for ThreadSetThreadArchivedMutation {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for ThreadSetThreadArchivedMutation {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = ThreadSetArchivedPayload {
             ids: self.ids.clone(),
             user_id: self.user_id,

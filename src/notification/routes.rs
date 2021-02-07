@@ -4,14 +4,14 @@ use sqlx::MySqlPool;
 use super::messages::{NotificationSetStateMutation, NotificationsQuery};
 use super::model::SetNotificationStatePayload;
 use crate::database::Connection;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[get("/notifications/{user_id}")]
 async fn notifications(user_id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let user_id = user_id.into_inner();
     let message = NotificationsQuery { user_id };
     let connection = Connection::Pool(db_pool.get_ref());
-    message.handle_new(connection).await
+    message.handle(connection).await
 }
 
 #[post("/set-notification-state")]
@@ -26,7 +26,7 @@ async fn set_state(
         unread: payload.unread,
     };
     let connection = Connection::Pool(db_pool.get_ref());
-    message.handle_new(connection).await
+    message.handle(connection).await
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {

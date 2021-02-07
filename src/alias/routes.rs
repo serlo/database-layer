@@ -4,7 +4,7 @@ use sqlx::MySqlPool;
 use super::messages::AliasQuery;
 use crate::database::Connection;
 use crate::instance::Instance;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[get("/alias/{instance}/{path:.*}")]
 async fn alias(
@@ -14,7 +14,7 @@ async fn alias(
     let (instance, path) = params.into_inner();
     let message = AliasQuery { instance, path };
     let connection = Connection::Pool(db_pool.get_ref());
-    message.handle_new(connection).await
+    message.handle(connection).await
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {

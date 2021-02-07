@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::model::{Event, EventError};
 use crate::database::Connection;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -13,10 +13,10 @@ pub enum EventMessage {
 }
 
 #[async_trait]
-impl MessageResponderNew for EventMessage {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for EventMessage {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            EventMessage::EventQuery(message) => message.handle_new(connection).await,
+            EventMessage::EventQuery(message) => message.handle(connection).await,
         }
     }
 }
@@ -28,8 +28,8 @@ pub struct EventQuery {
 }
 
 #[async_trait]
-impl MessageResponderNew for EventQuery {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for EventQuery {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let event = match connection {
             Connection::Pool(pool) => Event::fetch(self.id, pool).await,
             Connection::Transaction(transaction) => {

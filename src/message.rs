@@ -1,7 +1,6 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
 
 use crate::alias::AliasMessage;
 use crate::database::Connection;
@@ -17,13 +16,7 @@ use crate::uuid::UuidMessage;
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]
 #[async_trait]
 pub trait MessageResponder {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse;
-}
-
-/// A message responder maps the given message to a [`actix_web::HttpResponse`]
-#[async_trait]
-pub trait MessageResponderNew {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse;
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse;
 }
 
 #[derive(Deserialize, Serialize)]
@@ -41,18 +34,18 @@ pub enum Message {
 }
 
 #[async_trait]
-impl MessageResponderNew for Message {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for Message {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            Message::AliasMessage(message) => message.handle_new(connection).await,
-            Message::EventMessage(message) => message.handle_new(connection).await,
-            Message::LicenseMessage(message) => message.handle_new(connection).await,
-            Message::NavigationMessage(message) => message.handle_new(connection).await,
-            Message::NotificationMessage(message) => message.handle_new(connection).await,
-            Message::SubscriptionMessage(message) => message.handle_new(connection).await,
-            Message::ThreadMessage(message) => message.handle_new(connection).await,
-            Message::UserMessage(message) => message.handle_new(connection).await,
-            Message::UuidMessage(message) => message.handle_new(connection).await,
+            Message::AliasMessage(message) => message.handle(connection).await,
+            Message::EventMessage(message) => message.handle(connection).await,
+            Message::LicenseMessage(message) => message.handle(connection).await,
+            Message::NavigationMessage(message) => message.handle(connection).await,
+            Message::NotificationMessage(message) => message.handle(connection).await,
+            Message::SubscriptionMessage(message) => message.handle(connection).await,
+            Message::ThreadMessage(message) => message.handle(connection).await,
+            Message::UserMessage(message) => message.handle(connection).await,
+            Message::UuidMessage(message) => message.handle(connection).await,
         }
     }
 }

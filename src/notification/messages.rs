@@ -6,7 +6,7 @@ use super::model::{
     Notifications, NotificationsError, SetNotificationStateError, SetNotificationStatePayload,
 };
 use crate::database::Connection;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -16,14 +16,12 @@ pub enum NotificationMessage {
 }
 
 #[async_trait]
-impl MessageResponderNew for NotificationMessage {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for NotificationMessage {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            NotificationMessage::NotificationsQuery(message) => {
-                message.handle_new(connection).await
-            }
+            NotificationMessage::NotificationsQuery(message) => message.handle(connection).await,
             NotificationMessage::NotificationSetStateMutation(message) => {
-                message.handle_new(connection).await
+                message.handle(connection).await
             }
         }
     }
@@ -36,8 +34,8 @@ pub struct NotificationsQuery {
 }
 
 #[async_trait]
-impl MessageResponderNew for NotificationsQuery {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for NotificationsQuery {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let notifications = match connection {
             Connection::Pool(pool) => Notifications::fetch(self.user_id, pool).await,
             Connection::Transaction(transaction) => {
@@ -69,8 +67,8 @@ pub struct NotificationSetStateMutation {
 }
 
 #[async_trait]
-impl MessageResponderNew for NotificationSetStateMutation {
-    async fn handle_new(&self, connection: Connection<'_, '_>) -> HttpResponse {
+impl MessageResponder for NotificationSetStateMutation {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = SetNotificationStatePayload {
             ids: self.ids.clone(),
             user_id: self.user_id,

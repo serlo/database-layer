@@ -9,14 +9,14 @@ use super::model::{
     ThreadCommentThreadPayload, ThreadSetArchivedPayload, ThreadStartThreadPayload,
 };
 use crate::database::Connection;
-use crate::message::MessageResponderNew;
+use crate::message::MessageResponder;
 
 #[get("/threads/{id}")]
 async fn threads(id: web::Path<i32>, db_pool: web::Data<MySqlPool>) -> impl Responder {
     let id = id.into_inner();
     let message = ThreadsQuery { id };
     let connection = Connection::Pool(db_pool.get_ref());
-    message.handle_new(connection).await
+    message.handle(connection).await
 }
 
 #[post("/thread/set-archive")]
@@ -31,7 +31,7 @@ async fn set_archive(
         archived: payload.archived,
     };
     let connection = Connection::Pool(db_pool.get_ref());
-    message.handle_new(connection).await
+    message.handle(connection).await
 }
 
 #[post("/thread/start-thread")]
@@ -49,7 +49,7 @@ async fn start_thread(
         send_email: payload.send_email,
     };
     let connection = Connection::Pool(db_pool.get_ref());
-    message.handle_new(connection).await
+    message.handle(connection).await
 }
 
 #[post("/thread/comment-thread")]
@@ -66,7 +66,7 @@ async fn comment_thread(
         send_email: payload.send_email,
     };
     let connection = Connection::Pool(db_pool.get_ref());
-    message.handle_new(connection).await
+    message.handle(connection).await
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {

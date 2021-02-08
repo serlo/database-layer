@@ -137,6 +137,7 @@ pub struct SubscriptionsByUser {
 #[derive(Serialize)]
 pub struct SubscriptionByUser {
     id: i32,
+    send_email: bool,
 }
 
 impl SubscriptionsByUser {
@@ -147,6 +148,7 @@ impl SubscriptionsByUser {
             .iter()
             .map(|child| SubscriptionByUser {
                 id: child.object_id,
+                send_email: child.send_email,
             })
             .collect();
 

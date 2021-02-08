@@ -18,10 +18,7 @@ async fn handle_message(
     let rollback = req
         .headers()
         .get("Rollback")
-        .map_or(false, |value| match value.to_str() {
-            Ok("true") => true,
-            _ => false,
-        });
+        .map_or(false, |value| matches!(value.to_str(), Ok("true")));
     let message = payload.into_inner();
     let pool = db_pool.get_ref();
 

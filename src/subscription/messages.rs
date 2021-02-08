@@ -1,12 +1,12 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
 
 use super::model::{
     Subscription, SubscriptionChangeError, SubscriptionChangePayload, SubscriptionsByUser,
     SubscriptionsError,
 };
+use crate::database::Connection;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
@@ -18,10 +18,12 @@ pub enum SubscriptionMessage {
 
 #[async_trait]
 impl MessageResponder for SubscriptionMessage {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            SubscriptionMessage::SubscriptionsQuery(message) => message.handle(pool).await,
-            SubscriptionMessage::SubscriptionSetMutation(message) => message.handle(pool).await,
+            SubscriptionMessage::SubscriptionsQuery(message) => message.handle(connection).await,
+            SubscriptionMessage::SubscriptionSetMutation(message) => {
+                message.handle(connection).await
+            }
         }
     }
 }
@@ -34,8 +36,14 @@ pub struct SubscriptionsQuery {
 
 #[async_trait]
 impl MessageResponder for SubscriptionsQuery {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
-        match SubscriptionsByUser::fetch(self.user_id, pool).await {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let subscriptions = match connection {
+            Connection::Pool(pool) => SubscriptionsByUser::fetch(self.user_id, pool).await,
+            Connection::Transaction(transaction) => {
+                SubscriptionsByUser::fetch_via_transaction(self.user_id, transaction).await
+            }
+        };
+        match subscriptions {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),
@@ -62,14 +70,20 @@ pub struct SubscriptionSetMutation {
 
 #[async_trait]
 impl MessageResponder for SubscriptionSetMutation {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = SubscriptionChangePayload {
             ids: self.ids.clone(),
             user_id: self.user_id,
             subscribe: self.subscribe,
             send_email: self.send_email,
         };
-        match Subscription::change_subscription(payload, pool).await {
+        let response = match connection {
+            Connection::Pool(pool) => Subscription::change_subscription(payload, pool).await,
+            Connection::Transaction(transaction) => {
+                Subscription::change_subscription(payload, transaction).await
+            }
+        };
+        match response {
             Ok(_) => HttpResponse::Ok().finish(),
             Err(e) => {
                 println!("{:?}: {:?}", self, e);

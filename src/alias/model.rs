@@ -3,6 +3,7 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
+use crate::database::Executor;
 use crate::instance::Instance;
 use crate::uuid::{Uuid, UuidError, UuidFetcher};
 
@@ -38,6 +39,17 @@ impl Alias {
         instance: Instance,
         pool: &MySqlPool,
     ) -> Result<Self, AliasError> {
+        Self::fetch_via_transaction(path, instance, pool).await
+    }
+
+    pub async fn fetch_via_transaction<'a, E>(
+        path: &str,
+        instance: Instance,
+        executor: E,
+    ) -> Result<Self, AliasError>
+    where
+        E: Executor<'a>,
+    {
         if path == "backend"
             || path == "debugger"
             || path == "horizon"
@@ -91,6 +103,8 @@ impl Alias {
 
         let re = Regex::new(r"^user/profile/(?P<username>.+)$").unwrap();
 
+        let mut transaction = executor.begin().await?;
+
         let id: i32 = match re.captures(&path) {
             Some(captures) => {
                 let username = captures.name("username").unwrap().as_str();
@@ -102,7 +116,7 @@ impl Alias {
                     "#,
                     username
                 )
-                .fetch_one(pool)
+                .fetch_one(&mut transaction)
                 .await
                 .map_err(|error| match error {
                     sqlx::Error::RowNotFound => AliasError::NotFound,
@@ -124,7 +138,7 @@ impl Alias {
                         instance,
                         path
                     )
-                    .fetch_one(pool)
+                    .fetch_one(&mut transaction)
                     .await
                     .map_err(|error| match error {
                         sqlx::Error::RowNotFound => AliasError::NotFound,
@@ -135,15 +149,19 @@ impl Alias {
             }
         };
 
-        let uuid = Uuid::fetch(id, pool).await.map_err(|error| match error {
-            UuidError::DatabaseError { inner } => AliasError::DatabaseError { inner },
-            UuidError::InvalidInstance => AliasError::InvalidInstance,
-            UuidError::UnsupportedDiscriminator { .. } => AliasError::NotFound,
-            UuidError::UnsupportedEntityType { .. } => AliasError::NotFound,
-            UuidError::UnsupportedEntityRevisionType { .. } => AliasError::NotFound,
-            UuidError::EntityMissingRequiredParent => AliasError::NotFound,
-            UuidError::NotFound => AliasError::NotFound,
-        })?;
+        let uuid = Uuid::fetch_via_transaction(id, &mut transaction)
+            .await
+            .map_err(|error| match error {
+                UuidError::DatabaseError { inner } => AliasError::DatabaseError { inner },
+                UuidError::InvalidInstance => AliasError::InvalidInstance,
+                UuidError::UnsupportedDiscriminator { .. } => AliasError::NotFound,
+                UuidError::UnsupportedEntityType { .. } => AliasError::NotFound,
+                UuidError::UnsupportedEntityRevisionType { .. } => AliasError::NotFound,
+                UuidError::EntityMissingRequiredParent => AliasError::NotFound,
+                UuidError::NotFound => AliasError::NotFound,
+            })?;
+
+        transaction.commit().await?;
 
         Ok(Alias {
             id,

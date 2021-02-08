@@ -2,6 +2,7 @@ use actix_web::{get, web, Responder};
 use sqlx::MySqlPool;
 
 use super::messages::AliasQuery;
+use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
 
@@ -12,7 +13,8 @@ async fn alias(
 ) -> impl Responder {
     let (instance, path) = params.into_inner();
     let message = AliasQuery { instance, path };
-    message.handle(db_pool.get_ref()).await
+    let connection = Connection::Pool(db_pool.get_ref());
+    message.handle(connection).await
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {

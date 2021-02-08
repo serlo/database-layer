@@ -1,9 +1,7 @@
 //! Provides wrappers around sqlx traits.
-use sqlx::MySql;
+pub trait Acquire<'a>: sqlx::Acquire<'a, Database = sqlx::MySql> {}
 
-pub trait Acquire<'a>: sqlx::Acquire<'a, Database = MySql> {}
-
-impl<'a, A> Acquire<'a> for A where A: sqlx::Acquire<'a, Database = MySql> {}
+impl<'a, A> Acquire<'a> for A where A: sqlx::Acquire<'a, Database = sqlx::MySql> {}
 
 /// This trait should be used for functions that can accept either `&sqlx::MySqlPool` or `&mut Transaction<MySql>`.
 ///
@@ -46,4 +44,13 @@ impl<'a, A> Acquire<'a> for A where A: sqlx::Acquire<'a, Database = MySql> {}
 /// if we need it in a mutation or in tests.
 pub trait Executor<'a>: sqlx::Executor<'a, Database = sqlx::MySql> + Acquire<'a> {}
 
-impl<'a, E> Executor<'a> for E where E: sqlx::Executor<'a, Database = MySql> + Acquire<'a> {}
+impl<'a, E> Executor<'a> for E where E: sqlx::Executor<'a, Database = sqlx::MySql> + Acquire<'a> {}
+
+#[derive(Debug)]
+pub enum Connection<'c, 'e>
+where
+    'c: 'e,
+{
+    Pool(&'e sqlx::MySqlPool),
+    Transaction(&'e mut sqlx::Transaction<'c, sqlx::MySql>),
+}

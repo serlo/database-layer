@@ -1,9 +1,9 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
 
 use super::model::{User, UserError};
+use crate::database::Connection;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
@@ -15,10 +15,10 @@ pub enum UserMessage {
 
 #[async_trait]
 impl MessageResponder for UserMessage {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            UserMessage::ActiveAuthorsQuery(message) => message.handle(pool).await,
-            UserMessage::ActiveReviewersQuery(message) => message.handle(pool).await,
+            UserMessage::ActiveAuthorsQuery(message) => message.handle(connection).await,
+            UserMessage::ActiveReviewersQuery(message) => message.handle(connection).await,
         }
     }
 }
@@ -29,8 +29,14 @@ pub struct ActiveAuthorsQuery {}
 
 #[async_trait]
 impl MessageResponder for ActiveAuthorsQuery {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
-        match User::fetch_active_authors(pool).await {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let active_authors = match connection {
+            Connection::Pool(pool) => User::fetch_active_authors(pool).await,
+            Connection::Transaction(transaction) => {
+                User::fetch_active_authors_via_transaction(transaction).await
+            }
+        };
+        match active_authors {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),
@@ -50,8 +56,14 @@ pub struct ActiveReviewersQuery {}
 
 #[async_trait]
 impl MessageResponder for ActiveReviewersQuery {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
-        match User::fetch_active_reviewers(pool).await {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let active_reviewers = match connection {
+            Connection::Pool(pool) => User::fetch_active_reviewers(pool).await,
+            Connection::Transaction(transaction) => {
+                User::fetch_active_reviewers_via_transaction(transaction).await
+            }
+        };
+        match active_reviewers {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),

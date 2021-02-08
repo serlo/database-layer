@@ -1,9 +1,9 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
 
 use super::model::{Uuid, UuidError, UuidFetcher};
+use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::uuid::{SetUuidStateError, SetUuidStatePayload};
 
@@ -16,10 +16,10 @@ pub enum UuidMessage {
 
 #[async_trait]
 impl MessageResponder for UuidMessage {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            UuidMessage::UuidQuery(message) => message.handle(pool).await,
-            UuidMessage::UuidSetStateMutation(message) => message.handle(pool).await,
+            UuidMessage::UuidQuery(message) => message.handle(connection).await,
+            UuidMessage::UuidSetStateMutation(message) => message.handle(connection).await,
         }
     }
 }
@@ -32,14 +32,19 @@ pub struct UuidQuery {
 
 #[async_trait]
 impl MessageResponder for UuidQuery {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
-        let id = self.id;
-        match Uuid::fetch(id, pool).await {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let uuid = match connection {
+            Connection::Pool(pool) => Uuid::fetch(self.id, pool).await,
+            Connection::Transaction(transaction) => {
+                Uuid::fetch_via_transaction(self.id, transaction).await
+            }
+        };
+        match uuid {
             Ok(uuid) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(uuid),
             Err(e) => {
-                println!("/uuid/{}: {:?}", id, e);
+                println!("/uuid/{}: {:?}", self.id, e);
                 match e {
                     UuidError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
                     UuidError::InvalidInstance => HttpResponse::InternalServerError().finish(),
@@ -72,13 +77,19 @@ pub struct UuidSetStateMutation {
 
 #[async_trait]
 impl MessageResponder for UuidSetStateMutation {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = SetUuidStatePayload {
             ids: self.ids.clone(),
             user_id: self.user_id,
             trashed: self.trashed,
         };
-        match Uuid::set_uuid_state(payload, pool).await {
+        let response = match connection {
+            Connection::Pool(pool) => Uuid::set_uuid_state(payload, pool).await,
+            Connection::Transaction(transaction) => {
+                Uuid::set_uuid_state(payload, transaction).await
+            }
+        };
+        match response {
             Ok(_) => HttpResponse::Ok().finish(),
             Err(e) => {
                 println!("/set-uuid-state: {:?}", e);

@@ -1,9 +1,9 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
 
 use super::model::{Navigation, NavigationError};
+use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
 
@@ -15,9 +15,9 @@ pub enum NavigationMessage {
 
 #[async_trait]
 impl MessageResponder for NavigationMessage {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            NavigationMessage::NavigationQuery(message) => message.handle(pool).await,
+            NavigationMessage::NavigationQuery(message) => message.handle(connection).await,
         }
     }
 }
@@ -30,8 +30,15 @@ pub struct NavigationQuery {
 
 #[async_trait]
 impl MessageResponder for NavigationQuery {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
-        match Navigation::fetch(self.instance.clone(), pool).await {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let instance = self.instance.clone();
+        let navigation = match connection {
+            Connection::Pool(pool) => Navigation::fetch(instance, pool).await,
+            Connection::Transaction(transaction) => {
+                Navigation::fetch_via_transaction(instance, transaction).await
+            }
+        };
+        match navigation {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),

@@ -1,11 +1,11 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
 
 use super::model::{
     Notifications, NotificationsError, SetNotificationStateError, SetNotificationStatePayload,
 };
+use crate::database::Connection;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
@@ -17,11 +17,11 @@ pub enum NotificationMessage {
 
 #[async_trait]
 impl MessageResponder for NotificationMessage {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            NotificationMessage::NotificationsQuery(message) => message.handle(pool).await,
+            NotificationMessage::NotificationsQuery(message) => message.handle(connection).await,
             NotificationMessage::NotificationSetStateMutation(message) => {
-                message.handle(pool).await
+                message.handle(connection).await
             }
         }
     }
@@ -35,8 +35,14 @@ pub struct NotificationsQuery {
 
 #[async_trait]
 impl MessageResponder for NotificationsQuery {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
-        match Notifications::fetch(self.user_id, pool).await {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let notifications = match connection {
+            Connection::Pool(pool) => Notifications::fetch(self.user_id, pool).await,
+            Connection::Transaction(transaction) => {
+                Notifications::fetch_via_transaction(self.user_id, transaction).await
+            }
+        };
+        match notifications {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),
@@ -62,13 +68,19 @@ pub struct NotificationSetStateMutation {
 
 #[async_trait]
 impl MessageResponder for NotificationSetStateMutation {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = SetNotificationStatePayload {
             ids: self.ids.clone(),
             user_id: self.user_id,
             unread: self.unread,
         };
-        match Notifications::set_notification_state(payload, pool).await {
+        let response = match connection {
+            Connection::Pool(pool) => Notifications::set_notification_state(payload, pool).await,
+            Connection::Transaction(transaction) => {
+                Notifications::set_notification_state(payload, transaction).await
+            }
+        };
+        match response {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),

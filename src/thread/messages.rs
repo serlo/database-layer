@@ -1,13 +1,13 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
 
 use super::model::{
     ThreadCommentThreadError, ThreadCommentThreadPayload, ThreadSetArchiveError,
     ThreadSetArchivedPayload, ThreadStartThreadError, ThreadStartThreadPayload, Threads,
     ThreadsError,
 };
+use crate::database::Connection;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
@@ -16,15 +16,19 @@ pub enum ThreadMessage {
     ThreadsQuery(ThreadsQuery),
     ThreadCreateThreadMutation(ThreadCreateThreadMutation),
     ThreadCreateCommentMutation(ThreadCreateCommentMutation),
+    ThreadSetThreadArchivedMutation(ThreadSetThreadArchivedMutation),
 }
 
 #[async_trait]
 impl MessageResponder for ThreadMessage {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            ThreadMessage::ThreadsQuery(message) => message.handle(pool).await,
-            ThreadMessage::ThreadCreateThreadMutation(message) => message.handle(pool).await,
-            ThreadMessage::ThreadCreateCommentMutation(message) => message.handle(pool).await,
+            ThreadMessage::ThreadsQuery(message) => message.handle(connection).await,
+            ThreadMessage::ThreadCreateThreadMutation(message) => message.handle(connection).await,
+            ThreadMessage::ThreadCreateCommentMutation(message) => message.handle(connection).await,
+            ThreadMessage::ThreadSetThreadArchivedMutation(message) => {
+                message.handle(connection).await
+            }
         }
     }
 }
@@ -37,8 +41,14 @@ pub struct ThreadsQuery {
 
 #[async_trait]
 impl MessageResponder for ThreadsQuery {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
-        match Threads::fetch(self.id, pool).await {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let threads = match connection {
+            Connection::Pool(pool) => Threads::fetch(self.id, pool).await,
+            Connection::Transaction(transaction) => {
+                Threads::fetch_via_transaction(self.id, transaction).await
+            }
+        };
+        match threads {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),
@@ -67,7 +77,7 @@ pub struct ThreadCreateThreadMutation {
 
 #[async_trait]
 impl MessageResponder for ThreadCreateThreadMutation {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = ThreadStartThreadPayload {
             title: self.title.clone(),
             content: self.content.clone(),
@@ -76,7 +86,13 @@ impl MessageResponder for ThreadCreateThreadMutation {
             subscribe: self.subscribe,
             send_email: self.send_email,
         };
-        match Threads::start_thread(payload, pool).await {
+        let response = match connection {
+            Connection::Pool(pool) => Threads::start_thread(payload, pool).await,
+            Connection::Transaction(transaction) => {
+                Threads::start_thread(payload, transaction).await
+            }
+        };
+        match response {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),
@@ -110,7 +126,7 @@ pub struct ThreadCreateCommentMutation {
 
 #[async_trait]
 impl MessageResponder for ThreadCreateCommentMutation {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = ThreadCommentThreadPayload {
             thread_id: self.thread_id,
             content: self.content.clone(),
@@ -118,7 +134,13 @@ impl MessageResponder for ThreadCreateCommentMutation {
             subscribe: self.subscribe,
             send_email: self.send_email,
         };
-        match Threads::comment_thread(payload, pool).await {
+        let response = match connection {
+            Connection::Pool(pool) => Threads::comment_thread(payload, pool).await,
+            Connection::Transaction(transaction) => {
+                Threads::comment_thread(payload, transaction).await
+            }
+        };
+        match response {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),
@@ -153,13 +175,19 @@ pub struct ThreadSetThreadArchivedMutation {
 
 #[async_trait]
 impl MessageResponder for ThreadSetThreadArchivedMutation {
-    async fn handle(&self, pool: &MySqlPool) -> HttpResponse {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = ThreadSetArchivedPayload {
             ids: self.ids.clone(),
             user_id: self.user_id,
             archived: self.archived,
         };
-        match Threads::set_archive(payload, pool).await {
+        let response = match connection {
+            Connection::Pool(pool) => Threads::set_archive(payload, pool).await,
+            Connection::Transaction(transaction) => {
+                Threads::set_archive(payload, transaction).await
+            }
+        };
+        match response {
             Ok(_) => HttpResponse::Ok().finish(),
             Err(e) => {
                 println!("/thread/set-archive: {:?}", e);

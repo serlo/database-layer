@@ -46,5 +46,6 @@ test('Pacts', async () => {
     validateSSL: false,
     stateHandlers,
     timeout: 120 * 1000,
+    customProviderHeaders: ['Rollback: true'],
   }).verifyProvider()
 })

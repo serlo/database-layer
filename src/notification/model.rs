@@ -201,7 +201,7 @@ impl From<sqlx::Error> for SetNotificationStateError {
 }
 
 #[derive(Serialize)]
-pub struct SetNofiticationStateResponse {
+pub struct SetNotificationStateResponse {
     success: bool,
 }
 
@@ -209,7 +209,7 @@ impl Notifications {
     pub async fn set_notification_state<'a, E>(
         payload: SetNotificationStatePayload,
         executor: E,
-    ) -> Result<SetNofiticationStateResponse, SetNotificationStateError>
+    ) -> Result<SetNotificationStateResponse, SetNotificationStateError>
     where
         E: Executor<'a>,
     {
@@ -233,7 +233,7 @@ impl Notifications {
 
         transaction.commit().await?;
 
-        Ok(SetNofiticationStateResponse { success: true })
+        Ok(SetNotificationStateResponse { success: true })
     }
 }
 

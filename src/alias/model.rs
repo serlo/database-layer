@@ -50,6 +50,12 @@ impl Alias {
     where
         E: Executor<'a>,
     {
+        let path = if path.starts_with("/") {
+            &path[1..]
+        } else {
+            path
+        };
+
         if path == "backend"
             || path == "debugger"
             || path == "horizon"

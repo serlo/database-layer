@@ -50,6 +50,8 @@ impl Alias {
     where
         E: Executor<'a>,
     {
+        let path = path.strip_prefix('/').unwrap_or(path);
+
         if path == "backend"
             || path == "debugger"
             || path == "horizon"

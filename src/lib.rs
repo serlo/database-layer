@@ -14,7 +14,6 @@ pub mod alias;
 pub mod database;
 pub mod datetime;
 pub mod event;
-pub mod health;
 pub mod instance;
 pub mod license;
 pub mod message;
@@ -55,18 +54,7 @@ where
         InitError = (),
     >,
 {
-    app.data(pool)
-        .configure(routes::init)
-        .configure(alias::init)
-        .configure(event::init)
-        .configure(health::init)
-        .configure(license::init)
-        .configure(navigation::init)
-        .configure(notification::init)
-        .configure(subscription::init)
-        .configure(thread::init)
-        .configure(user::init)
-        .configure(uuid::init)
+    app.data(pool).configure(routes::init)
 }
 
 pub async fn create_database_pool() -> Result<Pool<MySql>, ApplicationError> {

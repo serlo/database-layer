@@ -7,7 +7,7 @@ use crate::database::Connection;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
-#[serde(tag = "type", content = "payload")]
+#[serde(tag = "type")]
 pub enum UserMessage {
     ActiveAuthorsQuery(ActiveAuthorsQuery),
     ActiveReviewersQuery(ActiveReviewersQuery),

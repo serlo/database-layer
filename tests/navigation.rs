@@ -4,6 +4,8 @@ mod tests {
     use actix_web::{test, App};
     use futures::StreamExt;
 
+    use serlo_org_database_layer::instance::Instance;
+    use serlo_org_database_layer::navigation::{NavigationMessage, NavigationQuery};
     use serlo_org_database_layer::{configure_app, create_database_pool};
 
     #[actix_rt::test]
@@ -11,7 +13,13 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);
         let mut app = test::init_service(app).await;
-        let request = test::TestRequest::get().uri("/navigation/de").to_request();
+        let message = NavigationMessage::NavigationQuery(NavigationQuery {
+            instance: Instance::De,
+        });
+        let request = test::TestRequest::post()
+            .uri("/")
+            .set_json(&message)
+            .to_request();
         let mut response = test::call_service(&mut app, request).await;
 
         assert!(response.status().is_success());

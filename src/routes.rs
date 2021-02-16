@@ -9,8 +9,13 @@ async fn index() -> HttpResponse {
     HttpResponse::Ok().finish()
 }
 
+#[get("/.well-known/health")]
+async fn health() -> HttpResponse {
+    HttpResponse::Ok().finish()
+}
+
 #[post("/")]
-async fn handle_message(
+async fn message(
     req: HttpRequest,
     payload: web::Json<Message>,
     db_pool: web::Data<MySqlPool>,
@@ -39,5 +44,6 @@ async fn handle_message(
 
 pub fn init(cfg: &mut web::ServiceConfig) {
     cfg.service(index);
-    cfg.service(handle_message);
+    cfg.service(health);
+    cfg.service(message);
 }

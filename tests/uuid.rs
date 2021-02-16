@@ -3,6 +3,7 @@ mod tests {
     use actix_web::{test, App};
     use futures::StreamExt;
 
+    use serlo_org_database_layer::uuid::{UuidMessage, UuidQuery};
     use serlo_org_database_layer::{configure_app, create_database_pool};
 
     #[actix_rt::test]
@@ -10,7 +11,11 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);
         let mut app = test::init_service(app).await;
-        let req = test::TestRequest::get().uri("/uuid/1").to_request();
+        let message = UuidMessage::UuidQuery(UuidQuery { id: 1 });
+        let req = test::TestRequest::post()
+            .uri("/")
+            .set_json(&message)
+            .to_request();
         let mut resp = test::call_service(&mut app, req).await;
 
         assert!(resp.status().is_success());

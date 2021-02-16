@@ -131,6 +131,7 @@ pub struct SubscriptionsByUser {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SubscriptionByUser {
     id: i32,
     send_email: bool,

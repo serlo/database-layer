@@ -39,19 +39,19 @@ impl MessageResponder for EventQuery {
         match event {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(data),
+                .json(&data),
             Err(e) => {
                 println!("/event/{}: {:?}", self.id, e);
                 match e {
                     EventError::DatabaseError { .. } => {
                         HttpResponse::InternalServerError().finish()
                     }
-                    EventError::InvalidType => HttpResponse::NotFound().json(None::<String>),
+                    EventError::InvalidType => HttpResponse::NotFound().json(&None::<String>),
                     EventError::InvalidInstance => HttpResponse::InternalServerError().finish(),
                     EventError::MissingRequiredField => {
-                        HttpResponse::NotFound().json(None::<String>)
+                        HttpResponse::NotFound().json(&None::<String>)
                     }
-                    EventError::NotFound => HttpResponse::NotFound().json(None::<String>),
+                    EventError::NotFound => HttpResponse::NotFound().json(&None::<String>),
                 }
             }
         }

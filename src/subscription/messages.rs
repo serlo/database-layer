@@ -46,7 +46,7 @@ impl MessageResponder for SubscriptionsQuery {
         match subscriptions {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(data),
+                .json(&data),
             Err(e) => {
                 println!("/subscriptions/{}: {:?}", self.user_id, e);
                 match e {

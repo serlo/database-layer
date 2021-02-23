@@ -47,8 +47,8 @@ pub fn configure_app<T, B>(app: App<T, B>, pool: MySqlPool) -> App<T, B>
 where
     B: MessageBody,
     T: ServiceFactory<
+        ServiceRequest,
         Config = (),
-        Request = ServiceRequest,
         Response = ServiceResponse<B>,
         Error = Error,
         InitError = (),

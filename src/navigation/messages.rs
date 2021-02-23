@@ -41,7 +41,7 @@ impl MessageResponder for NavigationQuery {
         match navigation {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(data),
+                .json(&data),
             Err(e) => {
                 println!("/navigation/{:?}: {:?}", self.instance, e);
                 match e {

@@ -45,7 +45,7 @@ impl MessageResponder for NotificationsQuery {
         match notifications {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(data),
+                .json(&data),
             Err(e) => {
                 println!("/notifications/{}: {:?}", self.user_id, e);
                 match e {
@@ -83,7 +83,7 @@ impl MessageResponder for NotificationSetStateMutation {
         match response {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(data),
+                .json(&data),
             Err(e) => {
                 println!("/set-notification-state: {:?}", e);
                 match e {

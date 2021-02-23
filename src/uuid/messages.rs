@@ -42,25 +42,25 @@ impl MessageResponder for UuidQuery {
         match uuid {
             Ok(uuid) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(uuid),
+                .json(&uuid),
             Err(e) => {
                 println!("/uuid/{}: {:?}", self.id, e);
                 match e {
                     UuidError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
                     UuidError::InvalidInstance => HttpResponse::InternalServerError().finish(),
                     UuidError::UnsupportedDiscriminator { .. } => {
-                        HttpResponse::NotFound().json(None::<String>)
+                        HttpResponse::NotFound().json(&None::<String>)
                     }
                     UuidError::UnsupportedEntityType { .. } => {
-                        HttpResponse::NotFound().json(None::<String>)
+                        HttpResponse::NotFound().json(&None::<String>)
                     }
                     UuidError::UnsupportedEntityRevisionType { .. } => {
-                        HttpResponse::NotFound().json(None::<String>)
+                        HttpResponse::NotFound().json(&None::<String>)
                     }
                     UuidError::EntityMissingRequiredParent => {
-                        HttpResponse::NotFound().json(None::<String>)
+                        HttpResponse::NotFound().json(&None::<String>)
                     }
-                    UuidError::NotFound => HttpResponse::NotFound().json(None::<String>),
+                    UuidError::NotFound => HttpResponse::NotFound().json(&None::<String>),
                 }
             }
         }

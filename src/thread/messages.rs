@@ -51,7 +51,7 @@ impl MessageResponder for ThreadsQuery {
         match threads {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(data),
+                .json(&data),
             Err(e) => {
                 println!("/threads/{}: {:?}", self.id, e);
                 match e {
@@ -95,18 +95,18 @@ impl MessageResponder for ThreadCreateThreadMutation {
         match response {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(data),
+                .json(&data),
             Err(e) => {
                 println!("/thread/start-thread: {:?}", e);
                 match e {
                     ThreadStartThreadError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().json(None::<String>)
+                        HttpResponse::InternalServerError().json(&None::<String>)
                     }
                     ThreadStartThreadError::EventError { .. } => {
-                        HttpResponse::InternalServerError().json(None::<String>)
+                        HttpResponse::InternalServerError().json(&None::<String>)
                     }
                     ThreadStartThreadError::UuidError { .. } => {
-                        HttpResponse::InternalServerError().json(None::<String>)
+                        HttpResponse::InternalServerError().json(&None::<String>)
                     }
                 }
             }
@@ -143,7 +143,7 @@ impl MessageResponder for ThreadCreateCommentMutation {
         match response {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(data),
+                .json(&data),
             Err(e) => {
                 println!("/thread/comment-thread: {:?}", e);
                 match e {

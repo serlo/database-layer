@@ -43,7 +43,7 @@ impl MessageResponder for AliasQuery {
         match alias {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(data),
+                .json(&data),
             Err(e) => {
                 println!("/alias/{:?}/{}: {:?}", self.instance, self.path, e);
                 match e {
@@ -51,8 +51,8 @@ impl MessageResponder for AliasQuery {
                         HttpResponse::InternalServerError().finish()
                     }
                     AliasError::InvalidInstance => HttpResponse::InternalServerError().finish(),
-                    AliasError::LegacyRoute => HttpResponse::NotFound().json(None::<String>),
-                    AliasError::NotFound => HttpResponse::NotFound().json(None::<String>),
+                    AliasError::LegacyRoute => HttpResponse::NotFound().json(&None::<String>),
+                    AliasError::NotFound => HttpResponse::NotFound().json(&None::<String>),
                 }
             }
         }

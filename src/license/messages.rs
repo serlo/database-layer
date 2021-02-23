@@ -39,7 +39,7 @@ impl MessageResponder for LicenseQuery {
         match license {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(data),
+                .json(&data),
             Err(e) => {
                 println!("/license/{}: {:?}", self.id, e);
                 match e {
@@ -47,7 +47,7 @@ impl MessageResponder for LicenseQuery {
                         HttpResponse::InternalServerError().finish()
                     }
                     LicenseError::InvalidInstance => HttpResponse::InternalServerError().finish(),
-                    LicenseError::NotFound => HttpResponse::NotFound().json(None::<String>),
+                    LicenseError::NotFound => HttpResponse::NotFound().json(&None::<String>),
                 }
             }
         }

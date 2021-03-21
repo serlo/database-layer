@@ -1833,7 +1833,7 @@ dependencies = [
 
 [[package]]
 name = "serlo-org-database-layer"
-version = "0.3.4"
+version = "0.3.5"
 dependencies = [
  "actix-rt",
  "actix-service",

@@ -14,6 +14,7 @@ pub enum LicenseMessage {
 
 #[async_trait]
 impl MessageResponder for LicenseMessage {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             LicenseMessage::LicenseQuery(message) => message.handle(connection).await,
@@ -29,6 +30,7 @@ pub struct LicenseQuery {
 
 #[async_trait]
 impl MessageResponder for LicenseQuery {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let license = match connection {
             Connection::Pool(pool) => License::fetch(self.id, pool).await,

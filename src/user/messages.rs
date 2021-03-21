@@ -15,6 +15,7 @@ pub enum UserMessage {
 
 #[async_trait]
 impl MessageResponder for UserMessage {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             UserMessage::ActiveAuthorsQuery(message) => message.handle(connection).await,
@@ -29,6 +30,7 @@ pub struct ActiveAuthorsQuery {}
 
 #[async_trait]
 impl MessageResponder for ActiveAuthorsQuery {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let active_authors = match connection {
             Connection::Pool(pool) => User::fetch_active_authors(pool).await,
@@ -56,6 +58,7 @@ pub struct ActiveReviewersQuery {}
 
 #[async_trait]
 impl MessageResponder for ActiveReviewersQuery {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let active_reviewers = match connection {
             Connection::Pool(pool) => User::fetch_active_reviewers(pool).await,

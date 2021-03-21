@@ -15,6 +15,7 @@ pub enum AliasMessage {
 
 #[async_trait]
 impl MessageResponder for AliasMessage {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             AliasMessage::AliasQuery(message) => message.handle(connection).await,
@@ -31,6 +32,7 @@ pub struct AliasQuery {
 
 #[async_trait]
 impl MessageResponder for AliasQuery {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let path = self.path.as_str();
         let instance = self.instance.clone();

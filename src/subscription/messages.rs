@@ -18,6 +18,7 @@ pub enum SubscriptionMessage {
 
 #[async_trait]
 impl MessageResponder for SubscriptionMessage {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             SubscriptionMessage::SubscriptionsQuery(message) => message.handle(connection).await,
@@ -36,6 +37,7 @@ pub struct SubscriptionsQuery {
 
 #[async_trait]
 impl MessageResponder for SubscriptionsQuery {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let subscriptions = match connection {
             Connection::Pool(pool) => SubscriptionsByUser::fetch(self.user_id, pool).await,
@@ -70,6 +72,7 @@ pub struct SubscriptionSetMutation {
 
 #[async_trait]
 impl MessageResponder for SubscriptionSetMutation {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = SubscriptionChangePayload {
             ids: self.ids.clone(),

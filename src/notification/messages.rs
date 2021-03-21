@@ -17,6 +17,7 @@ pub enum NotificationMessage {
 
 #[async_trait]
 impl MessageResponder for NotificationMessage {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             NotificationMessage::NotificationsQuery(message) => message.handle(connection).await,
@@ -35,6 +36,7 @@ pub struct NotificationsQuery {
 
 #[async_trait]
 impl MessageResponder for NotificationsQuery {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let notifications = match connection {
             Connection::Pool(pool) => Notifications::fetch(self.user_id, pool).await,
@@ -68,6 +70,7 @@ pub struct NotificationSetStateMutation {
 
 #[async_trait]
 impl MessageResponder for NotificationSetStateMutation {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = SetNotificationStatePayload {
             ids: self.ids.clone(),

@@ -21,6 +21,7 @@ pub enum ThreadMessage {
 
 #[async_trait]
 impl MessageResponder for ThreadMessage {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             ThreadMessage::ThreadsQuery(message) => message.handle(connection).await,
@@ -41,6 +42,7 @@ pub struct ThreadsQuery {
 
 #[async_trait]
 impl MessageResponder for ThreadsQuery {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let threads = match connection {
             Connection::Pool(pool) => Threads::fetch(self.id, pool).await,
@@ -77,6 +79,7 @@ pub struct ThreadCreateThreadMutation {
 
 #[async_trait]
 impl MessageResponder for ThreadCreateThreadMutation {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = ThreadStartThreadPayload {
             title: self.title.clone(),
@@ -126,6 +129,7 @@ pub struct ThreadCreateCommentMutation {
 
 #[async_trait]
 impl MessageResponder for ThreadCreateCommentMutation {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = ThreadCommentThreadPayload {
             thread_id: self.thread_id,
@@ -175,6 +179,7 @@ pub struct ThreadSetThreadArchivedMutation {
 
 #[async_trait]
 impl MessageResponder for ThreadSetThreadArchivedMutation {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = ThreadSetArchivedPayload {
             ids: self.ids.clone(),

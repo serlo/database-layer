@@ -35,6 +35,7 @@ pub enum Message {
 
 #[async_trait]
 impl MessageResponder for Message {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             Message::AliasMessage(message) => message.handle(connection).await,

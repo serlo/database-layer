@@ -16,6 +16,7 @@ pub enum UuidMessage {
 
 #[async_trait]
 impl MessageResponder for UuidMessage {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             UuidMessage::UuidQuery(message) => message.handle(connection).await,
@@ -32,6 +33,7 @@ pub struct UuidQuery {
 
 #[async_trait]
 impl MessageResponder for UuidQuery {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let uuid = match connection {
             Connection::Pool(pool) => Uuid::fetch(self.id, pool).await,
@@ -77,6 +79,7 @@ pub struct UuidSetStateMutation {
 
 #[async_trait]
 impl MessageResponder for UuidSetStateMutation {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = SetUuidStatePayload {
             ids: self.ids.clone(),

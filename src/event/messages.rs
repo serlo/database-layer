@@ -14,6 +14,7 @@ pub enum EventMessage {
 
 #[async_trait]
 impl MessageResponder for EventMessage {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             EventMessage::EventQuery(message) => message.handle(connection).await,
@@ -29,6 +30,7 @@ pub struct EventQuery {
 
 #[async_trait]
 impl MessageResponder for EventQuery {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let event = match connection {
             Connection::Pool(pool) => Event::fetch(self.id, pool).await,

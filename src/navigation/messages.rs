@@ -15,6 +15,7 @@ pub enum NavigationMessage {
 
 #[async_trait]
 impl MessageResponder for NavigationMessage {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             NavigationMessage::NavigationQuery(message) => message.handle(connection).await,
@@ -30,6 +31,7 @@ pub struct NavigationQuery {
 
 #[async_trait]
 impl MessageResponder for NavigationQuery {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let instance = self.instance.clone();
         let navigation = match connection {

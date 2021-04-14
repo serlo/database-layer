@@ -26,10 +26,10 @@ You can reuse the same database as a local serlo.org development environment. Th
 - Add a `docker-compose.override.yml` file with the following content:
   ```yaml
   version: '3.4'
-    services:
-      mysql:
-        ports:
-          - '3306:3306'
+  services:
+    mysql:
+      ports:
+        - '3306:3306'
   ```
 - Run `yarn start` to start local serlo.org. The database will be available under `mysql://root:secret@localhost:3306/serlo`.
 

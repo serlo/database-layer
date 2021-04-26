@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "bugs": {
-    "url": "https://github.com/serlo/rust-playground/issues"
+    "url": "https://github.com/serlo/serlo.org-database-layer/issues"
   },
-  "repository": "serlo/rust-playground",
+  "repository": "serlo/serlo.org-database-layer",
   "license": "Apache-2.0",
   "author": "Serlo Education e.V.",
   "scripts": {

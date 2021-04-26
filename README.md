@@ -41,4 +41,11 @@ You can also use the database schema in this repository.
 
 ## Development
 
-Run `cargo run` to install dependencies and start the webserver. Now open [http://localhost:8080](http://localhost:8080). Happy coding!
+Run `cargo run` to install dependencies and start the webserver.
+
+Now you can mock a request from the terminal:
+``` sh
+curl -H "Content-Type: application/json" -X POST -d '{"type":"UuidQuery","payload":{"id":1565}}' http://localhost:8080/
+```
+
+Happy coding!

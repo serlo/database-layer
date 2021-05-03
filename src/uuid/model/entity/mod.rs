@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
+use sqlx::Row;
 
 use abstract_entity::AbstractEntity;
 pub use entity_type::EntityType;
@@ -171,7 +172,12 @@ macro_rules! to_entity {
                 })
             }
             EntityType::Solution => {
-                let parent_id = Entity::find_parent_by_id($id, $executor).await?;
+                let parent_id = Entity::find_parent_by_id_and_types(
+                    $id,
+                    [EntityType::Exercise, EntityType::GroupedExercise],
+                    $executor,
+                )
+                .await?;
 
                 ConcreteEntity::Solution(Solution { parent_id })
             }
@@ -314,6 +320,41 @@ impl Entity {
             .first()
             .ok_or(UuidError::EntityMissingRequiredParent)
             .map(|parent_id| *parent_id)
+    }
+
+    async fn find_parent_by_id_and_types<'a, E, const N: usize>(
+        id: i32,
+        parent_types: [EntityType; N],
+        executor: E,
+    ) -> Result<i32, UuidError>
+    where
+        E: Executor<'a>,
+    {
+        let query = format!(
+            r#"
+                SELECT l.parent_id as id
+                    FROM entity_link l
+                    JOIN entity e on l.parent_id = e.id
+                    JOIN type t on t.id = e.type_id
+                    WHERE l.child_id = ?
+                        AND t.name in ({})
+            "#,
+            ["?"; N].join(", ")
+        );
+
+        let mut q = sqlx::query(&query);
+        q = q.bind(id);
+        for x in 0..N {
+            q = q.bind(&parent_types[x]);
+        }
+
+        let parent_id: i32 = q
+            .fetch_one(executor)
+            .await
+            .and_then(|row| row.try_get(0))
+            .map_err(|_| UuidError::EntityMissingRequiredParent)?;
+
+        Ok(parent_id)
     }
 
     async fn find_children_by_id_and_type<'a, E>(

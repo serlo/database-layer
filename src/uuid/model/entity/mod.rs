@@ -344,8 +344,8 @@ impl Entity {
 
         let mut q = sqlx::query(&query);
         q = q.bind(id);
-        for x in 0..N {
-            q = q.bind(&parent_types[x]);
+        for parent_type in parent_types.iter() {
+            q = q.bind(parent_type);
         }
 
         let parent_id: i32 = q

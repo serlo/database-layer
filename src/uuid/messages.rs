@@ -122,10 +122,9 @@ mod tests {
         // Add solution with id 100000 and math-puzzle with id 100001
         sqlx::query(
             r#"
-                INSERT INTO uuid(id, trashed, discriminator)
-                VALUES
-                    (100000, 0, "entity"),
-                    (100001, 0, "entity")
+                INSERT INTO uuid (id, trashed, discriminator)
+                VALUES (100000, 0, 'entity'),
+                       (100001, 0, 'entity')
             "#,
         )
         .execute(&mut transaction)
@@ -133,10 +132,9 @@ mod tests {
         .unwrap();
         sqlx::query(
             r#"
-                INSERT INTO entity
-                VALUES
-                    (100000, 2, 1, 1, CURDATE(), 1),
-                    (100001, 39, 1, 1, CURDATE(), 2)
+                INSERT INTO entity (id, type_id, instance_id, license_id, date, current_revision_id)
+                VALUES (100000, 2, 1, 1, CURDATE(), 1),
+                       (100001, 39, 1, 1, CURDATE(), 2)
             "#,
         )
         .execute(&mut transaction)
@@ -146,7 +144,7 @@ mod tests {
         // Link solution and math-puzzle
         sqlx::query(
             r#"
-                INSERT INTO entity_link(parent_id, child_id, type_id)
+                INSERT INTO entity_link (parent_id, child_id, type_id)
                 VALUES (100001, 100000, 9)
             "#,
         )

@@ -342,13 +342,13 @@ impl Entity {
             ["?"; N].join(", ")
         );
 
-        let mut q = sqlx::query(&query);
-        q = q.bind(id);
+        let mut query = sqlx::query(&query);
+        query = query.bind(id);
         for parent_type in parent_types.iter() {
-            q = q.bind(parent_type);
+            query = query.bind(parent_type);
         }
 
-        let parent_id: i32 = q
+        let parent_id: i32 = query
             .fetch_one(executor)
             .await
             .and_then(|row| row.try_get(0))

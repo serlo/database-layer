@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 actix-rt = "2.0.0"
-actix-service = "2.0.0-beta"
+actix-service = "2.0.0"
 actix-web = "4.0.0-beta"
 async-trait = "0.1.0"
 chrono = "0.4.0"

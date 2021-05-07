@@ -1,4 +1,4 @@
-FROM rust:1.51 as build
+FROM rust:1.52 as build
 WORKDIR /usr/src/app
 COPY src src
 COPY Cargo.lock .

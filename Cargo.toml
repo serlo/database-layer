@@ -1,6 +1,6 @@
 [package]
 name = "serlo-org-database-layer"
-version = "0.3.9"
+version = "0.3.10"
 authors = ["Serlo Education e.V."]
 license = "Apache-2.0"
 edition = "2018"

@@ -19,7 +19,11 @@ impl From<&AbstractEntityRevision> for VideoRevision {
         VideoRevision {
             url,
             title,
-            content,
+            content: if content.is_empty() {
+                String::from(r#"{"plugin":"rows","state":[{"plugin":"text"}]}"#)
+            } else {
+                content
+            },
         }
     }
 }

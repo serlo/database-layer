@@ -1,14 +1,15 @@
 use async_trait::async_trait;
 use futures::try_join;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use sqlx::Row;
+use thiserror::Error;
 
 use abstract_entity::AbstractEntity;
 pub use entity_type::EntityType;
 
 use super::taxonomy_term::TaxonomyTerm;
-use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
+use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
 use crate::format_alias;
 
@@ -394,4 +395,130 @@ impl Entity {
             .await
             .map(|children| children.first().cloned())
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EntityCheckoutRevisionPayload {
+    pub revision_id: i32,
+    pub user_id: i32,
+    pub reason: String,
+}
+
+#[derive(Error, Debug)]
+pub enum EntityCheckoutRevisionError {
+    #[error("Revision could not be checked out because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    // TODO: maybe be more explicit regarding the errors.
+    // E.g. NotFound could be a "RevisionNotFound" Error instead
+    #[error("Revision could not be checked out because of an internal error: {inner:?}.")]
+    UuidError { inner: UuidError },
+}
+
+impl From<sqlx::Error> for EntityCheckoutRevisionError {
+    fn from(inner: sqlx::Error) -> Self {
+        EntityCheckoutRevisionError::DatabaseError { inner }
+    }
+}
+
+impl From<UuidError> for EntityCheckoutRevisionError {
+    fn from(error: UuidError) -> Self {
+        match error {
+            UuidError::DatabaseError { inner } => inner.into(),
+            inner => EntityCheckoutRevisionError::UuidError { inner },
+        }
+    }
+}
+
+impl Entity {
+    pub async fn checkout_revision<'a, E>(
+        payload: EntityCheckoutRevisionPayload,
+        executor: E,
+    ) -> Result<(), EntityCheckoutRevisionError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let revision_id = payload.revision_id;
+        let revision = EntityRevision::fetch_via_transaction(revision_id, &mut transaction).await?;
+
+        if let ConcreteUuid::EntityRevision(EntityRevision {
+            abstract_entity_revision,
+            ..
+        }) = revision.concrete_uuid
+        {
+            let repository_id = abstract_entity_revision.repository_id;
+
+            sqlx::query!(
+                r#"
+                    UPDATE entity
+                        SET current_revision_id = ?
+                        WHERE id = ?
+                "#,
+                revision_id,
+                repository_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            transaction.commit().await?;
+
+            Ok(())
+        } else {
+            // TODO: throw error because given id does not exist or is not a revision
+            Ok(())
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Entity, EntityCheckoutRevisionPayload};
+    use crate::create_database_pool;
+    use crate::uuid::{ConcreteUuid, UuidFetcher};
+
+    #[actix_rt::test]
+    async fn checkout_revision() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Entity::checkout_revision(
+            EntityCheckoutRevisionPayload {
+                revision_id: 30672,
+                user_id: 1,
+                reason: "Revert changes".to_string(),
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        let entity = Entity::fetch_via_transaction(1855, &mut transaction)
+            .await
+            .unwrap();
+
+        if let ConcreteUuid::Entity(Entity {
+            abstract_entity, ..
+        }) = entity.concrete_uuid
+        {
+            assert_eq!(abstract_entity.current_revision_id, Some(30672));
+        } else {
+            panic!("Entity does not fulfill assertions: {:?}", entity)
+        }
+
+        // TODO: check if correct event got created!
+    }
+
+    // TODO: checkout_revision, already accepted
+
+    #[actix_rt::test]
+    async fn reject_revision() {
+        // TODO:
+    }
+
+    // TODO: reject_revision, already rejected i.e. trashed
+    // TODO: reject_revision that is currently checked out
+
+    // TODO: do not allow to trash entity revisions via setState (or remove permission similar to users)
 }

@@ -1,10 +1,8 @@
+use std::collections::HashMap;
+
 use serde::Serialize;
 
-use super::abstract_event::AbstractEvent;
-use super::event_type::RawEventType;
-use super::{Event, EventError};
-use crate::datetime::DateTime;
-use crate::notification::{Notifications, NotificationsError};
+use super::{AbstractEvent, Event, EventError, EventPayload, RawEventType};
 use crate::{database::Executor, instance::Instance};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -17,7 +15,7 @@ impl From<&AbstractEvent> for SetUuidStateEvent {
     fn from(abstract_event: &AbstractEvent) -> Self {
         let trashed = abstract_event.raw_typename == RawEventType::TrashUuid;
 
-        SetUuidStateEvent { trashed }
+        Self { trashed }
     }
 }
 
@@ -36,7 +34,7 @@ impl SetUuidStateEventPayload {
             RawEventType::RestoreUuid
         };
 
-        SetUuidStateEventPayload {
+        Self {
             raw_typename,
             actor_id,
             object_id,
@@ -50,32 +48,23 @@ impl SetUuidStateEventPayload {
     {
         let mut transaction = executor.begin().await?;
 
-        sqlx::query!(
-            r#"
-                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)
-                    SELECT ?, e.id, ?, i.id, ?
-                    FROM event e
-                    JOIN instance i
-                    WHERE e.name = ? AND i.subdomain = ?
-            "#,
-            self.actor_id,
-            self.object_id,
-            DateTime::now(),
-            self.raw_typename,
+        let result = sqlx::query!(
+            r#"SELECT id FROM instance WHERE subdomain = ?"#,
             self.instance
         )
-        .execute(&mut transaction)
+        .fetch_one(&mut transaction)
         .await?;
-        let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
-            .await?;
-        let event = Event::fetch_via_transaction(value.id as i32, &mut transaction).await?;
 
-        Notifications::create_notifications(&event, &mut transaction)
-            .await
-            .map_err(|error| match error {
-                NotificationsError::DatabaseError { inner } => EventError::from(inner),
-            })?;
+        let event = EventPayload::new(
+            self.raw_typename.clone(),
+            self.actor_id,
+            self.object_id,
+            result.id,
+            HashMap::new(),
+            HashMap::new(),
+        )
+        .save(&mut transaction)
+        .await?;
 
         transaction.commit().await?;
 

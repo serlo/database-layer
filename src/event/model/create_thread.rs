@@ -66,7 +66,7 @@ impl CreateThreadEventPayload {
             [("on".to_string(), self.uuid_parameter)]
                 .iter()
                 .cloned()
-                .collect::<HashMap<String, i32>>(),
+                .collect(),
         )
         .save(&mut transaction)
         .await?;

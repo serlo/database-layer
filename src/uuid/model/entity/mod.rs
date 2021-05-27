@@ -11,6 +11,7 @@ pub use entity_type::EntityType;
 use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
+use crate::event::{EventError, RevisionEventPayload};
 use crate::format_alias;
 
 mod abstract_entity;
@@ -317,7 +318,7 @@ impl Entity {
         parents
             .iter()
             .map(|parent| parent.id as i32)
-            .collect::<Vec<i32>>()
+            .collect::<Vec<_>>()
             .first()
             .ok_or(UuidError::EntityMissingRequiredParent)
             .map(|parent_id| *parent_id)
@@ -411,13 +412,15 @@ pub enum EntityCheckoutRevisionError {
     DatabaseError { inner: sqlx::Error },
     // TODO: maybe be more explicit regarding the errors.
     // E.g. NotFound could be a "RevisionNotFound" Error instead
-    #[error("Revision could not be checked out because of an internal error: {inner:?}.")]
+    #[error("Revision could not be checked out because of an event error: {inner:?}.")]
+    EventError { inner: EventError },
+    #[error("Revision could not be checked out because of an UUID error: {inner:?}.")]
     UuidError { inner: UuidError },
 }
 
 impl From<sqlx::Error> for EntityCheckoutRevisionError {
     fn from(inner: sqlx::Error) -> Self {
-        EntityCheckoutRevisionError::DatabaseError { inner }
+        Self::DatabaseError { inner }
     }
 }
 
@@ -425,7 +428,16 @@ impl From<UuidError> for EntityCheckoutRevisionError {
     fn from(error: UuidError) -> Self {
         match error {
             UuidError::DatabaseError { inner } => inner.into(),
-            inner => EntityCheckoutRevisionError::UuidError { inner },
+            inner => Self::UuidError { inner },
+        }
+    }
+}
+
+impl From<EventError> for EntityCheckoutRevisionError {
+    fn from(error: EventError) -> Self {
+        match error {
+            EventError::DatabaseError { inner } => inner.into(),
+            inner => Self::EventError { inner },
         }
     }
 }
@@ -450,21 +462,42 @@ impl Entity {
         {
             let repository_id = abstract_entity_revision.repository_id;
 
-            sqlx::query!(
-                r#"
-                    UPDATE entity
-                        SET current_revision_id = ?
-                        WHERE id = ?
-                "#,
-                revision_id,
-                repository_id,
-            )
-            .execute(&mut transaction)
-            .await?;
+            let repository = Entity::fetch_via_transaction(repository_id, &mut transaction).await?;
 
-            transaction.commit().await?;
+            if let ConcreteUuid::Entity(Entity {
+                abstract_entity, ..
+            }) = repository.concrete_uuid
+            {
+                sqlx::query!(
+                    r#"
+                        UPDATE entity
+                            SET current_revision_id = ?
+                            WHERE id = ?
+                    "#,
+                    revision_id,
+                    repository_id,
+                )
+                .execute(&mut transaction)
+                .await?;
 
-            Ok(())
+                RevisionEventPayload::new(
+                    false,
+                    payload.user_id,
+                    repository_id,
+                    payload.revision_id,
+                    payload.reason,
+                    abstract_entity.instance,
+                )
+                .save(&mut transaction)
+                .await?;
+
+                transaction.commit().await?;
+
+                Ok(())
+            } else {
+                // TODO: throw error because repository does not exist or is not a repository
+                Ok(())
+            }
         } else {
             // TODO: throw error because given id does not exist or is not a revision
             Ok(())
@@ -474,8 +507,11 @@ impl Entity {
 
 #[cfg(test)]
 mod tests {
+    use chrono::Duration;
+
     use super::{Entity, EntityCheckoutRevisionPayload};
     use crate::create_database_pool;
+    use crate::event::test_helpers::fetch_age_of_newest_event;
     use crate::uuid::{ConcreteUuid, UuidFetcher};
 
     #[actix_rt::test]
@@ -494,10 +530,10 @@ mod tests {
         .await
         .unwrap();
 
+        // Verify that revision was checked out.
         let entity = Entity::fetch_via_transaction(1855, &mut transaction)
             .await
             .unwrap();
-
         if let ConcreteUuid::Entity(Entity {
             abstract_entity, ..
         }) = entity.concrete_uuid
@@ -507,7 +543,11 @@ mod tests {
             panic!("Entity does not fulfill assertions: {:?}", entity)
         }
 
-        // TODO: check if correct event got created!
+        // Verify that the event was created.
+        let duration = fetch_age_of_newest_event(30672, &mut transaction)
+            .await
+            .unwrap();
+        assert!(duration < Duration::minutes(1));
     }
 
     // TODO: checkout_revision, already accepted

@@ -64,7 +64,7 @@ impl CreateCommentEventPayload {
             [("discussion".to_string(), self.thread_id)]
                 .iter()
                 .cloned()
-                .collect::<HashMap<String, i32>>(),
+                .collect(),
         )
         .save(&mut transaction)
         .await?;

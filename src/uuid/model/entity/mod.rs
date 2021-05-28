@@ -410,6 +410,8 @@ pub struct EntityCheckoutRevisionPayload {
 pub enum EntityCheckoutRevisionError {
     #[error("Revision could not be checked out because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
+    #[error("Revision could not be checked out because it is already the current revision of its repository.")]
+    RevisionAlreadyCheckedOut,
     // TODO: maybe be more explicit regarding the errors.
     // E.g. NotFound could be a "RevisionNotFound" Error instead
     #[error("Revision checkout failed because the provided UUID is not a revision: {uuid:?}.")]
@@ -472,6 +474,10 @@ impl Entity {
                 abstract_entity, ..
             }) = repository.concrete_uuid
             {
+                if abstract_entity.current_revision_id == Some(revision_id) {
+                    return Err(EntityCheckoutRevisionError::RevisionAlreadyCheckedOut);
+                }
+
                 sqlx::query!(
                     r#"
                         UPDATE entity
@@ -514,7 +520,7 @@ mod tests {
     use super::{Entity, EntityCheckoutRevisionPayload};
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-    use crate::uuid::{ConcreteUuid, UuidFetcher};
+    use crate::uuid::{ConcreteUuid, EntityCheckoutRevisionError, UuidFetcher};
 
     #[actix_rt::test]
     async fn checkout_revision() {
@@ -552,7 +558,30 @@ mod tests {
         assert!(duration < Duration::minutes(1));
     }
 
-    // TODO: checkout_revision, already accepted
+    #[actix_rt::test]
+    async fn checkout_checked_out_revision() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let result = Entity::checkout_revision(
+            EntityCheckoutRevisionPayload {
+                revision_id: 30674,
+                user_id: 1,
+                reason: "Revert changes".to_string(),
+            },
+            &mut transaction,
+        )
+        .await;
+
+        if let Err(EntityCheckoutRevisionError::RevisionAlreadyCheckedOut) = result {
+            // This is the expected branch.
+        } else {
+            panic!(
+                "Expected `RevisionAlreadyCheckedOut` error, got: {:?}",
+                result
+            )
+        }
+    }
 
     #[actix_rt::test]
     async fn reject_revision() {

@@ -412,6 +412,10 @@ pub enum EntityCheckoutRevisionError {
     DatabaseError { inner: sqlx::Error },
     // TODO: maybe be more explicit regarding the errors.
     // E.g. NotFound could be a "RevisionNotFound" Error instead
+    #[error("Revision checkout failed because the provided UUID is not a revision: {uuid:?}.")]
+    InvalidRevision { uuid: Uuid },
+    #[error("Revision checkout failed because the repository is invalid: {uuid:?}.")]
+    InvalidRepository { uuid: Uuid },
     #[error("Revision could not be checked out because of an event error: {inner:?}.")]
     EventError { inner: EventError },
     #[error("Revision could not be checked out because of an UUID error: {inner:?}.")]
@@ -495,12 +499,10 @@ impl Entity {
 
                 Ok(())
             } else {
-                // TODO: throw error because repository does not exist or is not a repository
-                Ok(())
+                Err(EntityCheckoutRevisionError::InvalidRepository { uuid: repository })
             }
         } else {
-            // TODO: throw error because given id does not exist or is not a revision
-            Ok(())
+            Err(EntityCheckoutRevisionError::InvalidRevision { uuid: revision })
         }
     }
 }

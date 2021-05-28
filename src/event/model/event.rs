@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
 use serde::Serialize;
@@ -9,7 +10,7 @@ use super::create_entity::CreateEntityEvent;
 use super::create_entity_revision::CreateEntityRevisionEvent;
 use super::create_thread::CreateThreadEvent;
 use super::entity_link::EntityLinkEvent;
-use super::event_type::EventType;
+use super::event_type::{EventType, RawEventType};
 use super::revision::RevisionEvent;
 use super::set_license::SetLicenseEvent;
 use super::set_taxonomy_parent::SetTaxonomyParentEvent;
@@ -19,6 +20,8 @@ use super::taxonomy_link::TaxonomyLinkEvent;
 use super::taxonomy_term::TaxonomyTermEvent;
 use super::EventError;
 use crate::database::Executor;
+use crate::datetime::DateTime;
+use crate::notification::{Notifications, NotificationsError};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct Event {
@@ -112,5 +115,139 @@ impl TryFrom<AbstractEvent> for Event {
             abstract_event,
             concrete_event,
         })
+    }
+}
+
+pub struct EventPayload {
+    raw_typename: RawEventType,
+    actor_id: i32,
+    object_id: i32,
+    instance_id: i32,
+    date: DateTime,
+
+    string_parameters: HashMap<String, String>,
+    uuid_parameters: HashMap<String, i32>,
+}
+
+impl EventPayload {
+    pub fn new(
+        raw_typename: RawEventType,
+        actor_id: i32,
+        object_id: i32,
+        instance_id: i32,
+        string_parameters: HashMap<String, String>,
+        uuid_parameters: HashMap<String, i32>,
+    ) -> Self {
+        Self {
+            raw_typename,
+            actor_id,
+            object_id,
+            instance_id,
+            date: DateTime::now(),
+
+            string_parameters,
+            uuid_parameters,
+        }
+    }
+
+    pub async fn save<'a, E>(&self, executor: E) -> Result<Event, EventError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)
+                    SELECT ?, id, ?, ?, ?
+                    FROM event
+                    WHERE name = ?
+            "#,
+            self.actor_id,
+            self.object_id,
+            self.instance_id,
+            self.date,
+            self.raw_typename,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let event_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        for (parameter, value) in &self.string_parameters {
+            sqlx::query!(
+                r#"
+                    INSERT INTO event_parameter (log_id, name_id)
+                        SELECT ?, id
+                        FROM event_parameter_name
+                        WHERE name = ?
+                "#,
+                event_id,
+                parameter
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            let parameter_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+                .fetch_one(&mut transaction)
+                .await?
+                .id as i32;
+
+            sqlx::query!(
+                r#"
+                    INSERT INTO event_parameter_string (value, event_parameter_id)
+                        VALUES (?, ?)
+                "#,
+                value,
+                parameter_id
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        for (parameter, uuid_id) in &self.uuid_parameters {
+            sqlx::query!(
+                r#"
+                    INSERT INTO event_parameter (log_id, name_id)
+                        SELECT ?, id
+                        FROM event_parameter_name
+                        WHERE name = ?
+                "#,
+                event_id,
+                parameter
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            let parameter_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+                .fetch_one(&mut transaction)
+                .await?
+                .id as i32;
+
+            sqlx::query!(
+                r#"
+                    INSERT INTO event_parameter_uuid (uuid_id, event_parameter_id)
+                        VALUES (?, ?)
+                "#,
+                uuid_id,
+                parameter_id
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        let event = Event::fetch_via_transaction(event_id, &mut transaction).await?;
+        Notifications::create_notifications(&event, &mut transaction)
+            .await
+            .map_err(|error| match error {
+                NotificationsError::DatabaseError { inner } => EventError::from(inner),
+            })?;
+
+        transaction.commit().await?;
+
+        Ok(event)
     }
 }

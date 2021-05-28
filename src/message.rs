@@ -11,7 +11,7 @@ use crate::notification::NotificationMessage;
 use crate::subscription::SubscriptionMessage;
 use crate::thread::ThreadMessage;
 use crate::user::UserMessage;
-use crate::uuid::UuidMessage;
+use crate::uuid::{EntityMessage, UuidMessage};
 
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]
 #[async_trait]
@@ -23,6 +23,7 @@ pub trait MessageResponder {
 #[serde(untagged)]
 pub enum Message {
     AliasMessage(AliasMessage),
+    EntityMessage(EntityMessage),
     EventMessage(EventMessage),
     LicenseMessage(LicenseMessage),
     NavigationMessage(NavigationMessage),
@@ -39,6 +40,7 @@ impl MessageResponder for Message {
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             Message::AliasMessage(message) => message.handle(connection).await,
+            Message::EntityMessage(message) => message.handle(connection).await,
             Message::EventMessage(message) => message.handle(connection).await,
             Message::LicenseMessage(message) => message.handle(connection).await,
             Message::NavigationMessage(message) => message.handle(connection).await,

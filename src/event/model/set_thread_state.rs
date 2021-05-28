@@ -1,11 +1,9 @@
+use std::collections::HashMap;
+
 use serde::Serialize;
 
-use super::abstract_event::AbstractEvent;
-use super::event_type::RawEventType;
-use super::{Event, EventError};
+use super::{AbstractEvent, Event, EventError, EventPayload, RawEventType};
 use crate::database::Executor;
-use crate::datetime::DateTime;
-use crate::notification::{Notifications, NotificationsError};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -19,7 +17,7 @@ impl From<&AbstractEvent> for SetThreadStateEvent {
         let thread_id = abstract_event.object_id;
         let archived = abstract_event.raw_typename == RawEventType::ArchiveThread;
 
-        SetThreadStateEvent {
+        Self {
             thread_id,
             archived,
         }
@@ -40,7 +38,7 @@ impl SetThreadStateEventPayload {
             RawEventType::RestoreThread
         };
 
-        SetThreadStateEventPayload {
+        Self {
             raw_typename,
             actor_id,
             object_id,
@@ -52,32 +50,24 @@ impl SetThreadStateEventPayload {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        sqlx::query!(
-            r#"
-                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)
-                    SELECT ?, e.id, ?, c.instance_id, ?
-                    FROM event e
-                    JOIN comment c
-                    WHERE e.name = ? AND c.id = ?
-            "#,
+
+        let result = sqlx::query!(
+            r#"SELECT instance_id FROM comment WHERE id = ?"#,
+            self.object_id
+        )
+        .fetch_one(&mut transaction)
+        .await?;
+
+        let event = EventPayload::new(
+            self.raw_typename.clone(),
             self.actor_id,
             self.object_id,
-            DateTime::now(),
-            self.raw_typename,
-            self.object_id,
+            result.instance_id,
+            HashMap::new(),
+            HashMap::new(),
         )
-        .execute(&mut transaction)
+        .save(&mut transaction)
         .await?;
-        let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
-            .await?;
-        let event = Event::fetch_via_transaction(value.id as i32, &mut transaction).await?;
-
-        Notifications::create_notifications(&event, &mut transaction)
-            .await
-            .map_err(|error| match error {
-                NotificationsError::DatabaseError { inner } => EventError::from(inner),
-            })?;
 
         transaction.commit().await?;
 

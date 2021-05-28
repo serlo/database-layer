@@ -33,6 +33,10 @@ pub struct AbstractEvent {
 pub struct EventStringParameters(pub HashMap<String, String>);
 
 impl EventStringParameters {
+    pub fn get(&self, name: &str) -> Option<String> {
+        self.0.get(name).cloned()
+    }
+
     pub fn get_or(&self, name: &str, default: &str) -> String {
         self.0
             .get(name)

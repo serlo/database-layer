@@ -614,6 +614,16 @@
       ]
     }
   },
+  "3dc81c4f5e6a706b90116e28d1c7365697b1fb39bea538ee9005194e7d07282b": {
+    "query": "\n                        UPDATE uuid\n                            SET trashed = true\n                            WHERE id = ?\n                    ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
+    }
+  },
   "40b8240c7dcab061ae6b38b169366923a24f07408a7c8f3dc94cf57af746733b": {
     "query": "\n                    UPDATE uuid\n                        SET trashed = ?\n                        WHERE id = ?\n                ",
     "describe": {

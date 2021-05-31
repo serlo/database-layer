@@ -481,6 +481,17 @@ impl Entity {
 
                 sqlx::query!(
                     r#"
+                        UPDATE uuid
+                            SET trashed = false
+                            WHERE id = ?
+                    "#,
+                    revision_id
+                )
+                .execute(&mut transaction)
+                .await?;
+
+                sqlx::query!(
+                    r#"
                         UPDATE entity
                             SET current_revision_id = ?
                             WHERE id = ?

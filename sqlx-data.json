@@ -1504,6 +1504,16 @@
       ]
     }
   },
+  "b6a8193e70c6a299cb9776625431dbba75019893b9cae04bc627507988dd4882": {
+    "query": "\n                        UPDATE uuid\n                            SET trashed = false\n                            WHERE id = ?\n                    ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
+    }
+  },
   "befb2d78ae7737e9d6e6a667301a984576cd5c451682394635e9e6c61b1b9669": {
     "query": "\n                SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id, c.uuid_id, p.title as parent_title\n                    FROM comment c\n                    LEFT JOIN comment p ON p.id = c.parent_id\n                    JOIN uuid u ON u.id = c.id\n                    WHERE c.id = ?\n            ",
     "describe": {

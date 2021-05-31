@@ -344,7 +344,7 @@ impl Threads {
                         UNION ALL
                         SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id
                         UNION ALL
-                        SELECT id, instance_id FROM term) u
+                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id) u
                     JOIN instance i ON i.id = u.instance_id
                     WHERE u.id = ?
             "#,

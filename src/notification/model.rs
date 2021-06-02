@@ -73,7 +73,13 @@ impl Notifications {
                 SELECT n.id, n.seen, e.event_log_id
                     FROM notification n
                     JOIN notification_event e ON n.id = e.notification_id
+                    JOIN event_log on event_log.id = e.event_log_id
+                    JOIN uuid uuid1 on uuid1.id = event_log.uuid_id
+                    LEFT JOIN entity entity1 on entity1.id = event_log.uuid_id
                     WHERE n.user_id = ?
+                      AND uuid1.discriminator != "attachment"
+                      AND uuid1.discriminator != "blogPost"
+                      AND (entity1.type_id IS NULL OR entity1.type_id IN (1,2,3,4,5,6,7,8,49,50))
                     ORDER BY n.date DESC, n.id DESC
             "#,
             user_id

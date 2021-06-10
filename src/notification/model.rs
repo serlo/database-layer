@@ -255,45 +255,45 @@ mod tests {
 
     #[actix_rt::test]
     async fn query_notifications_does_not_return_notifications_with_unsupported_uuid_object() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
+        for uuid_type in ["attachment", "blogPost"].iter() {
+            let pool = create_database_pool().await.unwrap();
+            let mut transaction = pool.begin().await.unwrap();
 
-        let new_user_id = create_new_test_user(&mut transaction).await.unwrap();
+            let new_user_id = create_new_test_user(&mut transaction).await.unwrap();
 
-        let attachment_uuid = sqlx::query!(
-            r#"
-                select id from uuid where discriminator = "attachment"
-            "#
-        )
-        .fetch_one(&mut transaction)
-        .await
-        .unwrap()
-        .id as i32;
-        let set_state_event =
-            SetUuidStateEventPayload::new(false, new_user_id, attachment_uuid, Instance::De)
-                .save(&mut transaction)
-                .await
-                .unwrap();
-
-        Notifications::create_notification(
-            &set_state_event,
-            &Subscriber {
-                user_id: new_user_id,
-                send_email: false,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
-
-        assert_eq!(
-            Notifications::fetch_via_transaction(new_user_id, &mut transaction)
+            let uuid = sqlx::query!("select id from uuid where discriminator = ?", uuid_type)
+                .fetch_one(&mut transaction)
                 .await
                 .unwrap()
-                .notifications
-                .len(),
-            0
-        );
+                .id as i32;
+            let set_state_event =
+                SetUuidStateEventPayload::new(false, new_user_id, uuid, Instance::De)
+                    .save(&mut transaction)
+                    .await
+                    .unwrap();
+
+            Notifications::create_notification(
+                &set_state_event,
+                &Subscriber {
+                    user_id: new_user_id,
+                    send_email: false,
+                },
+                &mut transaction,
+            )
+            .await
+            .unwrap();
+
+            assert_eq!(
+                Notifications::fetch_via_transaction(new_user_id, &mut transaction)
+                    .await
+                    .unwrap()
+                    .notifications
+                    .len(),
+                0,
+                "uuid_type: {}",
+                uuid_type
+            );
+        }
     }
 
     #[actix_rt::test]

@@ -38,9 +38,9 @@ pub struct EntityLinkEventPayload {
 impl EntityLinkEventPayload {
     pub fn new(child_id: i32, parent_id: i32, actor_id: i32, instance: Instance) -> Self {
         Self {
+            child_id,
             actor_id,
             parent_id,
-            child_id,
             instance,
         }
     }

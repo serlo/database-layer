@@ -48,7 +48,7 @@ impl SetUuidStateEventPayload {
     {
         let mut transaction = executor.begin().await?;
 
-        let result = sqlx::query!(
+        let instance_id = sqlx::query!(
             r#"SELECT id FROM instance WHERE subdomain = ?"#,
             self.instance
         )
@@ -59,7 +59,7 @@ impl SetUuidStateEventPayload {
             self.raw_typename.clone(),
             self.actor_id,
             self.object_id,
-            result.id,
+            instance_id.id,
             HashMap::new(),
             HashMap::new(),
         )

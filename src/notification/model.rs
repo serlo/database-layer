@@ -77,14 +77,17 @@ impl Notifications {
                     JOIN uuid uuid1 on uuid1.id = event_log.uuid_id
                     LEFT JOIN entity entity1 on entity1.id = event_log.uuid_id
                     LEFT JOIN event_parameter ON event_parameter.log_id = event_log.id
-                    LEFT JOIN event_parameter_uuid ON event_parameter_uuid.event_parameter_id = event_parameter.id
+                    LEFT JOIN event_parameter_uuid ON
+                      event_parameter_uuid.event_parameter_id = event_parameter.id
                     LEFT JOIN uuid uuid2 on uuid2.id = event_parameter_uuid.uuid_id
+                    LEFT JOIN entity entity2 on entity2.id = event_parameter_uuid.uuid_id
                     WHERE n.user_id = ?
                       AND uuid1.discriminator != "attachment"
                       AND uuid1.discriminator != "blogPost"
                       AND uuid2.discriminator != "attachment"
                       AND uuid2.discriminator != "blogPost"
                       AND (entity1.type_id IS NULL OR entity1.type_id IN (1,2,3,4,5,6,7,8,49,50))
+                      AND (entity2.type_id IS NULL OR entity2.type_id IN (1,2,3,4,5,6,7,8,49,50))
                     ORDER BY n.date DESC, n.id DESC
             "#,
             user_id
@@ -297,6 +300,34 @@ mod tests {
             .await
             .unwrap();
         }
+    }
+
+    #[actix_rt::test]
+    async fn query_notifications_does_not_return_notifications_with_unsupported_entity() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let math_puzzle_id = sqlx::query!("select id from entity where type_id = 39")
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap()
+            .id as i32;
+
+        assert_no_notifications_for(
+            |user_id| EntityLinkEventPayload::new(math_puzzle_id, user_id, user_id, Instance::De),
+            "when event_log.uuid_id is unsupported entity".to_string(),
+            &pool,
+        )
+        .await
+        .unwrap();
+
+        assert_no_notifications_for(
+            |user_id| EntityLinkEventPayload::new(user_id, math_puzzle_id, user_id, Instance::De),
+            "when event_parameter_uuid is unsupported entity".to_string(),
+            &pool,
+        )
+        .await
+        .unwrap();
     }
 
     async fn assert_no_notifications_for<'a, E, F>(

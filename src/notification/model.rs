@@ -251,6 +251,7 @@ mod tests {
     use crate::event::{Event, SetUuidStateEventPayload};
     use crate::instance::Instance;
     use crate::subscription::Subscriptions;
+    use rand::{distributions::Alphanumeric, Rng};
 
     #[actix_rt::test]
     async fn query_notifications_does_not_return_notifications_with_unsupported_uuid_object() {
@@ -554,9 +555,12 @@ mod tests {
         sqlx::query!(
             r#"
                 INSERT INTO user (id, username, email, password, token)
-                VALUES (?, "", "", "", "")
+                VALUES (?, ?, ?, "", ?)
             "#,
-            new_user_id
+            new_user_id,
+            random_string(10),
+            random_string(10),
+            random_string(10)
         )
         .execute(&mut transaction)
         .await?;
@@ -564,5 +568,13 @@ mod tests {
         transaction.commit().await?;
 
         Ok(new_user_id)
+    }
+
+    fn random_string(nr: usize) -> String {
+        return rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(nr)
+            .map(char::from)
+            .collect();
     }
 }

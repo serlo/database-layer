@@ -59,17 +59,16 @@ impl EntityLinkEventPayload {
         .await?
         .id;
 
-        let mut uuid_parameters: HashMap<String, i32> = HashMap::new();
-
-        uuid_parameters.insert("parent".to_string(), self.parent_id);
-
         let event = EventPayload::new(
             RawEventType::CreateEntityLink,
             self.actor_id,
             self.child_id,
             instance_id,
             HashMap::new(),
-            uuid_parameters,
+            [("parent".to_string(), self.parent_id)]
+                .iter()
+                .cloned()
+                .collect(),
         )
         .save(&mut transaction)
         .await?;

@@ -310,7 +310,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4121
+              "bits": 4113
             },
             "char_set": 224,
             "max_size": 4294967295
@@ -753,7 +753,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 24
+              "bits": 16
             },
             "char_set": 224,
             "max_size": 262140
@@ -922,6 +922,57 @@
         true,
         false,
         true,
+        false
+      ]
+    }
+  },
+  "4c013bda7dbbd8c3fed06e497309d3915a4cc86084758573307fecb679da9783": {
+    "query": "\n                SELECT n.id, n.seen, e.event_log_id\n                    FROM notification n\n                    JOIN notification_event e ON n.id = e.notification_id\n                    JOIN event_log on event_log.id = e.event_log_id\n                    JOIN uuid uuid1 on uuid1.id = event_log.uuid_id\n                    LEFT JOIN entity entity1 on entity1.id = event_log.uuid_id\n                    LEFT JOIN event_parameter ON event_parameter.log_id = event_log.id\n                    LEFT JOIN event_parameter_uuid ON\n                      event_parameter_uuid.event_parameter_id = event_parameter.id\n                    LEFT JOIN uuid uuid2 on uuid2.id = event_parameter_uuid.uuid_id\n                    LEFT JOIN entity entity2 on entity2.id = event_parameter_uuid.uuid_id\n                    WHERE n.user_id = ?\n                      AND uuid1.discriminator != \"attachment\"\n                      AND uuid1.discriminator != \"blogPost\"\n                      AND uuid2.discriminator != \"attachment\"\n                      AND uuid2.discriminator != \"blogPost\"\n                      AND (entity1.type_id IS NULL OR entity1.type_id IN (1,2,3,4,5,6,7,8,49,50))\n                      AND (entity2.type_id IS NULL OR entity2.type_id IN (1,2,3,4,5,6,7,8,49,50))\n                    ORDER BY n.date DESC, n.id DESC\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "seen",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "event_log_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
         false
       ]
     }
@@ -1167,57 +1218,6 @@
       ]
     }
   },
-  "83b5c28933dd953848d46aa1a1dc91667168e45b358c81038ca4a7690f9fccc8": {
-    "query": "\n                SELECT n.id, n.seen, e.event_log_id\n                    FROM notification n\n                    JOIN notification_event e ON n.id = e.notification_id\n                    JOIN event_log on event_log.id = e.event_log_id\n                    JOIN uuid uuid1 on uuid1.id = event_log.uuid_id\n                    LEFT JOIN entity entity1 on entity1.id = event_log.uuid_id\n                    WHERE n.user_id = ?\n                      AND uuid1.discriminator != \"attachment\"\n                      AND uuid1.discriminator != \"blogPost\"\n                      AND (entity1.type_id IS NULL OR entity1.type_id IN (1,2,3,4,5,6,7,8,49,50))\n                    ORDER BY n.date DESC, n.id DESC\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "seen",
-          "type_info": {
-            "type": "Tiny",
-            "flags": {
-              "bits": 1
-            },
-            "char_set": 63,
-            "max_size": 1
-          }
-        },
-        {
-          "ordinal": 2,
-          "name": "event_log_id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "87b99c353a3ccda694aaef3e4bd9d122313e7293997b7903d333327296a1118f": {
     "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, 'comment')\n            ",
     "describe": {
@@ -1385,7 +1385,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4120
+              "bits": 4112
             },
             "char_set": 224,
             "max_size": 4294967295
@@ -1397,7 +1397,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4120
+              "bits": 4112
             },
             "char_set": 224,
             "max_size": 4294967295
@@ -2020,7 +2020,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4121
+              "bits": 4113
             },
             "char_set": 224,
             "max_size": 4294967295

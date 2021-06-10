@@ -265,11 +265,10 @@ mod tests {
     async fn query_notifications_does_not_return_notifications_with_unsupported_uuid() {
         for uuid_type in ["attachment", "blogPost"].iter() {
             let pool = create_database_pool().await.unwrap();
-            let mut transaction = pool.begin().await.unwrap();
 
             let unsupported_uuid =
                 sqlx::query!("select id from uuid where discriminator = ?", uuid_type)
-                    .fetch_one(&mut transaction)
+                    .fetch_one(&pool)
                     .await
                     .unwrap()
                     .id as i32;
@@ -282,7 +281,7 @@ mod tests {
                     "when event_log.uuid_id is unsupported with uuid_type: {}",
                     uuid_type
                 ),
-                &mut transaction,
+                &pool,
             )
             .await
             .unwrap();
@@ -295,7 +294,7 @@ mod tests {
                     "when event_parameter_uuid is unsupported with uuid_type: {}",
                     uuid_type
                 ),
-                &mut transaction,
+                &pool,
             )
             .await
             .unwrap();
@@ -305,10 +304,9 @@ mod tests {
     #[actix_rt::test]
     async fn query_notifications_does_not_return_notifications_with_unsupported_entity() {
         let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
 
         let math_puzzle_id = sqlx::query!("select id from entity where type_id = 39")
-            .fetch_one(&mut transaction)
+            .fetch_one(&pool)
             .await
             .unwrap()
             .id as i32;

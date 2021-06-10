@@ -1,9 +1,11 @@
+use std::collections::HashMap;
 use std::convert::TryFrom;
 
 use serde::Serialize;
 
 use super::abstract_event::AbstractEvent;
-use super::EventError;
+use super::{Event, EventError, EventPayload, RawEventType};
+use crate::{database::Executor, instance::Instance};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,5 +25,57 @@ impl TryFrom<&AbstractEvent> for EntityLinkEvent {
             child_id,
             parent_id,
         })
+    }
+}
+
+pub struct EntityLinkEventPayload {
+    child_id: i32,
+    actor_id: i32,
+    parent_id: i32,
+    instance: Instance,
+}
+
+impl EntityLinkEventPayload {
+    pub fn new(child_id: i32, parent_id: i32, actor_id: i32, instance: Instance) -> Self {
+        return Self {
+            actor_id: actor_id,
+            parent_id: parent_id,
+            child_id: child_id,
+            instance: instance,
+        };
+    }
+
+    pub async fn save<'a, E>(&self, executor: E) -> Result<Event, EventError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let instance_id = sqlx::query!(
+            r#"SELECT id FROM instance WHERE subdomain = ?"#,
+            self.instance
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .id;
+
+        let mut uuid_parameters: HashMap<String, i32> = HashMap::new();
+
+        uuid_parameters.insert("parent".to_string(), self.parent_id);
+
+        let event = EventPayload::new(
+            RawEventType::CreateEntityLink,
+            self.actor_id,
+            self.child_id,
+            instance_id,
+            HashMap::new(),
+            uuid_parameters,
+        )
+        .save(&mut transaction)
+        .await?;
+
+        transaction.commit().await?;
+
+        Ok(event)
     }
 }

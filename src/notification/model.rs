@@ -248,7 +248,7 @@ mod tests {
     use super::{Notifications, SetNotificationStatePayload, Subscriber};
     use crate::create_database_pool;
     use crate::database::Executor;
-    use crate::event::{Event, SetUuidStateEventPayload};
+    use crate::event::{EntityLinkEventPayload, Event};
     use crate::instance::Instance;
     use crate::subscription::Subscriptions;
     use rand::{distributions::Alphanumeric, Rng};
@@ -266,14 +266,14 @@ mod tests {
                 .await
                 .unwrap()
                 .id as i32;
-            let set_state_event =
-                SetUuidStateEventPayload::new(false, new_user_id, uuid, Instance::De)
-                    .save(&mut transaction)
-                    .await
-                    .unwrap();
+
+            let event = EntityLinkEventPayload::new(uuid, new_user_id, new_user_id, Instance::De)
+                .save(&mut transaction)
+                .await
+                .unwrap();
 
             Notifications::create_notification(
-                &set_state_event,
+                &event,
                 &Subscriber {
                     user_id: new_user_id,
                     send_email: false,

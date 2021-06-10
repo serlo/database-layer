@@ -51,19 +51,11 @@ impl EntityLinkEventPayload {
     {
         let mut transaction = executor.begin().await?;
 
-        let instance_id = sqlx::query!(
-            r#"SELECT id FROM instance WHERE subdomain = ?"#,
-            self.instance
-        )
-        .fetch_one(&mut transaction)
-        .await?
-        .id;
-
         let event = EventPayload::new(
             RawEventType::CreateEntityLink,
             self.actor_id,
             self.child_id,
-            instance_id,
+            self.instance.fetch_id(&mut transaction).await?,
             HashMap::new(),
             [("parent".to_string(), self.parent_id)]
                 .iter()

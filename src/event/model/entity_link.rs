@@ -37,12 +37,12 @@ pub struct EntityLinkEventPayload {
 
 impl EntityLinkEventPayload {
     pub fn new(child_id: i32, parent_id: i32, actor_id: i32, instance: Instance) -> Self {
-        return Self {
-            actor_id: actor_id,
-            parent_id: parent_id,
-            child_id: child_id,
-            instance: instance,
-        };
+        Self {
+            actor_id,
+            parent_id,
+            child_id,
+            instance,
+        }
     }
 
     pub async fn save<'a, E>(&self, executor: E) -> Result<Event, EventError>

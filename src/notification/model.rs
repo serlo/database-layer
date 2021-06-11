@@ -517,22 +517,20 @@ mod tests {
         .await
         .unwrap();
 
-        let event = SetUuidStateEventPayload::new(false, other_user, other_user, Instance::De)
+        SetUuidStateEventPayload::new(false, other_user, other_user, Instance::De)
             .save(&mut transaction)
             .await
             .unwrap();
 
-        Notifications::create_notifications(&event, &mut transaction)
-            .await
-            .unwrap();
-
         // Verify that the notification was created.
-        let notifications = Notifications::fetch_via_transaction(test_user, &mut transaction)
-            .await
-            .unwrap();
-
-        // FIXME and delete me (see https://github.com/serlo/serlo.org-database-layer/issues/109)
-        assert!(notifications.notifications.len() >= 1);
+        assert_eq!(
+            Notifications::fetch_via_transaction(test_user, &mut transaction)
+                .await
+                .unwrap()
+                .notifications
+                .len(),
+            1
+        );
     }
 
     #[actix_rt::test]

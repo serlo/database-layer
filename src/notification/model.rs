@@ -82,10 +82,9 @@ impl Notifications {
                     LEFT JOIN uuid uuid2 on uuid2.id = event_parameter_uuid.uuid_id
                     LEFT JOIN entity entity2 on entity2.id = event_parameter_uuid.uuid_id
                     WHERE n.user_id = ?
-                      AND uuid1.discriminator != "attachment"
-                      AND uuid1.discriminator != "blogPost"
-                      AND (uuid2.discriminator IS NULL OR uuid2.discriminator != "attachment")
-                      AND (uuid2.discriminator IS NULL OR uuid2.discriminator != "blogPost")
+                      AND uuid1.discriminator NOT IN ("attachment", "blogPost")
+                      AND (uuid2.discriminator IS NULL OR
+                        uuid2.discriminator NOT IN ("attachment", "blogPost"))
                       AND (entity1.type_id IS NULL OR entity1.type_id IN (1,2,3,4,5,6,7,8,49,50))
                       AND (entity2.type_id IS NULL OR entity2.type_id IN (1,2,3,4,5,6,7,8,49,50))
                     ORDER BY n.date DESC, n.id DESC
@@ -505,8 +504,6 @@ mod tests {
 
         let other_user = 1;
         let test_user = create_new_test_user(&mut transaction).await.unwrap();
-
-        println!("{}", test_user);
 
         sqlx::query!(
             r#"

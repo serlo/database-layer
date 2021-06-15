@@ -694,6 +694,25 @@ mod tests {
     }
 
     #[actix_rt::test]
+    async fn checkout_revision_sets_trashed_flag_to_false() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let revision_id: i32 = 30672;
+        let entity_id: i32 = 1855;
+
+        sqlx::query!("UPDATE uuid SET trashed = 1 WHERE id = ?", revision_id)
+            .execute(&mut transaction)
+            .await
+            .unwrap();
+
+        let entity = Entity::fetch_via_transaction(entity_id, &mut transaction)
+            .await
+            .unwrap();
+        assert_eq!(entity.trashed, false);
+    }
+
+    #[actix_rt::test]
     async fn checkout_checked_out_revision() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();

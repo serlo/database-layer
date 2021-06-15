@@ -103,6 +103,7 @@ impl MessageResponder for UuidSetStateMutation {
                     SetUuidStateError::EventError { .. } => {
                         HttpResponse::InternalServerError().finish()
                     }
+                    SetUuidStateError::UuidCannotBeTrashed => HttpResponse::BadRequest().finish(),
                 }
             }
         }

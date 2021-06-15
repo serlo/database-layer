@@ -220,6 +220,8 @@ pub enum SetUuidStateError {
     DatabaseError { inner: sqlx::Error },
     #[error("UUID state cannot be set because of an internal error: {inner:?}.")]
     EventError { inner: EventError },
+    #[error("UUID has a type which cannot be trashed")]
+    UuidCannotBeTrashed,
 }
 
 impl From<sqlx::Error> for SetUuidStateError {
@@ -250,7 +252,7 @@ impl Uuid {
         for id in payload.ids.into_iter() {
             let result = sqlx::query!(
                 r#"
-                    SELECT u.trashed, i.subdomain
+                    SELECT u.trashed, i.subdomain, u.discriminator
                         FROM uuid u
                         JOIN (
                         SELECT id, instance_id FROM attachment_container
@@ -278,6 +280,10 @@ impl Uuid {
 
             let instance: Instance = match result {
                 Ok(uuid) => {
+                    if uuid.discriminator == "entityRevision" {
+                        return Err(SetUuidStateError::UuidCannotBeTrashed);
+                    }
+
                     // UUID has already the correct state, skip
                     if (uuid.trashed != 0) == payload.trashed {
                         continue;
@@ -404,5 +410,34 @@ mod tests {
             .await
             .unwrap();
         assert!(duration > Duration::minutes(1));
+    }
+
+    #[actix_rt::test]
+    async fn set_uuid_state_for_revisions_fails() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let revision_id = sqlx::query!(
+            r#"
+                select id from uuid where discriminator = "entityRevision"
+                                    and trashed = false
+            "#
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap()
+        .id as i32;
+
+        let result = Uuid::set_uuid_state(
+            SetUuidStatePayload {
+                ids: vec![revision_id],
+                user_id: 1,
+                trashed: true,
+            },
+            &mut transaction,
+        )
+        .await;
+
+        assert!(result.is_err())
     }
 }

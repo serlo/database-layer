@@ -411,36 +411,4 @@ mod tests {
             .unwrap();
         assert!(duration > Duration::minutes(1));
     }
-
-    #[actix_rt::test]
-    async fn set_uuid_state_for_untrashable_uuids_fails() {
-        for discriminator in ["entityRevision", "user"].iter() {
-            let pool = create_database_pool().await.unwrap();
-            let mut transaction = pool.begin().await.unwrap();
-
-            let revision_id = sqlx::query!(
-                r#"
-                select id from uuid where discriminator = ?
-                                    and trashed = false
-            "#,
-                discriminator
-            )
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-            let result = Uuid::set_uuid_state(
-                SetUuidStatePayload {
-                    ids: vec![revision_id],
-                    user_id: 1,
-                    trashed: true,
-                },
-                &mut transaction,
-            )
-            .await;
-
-            assert!(result.is_err(), "discriminator: {}", discriminator)
-        }
-    }
 }

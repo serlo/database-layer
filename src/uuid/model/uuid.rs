@@ -271,7 +271,7 @@ impl Uuid {
                         UNION ALL
                         SELECT id, instance_id FROM term) c ON c.id = u.id
                         JOIN instance i ON i.id = c.instance_id
-                        WHERE u.id = ? AND discriminator != 'user'
+                        WHERE u.id = ?
                 "#,
                 id
             )
@@ -280,7 +280,7 @@ impl Uuid {
 
             let instance: Instance = match result {
                 Ok(uuid) => {
-                    if uuid.discriminator == "entityRevision" {
+                    if uuid.discriminator == "entityRevision" || uuid.discriminator == "user" {
                         return Err(SetUuidStateError::UuidCannotBeTrashed);
                     }
 
@@ -413,31 +413,34 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn set_uuid_state_for_revisions_fails() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
+    async fn set_uuid_state_for_untrashable_uuids_fails() {
+        for discriminator in ["entityRevision", "user"].iter() {
+            let pool = create_database_pool().await.unwrap();
+            let mut transaction = pool.begin().await.unwrap();
 
-        let revision_id = sqlx::query!(
-            r#"
-                select id from uuid where discriminator = "entityRevision"
+            let revision_id = sqlx::query!(
+                r#"
+                select id from uuid where discriminator = ?
                                     and trashed = false
-            "#
-        )
-        .fetch_one(&mut transaction)
-        .await
-        .unwrap()
-        .id as i32;
+            "#,
+                discriminator
+            )
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap()
+            .id as i32;
 
-        let result = Uuid::set_uuid_state(
-            SetUuidStatePayload {
-                ids: vec![revision_id],
-                user_id: 1,
-                trashed: true,
-            },
-            &mut transaction,
-        )
-        .await;
+            let result = Uuid::set_uuid_state(
+                SetUuidStatePayload {
+                    ids: vec![revision_id],
+                    user_id: 1,
+                    trashed: true,
+                },
+                &mut transaction,
+            )
+            .await;
 
-        assert!(result.is_err())
+            assert!(result.is_err(), "discriminator: {}", discriminator)
+        }
     }
 }

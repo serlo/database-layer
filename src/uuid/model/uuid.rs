@@ -297,17 +297,7 @@ impl Uuid {
                 }
             };
 
-            sqlx::query!(
-                r#"
-                    UPDATE uuid
-                        SET trashed = ?
-                        WHERE id = ?
-                "#,
-                payload.trashed,
-                id
-            )
-            .execute(&mut transaction)
-            .await?;
+            Uuid::set_state(id, payload.trashed, &mut transaction).await?;
 
             SetUuidStateEventPayload::new(payload.trashed, payload.user_id, id, instance)
                 .save(&mut transaction)
@@ -317,6 +307,19 @@ impl Uuid {
         transaction.commit().await?;
 
         Ok(())
+    }
+
+    pub async fn set_state<'a, E>(
+        id: i32,
+        trashed: bool,
+        executor: E,
+    ) -> Result<sqlx::mysql::MySqlQueryResult, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        sqlx::query!("UPDATE uuid SET trashed = ? WHERE id = ?", trashed, id)
+            .execute(executor)
+            .await
     }
 }
 

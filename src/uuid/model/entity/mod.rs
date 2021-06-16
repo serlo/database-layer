@@ -479,16 +479,7 @@ impl Entity {
                     return Err(EntityCheckoutRevisionError::RevisionAlreadyCheckedOut);
                 }
 
-                sqlx::query!(
-                    r#"
-                        UPDATE uuid
-                            SET trashed = false
-                            WHERE id = ?
-                    "#,
-                    revision_id
-                )
-                .execute(&mut transaction)
-                .await?;
+                Uuid::set_state(revision_id, false, &mut transaction).await?;
 
                 sqlx::query!(
                     r#"
@@ -611,16 +602,7 @@ impl Entity {
                     return Err(EntityRejectRevisionError::RevisionCurrentlyCheckedOut);
                 }
 
-                sqlx::query!(
-                    r#"
-                        UPDATE uuid
-                            SET trashed = true
-                            WHERE id = ?
-                    "#,
-                    revision_id
-                )
-                .execute(&mut transaction)
-                .await?;
+                Uuid::set_state(revision_id, true, &mut transaction).await?;
 
                 RevisionEventPayload::new(
                     true,
@@ -655,7 +637,7 @@ mod tests {
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-    use crate::uuid::{ConcreteUuid, UuidFetcher};
+    use crate::uuid::{ConcreteUuid, Uuid, UuidFetcher};
 
     #[actix_rt::test]
     async fn checkout_revision() {
@@ -691,6 +673,24 @@ mod tests {
             .await
             .unwrap();
         assert!(duration < Duration::minutes(1));
+    }
+
+    #[actix_rt::test]
+    async fn checkout_revision_sets_trashed_flag_to_false() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let revision_id: i32 = 30672;
+        let entity_id: i32 = 1855;
+
+        Uuid::set_state(revision_id, true, &mut transaction)
+            .await
+            .unwrap();
+
+        let entity = Entity::fetch_via_transaction(entity_id, &mut transaction)
+            .await
+            .unwrap();
+        assert_eq!(entity.trashed, false);
     }
 
     #[actix_rt::test]
@@ -752,16 +752,9 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        sqlx::query!(
-            r#"
-                UPDATE uuid
-                    SET trashed = true
-                    WHERE id = 30672
-            "#
-        )
-        .execute(&mut transaction)
-        .await
-        .unwrap();
+        Uuid::set_state(30672, true, &mut transaction)
+            .await
+            .unwrap();
 
         let result = Entity::reject_revision(
             EntityRejectRevisionPayload {

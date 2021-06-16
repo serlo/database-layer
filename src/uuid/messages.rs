@@ -110,14 +110,10 @@ impl MessageResponder for UuidSetStateMutation {
                     SetUuidStateError::EventError { .. } => {
                         HttpResponse::InternalServerError().finish()
                     }
-                    SetUuidStateError::UuidCannotBeTrashed { id, discriminator } => HttpResponse::BadRequest()
+                    SetUuidStateError::UuidCannotBeTrashed { reason } => HttpResponse::BadRequest()
                         .json(UuidSetUuidStateResult {
                             success: false,
-                            reason: Some(format!(
-                                "uuid {} with type \"{}\" cannot be deleted via a setState mutation",
-                                id,
-                                discriminator
-                            )),
+                            reason: Some(reason),
                         }),
                 }
             }

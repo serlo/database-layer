@@ -24,8 +24,6 @@ mod tests {
             .unwrap()
             .id as i32;
 
-            dbg!(revision_id);
-
             let req = test::TestRequest::post()
                 .uri("/")
                 .set_json(&UuidMessage::UuidSetStateMutation(UuidSetStateMutation {

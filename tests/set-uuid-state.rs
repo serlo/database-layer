@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use actix_web::{test, App};
+    use futures::StreamExt;
 
     use serlo_org_database_layer::uuid::{UuidMessage, UuidSetStateMutation};
     use serlo_org_database_layer::{configure_app, create_database_pool};
@@ -33,9 +34,21 @@ mod tests {
                     trashed: true,
                 }))
                 .to_request();
-            let resp = test::call_service(&mut app, req).await;
+            let mut resp = test::call_service(&mut app, req).await;
 
             assert_eq!(resp.status(), 400);
+
+            let (bytes, _) = resp.take_body().into_future().await;
+            let result =
+                json::parse(std::str::from_utf8(&bytes.unwrap().unwrap()).unwrap()).unwrap();
+            assert_eq!(result["success"], false);
+            assert_eq!(
+                result["reason"],
+                format!(
+                    "uuid {} with type \"{}\" cannot be deleted via a setState mutation",
+                    revision_id, discriminator
+                )
+            );
         }
     }
 }

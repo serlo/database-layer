@@ -220,8 +220,8 @@ pub enum SetUuidStateError {
     DatabaseError { inner: sqlx::Error },
     #[error("UUID state cannot be set because of an internal error: {inner:?}.")]
     EventError { inner: EventError },
-    #[error("UUID has a type which cannot be trashed")]
-    UuidCannotBeTrashed,
+    #[error("UUID {id:?} has a type which cannot be trashed")]
+    UuidCannotBeTrashed { id: i32, discriminator: String },
 }
 
 impl From<sqlx::Error> for SetUuidStateError {
@@ -281,7 +281,10 @@ impl Uuid {
             let instance: Instance = match result {
                 Ok(uuid) => {
                     if uuid.discriminator == "entityRevision" || uuid.discriminator == "user" {
-                        return Err(SetUuidStateError::UuidCannotBeTrashed);
+                        return Err(SetUuidStateError::UuidCannotBeTrashed {
+                            id,
+                            discriminator: uuid.discriminator,
+                        });
                     }
 
                     // UUID has already the correct state, skip

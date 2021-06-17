@@ -220,6 +220,8 @@ pub enum SetUuidStateError {
     DatabaseError { inner: sqlx::Error },
     #[error("UUID state cannot be set because of an internal error: {inner:?}.")]
     EventError { inner: EventError },
+    #[error("{reason:?}")]
+    UuidCannotBeTrashed { reason: String },
 }
 
 impl From<sqlx::Error> for SetUuidStateError {
@@ -250,7 +252,7 @@ impl Uuid {
         for id in payload.ids.into_iter() {
             let result = sqlx::query!(
                 r#"
-                    SELECT u.trashed, i.subdomain
+                    SELECT u.trashed, i.subdomain, u.discriminator
                         FROM uuid u
                         JOIN (
                         SELECT id, instance_id FROM attachment_container
@@ -269,7 +271,7 @@ impl Uuid {
                         UNION ALL
                         SELECT id, instance_id FROM term) c ON c.id = u.id
                         JOIN instance i ON i.id = c.instance_id
-                        WHERE u.id = ? AND discriminator != 'user'
+                        WHERE u.id = ?
                 "#,
                 id
             )
@@ -278,6 +280,16 @@ impl Uuid {
 
             let instance: Instance = match result {
                 Ok(uuid) => {
+                    if uuid.discriminator == "entityRevision" || uuid.discriminator == "user" {
+                        return Err(SetUuidStateError::UuidCannotBeTrashed {
+                            reason: format!(
+                                "uuid {} with type \"{}\" cannot be deleted via a setState mutation",
+                                id,
+                                uuid.discriminator
+                            ),
+                        });
+                    }
+
                     // UUID has already the correct state, skip
                     if (uuid.trashed != 0) == payload.trashed {
                         continue;

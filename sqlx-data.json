@@ -1074,18 +1074,8 @@
       "nullable": []
     }
   },
-  "769713eded2a80cb23fd93a3767bc1aa4cbc7446e97f4f87d595e922fd143841": {
-    "query": "\n                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)\n                    SELECT ?, id, ?, ?, ?\n                    FROM event\n                    WHERE name = ?\n            ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 5
-      },
-      "nullable": []
-    }
-  },
-  "778d1aadfabd36aae4aabf449a61958b23a6f7f4b8c25844adcdd064acf7681a": {
-    "query": "\n                    SELECT u.trashed, i.subdomain\n                        FROM uuid u\n                        JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT id, instance_id FROM term) c ON c.id = u.id\n                        JOIN instance i ON i.id = c.instance_id\n                        WHERE u.id = ? AND discriminator != 'user'\n                ",
+  "7691e4f0280fd0bb9b0f2cc23d9ac8eeeed4a6c35d1a819d6f6f2c8ac45afcca": {
+    "query": "\n                    SELECT u.trashed, i.subdomain, u.discriminator\n                        FROM uuid u\n                        JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT id, instance_id FROM term) c ON c.id = u.id\n                        JOIN instance i ON i.id = c.instance_id\n                        WHERE u.id = ?\n                ",
     "describe": {
       "columns": [
         {
@@ -1111,6 +1101,18 @@
             "char_set": 224,
             "max_size": 40
           }
+        },
+        {
+          "ordinal": 2,
+          "name": "discriminator",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 180
+          }
         }
       ],
       "parameters": {
@@ -1118,8 +1120,19 @@
       },
       "nullable": [
         false,
+        false,
         false
       ]
+    }
+  },
+  "769713eded2a80cb23fd93a3767bc1aa4cbc7446e97f4f87d595e922fd143841": {
+    "query": "\n                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)\n                    SELECT ?, id, ?, ?, ?\n                    FROM event\n                    WHERE name = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": []
     }
   },
   "82e05bbc646bebf37b97af3f23e8599937749cb7ecf4b03bfd079ec152651862": {

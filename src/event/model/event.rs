@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
+use futures::future::try_join_all;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
@@ -259,8 +260,17 @@ pub struct Events {
 
 impl Events {
     pub async fn fetch(max_events: i32, pool: &MySqlPool) -> Result<Events, sqlx::Error> {
-        // TODO: Make parallel
-        Events::fetch_via_transaction(max_events, pool).await
+        let event_ids = Events::fetch_event_ids(max_events, pool).await?;
+        let events = try_join_all(
+            event_ids
+                .iter()
+                .map(|event_id| Events::fetch_event(*event_id, pool)),
+        )
+        .await?
+        .into_iter()
+        .filter_map(|x| x)
+        .collect();
+        Ok(Events { events })
     }
 
     pub async fn fetch_via_transaction<'a, E>(
@@ -305,7 +315,10 @@ impl Events {
         // TODO: More detailed error handling
         match Event::fetch_via_transaction(event_id, executor).await {
             Ok(event) => Ok(Some(event)),
-            _ => Ok(None),
+            Err(error) => {
+                dbg!(error);
+                Ok(None)
+            }
         }
     }
 }

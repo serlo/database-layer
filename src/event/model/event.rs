@@ -274,10 +274,9 @@ impl Events {
         let event_ids = Events::fetch_event_ids(max_events, &mut transaction).await?;
         let mut events = Vec::new();
 
-        for event_id in event_ids.iter() {
-            match Event::fetch_via_transaction(*event_id, &mut transaction).await {
-                Ok(event) => events.push(event),
-                // TODO: Better Handling
+        for event_id in event_ids {
+            match Events::fetch_event(event_id, &mut transaction).await? {
+                Some(event) => events.push(event),
                 _ => (),
             }
         }
@@ -297,5 +296,16 @@ impl Events {
                 .map(|record| record.id as i32)
                 .collect(),
         )
+    }
+
+    async fn fetch_event<'a, E>(event_id: i32, executor: E) -> Result<Option<Event>, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        // TODO: More detailed error handling
+        match Event::fetch_via_transaction(event_id, executor).await {
+            Ok(event) => Ok(Some(event)),
+            _ => Ok(None),
+        }
     }
 }

@@ -251,3 +251,51 @@ impl EventPayload {
         Ok(event)
     }
 }
+
+#[derive(Debug, Eq, PartialEq, Serialize)]
+pub struct Events {
+    events: Vec<Event>,
+}
+
+impl Events {
+    pub async fn fetch(max_events: i32, pool: &MySqlPool) -> Result<Events, sqlx::Error> {
+        // TODO: Make parallel
+        Events::fetch_via_transaction(max_events, pool).await
+    }
+
+    pub async fn fetch_via_transaction<'a, E>(
+        max_events: i32,
+        executor: E,
+    ) -> Result<Events, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+        let event_ids = Events::fetch_event_ids(max_events, &mut transaction).await?;
+        let mut events = Vec::new();
+
+        for event_id in event_ids.iter() {
+            match Event::fetch_via_transaction(*event_id, &mut transaction).await {
+                Ok(event) => events.push(event),
+                // TODO: Better Handling
+                _ => (),
+            }
+        }
+
+        Ok(Events { events })
+    }
+
+    async fn fetch_event_ids<'a, E>(max_events: i32, executor: E) -> Result<Vec<i32>, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        Ok(
+            sqlx::query!("SELECT id FROM event_log ORDER BY id LIMIT ?", max_events)
+                .fetch_all(executor)
+                .await?
+                .iter()
+                .map(|record| record.id as i32)
+                .collect(),
+        )
+    }
+}

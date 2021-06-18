@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{Event, EventError};
+use super::model::{Event, EventError, Events};
 use crate::database::Connection;
 use crate::message::MessageResponder;
 
@@ -10,6 +10,7 @@ use crate::message::MessageResponder;
 #[serde(tag = "type", content = "payload")]
 pub enum EventMessage {
     EventQuery(EventQuery),
+    EventsQuery(EventsQuery),
 }
 
 #[async_trait]
@@ -18,6 +19,7 @@ impl MessageResponder for EventMessage {
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             EventMessage::EventQuery(message) => message.handle(connection).await,
+            EventMessage::EventsQuery(message) => message.handle(connection).await,
         }
     }
 }
@@ -55,6 +57,33 @@ impl MessageResponder for EventQuery {
                     }
                     EventError::NotFound => HttpResponse::NotFound().json(&None::<String>),
                 }
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EventsQuery {}
+
+#[async_trait]
+impl MessageResponder for EventsQuery {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let max_events: i32 = 25_000;
+        let events = match connection {
+            Connection::Pool(pool) => Events::fetch(max_events, pool).await,
+            Connection::Transaction(transaction) => {
+                Events::fetch_via_transaction(max_events, transaction).await
+            }
+        };
+        match events {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(&data),
+            Err(e) => {
+                println!("/events: {:?}", e);
+                // TODO: Add errors
+                HttpResponse::InternalServerError().finish()
             }
         }
     }

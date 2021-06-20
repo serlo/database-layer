@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
-use futures::future::try_join_all;
+use futures::stream::FuturesOrdered;
+use futures::TryStreamExt;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
@@ -261,15 +262,14 @@ pub struct Events {
 impl Events {
     pub async fn fetch(max_events: i32, pool: &MySqlPool) -> Result<Events, sqlx::Error> {
         let event_ids = Events::fetch_event_ids(max_events, pool).await?;
-        let events = try_join_all(
-            event_ids
-                .iter()
-                .map(|event_id| Events::fetch_event(*event_id, pool)),
-        )
-        .await?
-        .into_iter()
-        .filter_map(|x| x)
-        .collect();
+
+        let mut event_tasks = FuturesOrdered::new();
+        for event_id in event_ids {
+            event_tasks.push(Events::fetch_event(event_id, pool));
+        }
+
+        let events: Vec<Option<Event>> = event_tasks.try_collect().await?;
+        let events = events.into_iter().filter_map(|x| x).collect();
         Ok(Events { events })
     }
 

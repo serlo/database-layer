@@ -69,7 +69,7 @@ pub struct EventsQuery {}
 #[async_trait]
 impl MessageResponder for EventsQuery {
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let max_events: i32 = 25_000;
+        let max_events: i32 = 15_000;
         let events = match connection {
             Connection::Pool(pool) => Events::fetch(max_events, pool).await,
             Connection::Transaction(transaction) => {

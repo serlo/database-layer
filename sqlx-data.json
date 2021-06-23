@@ -1208,6 +1208,31 @@
       "nullable": []
     }
   },
+  "8e97c2d35f81f183584d3303b5691d7e9f1cac9c7d55959a767aa51c883d9876": {
+    "query": "SELECT id FROM event_log WHERE id > ? ORDER BY id LIMIT ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "911ea66921a64de401503189cf88681dfd600d01b1992a7de141668b1c93c371": {
     "query": "\n                SELECT uuid_id as id\n                    FROM (\n                        SELECT id, uuid_id FROM comment c\n                        UNION ALL\n                        SELECT c.id, p.uuid_id FROM comment p LEFT JOIN comment c ON c.parent_id = p.id\n                    ) t\n                    WHERE id = ? AND uuid_id IS NOT NULL\n            ",
     "describe": {

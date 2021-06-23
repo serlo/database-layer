@@ -260,8 +260,12 @@ pub struct Events {
 }
 
 impl Events {
-    pub async fn fetch(max_events: i32, pool: &MySqlPool) -> Result<Events, sqlx::Error> {
-        let event_ids = Events::fetch_event_ids(max_events, pool).await?;
+    pub async fn fetch(
+        after: i32,
+        max_events: i32,
+        pool: &MySqlPool,
+    ) -> Result<Events, sqlx::Error> {
+        let event_ids = Events::fetch_event_ids(after, max_events, pool).await?;
 
         let mut event_tasks = FuturesOrdered::new();
         for event_id in event_ids {
@@ -274,6 +278,7 @@ impl Events {
     }
 
     pub async fn fetch_via_transaction<'a, E>(
+        after: i32,
         max_events: i32,
         executor: E,
     ) -> Result<Events, sqlx::Error>
@@ -281,7 +286,7 @@ impl Events {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        let event_ids = Events::fetch_event_ids(max_events, &mut transaction).await?;
+        let event_ids = Events::fetch_event_ids(after, max_events, &mut transaction).await?;
         let mut events = Vec::new();
 
         for event_id in event_ids {
@@ -294,18 +299,24 @@ impl Events {
         Ok(Events { events })
     }
 
-    async fn fetch_event_ids<'a, E>(max_events: i32, executor: E) -> Result<Vec<i32>, sqlx::Error>
+    async fn fetch_event_ids<'a, E>(
+        after: i32,
+        max_events: i32,
+        executor: E,
+    ) -> Result<Vec<i32>, sqlx::Error>
     where
         E: Executor<'a>,
     {
-        Ok(
-            sqlx::query!("SELECT id FROM event_log ORDER BY id LIMIT ?", max_events)
-                .fetch_all(executor)
-                .await?
-                .iter()
-                .map(|record| record.id as i32)
-                .collect(),
+        Ok(sqlx::query!(
+            "SELECT id FROM event_log WHERE id > ? ORDER BY id LIMIT ?",
+            after,
+            max_events
         )
+        .fetch_all(executor)
+        .await?
+        .iter()
+        .map(|record| record.id as i32)
+        .collect())
     }
 
     async fn fetch_event<'a, E>(event_id: i32, executor: E) -> Result<Option<Event>, sqlx::Error>

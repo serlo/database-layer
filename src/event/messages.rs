@@ -64,16 +64,19 @@ impl MessageResponder for EventQuery {
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct EventsQuery {}
+pub struct EventsQuery {
+    after: Option<i32>,
+}
 
 #[async_trait]
 impl MessageResponder for EventsQuery {
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let max_events: i32 = 15_000;
+        let after = self.after.unwrap_or(0);
         let events = match connection {
-            Connection::Pool(pool) => Events::fetch(max_events, pool).await,
+            Connection::Pool(pool) => Events::fetch(after, max_events, pool).await,
             Connection::Transaction(transaction) => {
-                Events::fetch_via_transaction(max_events, transaction).await
+                Events::fetch_via_transaction(after, max_events, transaction).await
             }
         };
         match events {

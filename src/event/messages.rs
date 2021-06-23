@@ -82,7 +82,6 @@ impl MessageResponder for EventsQuery {
                 .json(&data),
             Err(e) => {
                 println!("/events: {:?}", e);
-                // TODO: Add errors
                 HttpResponse::InternalServerError().finish()
             }
         }

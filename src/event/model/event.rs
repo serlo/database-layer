@@ -312,13 +312,15 @@ impl Events {
     where
         E: Executor<'a>,
     {
-        // TODO: More detailed error handling
         match Event::fetch_via_transaction(event_id, executor).await {
             Ok(event) => Ok(Some(event)),
-            Err(error) => {
-                dbg!(error);
-                Ok(None)
-            }
+            // Ignore invalid events
+            Err(EventError::InvalidInstance)
+            | Err(EventError::MissingRequiredField)
+            | Err(EventError::InvalidType)
+            // Event has been deleted after fetching the ids
+            | Err(EventError::NotFound) => Ok(None),
+            Err(EventError::DatabaseError { inner }) => Err(inner),
         }
     }
 }

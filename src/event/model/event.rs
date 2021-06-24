@@ -273,7 +273,7 @@ impl Events {
         }
 
         let events: Vec<Option<Event>> = event_tasks.try_collect().await?;
-        let events = events.into_iter().filter_map(|x| x).collect();
+        let events = events.into_iter().flatten().collect();
         Ok(Events { events })
     }
 

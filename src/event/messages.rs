@@ -70,6 +70,7 @@ pub struct EventsQuery {
 
 #[async_trait]
 impl MessageResponder for EventsQuery {
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let max_events: i32 = 15_000;
         let after = self.after.unwrap_or(0);

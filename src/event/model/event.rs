@@ -290,9 +290,8 @@ impl Events {
         let mut events = Vec::new();
 
         for event_id in event_ids {
-            match Events::fetch_event(event_id, &mut transaction).await? {
-                Some(event) => events.push(event),
-                _ => (),
+            if let Some(event) = Events::fetch_event(event_id, &mut transaction).await? {
+                events.push(event);
             }
         }
 

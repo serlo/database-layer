@@ -1,5 +1,6 @@
 use std::env;
 
+use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use thiserror::Error;
 
@@ -12,6 +13,14 @@ pub struct User {}
 pub enum UserError {
     #[error("Users cannot be fetched because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserActivityByType {
+    edits: i32,
+    reviews: i32,
+    comments: i32,
+    taxonomy: i32,
 }
 
 impl From<sqlx::Error> for UserError {
@@ -72,6 +81,50 @@ impl User {
             .fetch_all(executor)
             .await?;
         Ok(user_ids.iter().map(|user| user.id as i32).collect())
+    }
+
+    pub async fn fetch_activity_by_type<'a, E>(
+        user_id: i32,
+        executor: E,
+    ) -> Result<UserActivityByType, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        let result = sqlx::query!(
+            r#"
+                SELECT events.type AS event_type, count(*) AS counts
+                    FROM (
+                        SELECT CASE
+                            WHEN event_id = 5 THEN "edits"
+                            WHEN event_id in (6,11) THEN "reviews"
+                            WHEN event_id in (9,14,16) THEN "comments"
+                            ELSE "taxonomy"
+                        END AS type
+                        FROM event_log
+                        WHERE actor_id = ?
+                            AND event_id IN (5,6,11,9,14,16,1,2,12,15,17)
+                    ) events
+                GROUP BY events.type;
+            "#,
+            user_id
+        )
+        .fetch_all(executor)
+        .await?;
+
+        let find_counts = |event_type: &str| {
+            result
+                .iter()
+                .find(|&row| row.event_type == event_type)
+                .map(|row| row.counts)
+                .unwrap_or(0) as i32
+        };
+
+        Ok(UserActivityByType {
+            edits: find_counts("edits"),
+            reviews: find_counts("reviews"),
+            comments: find_counts("comments"),
+            taxonomy: find_counts("taxonomy"),
+        })
     }
 
     fn now() -> DateTime {

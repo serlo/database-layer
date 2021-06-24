@@ -7,11 +7,27 @@ use crate::database::Connection;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
-#[serde(tag = "type", content = "payload")]
-pub enum UserMessage {
+#[serde(tag = "type")]
+pub enum UserQueriesMessage {
     ActiveAuthorsQuery(ActiveAuthorsQuery),
     ActiveReviewersQuery(ActiveReviewersQuery),
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(tag = "type", content = "payload")]
+pub enum UserMessage {
     UserActivityByTypeQuery(UserActivityByTypeQuery),
+}
+
+#[async_trait]
+impl MessageResponder for UserQueriesMessage {
+    #[allow(clippy::async_yields_async)]
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        match self {
+            UserQueriesMessage::ActiveAuthorsQuery(message) => message.handle(connection).await,
+            UserQueriesMessage::ActiveReviewersQuery(message) => message.handle(connection).await,
+        }
+    }
 }
 
 #[async_trait]
@@ -19,8 +35,6 @@ impl MessageResponder for UserMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            UserMessage::ActiveAuthorsQuery(message) => message.handle(connection).await,
-            UserMessage::ActiveReviewersQuery(message) => message.handle(connection).await,
             UserMessage::UserActivityByTypeQuery(message) => message.handle(connection).await,
         }
     }

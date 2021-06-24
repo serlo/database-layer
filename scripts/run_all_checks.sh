@@ -30,7 +30,7 @@ function main {
 	cargo test
 
 	print_test_header "Run linter"
-	cargo clippy
+	yarn clippy
 
 	print_test_header "Check sqlx-data.json is up to date"
 	test_sqlx_data_up_to_date

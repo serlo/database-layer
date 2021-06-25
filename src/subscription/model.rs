@@ -126,14 +126,13 @@ impl Subscription {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SubscriptionsByUser {
-    user_id: i32,
     subscriptions: Vec<SubscriptionByUser>,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SubscriptionByUser {
-    id: i32,
+    object_id: i32,
     send_email: bool,
 }
 
@@ -154,15 +153,12 @@ impl SubscriptionsByUser {
             .0
             .iter()
             .map(|child| SubscriptionByUser {
-                id: child.object_id,
+                object_id: child.object_id,
                 send_email: child.send_email,
             })
             .collect();
 
-        Ok(SubscriptionsByUser {
-            user_id,
-            subscriptions,
-        })
+        Ok(SubscriptionsByUser { subscriptions })
     }
 }
 

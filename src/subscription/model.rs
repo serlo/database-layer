@@ -126,7 +126,6 @@ impl Subscription {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SubscriptionsByUser {
-    user_id: i32,
     subscriptions: Vec<SubscriptionByUser>,
 }
 
@@ -159,10 +158,7 @@ impl SubscriptionsByUser {
             })
             .collect();
 
-        Ok(SubscriptionsByUser {
-            user_id,
-            subscriptions,
-        })
+        Ok(SubscriptionsByUser { subscriptions })
     }
 }
 

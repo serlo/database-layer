@@ -2,7 +2,6 @@
 
 function init {
 	set -e
-	trap 'kill_background_jobs' EXIT
 
 	BOLD=$(tput bold)
 	NORMAL=$(tput sgr0)
@@ -36,7 +35,7 @@ function main {
 	test_sqlx_data_up_to_date
 
 	print_test_header "Run pact tests"
-	run_pact_tests
+	./scripts/pacts.sh
 }
 
 function test_no_uncommitted_changes_when_pushing {
@@ -51,29 +50,6 @@ function test_sqlx_data_up_to_date {
 	if [ -n "$(git diff sqlx-data.json)" ]; then
 		error "You need to run sqlx:prepare and commit the changes in sqlx-data.json!"
 	fi
-}
-
-function run_pact_tests {
-	# Run db layer server in background
-	cargo run --quiet &
-	DB_LAYER_SERVER_ID=$!
-	sleep 20
-
-	# run tests
-	yarn pacts
-
-	# stop server
-	kill $DB_LAYER_SERVER_ID
-}
-
-function kill_background_jobs {
-	if [ -n "$(get_all_background_jobs)" ]; then
-		kill $(get_all_background_jobs)
-	fi
-}
-
-function get_all_background_jobs {
-	jobs -p
 }
 
 function error {

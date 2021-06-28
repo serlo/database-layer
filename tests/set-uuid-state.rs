@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use actix_web::{test, App};
-    use futures::StreamExt;
+    use std::str::from_utf8;
 
     use serlo_org_database_layer::uuid::{UuidMessage, UuidSetStateMutation};
     use serlo_org_database_layer::{configure_app, create_database_pool};
@@ -32,13 +32,11 @@ mod tests {
                     trashed: true,
                 }))
                 .to_request();
-            let mut resp = test::call_service(&mut app, req).await;
+            let resp = test::call_service(&mut app, req).await;
 
             assert_eq!(resp.status(), 400);
 
-            let (bytes, _) = resp.take_body().into_future().await;
-            let result =
-                json::parse(std::str::from_utf8(&bytes.unwrap().unwrap()).unwrap()).unwrap();
+            let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
             assert_eq!(result["success"], false);
             assert_eq!(
                 result["reason"],

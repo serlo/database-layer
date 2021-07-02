@@ -9,6 +9,8 @@
   "license": "Apache-2.0",
   "author": "Serlo Education e.V.",
   "scripts": {
+    "check:all": "scripts/run_all_checks.sh",
+    "clippy": "cargo clippy --all-features -- -D warnings",
     "deploy": "ts-node scripts/deploy",
     "format": "prettier --write .",
     "mysql": "docker-compose exec mysql mysql --user=root --password=secret serlo",
@@ -29,6 +31,7 @@
     "node-fetch": "^2.0.0",
     "prettier": "^2.0.0",
     "prettier-plugin-packagejson": "^2.0.0",
+    "prettier-plugin-sh": "^0.7.0",
     "ramda": "^0.27.0",
     "semver": "^7.0.0",
     "toml": "^3.0.0",

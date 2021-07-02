@@ -50,3 +50,19 @@ curl -H "Content-Type: application/json" -X POST -d '{"type":"UuidQuery","payloa
 ```
 
 Happy coding!
+
+### Helpful commands
+
+- `cargo test` – Run all tests (see https://doc.rust-lang.org/book/ch11-01-writing-tests.html )
+- `cargo clippy` – Lint the whole codebase (see https://github.com/rust-lang/rust-clippy )
+
+### Run all checks
+
+The command `yarn check:all` will run all checks (like `cargo test` or `cargo clippy`) against the codebase. When you run `yarn check:all --no-uncommitted-changes` there is also a check whether you have uncommitted changes in your workspace. With this command you can test whether you are ready to open a pull request.
+
+In case you want to run all tests automatically before pushing you can use a [git hook](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks). Here you can execute in a shell in the directory of this repository:
+
+```sh
+echo "yarn check:all --no-uncommitted-changes" > .git/hooks/pre-push
+chmod +x .git/hooks/pre-push
+```

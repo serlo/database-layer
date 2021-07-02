@@ -225,6 +225,57 @@
       "nullable": []
     }
   },
+  "1d4ecbf8ff61c9aba3c70729c5c0baf459cda208f7ec9e0540a9f443c6e7e1e4": {
+    "query": "\n                SELECT s.uuid_id, s.user_id, s.notify_mailman FROM subscription s\n                JOIN uuid on uuid.id = s.uuid_id\n                LEFT JOIN entity on entity.id = s.uuid_id\n                WHERE s.user_id = ?\n                    AND uuid.discriminator NOT IN (\"attachment\", \"blogPost\")\n                    AND (entity.type_id IS NULL OR entity.type_id IN (1,2,3,4,5,6,7,8,49,50))\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "uuid_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "user_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "notify_mailman",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "1ee1dd9cee6adc4c510cd46ae79e143e8b04f696bd68b41a6e55871c64ecbf23": {
     "query": "SELECT id, date FROM page_revision WHERE page_repository_id = ?",
     "describe": {
@@ -561,26 +612,6 @@
         false,
         false
       ]
-    }
-  },
-  "3dc81c4f5e6a706b90116e28d1c7365697b1fb39bea538ee9005194e7d07282b": {
-    "query": "\n                        UPDATE uuid\n                            SET trashed = true\n                            WHERE id = ?\n                    ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": []
-    }
-  },
-  "40b8240c7dcab061ae6b38b169366923a24f07408a7c8f3dc94cf57af746733b": {
-    "query": "\n                    UPDATE uuid\n                        SET trashed = ?\n                        WHERE id = ?\n                ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 2
-      },
-      "nullable": []
     }
   },
   "436603084c0bc754c6d6baa29d1eb0d64f1ee26047a4b905585949e5ea544b15": {
@@ -1094,18 +1125,8 @@
       "nullable": []
     }
   },
-  "769713eded2a80cb23fd93a3767bc1aa4cbc7446e97f4f87d595e922fd143841": {
-    "query": "\n                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)\n                    SELECT ?, id, ?, ?, ?\n                    FROM event\n                    WHERE name = ?\n            ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 5
-      },
-      "nullable": []
-    }
-  },
-  "778d1aadfabd36aae4aabf449a61958b23a6f7f4b8c25844adcdd064acf7681a": {
-    "query": "\n                    SELECT u.trashed, i.subdomain\n                        FROM uuid u\n                        JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT id, instance_id FROM term) c ON c.id = u.id\n                        JOIN instance i ON i.id = c.instance_id\n                        WHERE u.id = ? AND discriminator != 'user'\n                ",
+  "7691e4f0280fd0bb9b0f2cc23d9ac8eeeed4a6c35d1a819d6f6f2c8ac45afcca": {
+    "query": "\n                    SELECT u.trashed, i.subdomain, u.discriminator\n                        FROM uuid u\n                        JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT id, instance_id FROM term) c ON c.id = u.id\n                        JOIN instance i ON i.id = c.instance_id\n                        WHERE u.id = ?\n                ",
     "describe": {
       "columns": [
         {
@@ -1131,6 +1152,18 @@
             "char_set": 224,
             "max_size": 40
           }
+        },
+        {
+          "ordinal": 2,
+          "name": "discriminator",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 180
+          }
         }
       ],
       "parameters": {
@@ -1138,8 +1171,19 @@
       },
       "nullable": [
         false,
+        false,
         false
       ]
+    }
+  },
+  "769713eded2a80cb23fd93a3767bc1aa4cbc7446e97f4f87d595e922fd143841": {
+    "query": "\n                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)\n                    SELECT ?, id, ?, ?, ?\n                    FROM event\n                    WHERE name = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": []
     }
   },
   "82e05bbc646bebf37b97af3f23e8599937749cb7ecf4b03bfd079ec152651862": {
@@ -1225,6 +1269,16 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "95cd88b4c06459122c191536fbef5c1c71a523fbf84a008593af1002721218d3": {
+    "query": "UPDATE uuid SET trashed = ? WHERE id = ?",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
     }
   },
   "a400f2b325f4baa03878fd49187085fb2b95d0ca886494a2fca05f1ec65b7ed1": {
@@ -1453,16 +1507,6 @@
       ]
     }
   },
-  "b6a8193e70c6a299cb9776625431dbba75019893b9cae04bc627507988dd4882": {
-    "query": "\n                        UPDATE uuid\n                            SET trashed = false\n                            WHERE id = ?\n                    ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": []
-    }
-  },
   "befb2d78ae7737e9d6e6a667301a984576cd5c451682394635e9e6c61b1b9669": {
     "query": "\n                SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id, c.uuid_id, p.title as parent_title\n                    FROM comment c\n                    LEFT JOIN comment p ON p.id = c.parent_id\n                    JOIN uuid u ON u.id = c.id\n                    WHERE c.id = ?\n            ",
     "describe": {
@@ -1623,57 +1667,6 @@
         "Right": 1
       },
       "nullable": [
-        false
-      ]
-    }
-  },
-  "c4402e45331abf62863a21179899bef13c7d01fdf4884c17823a4e0b81ef0a4c": {
-    "query": "SELECT uuid_id, user_id, notify_mailman FROM subscription WHERE user_id = ?",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "uuid_id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "user_id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        },
-        {
-          "ordinal": 2,
-          "name": "notify_mailman",
-          "type_info": {
-            "type": "Tiny",
-            "flags": {
-              "bits": 1
-            },
-            "char_set": 63,
-            "max_size": 1
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false,
-        false,
         false
       ]
     }

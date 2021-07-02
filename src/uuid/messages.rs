@@ -77,6 +77,13 @@ pub struct UuidSetStateMutation {
     pub trashed: bool,
 }
 
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UuidSetUuidStateResult {
+    pub success: bool,
+    pub reason: Option<String>,
+}
+
 #[async_trait]
 impl MessageResponder for UuidSetStateMutation {
     #[allow(clippy::async_yields_async)]
@@ -103,6 +110,11 @@ impl MessageResponder for UuidSetStateMutation {
                     SetUuidStateError::EventError { .. } => {
                         HttpResponse::InternalServerError().finish()
                     }
+                    SetUuidStateError::UuidCannotBeTrashed { reason } => HttpResponse::BadRequest()
+                        .json(UuidSetUuidStateResult {
+                            success: false,
+                            reason: Some(reason),
+                        }),
                 }
             }
         }

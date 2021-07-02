@@ -94,7 +94,7 @@ impl Notifications {
         .fetch_all(executor)
         .await?;
 
-        let notifications = notifications
+        let mut notifications: Vec<Notification> = notifications
             .iter()
             .map(|child| Notification {
                 id: child.id as i32,
@@ -102,6 +102,7 @@ impl Notifications {
                 event_id: child.event_log_id as i32,
             })
             .collect();
+        notifications.dedup_by(|n1, n2| n1.id == n2.id);
 
         Ok(Notifications {
             user_id,

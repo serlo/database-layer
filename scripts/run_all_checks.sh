@@ -7,6 +7,10 @@ function init() {
   NORMAL=$(tput sgr0)
 
   read_arguments "$@"
+
+  if ! mysql_is_running; then
+    yarn start
+  fi
 }
 
 function read_arguments() {
@@ -17,6 +21,10 @@ function read_arguments() {
       error "Unknown parameter provided"
     fi
   fi
+}
+
+function mysql_is_running() {
+  nc -z localhost 3306
 }
 
 function main() {

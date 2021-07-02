@@ -6,10 +6,15 @@ function init() {
   BOLD=$(tput bold)
   NORMAL=$(tput sgr0)
 
+  WAIT_FOR_MYSQL_TIMEOUT=20
+
   read_arguments "$@"
 
   if ! mysql_is_running; then
+    print_header "Start mysql"
     yarn start
+    log "MySQL need to start, let's wait 30 seconds until it has started..."
+    sleep 30
   fi
 }
 
@@ -29,20 +34,20 @@ function mysql_is_running() {
 
 function main() {
   if [ -n "$NO_UNCOMMITTED_CHANGES" ]; then
-    print_test_header "Check that there are no uncommitted changes when pushing"
+    print_header "Check that there are no uncommitted changes when pushing"
     test_no_uncommitted_changes_when_pushing
   fi
 
-  print_test_header "Run all tests"
+  print_header "Run all tests"
   cargo test
 
-  print_test_header "Run linter"
+  print_header "Run linter"
   yarn clippy
 
-  print_test_header "Check sqlx-data.json is up to date"
+  print_header "Check sqlx-data.json is up to date"
   test_sqlx_data_up_to_date
 
-  print_test_header "Run pact tests"
+  print_header "Run pact tests"
   ./scripts/pacts.sh
 }
 
@@ -65,13 +70,17 @@ function error() {
   exit 1
 }
 
-function print_test_header() {
+function print_header() {
   echo
   log "=== $@ ==="
 }
 
 function log() {
   echo "${BOLD}$@${NORMAL}"
+}
+
+function current_timestamp() {
+  date "+%s"
 }
 
 init "$@"

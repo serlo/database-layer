@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
-use futures::stream::FuturesOrdered;
 use futures::TryStreamExt;
 use serde::Serialize;
 use sqlx::MySqlPool;
@@ -23,6 +22,7 @@ use super::taxonomy_term::TaxonomyTermEvent;
 use super::EventError;
 use crate::database::Executor;
 use crate::datetime::DateTime;
+use crate::event::{EventStringParameters, EventUuidParameters};
 use crate::notification::{Notifications, NotificationsError};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -265,16 +265,7 @@ impl Events {
         max_events: i32,
         pool: &MySqlPool,
     ) -> Result<Events, sqlx::Error> {
-        let event_ids = Events::fetch_event_ids(after, max_events, pool).await?;
-
-        let mut event_tasks = FuturesOrdered::new();
-        for event_id in event_ids {
-            event_tasks.push(Events::fetch_event(event_id, pool));
-        }
-
-        let events: Vec<Option<Event>> = event_tasks.try_collect().await?;
-        let events = events.into_iter().flatten().collect();
-        Ok(Events { events })
+        Self::fetch_via_transaction(after, max_events, pool).await
     }
 
     pub async fn fetch_via_transaction<'a, E>(
@@ -286,51 +277,69 @@ impl Events {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        let event_ids = Events::fetch_event_ids(after, max_events, &mut transaction).await?;
-        let mut events = Vec::new();
+        let mut event_records = sqlx::query!(
+            r#"
+                SELECT event_log.id, instance.subdomain as instance, event.name as raw_typename,
+                       event_log.actor_id, event_log.date, event_log.uuid_id as object_id,
+                       event_parameter_uuid.uuid_id as uuid_parameter_id,
+                       uuid_parameter_name.name as uuid_parameter_key
+                FROM event_log
+                JOIN instance ON instance.id = event_log.instance_id
+                JOIN event ON event.id = event_log.event_id
+                LEFT JOIN event_parameter uuid_parameter ON uuid_parameter.log_id = event_log.id
+                LEFT JOIN event_parameter_name uuid_parameter_name
+                    ON uuid_parameter_name.id = uuid_parameter.name_id
+                LEFT JOIN event_parameter_uuid
+                    ON event_parameter_uuid.event_parameter_id = uuid_parameter.id
+                WHERE event_log.id > ?
+                ORDER BY event_log.id
+                LIMIT ?
+            "#,
+            after,
+            max_events
+        )
+        .fetch(&mut transaction);
 
-        for event_id in event_ids {
-            if let Some(event) = Events::fetch_event(event_id, &mut transaction).await? {
-                events.push(event);
+        let mut events: Vec<Event> = Vec::new();
+
+        while let Some(record) = event_records.try_next().await? {
+            let instance = match record.instance.parse() {
+                Ok(instance) => instance,
+                _ => continue,
+            };
+
+            let raw_typename: RawEventType = match record.raw_typename.parse() {
+                Ok(typename) => typename,
+                _ => continue,
+            };
+
+            // TODO: The same is necessary for string_parameters
+            let mut uuid_parameters = HashMap::new();
+
+            if let Some(key) = record.uuid_parameter_key {
+                if let Some(uuid_id) = record.uuid_parameter_id {
+                    uuid_parameters.insert(key, uuid_id as i32);
+                }
+            }
+
+            let abstract_event = AbstractEvent {
+                __typename: raw_typename.clone().into(),
+                id: record.id as i32,
+                instance,
+                actor_id: record.actor_id as i32,
+                object_id: record.object_id as i32,
+                date: record.date.into(),
+                raw_typename,
+                string_parameters: EventStringParameters(HashMap::new()),
+                uuid_parameters: EventUuidParameters(uuid_parameters),
+            };
+
+            match abstract_event.try_into() {
+                Ok(event) => events.push(event),
+                _ => (),
             }
         }
 
         Ok(Events { events })
-    }
-
-    async fn fetch_event_ids<'a, E>(
-        after: i32,
-        max_events: i32,
-        executor: E,
-    ) -> Result<Vec<i32>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        Ok(sqlx::query!(
-            "SELECT id FROM event_log WHERE id > ? ORDER BY id LIMIT ?",
-            after,
-            max_events
-        )
-        .fetch_all(executor)
-        .await?
-        .iter()
-        .map(|record| record.id as i32)
-        .collect())
-    }
-
-    async fn fetch_event<'a, E>(event_id: i32, executor: E) -> Result<Option<Event>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        match Event::fetch_via_transaction(event_id, executor).await {
-            Ok(event) => Ok(Some(event)),
-            // Ignore invalid events
-            Err(EventError::InvalidInstance)
-            | Err(EventError::MissingRequiredField)
-            | Err(EventError::InvalidType)
-            // Event has been deleted after fetching the ids
-            | Err(EventError::NotFound) => Ok(None),
-            Err(EventError::DatabaseError { inner }) => Err(inner),
-        }
     }
 }

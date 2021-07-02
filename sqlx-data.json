@@ -2107,6 +2107,44 @@
       ]
     }
   },
+  "f66c955309e4c90e6770a684e22849edf3ca9c395f6117efed1686a391cb7379": {
+    "query": "\n                SELECT events.type AS event_type, count(*) AS counts\n                    FROM (\n                        SELECT CASE\n                            WHEN event_id = 5 THEN \"edits\"\n                            WHEN event_id in (6,11) THEN \"reviews\"\n                            WHEN event_id in (9,14,16) THEN \"comments\"\n                            ELSE \"taxonomy\"\n                        END AS type\n                        FROM event_log\n                        WHERE actor_id = ?\n                            AND event_id IN (5,6,11,9,14,16,1,2,12,15,17)\n                    ) events\n                GROUP BY events.type;\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "event_type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 224,
+            "max_size": 32
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "counts",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "fc396ad2007a39fd9cc34588c754e057b39082c1a312abdaa4b33cb94946d93e": {
     "query": "\n                SELECT u.trashed, b.title\n                    FROM blog_post b\n                    JOIN uuid u ON u.id = b.id\n                    WHERE b.id = ?\n            ",
     "describe": {

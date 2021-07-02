@@ -33,7 +33,14 @@ impl Subscriptions {
         E: Executor<'a>,
     {
         let subscriptions = sqlx::query!(
-            r#"SELECT uuid_id, user_id, notify_mailman FROM subscription WHERE user_id = ?"#,
+            r#"
+                SELECT s.uuid_id, s.user_id, s.notify_mailman FROM subscription s
+                JOIN uuid on uuid.id = s.uuid_id
+                LEFT JOIN entity on entity.id = s.uuid_id
+                WHERE s.user_id = ?
+                    AND uuid.discriminator NOT IN ("attachment", "blogPost")
+                    AND (entity.type_id IS NULL OR entity.type_id IN (1,2,3,4,5,6,7,8,49,50))
+            "#,
             user_id
         )
         .fetch_all(executor)
@@ -217,6 +224,75 @@ mod tests {
     use super::{Subscription, Subscriptions, SubscriptionsError};
     use crate::create_database_pool;
     use crate::database::Executor;
+
+    #[actix_rt::test]
+    async fn get_subscriptions_does_not_return_unsupported_uuids() {
+        for unsupported_uuid in ["blogPost", "attachment"].iter() {
+            let pool = create_database_pool().await.unwrap();
+            let mut transaction = pool.begin().await.unwrap();
+
+            let uuid_id = sqlx::query!(
+                "SELECT id FROM uuid WHERE discriminator = ?",
+                unsupported_uuid
+            )
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap()
+            .id as i32;
+
+            assert_get_subscriptions_does_not_return(uuid_id, &mut transaction)
+                .await
+                .unwrap();
+        }
+    }
+
+    #[actix_rt::test]
+    async fn get_subscriptions_does_not_return_unsupported_entity() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let entity_id = sqlx::query!("SELECT id FROM entity WHERE type_id = 43",)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap()
+            .id as i32;
+
+        assert_get_subscriptions_does_not_return(entity_id, &mut transaction)
+            .await
+            .unwrap();
+    }
+
+    async fn assert_get_subscriptions_does_not_return<'a, E>(
+        uuid_id: i32,
+        executor: E,
+    ) -> Result<(), SubscriptionsError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+        let user_id: i32 = 35408;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO subscription (uuid_id, user_id, notify_mailman)
+                VALUES (?, ?, 1)
+            "#,
+            uuid_id,
+            user_id
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let subscriptions = Subscriptions::fetch_by_user(user_id, &mut transaction).await?;
+
+        assert!(subscriptions
+            .0
+            .iter()
+            .find(|sub| sub.object_id == uuid_id)
+            .is_none());
+
+        Ok(())
+    }
 
     #[actix_rt::test]
     async fn create_subscription_new() {

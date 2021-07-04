@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
-use futures::TryStreamExt;
+use futures::pin_mut;
+use futures::{StreamExt, TryStreamExt};
 use serde::Serialize;
 use sqlx::MySqlPool;
 
@@ -276,21 +277,23 @@ impl Events {
     where
         E: Executor<'a>,
     {
-        let mut transaction = executor.begin().await?;
-        let mut event_records = sqlx::query!(
+        let event_records = sqlx::query!(
             r#"
                 SELECT event_log.id, instance.subdomain as instance, event.name as raw_typename,
                        event_log.actor_id, event_log.date, event_log.uuid_id as object_id,
-                       event_parameter_uuid.uuid_id as uuid_parameter_id,
-                       uuid_parameter_name.name as uuid_parameter_key
+                       event_parameter_name.name as parameter_key,
+                       event_parameter_uuid.uuid_id as paramater_uuid_id,
+                       event_parameter_string.value as parameter_string
                 FROM event_log
                 JOIN instance ON instance.id = event_log.instance_id
                 JOIN event ON event.id = event_log.event_id
-                LEFT JOIN event_parameter uuid_parameter ON uuid_parameter.log_id = event_log.id
-                LEFT JOIN event_parameter_name uuid_parameter_name
-                    ON uuid_parameter_name.id = uuid_parameter.name_id
+                LEFT JOIN event_parameter ON event_parameter.log_id = event_log.id
+                LEFT JOIN event_parameter_name
+                    ON event_parameter_name.id = event_parameter.name_id
                 LEFT JOIN event_parameter_uuid
-                    ON event_parameter_uuid.event_parameter_id = uuid_parameter.id
+                    ON event_parameter_uuid.event_parameter_id = event_parameter.id
+                LEFT JOIN event_parameter_string
+                    ON event_parameter_string.event_parameter_id = event_parameter.id
                 WHERE event_log.id > ?
                 ORDER BY event_log.id
                 LIMIT ?
@@ -298,11 +301,13 @@ impl Events {
             after,
             max_events
         )
-        .fetch(&mut transaction);
+        .fetch(executor)
+        .peekable();
+        pin_mut!(event_records);
 
         let mut events: Vec<Event> = Vec::new();
 
-        while let Some(record) = event_records.try_next().await? {
+        while let Some(record) = event_records.as_mut().try_next().await? {
             let instance = match record.instance.parse() {
                 Ok(instance) => instance,
                 _ => continue,
@@ -313,12 +318,33 @@ impl Events {
                 _ => continue,
             };
 
-            // TODO: The same is necessary for string_parameters
-            let mut uuid_parameters = HashMap::new();
+            let mut string_parameters: HashMap<String, String> = HashMap::new();
+            let mut uuid_parameters: HashMap<String, i32> = HashMap::new();
 
-            if let Some(key) = record.uuid_parameter_key {
-                if let Some(uuid_id) = record.uuid_parameter_id {
+            if let Some(key) = record.parameter_key {
+                if let Some(uuid_id) = record.paramater_uuid_id {
                     uuid_parameters.insert(key, uuid_id as i32);
+                } else if let Some(string_value) = record.parameter_string {
+                    string_parameters.insert(key, string_value);
+                }
+            }
+
+            let current_id = record.id;
+
+            while let Some(Ok(other_record)) = event_records
+                .as_mut()
+                .next_if(|result| match result {
+                    Ok(other_record) => other_record.id == current_id,
+                    _ => false,
+                })
+                .await
+            {
+                if let Some(key) = other_record.parameter_key {
+                    if let Some(uuid_id) = other_record.paramater_uuid_id {
+                        uuid_parameters.insert(key, uuid_id as i32);
+                    } else if let Some(string_value) = other_record.parameter_string {
+                        string_parameters.insert(key, string_value);
+                    }
                 }
             }
 
@@ -330,13 +356,12 @@ impl Events {
                 object_id: record.object_id as i32,
                 date: record.date.into(),
                 raw_typename,
-                string_parameters: EventStringParameters(HashMap::new()),
+                string_parameters: EventStringParameters(string_parameters),
                 uuid_parameters: EventUuidParameters(uuid_parameters),
             };
 
-            match abstract_event.try_into() {
-                Ok(event) => events.push(event),
-                _ => (),
+            if let Ok(event) = abstract_event.try_into() {
+                events.push(event);
             }
         }
 

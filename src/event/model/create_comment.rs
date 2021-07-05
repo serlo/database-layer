@@ -31,19 +31,17 @@ impl TryFrom<&AbstractEvent> for CreateCommentEvent {
 pub struct CreateCommentEventPayload {
     raw_typename: RawEventType,
     actor_id: i32,
-    object_id: i32,
+    comment_id: i32,
     instance_id: i32,
     thread_id: i32,
 }
 
 impl CreateCommentEventPayload {
-    pub fn new(thread_id: i32, object_id: i32, actor_id: i32, instance_id: i32) -> Self {
-        let raw_typename = RawEventType::CreateComment;
-
+    pub fn new(thread_id: i32, comment_id: i32, actor_id: i32, instance_id: i32) -> Self {
         Self {
-            raw_typename,
+            raw_typename: RawEventType::CreateComment,
             actor_id,
-            object_id,
+            comment_id,
             instance_id,
             thread_id,
         }
@@ -58,7 +56,7 @@ impl CreateCommentEventPayload {
         let event = EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
-            self.object_id,
+            self.comment_id,
             self.instance_id,
             HashMap::new(),
             [("discussion".to_string(), self.thread_id)]

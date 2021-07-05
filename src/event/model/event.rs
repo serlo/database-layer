@@ -307,7 +307,7 @@ impl Events {
 
         let mut events: Vec<Event> = Vec::new();
 
-        while let Some(record) = event_records.as_mut().try_next().await? {
+        while let Some(mut record) = event_records.as_mut().try_next().await? {
             let instance = match record.instance.parse() {
                 Ok(instance) => instance,
                 _ => continue,
@@ -318,37 +318,7 @@ impl Events {
                 _ => continue,
             };
 
-            let mut string_parameters: HashMap<String, String> = HashMap::new();
-            let mut uuid_parameters: HashMap<String, i32> = HashMap::new();
-
-            if let Some(key) = record.parameter_key {
-                if let Some(uuid_id) = record.paramater_uuid_id {
-                    uuid_parameters.insert(key, uuid_id as i32);
-                } else if let Some(string_value) = record.parameter_string {
-                    string_parameters.insert(key, string_value);
-                }
-            }
-
-            let current_id = record.id;
-
-            while let Some(Ok(other_record)) = event_records
-                .as_mut()
-                .next_if(|result| match result {
-                    Ok(other_record) => other_record.id == current_id,
-                    _ => false,
-                })
-                .await
-            {
-                if let Some(key) = other_record.parameter_key {
-                    if let Some(uuid_id) = other_record.paramater_uuid_id {
-                        uuid_parameters.insert(key, uuid_id as i32);
-                    } else if let Some(string_value) = other_record.parameter_string {
-                        string_parameters.insert(key, string_value);
-                    }
-                }
-            }
-
-            let abstract_event = AbstractEvent {
+            let mut abstract_event = AbstractEvent {
                 __typename: raw_typename.clone().into(),
                 id: record.id as i32,
                 instance,
@@ -356,9 +326,29 @@ impl Events {
                 object_id: record.object_id as i32,
                 date: record.date.into(),
                 raw_typename,
-                string_parameters: EventStringParameters(string_parameters),
-                uuid_parameters: EventUuidParameters(uuid_parameters),
+                string_parameters: EventStringParameters(HashMap::new()),
+                uuid_parameters: EventUuidParameters(HashMap::new()),
             };
+
+            loop {
+                if let Some(key) = record.parameter_key {
+                    if let Some(uuid_id) = record.paramater_uuid_id {
+                        abstract_event.uuid_parameters.0.insert(key, uuid_id as i32);
+                    } else if let Some(string_value) = record.parameter_string {
+                        abstract_event.string_parameters.0.insert(key, string_value);
+                    }
+                }
+
+                if let Some(Ok(next_record)) = event_records.as_mut().peek().await {
+                    if next_record.id == record.id {
+                        record = event_records.as_mut().try_next().await?.unwrap();
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
 
             if let Ok(event) = abstract_event.try_into() {
                 events.push(event);

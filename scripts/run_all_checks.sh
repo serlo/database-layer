@@ -10,8 +10,11 @@ function init() {
 
   read_arguments "$@"
 
+  print_header "Make sure yarn packages are up to date"
+  yarn install --frozen-lockfile
+
   if ! mysql_is_running; then
-    print_header "Start mysql"
+    print_header "Make sure mysql is running"
     yarn start
     log "MySQL need to start, let's wait 30 seconds until it has started..."
     sleep 30

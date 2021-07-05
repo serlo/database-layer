@@ -28,7 +28,7 @@ impl From<sqlx::Error> for NotificationsError {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Notification {
     pub id: i32,
@@ -76,10 +76,17 @@ impl Notifications {
                     JOIN event_log on event_log.id = e.event_log_id
                     JOIN uuid uuid1 on uuid1.id = event_log.uuid_id
                     LEFT JOIN entity entity1 on entity1.id = event_log.uuid_id
+                    LEFT JOIN event_parameter ON event_parameter.log_id = event_log.id
+                    LEFT JOIN event_parameter_uuid ON
+                      event_parameter_uuid.event_parameter_id = event_parameter.id
+                    LEFT JOIN uuid uuid2 on uuid2.id = event_parameter_uuid.uuid_id
+                    LEFT JOIN entity entity2 on entity2.id = event_parameter_uuid.uuid_id
                     WHERE n.user_id = ?
-                      AND uuid1.discriminator != "attachment"
-                      AND uuid1.discriminator != "blogPost"
+                      AND uuid1.discriminator NOT IN ("attachment", "blogPost")
+                      AND (uuid2.discriminator IS NULL OR
+                        uuid2.discriminator NOT IN ("attachment", "blogPost"))
                       AND (entity1.type_id IS NULL OR entity1.type_id IN (1,2,3,4,5,6,7,8,49,50))
+                      AND (entity2.type_id IS NULL OR entity2.type_id IN (1,2,3,4,5,6,7,8,49,50))
                     ORDER BY n.date DESC, n.id DESC
             "#,
             user_id
@@ -87,7 +94,7 @@ impl Notifications {
         .fetch_all(executor)
         .await?;
 
-        let notifications = notifications
+        let mut notifications: Vec<Notification> = notifications
             .iter()
             .map(|child| Notification {
                 id: child.id as i32,
@@ -95,6 +102,7 @@ impl Notifications {
                 event_id: child.event_log_id as i32,
             })
             .collect();
+        notifications.dedup_by(|n1, n2| n1.id == n2.id);
 
         Ok(Notifications {
             user_id,
@@ -245,10 +253,119 @@ impl Notifications {
 
 #[cfg(test)]
 mod tests {
-    use super::{Notifications, SetNotificationStatePayload};
+    use super::{Notifications, NotificationsError, SetNotificationStatePayload, Subscriber};
     use crate::create_database_pool;
-    use crate::event::Event;
+    use crate::database::Executor;
+    use crate::event::{EntityLinkEventPayload, Event, SetUuidStateEventPayload};
+    use crate::instance::Instance;
     use crate::subscription::Subscriptions;
+    use rand::{distributions::Alphanumeric, Rng};
+
+    #[actix_rt::test]
+    async fn query_notifications_does_not_return_notifications_with_unsupported_uuid() {
+        for uuid_type in ["attachment", "blogPost"].iter() {
+            let pool = create_database_pool().await.unwrap();
+
+            let unsupported_uuid =
+                sqlx::query!("select id from uuid where discriminator = ?", uuid_type)
+                    .fetch_one(&pool)
+                    .await
+                    .unwrap()
+                    .id as i32;
+
+            assert_no_notifications_for(
+                |user_id| {
+                    EntityLinkEventPayload::new(unsupported_uuid, user_id, user_id, Instance::De)
+                },
+                format!(
+                    "when event_log.uuid_id is unsupported with uuid_type: {}",
+                    uuid_type
+                ),
+                &pool,
+            )
+            .await
+            .unwrap();
+
+            assert_no_notifications_for(
+                |user_id| {
+                    EntityLinkEventPayload::new(user_id, unsupported_uuid, user_id, Instance::De)
+                },
+                format!(
+                    "when event_parameter_uuid is unsupported with uuid_type: {}",
+                    uuid_type
+                ),
+                &pool,
+            )
+            .await
+            .unwrap();
+        }
+    }
+
+    #[actix_rt::test]
+    async fn query_notifications_does_not_return_notifications_with_unsupported_entity() {
+        let pool = create_database_pool().await.unwrap();
+
+        let math_puzzle_id = sqlx::query!("select id from entity where type_id = 39")
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+            .id as i32;
+
+        assert_no_notifications_for(
+            |user_id| EntityLinkEventPayload::new(math_puzzle_id, user_id, user_id, Instance::De),
+            "when event_log.uuid_id is unsupported entity".to_string(),
+            &pool,
+        )
+        .await
+        .unwrap();
+
+        assert_no_notifications_for(
+            |user_id| EntityLinkEventPayload::new(user_id, math_puzzle_id, user_id, Instance::De),
+            "when event_parameter_uuid is unsupported entity".to_string(),
+            &pool,
+        )
+        .await
+        .unwrap();
+    }
+
+    async fn assert_no_notifications_for<'a, E, F>(
+        create_event: F,
+        message: String,
+        executor: E,
+    ) -> Result<(), NotificationsError>
+    where
+        F: Fn(i32) -> EntityLinkEventPayload,
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+        let new_user_id = create_new_test_user(&mut transaction).await?;
+        let event = create_event(new_user_id)
+            .save(&mut transaction)
+            .await
+            .unwrap();
+
+        Notifications::create_notification(
+            &event,
+            &Subscriber {
+                user_id: new_user_id,
+                send_email: false,
+            },
+            &mut transaction,
+        )
+        .await?;
+
+        assert_eq!(
+            Notifications::fetch_via_transaction(new_user_id, &mut transaction)
+                .await?
+                .notifications
+                .len(),
+            0,
+            "{}",
+            message,
+        );
+
+        Ok(())
+    }
 
     #[actix_rt::test]
     async fn set_notification_state_no_id() {
@@ -386,41 +503,35 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let event = Event::fetch_via_transaction(41704, &mut transaction)
-            .await
-            .unwrap();
+        let other_user = 1;
+        let test_user = create_new_test_user(&mut transaction).await.unwrap();
 
-        // Verify assumption that the event has a subscriber.
-        let subscriptions =
-            Subscriptions::fetch_by_object(event.abstract_event.object_id, &mut transaction)
-                .await
-                .unwrap();
-        assert_eq!(subscriptions.0.len(), 1);
-        let subscriber = subscriptions.0[0].user_id;
-
-        // Clear notifications for this event.
         sqlx::query!(
-            r#"DELETE FROM notification_event WHERE event_log_id = ?"#,
-            event.abstract_event.id
+            r#"
+                INSERT INTO subscription (uuid_id, user_id, notify_mailman)
+                VALUES (?, ?, 1)
+            "#,
+            other_user,
+            test_user
         )
         .execute(&mut transaction)
         .await
         .unwrap();
 
-        Notifications::create_notifications(&event, &mut transaction)
+        SetUuidStateEventPayload::new(false, other_user, other_user, Instance::De)
+            .save(&mut transaction)
             .await
             .unwrap();
 
         // Verify that the notification was created.
-        let notifications = Notifications::fetch_via_transaction(subscriber, &mut transaction)
-            .await
-            .unwrap();
-        let notifications: Vec<_> = notifications
-            .notifications
-            .iter()
-            .filter(|notification| notification.event_id == event.abstract_event.id)
-            .collect();
-        assert_eq!(notifications.len(), 1);
+        assert_eq!(
+            Notifications::fetch_via_transaction(test_user, &mut transaction)
+                .await
+                .unwrap()
+                .notifications
+                .len(),
+            1
+        );
     }
 
     #[actix_rt::test]
@@ -485,5 +596,50 @@ mod tests {
                 assert_eq!(notifications.len(), 1);
             }
         }
+    }
+
+    async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (trashed, discriminator) VALUES (0, "user")
+            "#
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let new_user_id = sqlx::query!("SELECT LAST_INSERT_ID() as id FROM uuid")
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO user (id, username, email, password, token)
+                VALUES (?, ?, ?, "", ?)
+            "#,
+            new_user_id,
+            random_string(10),
+            random_string(10),
+            random_string(10)
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        transaction.commit().await?;
+
+        Ok(new_user_id)
+    }
+
+    fn random_string(nr: usize) -> String {
+        return rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(nr)
+            .map(char::from)
+            .collect();
     }
 }

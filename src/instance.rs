@@ -1,8 +1,10 @@
+use crate::database::Executor;
+
 use serde::{Deserialize, Serialize};
 use sqlx::database::HasArguments;
 use sqlx::encode::IsNull;
 use sqlx::mysql::MySqlTypeInfo;
-use sqlx::MySql;
+use sqlx::{Error, MySql};
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -13,6 +15,20 @@ pub enum Instance {
     Fr,
     Hi,
     Ta,
+}
+
+impl Instance {
+    pub async fn fetch_id<'a, E>(&self, executor: E) -> Result<i32, Error>
+    where
+        E: Executor<'a>,
+    {
+        Ok(
+            sqlx::query!("SELECT id FROM instance WHERE subdomain = ?", self)
+                .fetch_one(executor)
+                .await?
+                .id,
+        )
+    }
 }
 
 impl std::str::FromStr for Instance {

@@ -1769,6 +1769,7 @@ dependencies = [
  "dotenv",
  "futures",
  "json",
+ "rand",
  "regex",
  "sentry",
  "sentry-actix",

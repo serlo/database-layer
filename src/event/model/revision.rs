@@ -69,18 +69,11 @@ impl RevisionEventPayload {
     {
         let mut transaction = executor.begin().await?;
 
-        let result = sqlx::query!(
-            r#"SELECT id FROM instance WHERE subdomain = ?"#,
-            self.instance
-        )
-        .fetch_one(&mut transaction)
-        .await?;
-
         let event = EventPayload::new(
             self.raw_typename.clone(),
             self.user_id,
             self.revision_id,
-            result.id,
+            self.instance.fetch_id(&mut transaction).await?,
             [("reason".to_string(), self.reason.to_string())]
                 .iter()
                 .cloned()

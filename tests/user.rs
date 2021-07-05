@@ -14,7 +14,7 @@ mod tests {
         let req = test::TestRequest::post()
             .uri("/")
             .set_json(&json!({
-                "type": "UserActivityByTypeQuery",
+                "type": "ActivityByTypeQuery",
                 "payload": { "userId": 1 }
             }))
             .to_request();

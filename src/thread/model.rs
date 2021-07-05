@@ -4,7 +4,9 @@ use thiserror::Error;
 
 use crate::database::Executor;
 use crate::datetime::DateTime;
-use crate::event::{CreateCommentEventPayload, EventError, SetThreadStateEventPayload};
+use crate::event::{
+    CreateCommentEventPayload, CreateThreadEventPayload, EventError, SetThreadStateEventPayload,
+};
 use crate::subscription::{Subscription, SubscriptionChangeError};
 use crate::uuid::{Uuid, UuidError, UuidFetcher};
 
@@ -384,7 +386,7 @@ impl Threads {
             .await?;
         let thread_id = value.id as i32;
 
-        CreateCommentEventPayload::new(thread_id, payload.object_id, payload.user_id, instance_id)
+        CreateThreadEventPayload::new(thread_id, payload.object_id, payload.user_id, instance_id)
             .save(&mut transaction)
             .await?;
 

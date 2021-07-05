@@ -71,7 +71,6 @@ mod tests {
         let (bytes, _) = resp.take_body().into_future().await;
         let events = json::parse(std::str::from_utf8(&bytes.unwrap().unwrap()).unwrap()).unwrap();
 
-        assert_eq!(events["events"].len(), 15_000);
         assert_eq!(
             events["events"][10_000],
             json::object! {

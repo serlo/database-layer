@@ -277,6 +277,15 @@ impl Events {
     where
         E: Executor<'a>,
     {
+        // TODO: The following query would produce an row per event parameter which
+        // need to be aggregate afterwards. Thus with the following code we receive less
+        // than max_events in the query since an event might take more than two rows.
+        // There are two solutions:
+        //
+        // (1) Do not use limit and figure out how to abort an sqlx stream.
+        // (2) Aggregate multiple rows with something like
+        // https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html#function_json-objectagg
+        // so that we have one row per event
         let event_records = sqlx::query!(
             r#"
                 SELECT event_log.id, instance.subdomain as instance, event.name as raw_typename,

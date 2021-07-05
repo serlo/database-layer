@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use actix_service::ServiceFactory;
 use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
+use actix_web::web::Data;
 use actix_web::{App, Error};
 use dotenv::dotenv;
 use regex::Regex;
@@ -55,7 +56,7 @@ where
         InitError = (),
     >,
 {
-    app.data(pool).configure(routes::init)
+    app.app_data(Data::new(pool)).configure(routes::init)
 }
 
 pub async fn create_database_pool() -> Result<Pool<MySql>, ApplicationError> {

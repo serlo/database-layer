@@ -1,8 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use actix_web::web::BytesMut;
     use actix_web::{test, App};
-    use futures::StreamExt;
+    use std::str::from_utf8;
 
     use serlo_org_database_layer::instance::Instance;
     use serlo_org_database_layer::navigation::{NavigationMessage, NavigationQuery};
@@ -20,17 +19,11 @@ mod tests {
             .uri("/")
             .set_json(&message)
             .to_request();
-        let mut response = test::call_service(&mut app, request).await;
+        let response = test::call_service(&mut app, request).await;
 
         assert!(response.status().is_success());
 
-        let mut body = response.take_body();
-        let mut bytes = BytesMut::new();
-        while let Some(item) = body.next().await {
-            bytes.extend_from_slice(&item.unwrap());
-        }
-
-        let actual = json::parse(std::str::from_utf8(&bytes).unwrap()).unwrap();
+        let actual = json::parse(from_utf8(&test::read_body(response).await).unwrap()).unwrap();
         let expected = json::parse(
             r#"
                 {

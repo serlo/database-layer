@@ -61,7 +61,7 @@ mod tests {
             .uri("/")
             .set_json(&serde_json::json!({
                 "type": "EventsQuery",
-                "payload": { "after": 10_013 }
+                "payload": { "after": 70_000 }
             }))
             .to_request();
         let mut resp = test::call_service(&mut app, req).await;
@@ -71,16 +71,17 @@ mod tests {
         let (bytes, _) = resp.take_body().into_future().await;
         let events = json::parse(std::str::from_utf8(&bytes.unwrap().unwrap()).unwrap()).unwrap();
 
+        assert_eq!(events["events"].len(), 15_000);
         assert_eq!(
-            events["events"][0],
+            events["events"][10_000],
             json::object! {
-                __typename: "CreateEntityNotificationEvent",
-                id: 10014,
+                __typename: "SetLicenseNotificationEvent",
+                id: 80014,
                 instance: "de",
-                date: "2014-03-01T21:18:05+01:00",
-                actorId: 6,
-                objectId: 5545,
-                entityId: 5545
+                date: "2014-10-31T10:54:44+01:00",
+                actorId: 324,
+                objectId: 32567,
+                repositoryId: 32567
             }
         );
     }

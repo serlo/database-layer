@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
+use futures::pin_mut;
+use futures::{StreamExt, TryStreamExt};
 use serde::Serialize;
 use sqlx::MySqlPool;
 
@@ -21,6 +23,7 @@ use super::taxonomy_term::TaxonomyTermEvent;
 use super::EventError;
 use crate::database::Executor;
 use crate::datetime::DateTime;
+use crate::event::{EventStringParameters, EventUuidParameters};
 use crate::notification::{Notifications, NotificationsError};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -249,5 +252,118 @@ impl EventPayload {
         transaction.commit().await?;
 
         Ok(event)
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize)]
+pub struct Events {
+    events: Vec<Event>,
+}
+
+impl Events {
+    pub async fn fetch(
+        after: i32,
+        max_events: i32,
+        pool: &MySqlPool,
+    ) -> Result<Events, sqlx::Error> {
+        Self::fetch_via_transaction(after, max_events, pool).await
+    }
+
+    pub async fn fetch_via_transaction<'a, E>(
+        after: i32,
+        max_events: i32,
+        executor: E,
+    ) -> Result<Events, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        // TODO: The following query would produce an row per event parameter which
+        // need to be aggregate afterwards. Thus with the following code we receive less
+        // than max_events in the query since an event might take more than two rows.
+        // There are two solutions:
+        //
+        // (1) Do not use limit and figure out how to abort an sqlx stream.
+        // (2) Aggregate multiple rows with something like
+        // https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html#function_json-objectagg
+        // so that we have one row per event
+        let event_records = sqlx::query!(
+            r#"
+                SELECT event_log.id, instance.subdomain as instance, event.name as raw_typename,
+                       event_log.actor_id, event_log.date, event_log.uuid_id as object_id,
+                       event_parameter_name.name as parameter_key,
+                       event_parameter_uuid.uuid_id as paramater_uuid_id,
+                       event_parameter_string.value as parameter_string
+                FROM event_log
+                JOIN instance ON instance.id = event_log.instance_id
+                JOIN event ON event.id = event_log.event_id
+                LEFT JOIN event_parameter ON event_parameter.log_id = event_log.id
+                LEFT JOIN event_parameter_name
+                    ON event_parameter_name.id = event_parameter.name_id
+                LEFT JOIN event_parameter_uuid
+                    ON event_parameter_uuid.event_parameter_id = event_parameter.id
+                LEFT JOIN event_parameter_string
+                    ON event_parameter_string.event_parameter_id = event_parameter.id
+                WHERE event_log.id > ?
+                ORDER BY event_log.id
+                LIMIT ?
+            "#,
+            after,
+            max_events
+        )
+        .fetch(executor)
+        .peekable();
+        pin_mut!(event_records);
+
+        let mut events: Vec<Event> = Vec::new();
+
+        while let Some(mut record) = event_records.as_mut().try_next().await? {
+            let instance = match record.instance.parse() {
+                Ok(instance) => instance,
+                _ => continue,
+            };
+
+            let raw_typename: RawEventType = match record.raw_typename.parse() {
+                Ok(typename) => typename,
+                _ => continue,
+            };
+
+            let mut abstract_event = AbstractEvent {
+                __typename: raw_typename.clone().into(),
+                id: record.id as i32,
+                instance,
+                actor_id: record.actor_id as i32,
+                object_id: record.object_id as i32,
+                date: record.date.into(),
+                raw_typename,
+                string_parameters: EventStringParameters(HashMap::new()),
+                uuid_parameters: EventUuidParameters(HashMap::new()),
+            };
+
+            loop {
+                if let Some(key) = record.parameter_key {
+                    if let Some(uuid_id) = record.paramater_uuid_id {
+                        abstract_event.uuid_parameters.0.insert(key, uuid_id as i32);
+                    } else if let Some(string_value) = record.parameter_string {
+                        abstract_event.string_parameters.0.insert(key, string_value);
+                    }
+                }
+
+                if let Some(Ok(next_record)) = event_records.as_mut().peek().await {
+                    if next_record.id == record.id {
+                        record = event_records.as_mut().try_next().await?.unwrap();
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            if let Ok(event) = abstract_event.try_into() {
+                events.push(event);
+            }
+        }
+
+        Ok(Events { events })
     }
 }

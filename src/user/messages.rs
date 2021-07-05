@@ -16,7 +16,7 @@ pub enum UserQueriesMessage {
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum UserMessage {
-    UserActivityByTypeQuery(UserActivityByTypeQuery),
+    ActivityByTypeQuery(UserActivityByTypeQuery),
 }
 
 #[async_trait]
@@ -35,7 +35,7 @@ impl MessageResponder for UserMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            UserMessage::UserActivityByTypeQuery(message) => message.handle(connection).await,
+            UserMessage::ActivityByTypeQuery(message) => message.handle(connection).await,
         }
     }
 }

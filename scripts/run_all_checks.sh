@@ -38,14 +38,14 @@ function main() {
     test_no_uncommitted_changes_when_pushing
   fi
 
+  print_header "Check sqlx-data.json is up to date"
+  test_sqlx_data_up_to_date
+
   print_header "Run all tests"
   cargo test
 
   print_header "Run linter"
   yarn clippy
-
-  print_header "Check sqlx-data.json is up to date"
-  test_sqlx_data_up_to_date
 
   print_header "Run pact tests"
   ./scripts/pacts.sh

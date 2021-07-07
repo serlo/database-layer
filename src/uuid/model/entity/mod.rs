@@ -690,7 +690,7 @@ mod tests {
         let entity = Entity::fetch_via_transaction(entity_id, &mut transaction)
             .await
             .unwrap();
-        assert_eq!(entity.trashed, false);
+        assert!(!entity.trashed);
     }
 
     #[actix_rt::test]
@@ -738,7 +738,7 @@ mod tests {
         let revision = EntityRevision::fetch_via_transaction(30672, &mut transaction)
             .await
             .unwrap();
-        assert_eq!(revision.trashed, true);
+        assert!(revision.trashed);
 
         // Verify that the event was created.
         let duration = fetch_age_of_newest_event(30672, &mut transaction)

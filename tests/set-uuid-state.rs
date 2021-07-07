@@ -1,3 +1,4 @@
+#![allow(clippy::bool_assert_comparison)]
 #[cfg(test)]
 mod tests {
     use actix_web::{test, App};
@@ -13,7 +14,7 @@ mod tests {
             let mut transaction = pool.begin().await.unwrap();
 
             let app = configure_app(App::new(), pool);
-            let mut app = test::init_service(app).await;
+            let app = test::init_service(app).await;
 
             let revision_id = sqlx::query!(
                 "select id from uuid where discriminator = ? and trashed = false",
@@ -32,7 +33,7 @@ mod tests {
                     trashed: true,
                 }))
                 .to_request();
-            let resp = test::call_service(&mut app, req).await;
+            let resp = test::call_service(&app, req).await;
 
             assert_eq!(resp.status(), 400);
 

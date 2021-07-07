@@ -9,7 +9,7 @@ mod tests {
     async fn events_query_without_after_parameter() {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);
-        let mut app = test::init_service(app).await;
+        let app = test::init_service(app).await;
         let req = test::TestRequest::post()
             .uri("/")
             .set_json(&serde_json::json!({
@@ -17,7 +17,7 @@ mod tests {
                 "payload": {}
             }))
             .to_request();
-        let resp = test::call_service(&mut app, req).await;
+        let resp = test::call_service(&app, req).await;
 
         assert!(resp.status().is_success());
 
@@ -55,7 +55,7 @@ mod tests {
     async fn events_query_with_after_parameter() {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);
-        let mut app = test::init_service(app).await;
+        let app = test::init_service(app).await;
         let req = test::TestRequest::post()
             .uri("/")
             .set_json(&serde_json::json!({
@@ -63,7 +63,7 @@ mod tests {
                 "payload": { "after": 70_000 }
             }))
             .to_request();
-        let resp = test::call_service(&mut app, req).await;
+        let resp = test::call_service(&app, req).await;
 
         assert!(resp.status().is_success());
 

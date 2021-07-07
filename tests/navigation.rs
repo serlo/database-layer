@@ -11,7 +11,7 @@ mod tests {
     async fn de() {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);
-        let mut app = test::init_service(app).await;
+        let app = test::init_service(app).await;
         let message = NavigationMessage::NavigationQuery(NavigationQuery {
             instance: Instance::De,
         });
@@ -19,7 +19,7 @@ mod tests {
             .uri("/")
             .set_json(&message)
             .to_request();
-        let response = test::call_service(&mut app, request).await;
+        let response = test::call_service(&app, request).await;
 
         assert!(response.status().is_success());
 

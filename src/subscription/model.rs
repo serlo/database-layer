@@ -285,11 +285,7 @@ mod tests {
 
         let subscriptions = Subscriptions::fetch_by_user(user_id, &mut transaction).await?;
 
-        assert!(subscriptions
-            .0
-            .iter()
-            .find(|sub| sub.object_id == uuid_id)
-            .is_none());
+        assert!(!subscriptions.0.iter().any(|sub| sub.object_id == uuid_id));
 
         Ok(())
     }

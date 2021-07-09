@@ -25,6 +25,122 @@
       ]
     }
   },
+  "031e2f59065e8ca369e26a3c620a11709c48ab61d2b2e127aefc55173db3dd75": {
+    "query": "\n                SELECT *\n                FROM ((SELECT el.id,\n                              i.subdomain                           AS instance,\n                              e.name                                AS raw_typename,\n                              el.actor_id,\n                              el.date,\n                              el.uuid_id                            AS object_id,\n                              JSON_OBJECTAGG(epn.name, eps.value)   AS string_parameters,\n                              JSON_OBJECTAGG(epn.name, epu.uuid_id) AS uuid_parameters\n                       FROM event_log el\n                                JOIN event e ON e.id = el.event_id\n                                JOIN instance i on i.id = el.instance_id\n                                LEFT JOIN event_parameter ep ON ep.log_id = el.id\n                                LEFT JOIN event_parameter_name epn ON epn.id = ep.name_id\n                                LEFT JOIN event_parameter_string eps ON eps.event_parameter_id = ep.id\n                                LEFT JOIN event_parameter_uuid epu ON epu.event_parameter_id = ep.id\n                       WHERE epn.name IS NOT NULL\n                       GROUP BY el.id)\n                      UNION\n                      (SELECT el.id,\n                              i.subdomain AS instance,\n                              e.name      AS raw_typename,\n                              el.actor_id,\n                              el.date,\n                              el.uuid_id,\n                              '{}'        AS string_parameters,\n                              '{}'        AS uuid_parameters\n                       FROM event_log el\n                                JOIN event e ON e.id = el.event_id\n                                JOIN instance i on i.id = el.instance_id\n                                LEFT JOIN event_parameter ep ON ep.log_id = el.id\n                                LEFT JOIN event_parameter_name epn ON epn.id = ep.name_id\n                       WHERE epn.name IS NULL\n                       GROUP BY el.id)) events\n                WHERE id > ?\n                ORDER BY id\n                LIMIT ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "instance",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "raw_typename",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "actor_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "date",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 12417
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "object_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "string_parameters",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 144
+            },
+            "char_set": 63,
+            "max_size": 16777216
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "uuid_parameters",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 144
+            },
+            "char_set": 63,
+            "max_size": 16777216
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true
+      ]
+    }
+  },
   "04912efa922c870efb5268ef2a98a82dfa657b084a50c91b89031388c514de65": {
     "query": "SELECT LAST_INSERT_ID() as id",
     "describe": {
@@ -1184,135 +1300,6 @@
         "Right": 5
       },
       "nullable": []
-    }
-  },
-  "7f79c1a45104204e694c33bec60382bc9ade02080614113303f455ba28189e40": {
-    "query": "\n                SELECT event_log.id, instance.subdomain as instance, event.name as raw_typename,\n                       event_log.actor_id, event_log.date, event_log.uuid_id as object_id,\n                       event_parameter_name.name as parameter_key,\n                       event_parameter_uuid.uuid_id as paramater_uuid_id,\n                       event_parameter_string.value as parameter_string\n                FROM event_log\n                JOIN instance ON instance.id = event_log.instance_id\n                JOIN event ON event.id = event_log.event_id\n                LEFT JOIN event_parameter ON event_parameter.log_id = event_log.id\n                LEFT JOIN event_parameter_name\n                    ON event_parameter_name.id = event_parameter.name_id\n                LEFT JOIN event_parameter_uuid\n                    ON event_parameter_uuid.event_parameter_id = event_parameter.id\n                LEFT JOIN event_parameter_string\n                    ON event_parameter_string.event_parameter_id = event_parameter.id\n                WHERE event_log.id > ?\n                ORDER BY event_log.id\n                LIMIT ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "instance",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4097
-            },
-            "char_set": 224,
-            "max_size": 40
-          }
-        },
-        {
-          "ordinal": 2,
-          "name": "raw_typename",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4101
-            },
-            "char_set": 224,
-            "max_size": 1020
-          }
-        },
-        {
-          "ordinal": 3,
-          "name": "actor_id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        },
-        {
-          "ordinal": 4,
-          "name": "date",
-          "type_info": {
-            "type": "Timestamp",
-            "flags": {
-              "bits": 1153
-            },
-            "char_set": 63,
-            "max_size": 19
-          }
-        },
-        {
-          "ordinal": 5,
-          "name": "object_id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        },
-        {
-          "ordinal": 6,
-          "name": "parameter_key",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4096
-            },
-            "char_set": 224,
-            "max_size": 1020
-          }
-        },
-        {
-          "ordinal": 7,
-          "name": "paramater_uuid_id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4104
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        },
-        {
-          "ordinal": 8,
-          "name": "parameter_string",
-          "type_info": {
-            "type": "Blob",
-            "flags": {
-              "bits": 4112
-            },
-            "char_set": 224,
-            "max_size": 262140
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 2
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true
-      ]
     }
   },
   "82e05bbc646bebf37b97af3f23e8599937749cb7ecf4b03bfd079ec152651862": {

@@ -9,6 +9,7 @@ use super::EventError;
 use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::instance::Instance;
+use json::JsonValue;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -33,6 +34,18 @@ pub struct AbstractEvent {
 pub struct EventStringParameters(pub HashMap<String, String>);
 
 impl EventStringParameters {
+    pub fn from(value: JsonValue) -> Self {
+        let mut map = HashMap::new();
+        if let JsonValue::Object(object) = value {
+            for entry in object.iter() {
+                if let (key, JsonValue::String(value)) = entry {
+                    map.insert(key.to_string(), value.to_string());
+                }
+            }
+        };
+        Self(map)
+    }
+
     pub fn get(&self, name: &str) -> Option<String> {
         self.0.get(name).cloned()
     }
@@ -49,6 +62,19 @@ impl EventStringParameters {
 pub struct EventUuidParameters(pub HashMap<String, i32>);
 
 impl EventUuidParameters {
+    pub fn from(value: JsonValue) -> Self {
+        let mut map = HashMap::new();
+        if let JsonValue::Object(object) = value {
+            for entry in object.iter() {
+                if let (key, JsonValue::Number(value)) = entry {
+                    let value: f64 = (*value).into();
+                    map.insert(key.to_string(), value as i32);
+                }
+            }
+        };
+        Self(map)
+    }
+
     pub fn get(&self, name: &str) -> Option<i32> {
         self.0.get(name).copied()
     }

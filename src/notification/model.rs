@@ -636,10 +636,10 @@ mod tests {
     }
 
     fn random_string(nr: usize) -> String {
-        return rand::thread_rng()
+        rand::thread_rng()
             .sample_iter(&Alphanumeric)
             .take(nr)
             .map(char::from)
-            .collect();
+            .collect()
     }
 }

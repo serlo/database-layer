@@ -167,9 +167,9 @@ mod tests {
         let result = Uuid::fetch_via_transaction(100000, &mut transaction).await;
 
         assert!(result.is_err());
-        match result.err().unwrap() {
+        match result.as_ref().err().unwrap() {
             UuidError::EntityMissingRequiredParent => (),
-            _ => assert!(false),
+            _ => panic!("Error does not fulfill assertions {:?}", result.err()),
         }
     }
 }

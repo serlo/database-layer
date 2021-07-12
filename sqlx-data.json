@@ -50,6 +50,122 @@
       ]
     }
   },
+  "0613f612f224e4b6a8ddf4ce153348cb03d21b3de1200e8e74bf4fd21fab0613": {
+    "query": "\n                SELECT\n                    el.id,\n                    i.subdomain                           AS instance,\n                    e.name                                AS raw_typename,\n                    el.actor_id,\n                    el.date,\n                    el.uuid_id                            AS object_id,\n                    JSON_REMOVE(\n                        JSON_OBJECTAGG(\n                            CASE WHEN epn.name IS NOT NULL THEN epn.name ELSE \"__unused_key\" END,\n                            eps.value\n                        ),\n                        \"$.__unused_key\"\n                    )   AS string_parameters,\n                    JSON_REMOVE(\n                        JSON_OBJECTAGG(\n                            CASE WHEN epn.name IS NOT NULL THEN epn.name ELSE \"__unused_key\" END,\n                            epu.uuid_id\n                        ),\n                        \"$.__unused_key\"\n                    ) AS uuid_parameters\n                FROM event_log el\n                    JOIN event e ON e.id = el.event_id\n                    JOIN instance i on i.id = el.instance_id\n                    LEFT JOIN event_parameter ep ON ep.log_id = el.id\n                    LEFT JOIN event_parameter_name epn ON epn.id = ep.name_id\n                    LEFT JOIN event_parameter_string eps ON eps.event_parameter_id = ep.id\n                    LEFT JOIN event_parameter_uuid epu ON epu.event_parameter_id = ep.id\n                WHERE el.id > ?\n                GROUP BY el.id\n                ORDER BY el.id\n                LIMIT ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "instance",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "raw_typename",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4101
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "actor_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "date",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "object_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "string_parameters",
+          "type_info": {
+            "type": "Json",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 224,
+            "max_size": 16777216
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "uuid_parameters",
+          "type_info": {
+            "type": "Json",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 224,
+            "max_size": 16777216
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true
+      ]
+    }
+  },
   "0775fb20c50e22a43297a12e8959dc4e6c7527a64d40dfbe885f616acf252865": {
     "query": "\n                SELECT name, value FROM\n                    (\n                    # Level 1\n                    SELECT k.name, p.value, p.page_id\n                        FROM navigation_parameter p\n                        JOIN navigation_parameter_key k ON k.id = p.key_id\n                        WHERE p.parent_id IS NULL AND value != ''\n                    UNION ALL\n                    # Level 2\n                    SELECT CONCAT(k1.name, '.', k2.name) as name, p2.value, p2.page_id\n                        FROM navigation_parameter p1\n                        JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                        JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                        JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                        WHERE p1.parent_id IS NULL AND p2.value != ''\n                    UNION ALL\n                    # Level 3\n                    SELECT CONCAT(k1.name, '.', k2.name, '.', k3.name) as name, p3.value, p3.page_id\n                        FROM navigation_parameter p1\n                        JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                        JOIN navigation_parameter p3 ON p3.parent_id = p2.id\n                        JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                        JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                        JOIN navigation_parameter_key k3 ON k3.id = p3.key_id\n                        WHERE p1.parent_id IS NULL AND p3.value != ''\n                    ) u\n                    WHERE page_id = ?\n            ",
     "describe": {
@@ -1668,122 +1784,6 @@
       },
       "nullable": [
         false
-      ]
-    }
-  },
-  "c575eef20024336e3a764a25489bf65074ea903fb32b4c80e1664bdbd8f3f448": {
-    "query": "\n                SELECT el.id,\n                    i.subdomain                           AS instance,\n                    e.name                                AS raw_typename,\n                    el.actor_id,\n                    el.date,\n                    el.uuid_id                            AS object_id,\n                    JSON_REMOVE(\n                        JSON_OBJECTAGG(\n                            CASE WHEN epn.name IS NOT NULL THEN epn.name ELSE \"__unused_key\" END,\n                            eps.value\n                        ),\n                        \"$.__unused_key\"\n                    )   AS string_parameters,\n                    JSON_REMOVE(\n                        JSON_OBJECTAGG(\n                            CASE WHEN epn.name IS NOT NULL THEN epn.name ELSE \"__unused_key\" END,\n                            epu.uuid_id\n                        ),\n                        \"$.__unused_key\"\n                    ) AS uuid_parameters\n                FROM event_log el\n                    JOIN event e ON e.id = el.event_id\n                    JOIN instance i on i.id = el.instance_id\n                    LEFT JOIN event_parameter ep ON ep.log_id = el.id\n                    LEFT JOIN event_parameter_name epn ON epn.id = ep.name_id\n                    LEFT JOIN event_parameter_string eps ON eps.event_parameter_id = ep.id\n                    LEFT JOIN event_parameter_uuid epu ON epu.event_parameter_id = ep.id\n                WHERE el.id > ?\n                GROUP BY el.id\n                ORDER BY el.id\n                LIMIT ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "instance",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4097
-            },
-            "char_set": 224,
-            "max_size": 40
-          }
-        },
-        {
-          "ordinal": 2,
-          "name": "raw_typename",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4101
-            },
-            "char_set": 224,
-            "max_size": 1020
-          }
-        },
-        {
-          "ordinal": 3,
-          "name": "actor_id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        },
-        {
-          "ordinal": 4,
-          "name": "date",
-          "type_info": {
-            "type": "Timestamp",
-            "flags": {
-              "bits": 1153
-            },
-            "char_set": 63,
-            "max_size": 19
-          }
-        },
-        {
-          "ordinal": 5,
-          "name": "object_id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        },
-        {
-          "ordinal": 6,
-          "name": "string_parameters",
-          "type_info": {
-            "type": "Json",
-            "flags": {
-              "bits": 128
-            },
-            "char_set": 224,
-            "max_size": 16777216
-          }
-        },
-        {
-          "ordinal": 7,
-          "name": "uuid_parameters",
-          "type_info": {
-            "type": "Json",
-            "flags": {
-              "bits": 128
-            },
-            "char_set": 224,
-            "max_size": 16777216
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 2
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true
       ]
     }
   },

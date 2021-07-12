@@ -278,7 +278,8 @@ impl Events {
     {
         let mut event_records = sqlx::query!(
             r#"
-                SELECT el.id,
+                SELECT
+                    el.id,
                     i.subdomain                           AS instance,
                     e.name                                AS raw_typename,
                     el.actor_id,
@@ -340,7 +341,7 @@ impl Events {
                             .collect()
                     })
                 })
-                .unwrap_or(HashMap::new());
+                .unwrap_or_default();
 
             let uuid_parameters = record
                 .uuid_parameters
@@ -354,7 +355,7 @@ impl Events {
                             .collect()
                     })
                 })
-                .unwrap_or(HashMap::new());
+                .unwrap_or_default();
 
             let abstract_event = AbstractEvent {
                 __typename: raw_typename.clone().into(),

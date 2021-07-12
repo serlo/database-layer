@@ -1919,6 +1919,7 @@ dependencies = [
  "rand",
  "rsa",
  "serde",
+ "serde_json",
  "sha-1",
  "sha2",
  "smallvec",

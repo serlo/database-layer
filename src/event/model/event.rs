@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
-use futures::pin_mut;
 use futures::TryStreamExt;
 use serde::Serialize;
 use sqlx::MySqlPool;
@@ -277,55 +276,48 @@ impl Events {
     where
         E: Executor<'a>,
     {
-        let event_records = sqlx::query!(
+        let mut event_records = sqlx::query!(
             r#"
-                SELECT *
-                FROM ((SELECT el.id,
-                              i.subdomain                           AS instance,
-                              e.name                                AS raw_typename,
-                              el.actor_id,
-                              el.date,
-                              el.uuid_id                            AS object_id,
-                              JSON_OBJECTAGG(epn.name, eps.value)   AS string_parameters,
-                              JSON_OBJECTAGG(epn.name, epu.uuid_id) AS uuid_parameters
-                       FROM event_log el
-                                JOIN event e ON e.id = el.event_id
-                                JOIN instance i on i.id = el.instance_id
-                                LEFT JOIN event_parameter ep ON ep.log_id = el.id
-                                LEFT JOIN event_parameter_name epn ON epn.id = ep.name_id
-                                LEFT JOIN event_parameter_string eps ON eps.event_parameter_id = ep.id
-                                LEFT JOIN event_parameter_uuid epu ON epu.event_parameter_id = ep.id
-                       WHERE epn.name IS NOT NULL
-                       GROUP BY el.id)
-                      UNION
-                      (SELECT el.id,
-                              i.subdomain AS instance,
-                              e.name      AS raw_typename,
-                              el.actor_id,
-                              el.date,
-                              el.uuid_id,
-                              '{}'        AS string_parameters,
-                              '{}'        AS uuid_parameters
-                       FROM event_log el
-                                JOIN event e ON e.id = el.event_id
-                                JOIN instance i on i.id = el.instance_id
-                                LEFT JOIN event_parameter ep ON ep.log_id = el.id
-                                LEFT JOIN event_parameter_name epn ON epn.id = ep.name_id
-                       WHERE epn.name IS NULL
-                       GROUP BY el.id)) events
-                WHERE id > ?
-                ORDER BY id
+                SELECT el.id,
+                    i.subdomain                           AS instance,
+                    e.name                                AS raw_typename,
+                    el.actor_id,
+                    el.date,
+                    el.uuid_id                            AS object_id,
+                    JSON_REMOVE(
+                        JSON_OBJECTAGG(
+                            CASE WHEN epn.name IS NOT NULL THEN epn.name ELSE "__unused_key" END,
+                            eps.value
+                        ),
+                        "$.__unused_key"
+                    )   AS string_parameters,
+                    JSON_REMOVE(
+                        JSON_OBJECTAGG(
+                            CASE WHEN epn.name IS NOT NULL THEN epn.name ELSE "__unused_key" END,
+                            epu.uuid_id
+                        ),
+                        "$.__unused_key"
+                    ) AS uuid_parameters
+                FROM event_log el
+                    JOIN event e ON e.id = el.event_id
+                    JOIN instance i on i.id = el.instance_id
+                    LEFT JOIN event_parameter ep ON ep.log_id = el.id
+                    LEFT JOIN event_parameter_name epn ON epn.id = ep.name_id
+                    LEFT JOIN event_parameter_string eps ON eps.event_parameter_id = ep.id
+                    LEFT JOIN event_parameter_uuid epu ON epu.event_parameter_id = ep.id
+                WHERE el.id > ?
+                GROUP BY el.id
+                ORDER BY el.id
                 LIMIT ?
             "#,
             after,
             max_events
         )
         .fetch(executor);
-        pin_mut!(event_records);
 
         let mut events: Vec<Event> = Vec::new();
 
-        while let Some(record) = event_records.as_mut().try_next().await? {
+        while let Some(record) = event_records.try_next().await? {
             let instance = match record.instance.parse() {
                 Ok(instance) => instance,
                 _ => continue,
@@ -336,21 +328,33 @@ impl Events {
                 _ => continue,
             };
 
-            let string_parameters = if let Some(string_parameters_json) = record.string_parameters {
-                // TODO: Handle errors
-                let value = json::parse(&String::from_utf8_lossy(&string_parameters_json)).unwrap();
-                EventStringParameters::from(value)
-            } else {
-                EventStringParameters(HashMap::new())
-            };
+            let string_parameters = record
+                .string_parameters
+                .and_then(|value| {
+                    value.as_object().map(|object| {
+                        object
+                            .iter()
+                            .filter_map(|(key, value)| {
+                                value.as_str().map(|value| (key.clone(), value.to_string()))
+                            })
+                            .collect()
+                    })
+                })
+                .unwrap_or(HashMap::new());
 
-            let uuid_parameters = if let Some(uuid_parameters_json) = record.uuid_parameters {
-                // TODO: Handle errors
-                let value = json::parse(&String::from_utf8_lossy(&uuid_parameters_json)).unwrap();
-                EventUuidParameters::from(value)
-            } else {
-                EventUuidParameters(HashMap::new())
-            };
+            let uuid_parameters = record
+                .uuid_parameters
+                .and_then(|value| {
+                    value.as_object().map(|object| {
+                        object
+                            .iter()
+                            .filter_map(|(key, value)| {
+                                value.as_i64().map(|value| (key.clone(), value as i32))
+                            })
+                            .collect()
+                    })
+                })
+                .unwrap_or(HashMap::new());
 
             let abstract_event = AbstractEvent {
                 __typename: raw_typename.clone().into(),
@@ -360,8 +364,8 @@ impl Events {
                 object_id: record.object_id as i32,
                 date: record.date.into(),
                 raw_typename,
-                string_parameters,
-                uuid_parameters,
+                string_parameters: EventStringParameters(string_parameters),
+                uuid_parameters: EventUuidParameters(uuid_parameters),
             };
 
             if let Ok(event) = abstract_event.try_into() {

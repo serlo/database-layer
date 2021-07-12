@@ -35,12 +35,14 @@ pub struct EventStringParameters(pub HashMap<String, String>);
 
 impl EventStringParameters {
     pub fn from(value: JsonValue) -> Self {
-        let mut map = HashMap::new();
-        if let JsonValue::Object(object) = value {
-            for (key, JsonValue::String(value)) in object.iter() {
-                map.insert(key.to_string(), value.to_string());
-            }
-        };
+        let map = value
+            .entries()
+            .filter_map(|(key, value)| {
+                value
+                    .as_str()
+                    .map(|value| (key.to_string(), value.to_string()))
+            })
+            .collect();
         Self(map)
     }
 
@@ -61,13 +63,10 @@ pub struct EventUuidParameters(pub HashMap<String, i32>);
 
 impl EventUuidParameters {
     pub fn from(value: JsonValue) -> Self {
-        let mut map = HashMap::new();
-        if let JsonValue::Object(object) = value {
-            for (key, JsonValue::Number(value)) in object.iter() {
-                let value: f64 = (*value).into();
-                map.insert(key.to_string(), value as i32);
-            }
-        };
+        let map = value
+            .entries()
+            .filter_map(|(key, value)| value.as_i32().map(|value| (key.to_string(), value)))
+            .collect();
         Self(map)
     }
 

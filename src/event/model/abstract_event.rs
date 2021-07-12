@@ -37,10 +37,8 @@ impl EventStringParameters {
     pub fn from(value: JsonValue) -> Self {
         let mut map = HashMap::new();
         if let JsonValue::Object(object) = value {
-            for entry in object.iter() {
-                if let (key, JsonValue::String(value)) = entry {
-                    map.insert(key.to_string(), value.to_string());
-                }
+            for (key, JsonValue::String(value)) in object.iter() {
+                map.insert(key.to_string(), value.to_string());
             }
         };
         Self(map)
@@ -65,11 +63,9 @@ impl EventUuidParameters {
     pub fn from(value: JsonValue) -> Self {
         let mut map = HashMap::new();
         if let JsonValue::Object(object) = value {
-            for entry in object.iter() {
-                if let (key, JsonValue::Number(value)) = entry {
-                    let value: f64 = (*value).into();
-                    map.insert(key.to_string(), value as i32);
-                }
+            for (key, JsonValue::Number(value)) in object.iter() {
+                let value: f64 = (*value).into();
+                map.insert(key.to_string(), value as i32);
             }
         };
         Self(map)

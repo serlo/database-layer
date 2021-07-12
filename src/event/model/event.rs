@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
-use futures::pin_mut;
-use futures::{StreamExt, TryStreamExt};
+use futures::TryStreamExt;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
@@ -277,46 +276,49 @@ impl Events {
     where
         E: Executor<'a>,
     {
-        // TODO: The following query would produce an row per event parameter which
-        // need to be aggregate afterwards. Thus with the following code we receive less
-        // than max_events in the query since an event might take more than two rows.
-        // There are two solutions:
-        //
-        // (1) Do not use limit and figure out how to abort an sqlx stream.
-        // (2) Aggregate multiple rows with something like
-        // https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html#function_json-objectagg
-        // so that we have one row per event
-        let event_records = sqlx::query!(
+        let mut event_records = sqlx::query!(
             r#"
-                SELECT event_log.id, instance.subdomain as instance, event.name as raw_typename,
-                       event_log.actor_id, event_log.date, event_log.uuid_id as object_id,
-                       event_parameter_name.name as parameter_key,
-                       event_parameter_uuid.uuid_id as paramater_uuid_id,
-                       event_parameter_string.value as parameter_string
-                FROM event_log
-                JOIN instance ON instance.id = event_log.instance_id
-                JOIN event ON event.id = event_log.event_id
-                LEFT JOIN event_parameter ON event_parameter.log_id = event_log.id
-                LEFT JOIN event_parameter_name
-                    ON event_parameter_name.id = event_parameter.name_id
-                LEFT JOIN event_parameter_uuid
-                    ON event_parameter_uuid.event_parameter_id = event_parameter.id
-                LEFT JOIN event_parameter_string
-                    ON event_parameter_string.event_parameter_id = event_parameter.id
-                WHERE event_log.id > ?
-                ORDER BY event_log.id
+                SELECT
+                    el.id,
+                    i.subdomain                           AS instance,
+                    e.name                                AS raw_typename,
+                    el.actor_id,
+                    el.date,
+                    el.uuid_id                            AS object_id,
+                    JSON_REMOVE(
+                        JSON_OBJECTAGG(
+                            CASE WHEN epn.name IS NOT NULL THEN epn.name ELSE "__unused_key" END,
+                            eps.value
+                        ),
+                        "$.__unused_key"
+                    )   AS string_parameters,
+                    JSON_REMOVE(
+                        JSON_OBJECTAGG(
+                            CASE WHEN epn.name IS NOT NULL THEN epn.name ELSE "__unused_key" END,
+                            epu.uuid_id
+                        ),
+                        "$.__unused_key"
+                    ) AS uuid_parameters
+                FROM event_log el
+                    JOIN event e ON e.id = el.event_id
+                    JOIN instance i on i.id = el.instance_id
+                    LEFT JOIN event_parameter ep ON ep.log_id = el.id
+                    LEFT JOIN event_parameter_name epn ON epn.id = ep.name_id
+                    LEFT JOIN event_parameter_string eps ON eps.event_parameter_id = ep.id
+                    LEFT JOIN event_parameter_uuid epu ON epu.event_parameter_id = ep.id
+                WHERE el.id > ?
+                GROUP BY el.id
+                ORDER BY el.id
                 LIMIT ?
             "#,
             after,
             max_events
         )
-        .fetch(executor)
-        .peekable();
-        pin_mut!(event_records);
+        .fetch(executor);
 
         let mut events: Vec<Event> = Vec::new();
 
-        while let Some(mut record) = event_records.as_mut().try_next().await? {
+        while let Some(record) = event_records.try_next().await? {
             let instance = match record.instance.parse() {
                 Ok(instance) => instance,
                 _ => continue,
@@ -327,7 +329,35 @@ impl Events {
                 _ => continue,
             };
 
-            let mut abstract_event = AbstractEvent {
+            let string_parameters = record
+                .string_parameters
+                .and_then(|value| {
+                    value.as_object().map(|object| {
+                        object
+                            .iter()
+                            .filter_map(|(key, value)| {
+                                value.as_str().map(|value| (key.clone(), value.to_string()))
+                            })
+                            .collect()
+                    })
+                })
+                .unwrap_or_default();
+
+            let uuid_parameters = record
+                .uuid_parameters
+                .and_then(|value| {
+                    value.as_object().map(|object| {
+                        object
+                            .iter()
+                            .filter_map(|(key, value)| {
+                                value.as_i64().map(|value| (key.clone(), value as i32))
+                            })
+                            .collect()
+                    })
+                })
+                .unwrap_or_default();
+
+            let abstract_event = AbstractEvent {
                 __typename: raw_typename.clone().into(),
                 id: record.id as i32,
                 instance,
@@ -335,29 +365,9 @@ impl Events {
                 object_id: record.object_id as i32,
                 date: record.date.into(),
                 raw_typename,
-                string_parameters: EventStringParameters(HashMap::new()),
-                uuid_parameters: EventUuidParameters(HashMap::new()),
+                string_parameters: EventStringParameters(string_parameters),
+                uuid_parameters: EventUuidParameters(uuid_parameters),
             };
-
-            loop {
-                if let Some(key) = record.parameter_key {
-                    if let Some(uuid_id) = record.paramater_uuid_id {
-                        abstract_event.uuid_parameters.0.insert(key, uuid_id as i32);
-                    } else if let Some(string_value) = record.parameter_string {
-                        abstract_event.string_parameters.0.insert(key, string_value);
-                    }
-                }
-
-                if let Some(Ok(next_record)) = event_records.as_mut().peek().await {
-                    if next_record.id == record.id {
-                        record = event_records.as_mut().try_next().await?.unwrap();
-                    } else {
-                        break;
-                    }
-                } else {
-                    break;
-                }
-            }
 
             if let Ok(event) = abstract_event.try_into() {
                 events.push(event);

@@ -14,6 +14,14 @@ $ git clone https://github.com/serlo/serlo.org-database-layer.git
 $ cd serlo.org-database-layer
 ```
 
+### Install sqlx-cli
+
+You need to install [`sqlx-cli`](https://github.com/launchbadge/sqlx/tree/master/sqlx-cli) via
+
+```sh
+cargo install sqlx-cli
+```
+
 ### Database
 
 To get a local database for development, there are two approaches.

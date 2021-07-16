@@ -327,9 +327,9 @@ impl Threads {
     {
         let mut transaction = executor.begin().await?;
 
-        let result = sqlx::query!(
+        let uuid_data = sqlx::query!(
             r#"
-                SELECT i.id as instance_id
+                SELECT i.id as instance_id, uuid.discriminator
                     FROM uuid
                     JOIN (
                         SELECT id, instance_id FROM attachment_container
@@ -346,7 +346,9 @@ impl Threads {
                         UNION ALL
                         SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id
                         UNION ALL
-                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id) u
+                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id
+                        UNION ALL
+                        SELECT user.id, 1 FROM user) u
                     JOIN instance i ON i.id = u.instance_id
                     WHERE u.id = ?
             "#,
@@ -354,8 +356,7 @@ impl Threads {
         )
         .fetch_one(&mut transaction)
         .await?;
-
-        let instance_id = result.instance_id as i32;
+        let instance_id = uuid_data.instance_id as i32;
 
         sqlx::query!(
             r#"
@@ -390,7 +391,7 @@ impl Threads {
             .save(&mut transaction)
             .await?;
 
-        if payload.subscribe {
+        if payload.subscribe && uuid_data.discriminator != "user" {
             let subscription = Subscription {
                 object_id: thread_id,
                 user_id: payload.user_id,
@@ -424,36 +425,49 @@ mod tests {
 
     #[actix_rt::test]
     async fn start_thread() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
+        for object_id in [1565, 1] {
+            let pool = create_database_pool().await.unwrap();
+            let mut transaction = pool.begin().await.unwrap();
 
-        Threads::start_thread(
-            ThreadStartThreadPayload {
-                title: "title".to_string(),
-                content: "content-test".to_string(),
-                object_id: 1565,
-                user_id: 1,
-                subscribe: true,
-                send_email: false,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
+            Threads::start_thread(
+                ThreadStartThreadPayload {
+                    title: "title".to_string(),
+                    content: "content-test".to_string(),
+                    object_id,
+                    user_id: 1,
+                    subscribe: true,
+                    send_email: false,
+                },
+                &mut transaction,
+            )
+            .await
+            .unwrap();
 
-        let thread = sqlx::query!(
-            r#"
+            let thread = sqlx::query!(
+                r#"
                 SELECT title, content, author_id FROM comment WHERE uuid_id = ?
+                ORDER BY id DESC
             "#,
-            1565
-        )
-        .fetch_one(&mut transaction)
-        .await
-        .unwrap();
+                object_id
+            )
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap();
 
-        assert_eq!(thread.content, Some("content-test".to_string()));
-        assert_eq!(thread.title, Some("title".to_string()));
-        assert_eq!(thread.author_id, 1);
+            assert_eq!(
+                thread.content,
+                Some("content-test".to_string()),
+                "object_id: {}",
+                object_id
+            );
+            assert_eq!(
+                thread.title,
+                Some("title".to_string()),
+                "object_id: {}",
+                object_id
+            );
+            assert_eq!(thread.author_id, 1, "object_id: {}", object_id);
+        }
     }
 
     #[actix_rt::test]

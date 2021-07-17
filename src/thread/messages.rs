@@ -186,7 +186,7 @@ impl MessageResponder for ThreadCreateCommentMutation {
                         .content_type("application/json; charset=utf-8")
                         .json(ThreadCreateCommentMutationResponse {
                             success: false,
-                            reason: Some(format!("Cannot create comment: {}", reason).to_string()),
+                            reason: Some(format!("Cannot create comment: {}", reason)),
                         }),
                 }
             }

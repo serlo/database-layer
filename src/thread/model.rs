@@ -196,7 +196,7 @@ impl Threads {
     where
         E: Executor<'a>,
     {
-        if payload.content.len() == 0 {
+        if payload.content.is_empty() {
             return Err(ThreadCommentThreadError::BadUserInput {
                 reason: "content is empty".to_string(),
             });

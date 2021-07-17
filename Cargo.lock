@@ -436,9 +436,9 @@ checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
 name = "cookie"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffdf8865bac3d9a3bde5bde9088ca431b11f5d37c7a578b8086af77248b76627"
+checksum = "d5f1c7727e460397e56abc4bddc1d49e07a1ad78fc98eb2e1c8f032a58a2f80d"
 dependencies = [
  "percent-encoding",
  "time 0.2.27",
@@ -1667,8 +1667,8 @@ dependencies = [
 
 [[package]]
 name = "sentry"
-version = "0.22.0"
-source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#d798b3c594bc05a4ac66beb724ed702dcc6ca7a8"
+version = "0.23.0"
+source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#b8d03e7960bfe9e7b2247775a4ff3f53eeed327e"
 dependencies = [
  "httpdate",
  "reqwest",
@@ -1681,8 +1681,8 @@ dependencies = [
 
 [[package]]
 name = "sentry-actix"
-version = "0.22.0"
-source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#d798b3c594bc05a4ac66beb724ed702dcc6ca7a8"
+version = "0.23.0"
+source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#b8d03e7960bfe9e7b2247775a4ff3f53eeed327e"
 dependencies = [
  "actix-web",
  "futures-util",
@@ -1691,8 +1691,8 @@ dependencies = [
 
 [[package]]
 name = "sentry-backtrace"
-version = "0.22.0"
-source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#d798b3c594bc05a4ac66beb724ed702dcc6ca7a8"
+version = "0.23.0"
+source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#b8d03e7960bfe9e7b2247775a4ff3f53eeed327e"
 dependencies = [
  "backtrace",
  "lazy_static",
@@ -1702,8 +1702,8 @@ dependencies = [
 
 [[package]]
 name = "sentry-contexts"
-version = "0.22.0"
-source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#d798b3c594bc05a4ac66beb724ed702dcc6ca7a8"
+version = "0.23.0"
+source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#b8d03e7960bfe9e7b2247775a4ff3f53eeed327e"
 dependencies = [
  "hostname",
  "lazy_static",
@@ -1716,8 +1716,8 @@ dependencies = [
 
 [[package]]
 name = "sentry-core"
-version = "0.22.0"
-source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#d798b3c594bc05a4ac66beb724ed702dcc6ca7a8"
+version = "0.23.0"
+source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#b8d03e7960bfe9e7b2247775a4ff3f53eeed327e"
 dependencies = [
  "chrono",
  "lazy_static",
@@ -1729,8 +1729,8 @@ dependencies = [
 
 [[package]]
 name = "sentry-panic"
-version = "0.22.0"
-source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#d798b3c594bc05a4ac66beb724ed702dcc6ca7a8"
+version = "0.23.0"
+source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#b8d03e7960bfe9e7b2247775a4ff3f53eeed327e"
 dependencies = [
  "sentry-backtrace",
  "sentry-core",
@@ -1738,11 +1738,13 @@ dependencies = [
 
 [[package]]
 name = "sentry-types"
-version = "0.22.0"
-source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#d798b3c594bc05a4ac66beb724ed702dcc6ca7a8"
+version = "0.23.0"
+source = "git+https://github.com/fourbs-net/sentry-rust?branch=update-actix#b8d03e7960bfe9e7b2247775a4ff3f53eeed327e"
 dependencies = [
  "chrono",
  "debugid",
+ "getrandom",
+ "hex",
  "serde",
  "serde_json",
  "thiserror",
@@ -2083,9 +2085,9 @@ dependencies = [
 
 [[package]]
 name = "subtle"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e81da0851ada1f3e9d4312c704aa4f8806f0f9d69faaf8df2f3464b4a9437c2"
+checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"

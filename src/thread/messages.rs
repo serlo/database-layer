@@ -77,6 +77,13 @@ pub struct ThreadCreateThreadMutation {
     pub send_email: bool,
 }
 
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThreadCreateThreadMutationResponse {
+    pub success: bool,
+    pub reason: Option<String>,
+}
+
 #[async_trait]
 impl MessageResponder for ThreadCreateThreadMutation {
     #[allow(clippy::async_yields_async)]
@@ -111,6 +118,11 @@ impl MessageResponder for ThreadCreateThreadMutation {
                     ThreadStartThreadError::UuidError { .. } => {
                         HttpResponse::InternalServerError().json(&None::<String>)
                     }
+                    ThreadStartThreadError::BadUserInput { reason } => HttpResponse::BadRequest()
+                        .json(ThreadCreateCommentMutationResponse {
+                            success: false,
+                            reason: Some(format!("Cannot create thread: {}", reason)),
+                        }),
                 }
             }
         }

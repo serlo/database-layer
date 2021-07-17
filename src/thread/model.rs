@@ -299,6 +299,8 @@ pub enum ThreadStartThreadError {
     EventError { inner: EventError },
     #[error("Thread could not be created because of an uuid error: {inner:?}.")]
     UuidError { inner: UuidError },
+    #[error("Cannot create thread: {reason:?}")]
+    BadUserInput { reason: String },
 }
 
 impl From<sqlx::Error> for ThreadStartThreadError {
@@ -333,6 +335,12 @@ impl Threads {
     where
         E: Executor<'a>,
     {
+        if payload.content.is_empty() {
+            return Err(ThreadStartThreadError::BadUserInput {
+                reason: "content is empty".to_string(),
+            });
+        }
+
         let mut transaction = executor.begin().await?;
 
         let uuid_data = sqlx::query!(

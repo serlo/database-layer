@@ -160,6 +160,8 @@ pub enum ThreadCommentThreadError {
     EventError { inner: EventError },
     #[error("Comment cannot be created because of an uuid error: {inner:?}.")]
     UuidError { inner: UuidError },
+    #[error("Bad user input: {reason:?}")]
+    BadUserInput { reason: String },
 }
 
 impl From<sqlx::Error> for ThreadCommentThreadError {
@@ -194,6 +196,12 @@ impl Threads {
     where
         E: Executor<'a>,
     {
+        if payload.content.len() == 0 {
+            return Err(ThreadCommentThreadError::BadUserInput {
+                reason: "content is empty".to_string(),
+            });
+        };
+
         let mut transaction = executor.begin().await?;
 
         let thread = sqlx::query!(

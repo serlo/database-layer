@@ -127,6 +127,13 @@ pub struct ThreadCreateCommentMutation {
     pub send_email: bool,
 }
 
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThreadCreateCommentMutationResponse {
+    pub success: bool,
+    pub reason: Option<String>,
+}
+
 #[async_trait]
 impl MessageResponder for ThreadCreateCommentMutation {
     #[allow(clippy::async_yields_async)]
@@ -163,6 +170,12 @@ impl MessageResponder for ThreadCreateCommentMutation {
                     ThreadCommentThreadError::UuidError { .. } => {
                         HttpResponse::InternalServerError().finish()
                     }
+                    ThreadCommentThreadError::BadUserInput { reason } => HttpResponse::BadRequest()
+                        .content_type("application/json; charset=utf-8")
+                        .json(ThreadCreateCommentMutationResponse {
+                            success: false,
+                            reason: Some(format!("Cannot create comment: {}", reason).to_string()),
+                        }),
                 }
             }
         }

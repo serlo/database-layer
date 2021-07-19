@@ -343,9 +343,9 @@ impl Threads {
 
         let mut transaction = executor.begin().await?;
 
-        let uuid_data = sqlx::query!(
+        let instance_id = sqlx::query!(
             r#"
-                SELECT i.id as instance_id, uuid.discriminator
+                SELECT i.id as instance_id
                     FROM uuid
                     JOIN (
                         SELECT id, instance_id FROM attachment_container
@@ -371,8 +371,7 @@ impl Threads {
             payload.object_id
         )
         .fetch_one(&mut transaction)
-        .await?;
-        let instance_id = uuid_data.instance_id as i32;
+        .await?.instance_id as i32;
 
         sqlx::query!(
             r#"
@@ -407,7 +406,7 @@ impl Threads {
             .save(&mut transaction)
             .await?;
 
-        if payload.subscribe && uuid_data.discriminator != "user" {
+        if payload.subscribe {
             let subscription = Subscription {
                 object_id: thread_id,
                 user_id: payload.user_id,

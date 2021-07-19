@@ -441,49 +441,56 @@ mod tests {
 
     #[actix_rt::test]
     async fn start_thread() {
-        for object_id in [1565, 1] {
-            let pool = create_database_pool().await.unwrap();
-            let mut transaction = pool.begin().await.unwrap();
+        run_test_start_thread(1565).await;
+    }
 
-            Threads::start_thread(
-                ThreadStartThreadPayload {
-                    title: "title".to_string(),
-                    content: "content-test".to_string(),
-                    object_id,
-                    user_id: 1,
-                    subscribe: true,
-                    send_email: false,
-                },
-                &mut transaction,
-            )
-            .await
-            .unwrap();
+    #[actix_rt::test]
+    async fn start_thread_on_user() {
+        run_test_start_thread(1).await;
+    }
 
-            let thread = sqlx::query!(
-                r#"
+    async fn run_test_start_thread(object_id: i32) {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Threads::start_thread(
+            ThreadStartThreadPayload {
+                title: "title".to_string(),
+                content: "content-test".to_string(),
+                object_id,
+                user_id: 1,
+                subscribe: true,
+                send_email: false,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        let thread = sqlx::query!(
+            r#"
                 SELECT title, content, author_id FROM comment WHERE uuid_id = ?
                 ORDER BY id DESC
             "#,
-                object_id
-            )
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap();
+            object_id
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap();
 
-            assert_eq!(
-                thread.content,
-                Some("content-test".to_string()),
-                "object_id: {}",
-                object_id
-            );
-            assert_eq!(
-                thread.title,
-                Some("title".to_string()),
-                "object_id: {}",
-                object_id
-            );
-            assert_eq!(thread.author_id, 1, "object_id: {}", object_id);
-        }
+        assert_eq!(
+            thread.content,
+            Some("content-test".to_string()),
+            "object_id: {}",
+            object_id
+        );
+        assert_eq!(
+            thread.title,
+            Some("title".to_string()),
+            "object_id: {}",
+            object_id
+        );
+        assert_eq!(thread.author_id, 1, "object_id: {}", object_id);
     }
 
     #[actix_rt::test]

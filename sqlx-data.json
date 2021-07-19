@@ -640,44 +640,6 @@
       "nullable": []
     }
   },
-  "3b5a8b30ba0c1e7963a030cf2e836bc1d8099b5aa271756bf249716469a5b562": {
-    "query": "\n                SELECT i.id as instance_id, uuid.discriminator\n                    FROM uuid\n                    JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id\n                        UNION ALL\n                        SELECT user.id, 1 FROM user) u\n                    JOIN instance i ON i.id = u.instance_id\n                    WHERE u.id = ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "instance_id",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "discriminator",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 224,
-            "max_size": 180
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
   "3c53faa4669ab4e83898639d4c51a92a6be3c24b57914864aa0509f75cb61506": {
     "query": "\n                SELECT l.id, l.actor_id, l.uuid_id, l.date, i.subdomain, e.name\n                    FROM event_log l\n                    LEFT JOIN event_parameter p ON l.id = p.log_id\n                    JOIN instance i ON l.instance_id = i.id\n                    JOIN event e ON l.event_id = e.id\n                    WHERE l.id = ?\n            ",
     "describe": {
@@ -1145,6 +1107,31 @@
       },
       "nullable": [
         false,
+        false
+      ]
+    }
+  },
+  "59c890642fddea5cbd5d6baddfc1099ab7190d2780b368f08d00f1580e58fa5f": {
+    "query": "\n                SELECT i.id as instance_id\n                    FROM uuid\n                    JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id\n                        UNION ALL\n                        SELECT user.id, 1 FROM user) u\n                    JOIN instance i ON i.id = u.instance_id\n                    WHERE u.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "instance_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
         false
       ]
     }

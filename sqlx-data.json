@@ -477,7 +477,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4121
+              "bits": 4113
             },
             "char_set": 224,
             "max_size": 4294967295
@@ -900,7 +900,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 24
+              "bits": 16
             },
             "char_set": 224,
             "max_size": 262140
@@ -942,31 +942,6 @@
         true,
         true,
         true
-      ]
-    }
-  },
-  "4b1165c46b2fb6df7b6556769f27a5586be66272b1b54a41191c744926fe3b92": {
-    "query": "\n                SELECT i.id as instance_id\n                    FROM uuid\n                    JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id) u\n                    JOIN instance i ON i.id = u.instance_id\n                    WHERE u.id = ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "instance_id",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false
       ]
     }
   },
@@ -1132,6 +1107,31 @@
       },
       "nullable": [
         false,
+        false
+      ]
+    }
+  },
+  "59c890642fddea5cbd5d6baddfc1099ab7190d2780b368f08d00f1580e58fa5f": {
+    "query": "\n                SELECT i.id as instance_id\n                    FROM uuid\n                    JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id\n                        UNION ALL\n                        SELECT user.id, 1 FROM user) u\n                    JOIN instance i ON i.id = u.instance_id\n                    WHERE u.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "instance_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
         false
       ]
     }
@@ -1504,7 +1504,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4120
+              "bits": 4112
             },
             "char_set": 224,
             "max_size": 4294967295
@@ -1516,7 +1516,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4120
+              "bits": 4112
             },
             "char_set": 224,
             "max_size": 4294967295
@@ -2078,7 +2078,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4121
+              "bits": 4113
             },
             "char_set": 224,
             "max_size": 4294967295

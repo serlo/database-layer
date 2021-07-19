@@ -160,6 +160,8 @@ pub enum ThreadCommentThreadError {
     EventError { inner: EventError },
     #[error("Comment cannot be created because of an uuid error: {inner:?}.")]
     UuidError { inner: UuidError },
+    #[error("Bad user input: {reason:?}")]
+    BadUserInput { reason: String },
 }
 
 impl From<sqlx::Error> for ThreadCommentThreadError {
@@ -194,6 +196,12 @@ impl Threads {
     where
         E: Executor<'a>,
     {
+        if payload.content.is_empty() {
+            return Err(ThreadCommentThreadError::BadUserInput {
+                reason: "content is empty".to_string(),
+            });
+        };
+
         let mut transaction = executor.begin().await?;
 
         let thread = sqlx::query!(
@@ -291,6 +299,8 @@ pub enum ThreadStartThreadError {
     EventError { inner: EventError },
     #[error("Thread could not be created because of an uuid error: {inner:?}.")]
     UuidError { inner: UuidError },
+    #[error("Cannot create thread: {reason:?}")]
+    BadUserInput { reason: String },
 }
 
 impl From<sqlx::Error> for ThreadStartThreadError {
@@ -325,9 +335,15 @@ impl Threads {
     where
         E: Executor<'a>,
     {
+        if payload.content.is_empty() {
+            return Err(ThreadStartThreadError::BadUserInput {
+                reason: "content is empty".to_string(),
+            });
+        }
+
         let mut transaction = executor.begin().await?;
 
-        let result = sqlx::query!(
+        let instance_id = sqlx::query!(
             r#"
                 SELECT i.id as instance_id
                     FROM uuid
@@ -346,16 +362,16 @@ impl Threads {
                         UNION ALL
                         SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id
                         UNION ALL
-                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id) u
+                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id
+                        UNION ALL
+                        SELECT user.id, 1 FROM user) u
                     JOIN instance i ON i.id = u.instance_id
                     WHERE u.id = ?
             "#,
             payload.object_id
         )
         .fetch_one(&mut transaction)
-        .await?;
-
-        let instance_id = result.instance_id as i32;
+        .await?.instance_id as i32;
 
         sqlx::query!(
             r#"
@@ -424,6 +440,15 @@ mod tests {
 
     #[actix_rt::test]
     async fn start_thread() {
+        run_test_start_thread(1565).await;
+    }
+
+    #[actix_rt::test]
+    async fn start_thread_on_user() {
+        run_test_start_thread(1).await;
+    }
+
+    async fn run_test_start_thread(object_id: i32) {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
@@ -431,7 +456,7 @@ mod tests {
             ThreadStartThreadPayload {
                 title: "title".to_string(),
                 content: "content-test".to_string(),
-                object_id: 1565,
+                object_id,
                 user_id: 1,
                 subscribe: true,
                 send_email: false,
@@ -444,16 +469,27 @@ mod tests {
         let thread = sqlx::query!(
             r#"
                 SELECT title, content, author_id FROM comment WHERE uuid_id = ?
+                ORDER BY id DESC
             "#,
-            1565
+            object_id
         )
         .fetch_one(&mut transaction)
         .await
         .unwrap();
 
-        assert_eq!(thread.content, Some("content-test".to_string()));
-        assert_eq!(thread.title, Some("title".to_string()));
-        assert_eq!(thread.author_id, 1);
+        assert_eq!(
+            thread.content,
+            Some("content-test".to_string()),
+            "object_id: {}",
+            object_id
+        );
+        assert_eq!(
+            thread.title,
+            Some("title".to_string()),
+            "object_id: {}",
+            object_id
+        );
+        assert_eq!(thread.author_id, 1, "object_id: {}", object_id);
     }
 
     #[actix_rt::test]

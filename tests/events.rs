@@ -23,7 +23,7 @@ mod tests {
 
         let events = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
 
-        assert_eq!(events["events"].len(), 15_000);
+        assert_eq!(events["events"].len(), 50_000);
         assert_eq!(
             events["events"][0],
             json::object! {
@@ -70,7 +70,6 @@ mod tests {
         let events =
             json::parse(std::str::from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
 
-        assert_eq!(events["events"].len(), 15_000);
         assert_eq!(
             events["events"][10_000],
             json::object! {

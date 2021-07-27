@@ -477,7 +477,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4113
+              "bits": 4121
             },
             "char_set": 224,
             "max_size": 4294967295
@@ -951,7 +951,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 16
+              "bits": 24
             },
             "char_set": 224,
             "max_size": 262140
@@ -1555,7 +1555,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4112
+              "bits": 4120
             },
             "char_set": 224,
             "max_size": 4294967295
@@ -1567,7 +1567,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4112
+              "bits": 4120
             },
             "char_set": 224,
             "max_size": 4294967295
@@ -2129,7 +2129,7 @@
           "type_info": {
             "type": "Blob",
             "flags": {
-              "bits": 4113
+              "bits": 4121
             },
             "char_set": 224,
             "max_size": 4294967295

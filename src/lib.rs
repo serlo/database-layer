@@ -4,7 +4,7 @@ use std::time::Duration;
 use actix_service::ServiceFactory;
 use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
 use actix_web::web::Data;
-use actix_web::{App, Error};
+use actix_web::App;
 use dotenv::dotenv;
 use regex::Regex;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
@@ -38,7 +38,7 @@ pub fn format_alias(prefix: Option<&str>, id: i32, suffix: Option<&str>) -> Stri
 fn slugify(segment: &str) -> String {
     let segment = Regex::new(r#"['"`=+*&^%$#@!<>?]"#)
         .unwrap()
-        .replace_all(&segment, "");
+        .replace_all(segment, "");
     let segment = Regex::new(r"[\[\]{}() ,;:/|\-]+")
         .unwrap()
         .replace_all(&segment, "-");
@@ -52,7 +52,7 @@ where
         ServiceRequest,
         Config = (),
         Response = ServiceResponse<B>,
-        Error = Error,
+        Error = actix_web::Error,
         InitError = (),
     >,
 {

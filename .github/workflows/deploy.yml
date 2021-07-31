@@ -26,9 +26,10 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 14.x
+          cache: yarn
       - uses: google-github-actions/setup-gcloud@master
         with:
-          version: '274.0.0'
+          version: 274.0.0
           service_account_key: ${{ secrets.GCP_KEY_CONTAINER_REGISTRY }}
       - run: gcloud auth configure-docker
       - run: yarn --frozen-lockfile

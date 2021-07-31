@@ -12,6 +12,7 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 14.x
+          cache: yarn
       - run: yarn --frozen-lockfile
       - uses: actions-rs/toolchain@v1
         with:

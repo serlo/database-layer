@@ -107,7 +107,7 @@ impl Alias {
 
         let mut transaction = executor.begin().await?;
 
-        let id: i32 = match re.captures(&path) {
+        let id: i32 = match re.captures(path) {
             Some(captures) => {
                 let username = captures.name("username").unwrap().as_str();
                 sqlx::query!(
@@ -128,7 +128,7 @@ impl Alias {
             }
             _ => {
                 let re = Regex::new(r"^(?P<subject>[^/]+/)?(?P<id>\d+)/(?P<title>[^/]*)$").unwrap();
-                match re.captures(&path) {
+                match re.captures(path) {
                     Some(captures) => captures.name("id").unwrap().as_str().parse().unwrap(),
                     _ => sqlx::query!(
                         r#"

@@ -11,7 +11,7 @@ use crate::notification::NotificationMessage;
 use crate::subscription::SubscriptionMessage;
 use crate::thread::ThreadMessage;
 use crate::user::{UserMessage, UserQueriesMessage};
-use crate::uuid::{EntityMessage, UuidMessage};
+use crate::uuid::{EntityMessage, PageMessage, UuidMessage};
 
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]
 #[async_trait]
@@ -28,6 +28,7 @@ pub enum Message {
     LicenseMessage(LicenseMessage),
     NavigationMessage(NavigationMessage),
     NotificationMessage(NotificationMessage),
+    PageMessage(PageMessage),
     SubscriptionMessage(SubscriptionMessage),
     ThreadMessage(ThreadMessage),
     UserMessage(UserMessage),
@@ -46,6 +47,7 @@ impl MessageResponder for Message {
             Message::LicenseMessage(message) => message.handle(connection).await,
             Message::NavigationMessage(message) => message.handle(connection).await,
             Message::NotificationMessage(message) => message.handle(connection).await,
+            Message::PageMessage(message) => message.handle(connection).await,
             Message::SubscriptionMessage(message) => message.handle(connection).await,
             Message::ThreadMessage(message) => message.handle(connection).await,
             Message::UserMessage(message) => message.handle(connection).await,

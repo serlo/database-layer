@@ -1413,6 +1413,16 @@
       ]
     }
   },
+  "93081abb88a7b64f755224129e49c32f58f91648d7e1b59bcb8d65d643c47d5b": {
+    "query": "\n                        UPDATE page_repository\n                            SET current_revision_id = ?\n                            WHERE id = ?\n                    ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
   "946cb29201730400fa27ad703aab47a0268fadb1d6a4fe37e92789fef15eed02": {
     "query": "\n                SELECT c.id\n                    FROM entity_link l\n                    JOIN entity c on c.id = l.child_id\n                    JOIN type t ON t.id = c.type_id\n                    WHERE l.parent_id = ? AND t.name = ?\n                    ORDER BY l.order ASC\n            ",
     "describe": {

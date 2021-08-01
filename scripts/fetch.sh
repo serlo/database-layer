@@ -11,7 +11,11 @@ function init() {
 }
 
 function main() {
-  yarn pacts
+  curl --request POST \
+    --header "Content-Type: application/json" \
+    --data "{ \"type\": \"$1\", \"payload\": $2 }" \
+    --verbose \
+    http://localhost:8080/ | jq
 }
 
 function tear_down() {
@@ -19,4 +23,4 @@ function tear_down() {
 }
 
 init
-main
+main "$@"

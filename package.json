@@ -12,6 +12,7 @@
     "check:all": "scripts/run_all_checks.sh",
     "clippy": "cargo clippy --all-features -- -D warnings",
     "deploy": "ts-node scripts/deploy",
+    "fetch": "./scripts/fetch.sh",
     "format": "prettier --write .",
     "mysql": "docker-compose exec mysql mysql --user=root --password=secret serlo",
     "mysql:dump": "ts-node scripts/mysql-dump.ts",

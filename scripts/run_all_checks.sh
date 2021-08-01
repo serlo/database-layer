@@ -82,9 +82,5 @@ function log() {
   echo "${BOLD}$@${NORMAL}"
 }
 
-function current_timestamp() {
-  date "+%s"
-}
-
 init "$@"
 main

@@ -262,14 +262,16 @@ pub struct Events {
 impl Events {
     pub async fn fetch(
         after: i32,
+        actor_id: Option<i32>,
         max_events: i32,
         pool: &MySqlPool,
     ) -> Result<Events, sqlx::Error> {
-        Self::fetch_via_transaction(after, max_events, pool).await
+        Self::fetch_via_transaction(after, actor_id, max_events, pool).await
     }
 
     pub async fn fetch_via_transaction<'a, E>(
         after: i32,
+        actor_id: Option<i32>,
         max_events: i32,
         executor: E,
     ) -> Result<Events, sqlx::Error>
@@ -306,12 +308,16 @@ impl Events {
                     LEFT JOIN event_parameter_name epn ON epn.id = ep.name_id
                     LEFT JOIN event_parameter_string eps ON eps.event_parameter_id = ep.id
                     LEFT JOIN event_parameter_uuid epu ON epu.event_parameter_id = ep.id
-                WHERE el.id > ?
+                WHERE
+                  el.id > ?
+                  AND (? IS NULL OR el.actor_id = ?)
                 GROUP BY el.id
                 ORDER BY el.id
                 LIMIT ?
             "#,
             after,
+            actor_id,
+            actor_id,
             max_events
         )
         .fetch(executor);

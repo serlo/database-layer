@@ -11,7 +11,7 @@ function init() {
 }
 
 function main() {
-  curl --request POST \
+  time curl --request POST \
     --header "Content-Type: application/json" \
     --data "{ \"type\": \"$1\", \"payload\": $2 }" \
     --verbose \

@@ -66,18 +66,19 @@ impl MessageResponder for EventQuery {
 #[serde(rename_all = "camelCase")]
 pub struct EventsQuery {
     after: Option<i32>,
+    actor_id: Option<i32>,
 }
 
 #[async_trait]
 impl MessageResponder for EventsQuery {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let max_events: i32 = 50_000;
+        let max_events: i32 = 2_000;
         let after = self.after.unwrap_or(0);
         let events = match connection {
-            Connection::Pool(pool) => Events::fetch(after, max_events, pool).await,
+            Connection::Pool(pool) => Events::fetch(after, self.actor_id, max_events, pool).await,
             Connection::Transaction(transaction) => {
-                Events::fetch_via_transaction(after, max_events, transaction).await
+                Events::fetch_via_transaction(after, self.actor_id, max_events, transaction).await
             }
         };
         match events {

@@ -24,6 +24,7 @@ mod tests {
         let events = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
 
         assert_eq!(events["events"].len(), 100);
+        assert_eq!(events["hasNextPage"], true);
         assert_eq!(
             events["events"][0],
             json::object! {
@@ -57,6 +58,7 @@ mod tests {
         let events =
             json::parse(std::str::from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
 
+        assert_eq!(events["hasNextPage"], true);
         assert_eq!(
             events["events"][0],
             json::object! {
@@ -91,6 +93,7 @@ mod tests {
             json::parse(std::str::from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
 
         assert_eq!(events["events"].len(), 13);
+        assert_eq!(events["hasNextPage"], false);
         assert_eq!(
             events["events"][12],
             json::object! {
@@ -126,6 +129,7 @@ mod tests {
             json::parse(std::str::from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
 
         assert_eq!(events["events"].len(), 23);
+        assert_eq!(events["hasNextPage"], false);
         assert_eq!(
             events["events"][22],
             json::object! {
@@ -159,6 +163,7 @@ mod tests {
         let events =
             json::parse(std::str::from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
 
+        assert_eq!(events["hasNextPage"], true);
         assert_eq!(
             events["events"][0],
             json::object! {

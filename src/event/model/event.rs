@@ -256,8 +256,10 @@ impl EventPayload {
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Events {
     events: Vec<Event>,
+    has_next_page: bool,
 }
 
 impl Events {
@@ -336,13 +338,18 @@ impl Events {
             object_id,
             instance_id,
             instance_id,
-            max_events
+            max_events + 1
         )
         .fetch(&mut transaction);
 
         let mut events: Vec<Event> = Vec::new();
+        let mut has_next_page = false;
 
         while let Some(record) = event_records.try_next().await? {
+            if events.len() as i32 == max_events {
+                has_next_page = true;
+                break;
+            }
             let instance = match record.instance.parse() {
                 Ok(instance) => instance,
                 _ => continue,
@@ -398,6 +405,9 @@ impl Events {
             }
         }
 
-        Ok(Events { events })
+        Ok(Events {
+            events,
+            has_next_page,
+        })
     }
 }

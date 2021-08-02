@@ -263,15 +263,17 @@ impl Events {
     pub async fn fetch(
         after: i32,
         actor_id: Option<i32>,
+        object_id: Option<i32>,
         max_events: i32,
         pool: &MySqlPool,
     ) -> Result<Events, sqlx::Error> {
-        Self::fetch_via_transaction(after, actor_id, max_events, pool).await
+        Self::fetch_via_transaction(after, actor_id, object_id, max_events, pool).await
     }
 
     pub async fn fetch_via_transaction<'a, E>(
         after: i32,
         actor_id: Option<i32>,
+        object_id: Option<i32>,
         max_events: i32,
         executor: E,
     ) -> Result<Events, sqlx::Error>
@@ -311,6 +313,7 @@ impl Events {
                 WHERE
                   el.id > ?
                   AND (? IS NULL OR el.actor_id = ?)
+                  AND (? IS NULL OR el.uuid_id = ? OR epu.uuid_id = ?)
                 GROUP BY el.id
                 ORDER BY el.id
                 LIMIT ?
@@ -318,6 +321,9 @@ impl Events {
             after,
             actor_id,
             actor_id,
+            object_id,
+            object_id,
+            object_id,
             max_events
         )
         .fetch(executor);

@@ -106,4 +106,38 @@ mod tests {
             }
         );
     }
+
+    #[actix_rt::test]
+    async fn events_query_with_object_id_parameter() {
+        let pool = create_database_pool().await.unwrap();
+        let app = configure_app(App::new(), pool);
+        let app = test::init_service(app).await;
+        let req = test::TestRequest::post()
+            .uri("/")
+            .set_json(&serde_json::json!({
+                "type": "EventsQuery",
+                "payload": { "objectId": 1565 }
+            }))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert!(resp.status().is_success());
+
+        let events =
+            json::parse(std::str::from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
+
+        assert_eq!(events["events"].len(), 23);
+        assert_eq!(
+            events["events"][0],
+            json::object! {
+                "__typename": "SetLicenseNotificationEvent",
+                "id": 472,
+                "instance": "de",
+                "date": "2014-03-01T20:38:24+01:00",
+                "actorId": 6,
+                "objectId": 1565,
+                "repositoryId": 1565
+            }
+        );
+    }
 }

@@ -23,6 +23,7 @@ use super::EventError;
 use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::event::{EventStringParameters, EventUuidParameters};
+use crate::instance::Instance;
 use crate::notification::{Notifications, NotificationsError};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -264,22 +265,29 @@ impl Events {
         after: Option<i32>,
         actor_id: Option<i32>,
         object_id: Option<i32>,
+        instance: Option<&Instance>,
         max_events: i32,
         pool: &MySqlPool,
     ) -> Result<Events, sqlx::Error> {
-        Self::fetch_via_transaction(after, actor_id, object_id, max_events, pool).await
+        Self::fetch_via_transaction(after, actor_id, object_id, instance, max_events, pool).await
     }
 
     pub async fn fetch_via_transaction<'a, E>(
         after: Option<i32>,
         actor_id: Option<i32>,
         object_id: Option<i32>,
+        instance: Option<&Instance>,
         max_events: i32,
         executor: E,
     ) -> Result<Events, sqlx::Error>
     where
         E: Executor<'a>,
     {
+        let mut transaction = executor.begin().await.unwrap();
+        let instance_id = match instance {
+            Some(instance) => Some(Instance::fetch_id(instance, &mut transaction).await?),
+            None => None,
+        };
         let mut event_records = sqlx::query!(
             r#"
                 SELECT
@@ -314,6 +322,7 @@ impl Events {
                   (? IS NULL OR el.id < ?)
                   AND (? IS NULL OR el.actor_id = ?)
                   AND (? IS NULL OR el.uuid_id = ? OR epu.uuid_id = ?)
+                  AND (? IS NULL OR el.instance_id = ?)
                 GROUP BY el.id
                 ORDER BY el.id DESC
                 LIMIT ?
@@ -325,9 +334,11 @@ impl Events {
             object_id,
             object_id,
             object_id,
+            instance_id,
+            instance_id,
             max_events
         )
-        .fetch(executor);
+        .fetch(&mut transaction);
 
         let mut events: Vec<Event> = Vec::new();
 

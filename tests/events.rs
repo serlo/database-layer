@@ -141,6 +141,39 @@ mod tests {
     }
 
     #[actix_rt::test]
+    async fn events_query_with_instance_parameter() {
+        let pool = create_database_pool().await.unwrap();
+        let app = configure_app(App::new(), pool);
+        let app = test::init_service(app).await;
+        let req = test::TestRequest::post()
+            .uri("/")
+            .set_json(&serde_json::json!({
+                "type": "EventsQuery",
+                "payload": { "instance": "en", "first": 200 }
+            }))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert!(resp.status().is_success());
+
+        let events =
+            json::parse(std::str::from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
+
+        assert_eq!(
+            events["events"][0],
+            json::object! {
+                "__typename": "SetTaxonomyTermNotificationEvent",
+                "id": 86591,
+                "instance": "en",
+                "date": "2020-06-16T12:50:13+02:00",
+                "actorId": 1,
+                "objectId": 35607,
+                "taxonomyTermId": 35607
+            }
+        );
+    }
+
+    #[actix_rt::test]
     async fn events_query_fails_when_first_parameter_is_too_high() {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);

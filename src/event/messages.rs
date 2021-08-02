@@ -5,6 +5,7 @@ use serde_json::json;
 
 use super::model::{Event, EventError, Events};
 use crate::database::Connection;
+use crate::instance::Instance;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
@@ -69,6 +70,7 @@ pub struct EventsQuery {
     after: Option<i32>,
     actor_id: Option<i32>,
     object_id: Option<i32>,
+    instance: Option<Instance>,
     first: i32,
 }
 
@@ -84,13 +86,22 @@ impl MessageResponder for EventsQuery {
         }
         let events = match connection {
             Connection::Pool(pool) => {
-                Events::fetch(self.after, self.actor_id, self.object_id, self.first, pool).await
+                Events::fetch(
+                    self.after,
+                    self.actor_id,
+                    self.object_id,
+                    self.instance.as_ref(),
+                    self.first,
+                    pool,
+                )
+                .await
             }
             Connection::Transaction(transaction) => {
                 Events::fetch_via_transaction(
                     self.after,
                     self.actor_id,
                     self.object_id,
+                    self.instance.as_ref(),
                     self.first,
                     transaction,
                 )

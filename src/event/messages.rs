@@ -87,22 +87,22 @@ impl MessageResponder for EventsQuery {
         let events = match connection {
             Connection::Pool(pool) => {
                 Events::fetch(
+                    self.first,
                     self.after,
                     self.actor_id,
                     self.object_id,
                     self.instance.as_ref(),
-                    self.first,
                     pool,
                 )
                 .await
             }
             Connection::Transaction(transaction) => {
                 Events::fetch_via_transaction(
+                    self.first,
                     self.after,
                     self.actor_id,
                     self.object_id,
                     self.instance.as_ref(),
-                    self.first,
                     transaction,
                 )
                 .await

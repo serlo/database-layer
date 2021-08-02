@@ -264,22 +264,22 @@ pub struct Events {
 
 impl Events {
     pub async fn fetch(
+        max_events: i32,
         after: Option<i32>,
         actor_id: Option<i32>,
         object_id: Option<i32>,
         instance: Option<&Instance>,
-        max_events: i32,
         pool: &MySqlPool,
     ) -> Result<Events, sqlx::Error> {
-        Self::fetch_via_transaction(after, actor_id, object_id, instance, max_events, pool).await
+        Self::fetch_via_transaction(max_events, after, actor_id, object_id, instance, pool).await
     }
 
     pub async fn fetch_via_transaction<'a, E>(
+        max_events: i32,
         after: Option<i32>,
         actor_id: Option<i32>,
         object_id: Option<i32>,
         instance: Option<&Instance>,
-        max_events: i32,
         executor: E,
     ) -> Result<Events, sqlx::Error>
     where

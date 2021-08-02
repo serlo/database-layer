@@ -14,7 +14,7 @@ mod tests {
             .uri("/")
             .set_json(&serde_json::json!({
                 "type": "EventsQuery",
-                "payload": {}
+                "payload": { "first": 100 }
             }))
             .to_request();
         let resp = test::call_service(&app, req).await;
@@ -23,7 +23,7 @@ mod tests {
 
         let events = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
 
-        assert_eq!(events["events"].len(), 2_000);
+        assert_eq!(events["events"].len(), 100);
         assert_eq!(
             events["events"][0],
             json::object! {
@@ -47,7 +47,7 @@ mod tests {
             .uri("/")
             .set_json(&serde_json::json!({
                 "type": "EventsQuery",
-                "payload": { "after": 80_015 }
+                "payload": { "after": 80_015, "first": 10 }
             }))
             .to_request();
         let resp = test::call_service(&app, req).await;
@@ -80,7 +80,7 @@ mod tests {
             .uri("/")
             .set_json(&serde_json::json!({
                 "type": "EventsQuery",
-                "payload": { "actorId": 2 }
+                "payload": { "actorId": 2, "first": 200 }
             }))
             .to_request();
         let resp = test::call_service(&app, req).await;
@@ -115,7 +115,7 @@ mod tests {
             .uri("/")
             .set_json(&serde_json::json!({
                 "type": "EventsQuery",
-                "payload": { "objectId": 1565 }
+                "payload": { "objectId": 1565, "first": 200 }
             }))
             .to_request();
         let resp = test::call_service(&app, req).await;
@@ -137,6 +137,31 @@ mod tests {
                 "objectId": 1565,
                 "repositoryId": 1565
             }
+        );
+    }
+
+    #[actix_rt::test]
+    async fn events_query_fails_when_first_parameter_is_too_high() {
+        let pool = create_database_pool().await.unwrap();
+        let app = configure_app(App::new(), pool);
+        let app = test::init_service(app).await;
+        let req = test::TestRequest::post()
+            .uri("/")
+            .set_json(&serde_json::json!({
+                "type": "EventsQuery",
+                "payload": { "first": 1_000_000 }
+            }))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), 400);
+
+        let events =
+            json::parse(std::str::from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
+
+        assert_eq!(
+            events,
+            json::object! { "success": false, "reason": "parameter `first` is too high" }
         );
     }
 }

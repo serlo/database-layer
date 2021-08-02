@@ -1,6 +1,7 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use super::model::{Event, EventError, Events};
 use crate::database::Connection;
@@ -68,23 +69,29 @@ pub struct EventsQuery {
     after: Option<i32>,
     actor_id: Option<i32>,
     object_id: Option<i32>,
+    first: i32,
 }
 
 #[async_trait]
 impl MessageResponder for EventsQuery {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let max_events: i32 = 2000;
+        if self.first > 10_000 {
+            return HttpResponse::BadRequest().json(json!({
+                "success": false,
+                "reason": "parameter `first` is too high",
+            }));
+        }
         let events = match connection {
             Connection::Pool(pool) => {
-                Events::fetch(self.after, self.actor_id, self.object_id, max_events, pool).await
+                Events::fetch(self.after, self.actor_id, self.object_id, self.first, pool).await
             }
             Connection::Transaction(transaction) => {
                 Events::fetch_via_transaction(
                     self.after,
                     self.actor_id,
                     self.object_id,
-                    max_events,
+                    self.first,
                     transaction,
                 )
                 .await

@@ -27,14 +27,13 @@ mod tests {
         assert_eq!(
             events["events"][0],
             json::object! {
-                __typename: "CreateTaxonomyLinkNotificationEvent",
-                id: 1,
-                instance: "de",
-                date: "2014-03-01T20:36:33+01:00",
-                actorId: 6,
-                objectId: 8,
-                parentId: 8,
-                childId: 1199
+                "__typename": "SetTaxonomyTermNotificationEvent",
+                "id": 86591,
+                "instance": "en",
+                "date": "2020-06-16T12:50:13+02:00",
+                "actorId": 1,
+                "objectId": 35607,
+                "taxonomyTermId": 35607
             }
         );
     }
@@ -48,7 +47,7 @@ mod tests {
             .uri("/")
             .set_json(&serde_json::json!({
                 "type": "EventsQuery",
-                "payload": { "after": 80_013 }
+                "payload": { "after": 80_015 }
             }))
             .to_request();
         let resp = test::call_service(&app, req).await;
@@ -93,7 +92,7 @@ mod tests {
 
         assert_eq!(events["events"].len(), 13);
         assert_eq!(
-            events["events"][0],
+            events["events"][12],
             json::object! {
                 "__typename": "CreateCommentNotificationEvent",
                 "id": 37375,
@@ -128,7 +127,7 @@ mod tests {
 
         assert_eq!(events["events"].len(), 23);
         assert_eq!(
-            events["events"][0],
+            events["events"][22],
             json::object! {
                 "__typename": "SetLicenseNotificationEvent",
                 "id": 472,

@@ -74,15 +74,14 @@ pub struct EventsQuery {
 impl MessageResponder for EventsQuery {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let max_events: i32 = 2_000;
-        let after = self.after.unwrap_or(0);
+        let max_events: i32 = 2000;
         let events = match connection {
             Connection::Pool(pool) => {
-                Events::fetch(after, self.actor_id, self.object_id, max_events, pool).await
+                Events::fetch(self.after, self.actor_id, self.object_id, max_events, pool).await
             }
             Connection::Transaction(transaction) => {
                 Events::fetch_via_transaction(
-                    after,
+                    self.after,
                     self.actor_id,
                     self.object_id,
                     max_events,

@@ -261,7 +261,7 @@ pub struct Events {
 
 impl Events {
     pub async fn fetch(
-        after: i32,
+        after: Option<i32>,
         actor_id: Option<i32>,
         object_id: Option<i32>,
         max_events: i32,
@@ -271,7 +271,7 @@ impl Events {
     }
 
     pub async fn fetch_via_transaction<'a, E>(
-        after: i32,
+        after: Option<i32>,
         actor_id: Option<i32>,
         object_id: Option<i32>,
         max_events: i32,
@@ -311,13 +311,14 @@ impl Events {
                     LEFT JOIN event_parameter_string eps ON eps.event_parameter_id = ep.id
                     LEFT JOIN event_parameter_uuid epu ON epu.event_parameter_id = ep.id
                 WHERE
-                  el.id > ?
+                  (? IS NULL OR el.id < ?)
                   AND (? IS NULL OR el.actor_id = ?)
                   AND (? IS NULL OR el.uuid_id = ? OR epu.uuid_id = ?)
                 GROUP BY el.id
-                ORDER BY el.id
+                ORDER BY el.id DESC
                 LIMIT ?
             "#,
+            after,
             after,
             actor_id,
             actor_id,

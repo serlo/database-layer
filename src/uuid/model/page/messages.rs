@@ -59,10 +59,12 @@ impl MessageResponder for PageCheckoutRevisionMutation {
             }
         };
         match response {
-            Ok(_) => HttpResponse::Ok().json(PageRevisionData {
-                success: true,
-                reason: None,
-            }),
+            Ok(_) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(PageRevisionData {
+                    success: true,
+                    reason: None,
+                }),
             Err(e) => {
                 println!("/checkout-revision: {:?}", e);
                 match e {
@@ -122,10 +124,12 @@ impl MessageResponder for PageRejectRevisionMutation {
             }
         };
         match response {
-            Ok(_) => HttpResponse::Ok().json(PageRevisionData {
-                success: true,
-                reason: None,
-            }),
+            Ok(_) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(PageRevisionData {
+                    success: true,
+                    reason: None,
+                }),
             Err(e) => {
                 println!("/reject-revision: {:?}", e);
                 match e {

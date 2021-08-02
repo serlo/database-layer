@@ -62,10 +62,12 @@ impl MessageResponder for EntityCheckoutRevisionMutation {
             }
         };
         match response {
-            Ok(_) => HttpResponse::Ok().json(EntityRevisionData {
-                success: true,
-                reason: None,
-            }),
+            Ok(_) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(EntityRevisionData {
+                    success: true,
+                    reason: None,
+                }),
             Err(e) => {
                 println!("/checkout-revision: {:?}", e);
                 match e {
@@ -126,10 +128,12 @@ impl MessageResponder for EntityRejectRevisionMutation {
             }
         };
         match response {
-            Ok(_) => HttpResponse::Ok().json(EntityRevisionData {
-                success: true,
-                reason: None,
-            }),
+            Ok(_) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(EntityRevisionData {
+                    success: true,
+                    reason: None,
+                }),
             Err(e) => {
                 println!("/reject-revision: {:?}", e);
                 match e {

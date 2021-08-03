@@ -1,9 +1,11 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use super::model::{Event, EventError, Events};
 use crate::database::Connection;
+use crate::instance::Instance;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
@@ -67,18 +69,43 @@ impl MessageResponder for EventQuery {
 pub struct EventsQuery {
     after: Option<i32>,
     actor_id: Option<i32>,
+    object_id: Option<i32>,
+    instance: Option<Instance>,
+    first: i32,
 }
 
 #[async_trait]
 impl MessageResponder for EventsQuery {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let max_events: i32 = 2_000;
-        let after = self.after.unwrap_or(0);
+        if self.first > 10_000 {
+            return HttpResponse::BadRequest().json(json!({
+                "success": false,
+                "reason": "parameter `first` is too high",
+            }));
+        }
         let events = match connection {
-            Connection::Pool(pool) => Events::fetch(after, self.actor_id, max_events, pool).await,
+            Connection::Pool(pool) => {
+                Events::fetch(
+                    self.first,
+                    self.after,
+                    self.actor_id,
+                    self.object_id,
+                    self.instance.as_ref(),
+                    pool,
+                )
+                .await
+            }
             Connection::Transaction(transaction) => {
-                Events::fetch_via_transaction(after, self.actor_id, max_events, transaction).await
+                Events::fetch_via_transaction(
+                    self.first,
+                    self.after,
+                    self.actor_id,
+                    self.object_id,
+                    self.instance.as_ref(),
+                    transaction,
+                )
+                .await
             }
         };
         match events {

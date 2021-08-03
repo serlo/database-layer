@@ -23,6 +23,7 @@ use super::EventError;
 use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::event::{EventStringParameters, EventUuidParameters};
+use crate::instance::Instance;
 use crate::notification::{Notifications, NotificationsError};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -255,29 +256,40 @@ impl EventPayload {
 }
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Events {
     events: Vec<Event>,
+    has_next_page: bool,
 }
 
 impl Events {
     pub async fn fetch(
-        after: i32,
-        actor_id: Option<i32>,
         max_events: i32,
+        after: Option<i32>,
+        actor_id: Option<i32>,
+        object_id: Option<i32>,
+        instance: Option<&Instance>,
         pool: &MySqlPool,
     ) -> Result<Events, sqlx::Error> {
-        Self::fetch_via_transaction(after, actor_id, max_events, pool).await
+        Self::fetch_via_transaction(max_events, after, actor_id, object_id, instance, pool).await
     }
 
     pub async fn fetch_via_transaction<'a, E>(
-        after: i32,
-        actor_id: Option<i32>,
         max_events: i32,
+        after: Option<i32>,
+        actor_id: Option<i32>,
+        object_id: Option<i32>,
+        instance: Option<&Instance>,
         executor: E,
     ) -> Result<Events, sqlx::Error>
     where
         E: Executor<'a>,
     {
+        let mut transaction = executor.begin().await.unwrap();
+        let instance_id = match instance {
+            Some(instance) => Some(Instance::fetch_id(instance, &mut transaction).await?),
+            None => None,
+        };
         let mut event_records = sqlx::query!(
             r#"
                 SELECT
@@ -309,22 +321,35 @@ impl Events {
                     LEFT JOIN event_parameter_string eps ON eps.event_parameter_id = ep.id
                     LEFT JOIN event_parameter_uuid epu ON epu.event_parameter_id = ep.id
                 WHERE
-                  el.id > ?
+                  (? IS NULL OR el.id < ?)
                   AND (? IS NULL OR el.actor_id = ?)
+                  AND (? IS NULL OR el.uuid_id = ? OR epu.uuid_id = ?)
+                  AND (? IS NULL OR el.instance_id = ?)
                 GROUP BY el.id
-                ORDER BY el.id
+                ORDER BY el.id DESC
                 LIMIT ?
             "#,
             after,
+            after,
             actor_id,
             actor_id,
-            max_events
+            object_id,
+            object_id,
+            object_id,
+            instance_id,
+            instance_id,
+            max_events + 1
         )
-        .fetch(executor);
+        .fetch(&mut transaction);
 
         let mut events: Vec<Event> = Vec::new();
+        let mut has_next_page = false;
 
         while let Some(record) = event_records.try_next().await? {
+            if events.len() as i32 == max_events {
+                has_next_page = true;
+                break;
+            }
             let instance = match record.instance.parse() {
                 Ok(instance) => instance,
                 _ => continue,
@@ -380,6 +405,9 @@ impl Events {
             }
         }
 
-        Ok(Events { events })
+        Ok(Events {
+            events,
+            has_next_page,
+        })
     }
 }

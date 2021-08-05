@@ -1659,6 +1659,31 @@
       "nullable": []
     }
   },
+  "ae09ec9485a318aaac9d2122b1da6d05bec6f5506257f0b47f13265d21d13d10": {
+    "query": "\n                SELECT DISTINCT(r.id)\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                LEFT JOIN entity_link el1 ON el1.child_id = e.id\n                LEFT JOIN entity_link el2 ON el2.child_id = el1.parent_id\n                JOIN term_taxonomy_entity tte ON tte.entity_id IN (e.id, el1.parent_id, el2.parent_id)\n                JOIN term_taxonomy t0 ON t0.id = tte.term_taxonomy_id\n                LEFT JOIN term_taxonomy t1 ON t1.id = t0.parent_id\n                LEFT JOIN term_taxonomy t2 ON t2.id = t1.parent_id\n                LEFT JOIN term_taxonomy t3 ON t3.id = t2.parent_id\n                LEFT JOIN term_taxonomy t4 ON t4.id = t3.parent_id\n                LEFT JOIN term_taxonomy t5 ON t5.id = t4.parent_id\n                LEFT JOIN term_taxonomy t6 ON t6.id = t5.parent_id\n                LEFT JOIN term_taxonomy t7 ON t7.id = t6.parent_id\n                LEFT JOIN term_taxonomy t8 ON t8.id = t7.parent_id\n                LEFT JOIN term_taxonomy t9 ON t9.id = t8.parent_id\n                LEFT JOIN term_taxonomy t10 ON t10.id = t9.parent_id\n                LEFT JOIN term_taxonomy t11 ON t11.id = t10.parent_id\n                LEFT JOIN term_taxonomy t12 ON t12.id = t11.parent_id\n                LEFT JOIN term_taxonomy t13 ON t13.id = t12.parent_id\n                LEFT JOIN term_taxonomy t14 ON t14.id = t13.parent_id\n                LEFT JOIN term_taxonomy t15 ON t15.id = t14.parent_id\n                LEFT JOIN term_taxonomy t16 ON t16.id = t15.parent_id\n                LEFT JOIN term_taxonomy t17 ON t17.id = t16.parent_id\n                LEFT JOIN term_taxonomy t18 ON t18.id = t17.parent_id\n                LEFT JOIN term_taxonomy t19 ON t19.id = t18.parent_id\n                LEFT JOIN term_taxonomy t20 ON t20.id = t19.parent_id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                    AND (el1.type_id IS NULL OR el1.type_id = 9)\n                    AND (el2.type_id IS NULL OR el2.type_id = 9)\n                    AND ? IN (t0.id, t1.id, t2.id, t3.id, t4.id, t5.id, t6.id,\n                              t7.id, t8.id, t9.id, t10.id, t11.id, t12.id, t13.id,\n                              t14.id, t15.id, t16.id, t17.id, t18.id, t19.id, t20.id)\n                ORDER BY r.id\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "b67a6cd1168e030043fc309da009c241d88b7543ce11598b7e183086dd2f5077": {
     "query": "\n                SELECT entity_id\n                    FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n                    ORDER BY position ASC\n            ",
     "describe": {
@@ -2020,6 +2045,31 @@
             "type": "LongLong",
             "flags": {
               "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "e16011083c1b7d901c93404dd3ee8d7a647fcb4708ef266fba3da654c9c90cce": {
+    "query": "\n                SELECT subject.id\n                FROM term_taxonomy AS subject\n                JOIN term_taxonomy AS root ON root.id = subject.parent_id\n                JOIN uuid as subject_uuid ON subject_uuid.id = subject.id\n                JOIN taxonomy AS subject_taxonomy ON subject_taxonomy.id = subject.taxonomy_id\n                JOIN type AS subject_type ON subject_type.id = subject_taxonomy.type_id\n                JOIN term AS subject_term ON subject_term.id = subject.term_id\n                JOIN instance AS subject_instance ON subject_instance.id = subject_term.instance_id\n                WHERE\n                    (root.parent_id IS NULL OR root.id = 106081)\n                    AND subject_uuid.trashed = 0\n                    AND (subject_type.name = \"subject\" or subject_type.name = \"topic\")\n                    AND subject_instance.subdomain = ?\n                ORDER BY subject.id;\n\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
             },
             "char_set": 63,
             "max_size": 20

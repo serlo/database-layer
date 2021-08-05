@@ -14,6 +14,7 @@ use crate::message::MessageResponder;
 pub enum EntityMessage {
     EntityCheckoutRevisionMutation(EntityCheckoutRevisionMutation),
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
+    UnrevisedRevisionsQuery(UnrevisedRevisionsQuery),
 }
 
 #[async_trait]
@@ -27,6 +28,7 @@ impl MessageResponder for EntityMessage {
             EntityMessage::EntityRejectRevisionMutation(message) => {
                 message.handle(connection).await
             }
+            EntityMessage::UnrevisedRevisionsQuery(message) => message.handle(connection).await,
         }
     }
 }
@@ -170,6 +172,36 @@ impl MessageResponder for EntityRejectRevisionMutation {
                         })
                     }
                 }
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnrevisedRevisionsQuery {
+    pub taxonomy_term_id: i32,
+}
+
+#[async_trait]
+impl MessageResponder for UnrevisedRevisionsQuery {
+    #[allow(clippy::async_yields_async)]
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let response = match connection {
+            Connection::Pool(pool) => {
+                Entity::unrevised_revisions(self.taxonomy_term_id, pool).await
+            }
+            Connection::Transaction(transaction) => {
+                Entity::unrevised_revisions(self.taxonomy_term_id, transaction).await
+            }
+        };
+        match response {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(data),
+            Err(e) => {
+                println!("/unrevised-revisions/{}: {:?}", self.taxonomy_term_id, e);
+                HttpResponse::InternalServerError().finish()
             }
         }
     }

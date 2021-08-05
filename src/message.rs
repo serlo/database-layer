@@ -8,6 +8,7 @@ use crate::event::EventMessage;
 use crate::license::LicenseMessage;
 use crate::navigation::NavigationMessage;
 use crate::notification::NotificationMessage;
+use crate::subject::SubjectsMessage;
 use crate::subscription::SubscriptionMessage;
 use crate::thread::ThreadMessage;
 use crate::user::{UserMessage, UserQueriesMessage};
@@ -29,6 +30,7 @@ pub enum Message {
     NavigationMessage(NavigationMessage),
     NotificationMessage(NotificationMessage),
     PageMessage(PageMessage),
+    SubjectsMessage(SubjectsMessage),
     SubscriptionMessage(SubscriptionMessage),
     ThreadMessage(ThreadMessage),
     UserMessage(UserMessage),
@@ -48,6 +50,7 @@ impl MessageResponder for Message {
             Message::NavigationMessage(message) => message.handle(connection).await,
             Message::NotificationMessage(message) => message.handle(connection).await,
             Message::PageMessage(message) => message.handle(connection).await,
+            Message::SubjectsMessage(message) => message.handle(connection).await,
             Message::SubscriptionMessage(message) => message.handle(connection).await,
             Message::ThreadMessage(message) => message.handle(connection).await,
             Message::UserMessage(message) => message.handle(connection).await,

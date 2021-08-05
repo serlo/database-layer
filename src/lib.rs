@@ -22,6 +22,7 @@ pub mod message;
 pub mod navigation;
 pub mod notification;
 pub mod routes;
+pub mod subject;
 pub mod subscription;
 pub mod thread;
 pub mod user;

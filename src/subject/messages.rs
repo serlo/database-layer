@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 
 use super::model::{Subjects, SubjectsError};
 use crate::database::Connection;
-use crate::instance::Instance;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
@@ -25,19 +24,16 @@ impl MessageResponder for SubjectsMessage {
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SubjectsQuery {
-    pub instance: Instance,
-}
+pub struct SubjectsQuery {}
 
 #[async_trait]
 impl MessageResponder for SubjectsQuery {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let instance = self.instance.clone();
         let subjects = match connection {
-            Connection::Pool(pool) => Subjects::fetch(instance, pool).await,
+            Connection::Pool(pool) => Subjects::fetch(pool).await,
             Connection::Transaction(transaction) => {
-                Subjects::fetch_via_transaction(instance, transaction).await
+                Subjects::fetch_via_transaction(transaction).await
             }
         };
         match subjects {
@@ -45,7 +41,7 @@ impl MessageResponder for SubjectsQuery {
                 .content_type("application/json; charset=utf-8")
                 .json(&data),
             Err(e) => {
-                println!("/subjects/{:?}: {:?}", self.instance, e);
+                println!("/subjects: {:?}", e);
                 match e {
                     SubjectsError::DatabaseError { .. } => {
                         HttpResponse::InternalServerError().finish()

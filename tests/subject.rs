@@ -14,7 +14,7 @@ mod tests {
             .uri("/")
             .set_json(&serde_json::json!({
                 "type": "SubjectsQuery",
-                "payload": { "instance": "de" }
+                "payload": {}
             }))
             .to_request();
         let resp = test::call_service(&app, req).await;
@@ -26,17 +26,48 @@ mod tests {
         assert_eq!(
             result,
             json::object! {
-                "subjectTaxonomyTermIds": [
-                    5,
-                    17744,
-                    18230,
-                    23362,
-                    25712,
-                    25979,
-                    26523,
-                    33894,
-                      35608
-                ]
+              "subjects": [
+                {
+                  "instance": "de",
+                  "taxonomyTermId": 5
+                },
+                {
+                  "instance": "de",
+                  "taxonomyTermId": 17744
+                },
+                {
+                  "instance": "de",
+                  "taxonomyTermId": 18230
+                },
+                {
+                  "instance": "de",
+                  "taxonomyTermId": 23362
+                },
+                {
+                  "instance": "en",
+                  "taxonomyTermId": 23593
+                },
+                {
+                  "instance": "de",
+                  "taxonomyTermId": 25712
+                },
+                {
+                  "instance": "de",
+                  "taxonomyTermId": 25979
+                },
+                {
+                  "instance": "de",
+                  "taxonomyTermId": 26523
+                },
+                {
+                  "instance": "de",
+                  "taxonomyTermId": 33894
+                },
+                {
+                  "instance": "de",
+                  "taxonomyTermId": 35608
+                }
+              ]
             }
         );
     }

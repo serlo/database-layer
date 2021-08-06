@@ -1974,6 +1974,44 @@
       ]
     }
   },
+  "cfca515fb4bf1ec23708898e83d552c620dd9c72afa7301a6df55b08944c1f9d": {
+    "query": "\n                SELECT\n                    subject.id,\n                    subject_instance.subdomain as instance\n                FROM term_taxonomy AS subject\n                JOIN term_taxonomy AS root ON root.id = subject.parent_id\n                JOIN uuid as subject_uuid ON subject_uuid.id = subject.id\n                JOIN taxonomy AS subject_taxonomy ON subject_taxonomy.id = subject.taxonomy_id\n                JOIN type AS subject_type ON subject_type.id = subject_taxonomy.type_id\n                JOIN term AS subject_term ON subject_term.id = subject.term_id\n                JOIN instance AS subject_instance ON subject_instance.id = subject_term.instance_id\n                WHERE\n                    (root.parent_id IS NULL OR root.id = 106081)\n                    AND subject_uuid.trashed = 0\n                    AND (subject_type.name = \"subject\" or subject_type.name = \"topic\")\n                ORDER BY subject.id;\n\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "instance",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "d121fd6dc5fc9d7dfa144ab7400b289f770e709857e4f1e29af22f27daf212ee": {
     "query": "\n                SELECT DISTINCT(r.id)\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                ORDER BY r.id\n            ",
     "describe": {
@@ -2058,31 +2096,6 @@
             "type": "LongLong",
             "flags": {
               "bits": 1
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
-  "e16011083c1b7d901c93404dd3ee8d7a647fcb4708ef266fba3da654c9c90cce": {
-    "query": "\n                SELECT subject.id\n                FROM term_taxonomy AS subject\n                JOIN term_taxonomy AS root ON root.id = subject.parent_id\n                JOIN uuid as subject_uuid ON subject_uuid.id = subject.id\n                JOIN taxonomy AS subject_taxonomy ON subject_taxonomy.id = subject.taxonomy_id\n                JOIN type AS subject_type ON subject_type.id = subject_taxonomy.type_id\n                JOIN term AS subject_term ON subject_term.id = subject.term_id\n                JOIN instance AS subject_instance ON subject_instance.id = subject_term.instance_id\n                WHERE\n                    (root.parent_id IS NULL OR root.id = 106081)\n                    AND subject_uuid.trashed = 0\n                    AND (subject_type.name = \"subject\" or subject_type.name = \"topic\")\n                    AND subject_instance.subdomain = ?\n                ORDER BY subject.id;\n\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4107
             },
             "char_set": 63,
             "max_size": 20

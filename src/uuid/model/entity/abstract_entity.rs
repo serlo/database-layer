@@ -13,6 +13,7 @@ pub struct AbstractEntity {
     pub date: DateTime,
     pub license_id: i32,
     pub taxonomy_term_ids: Vec<i32>,
+    pub canonical_subject_id: Option<i32>,
 
     pub current_revision_id: Option<i32>,
     pub revision_ids: Vec<i32>,

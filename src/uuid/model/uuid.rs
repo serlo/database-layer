@@ -156,13 +156,17 @@ impl Uuid {
             Discriminator::BlogPost => BlogPost::get_context(),
             // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
             Discriminator::Comment => None,
-            Discriminator::Entity => Entity::fetch_canonical_subject(id, pool).await?,
-            Discriminator::EntityRevision => {
-                EntityRevision::fetch_canonical_subject(id, pool).await?
-            }
+            Discriminator::Entity => Entity::fetch_canonical_subject(id, pool)
+                .await?
+                .map(|subject| subject.name),
+            Discriminator::EntityRevision => EntityRevision::fetch_canonical_subject(id, pool)
+                .await?
+                .map(|subject| subject.name),
             Discriminator::Page => None,         // TODO:
             Discriminator::PageRevision => None, // TODO:
-            Discriminator::TaxonomyTerm => TaxonomyTerm::fetch_canonical_subject(id, pool).await?,
+            Discriminator::TaxonomyTerm => TaxonomyTerm::fetch_canonical_subject(id, pool)
+                .await?
+                .map(|subject| subject.name),
             Discriminator::User => User::get_context(),
         };
         Ok(context)
@@ -184,16 +188,21 @@ impl Uuid {
             // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
             Discriminator::Comment => None,
             Discriminator::Entity => {
-                Entity::fetch_canonical_subject_via_transaction(id, &mut transaction).await?
+                Entity::fetch_canonical_subject_via_transaction(id, &mut transaction)
+                    .await?
+                    .map(|subject| subject.name)
             }
             Discriminator::EntityRevision => {
                 EntityRevision::fetch_canonical_subject_via_transaction(id, &mut transaction)
                     .await?
+                    .map(|subject| subject.name)
             }
             Discriminator::Page => None,         // TODO:
             Discriminator::PageRevision => None, // TODO:
             Discriminator::TaxonomyTerm => {
-                TaxonomyTerm::fetch_canonical_subject(id, &mut transaction).await?
+                TaxonomyTerm::fetch_canonical_subject(id, &mut transaction)
+                    .await?
+                    .map(|subject| subject.name)
             }
             Discriminator::User => User::get_context(),
         };

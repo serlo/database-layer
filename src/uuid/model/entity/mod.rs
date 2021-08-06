@@ -1,3 +1,4 @@
+use crate::uuid::Subject;
 use async_trait::async_trait;
 use futures::try_join;
 use serde::{Deserialize, Serialize};
@@ -128,6 +129,9 @@ macro_rules! to_entity {
             date: $entity.date.into(),
             license_id: $entity.license_id,
             taxonomy_term_ids: $taxonomy_terms.iter().map(|term| term.id as i32).collect(),
+            canonical_subject_id: $subject
+                .as_ref()
+                .map(|subject| subject.taxonomy_term_id.clone()),
 
             current_revision_id: $entity.current_revision_id,
             revision_ids: $revisions
@@ -193,7 +197,7 @@ macro_rules! to_entity {
             id: $id,
             trashed: $entity.trashed != 0,
             alias: format_alias(
-                $subject.as_deref(),
+                $subject.map(|subject| subject.name).as_deref(),
                 $id,
                 Some(
                     $entity
@@ -284,7 +288,7 @@ impl Entity {
     pub async fn fetch_canonical_subject(
         id: i32,
         pool: &MySqlPool,
-    ) -> Result<Option<String>, sqlx::Error> {
+    ) -> Result<Option<Subject>, sqlx::Error> {
         let taxonomy_terms = fetch_all_taxonomy_terms_ancestors!(id, pool).await?;
         let subject = fetch_canonical_subject!(taxonomy_terms, pool);
         Ok(subject)
@@ -293,7 +297,7 @@ impl Entity {
     pub async fn fetch_canonical_subject_via_transaction<'a, E>(
         id: i32,
         executor: E,
-    ) -> Result<Option<String>, sqlx::Error>
+    ) -> Result<Option<Subject>, sqlx::Error>
     where
         E: Executor<'a>,
     {

@@ -1,3 +1,4 @@
+use crate::uuid::Subject;
 use async_trait::async_trait;
 use futures::try_join;
 use serde::Serialize;
@@ -169,7 +170,7 @@ impl EntityRevision {
     pub async fn fetch_canonical_subject(
         id: i32,
         pool: &MySqlPool,
-    ) -> Result<Option<String>, sqlx::Error> {
+    ) -> Result<Option<Subject>, sqlx::Error> {
         let revision = sqlx::query!(
             r#"SELECT repository_id FROM entity_revision WHERE id = ?"#,
             id
@@ -182,7 +183,7 @@ impl EntityRevision {
     pub async fn fetch_canonical_subject_via_transaction<'a, E>(
         id: i32,
         executor: E,
-    ) -> Result<Option<String>, sqlx::Error>
+    ) -> Result<Option<Subject>, sqlx::Error>
     where
         E: Executor<'a>,
     {

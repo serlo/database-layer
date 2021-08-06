@@ -6,15 +6,15 @@ mod tests {
     use serlo_org_database_layer::{configure_app, create_database_pool};
 
     #[actix_rt::test]
-    async fn unrevised_revisions_query() {
+    async fn unrevised_entities_query() {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);
         let app = test::init_service(app).await;
         let req = test::TestRequest::post()
             .uri("/")
             .set_json(&serde_json::json!({
-                "type": "UnrevisedRevisionsQuery",
-                "payload": { "taxonomyTermId": 5 }
+                "type": "UnrevisedEntitiesQuery",
+                "payload": {}
             }))
             .to_request();
         let resp = test::call_service(&app, req).await;
@@ -26,7 +26,14 @@ mod tests {
         assert_eq!(
             result,
             json::object! {
-                "unrevisedRevisionIds": [ 34742 ]
+                "unrevisedEntityIds": [
+                    26893,
+                    33583,
+                    34742,
+                    34909,
+                    35290,
+                    35558
+                 ]
             }
         );
     }

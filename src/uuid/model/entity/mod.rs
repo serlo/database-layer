@@ -633,60 +633,29 @@ impl Entity {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UnrevisedRevisionsQueryResult {
-    pub unrevised_revision_ids: Vec<i32>,
+pub struct UnrevisedEntitiesQueryResult {
+    pub unrevised_entity_ids: Vec<i32>,
 }
 
 impl Entity {
-    pub async fn unrevised_revisions<'a, E>(
-        taxonomy_term_id: i32,
+    pub async fn unrevised_entities<'a, E>(
         executor: E,
-    ) -> Result<UnrevisedRevisionsQueryResult, sqlx::Error>
+    ) -> Result<UnrevisedEntitiesQueryResult, sqlx::Error>
     where
         E: Executor<'a>,
     {
-        let unrevised_revision_ids = sqlx::query!(
+        let unrevised_entity_ids = sqlx::query!(
             r#"
                 SELECT DISTINCT(r.id)
                 FROM entity_revision r
                 JOIN uuid u_r ON r.id = u_r.id
                 JOIN entity e ON e.id = r.repository_id
                 JOIN uuid u_e ON e.id = u_e.id
-                LEFT JOIN entity_link el1 ON el1.child_id = e.id
-                LEFT JOIN entity_link el2 ON el2.child_id = el1.parent_id
-                JOIN term_taxonomy_entity tte ON tte.entity_id IN (e.id, el1.parent_id, el2.parent_id)
-                JOIN term_taxonomy t0 ON t0.id = tte.term_taxonomy_id
-                LEFT JOIN term_taxonomy t1 ON t1.id = t0.parent_id
-                LEFT JOIN term_taxonomy t2 ON t2.id = t1.parent_id
-                LEFT JOIN term_taxonomy t3 ON t3.id = t2.parent_id
-                LEFT JOIN term_taxonomy t4 ON t4.id = t3.parent_id
-                LEFT JOIN term_taxonomy t5 ON t5.id = t4.parent_id
-                LEFT JOIN term_taxonomy t6 ON t6.id = t5.parent_id
-                LEFT JOIN term_taxonomy t7 ON t7.id = t6.parent_id
-                LEFT JOIN term_taxonomy t8 ON t8.id = t7.parent_id
-                LEFT JOIN term_taxonomy t9 ON t9.id = t8.parent_id
-                LEFT JOIN term_taxonomy t10 ON t10.id = t9.parent_id
-                LEFT JOIN term_taxonomy t11 ON t11.id = t10.parent_id
-                LEFT JOIN term_taxonomy t12 ON t12.id = t11.parent_id
-                LEFT JOIN term_taxonomy t13 ON t13.id = t12.parent_id
-                LEFT JOIN term_taxonomy t14 ON t14.id = t13.parent_id
-                LEFT JOIN term_taxonomy t15 ON t15.id = t14.parent_id
-                LEFT JOIN term_taxonomy t16 ON t16.id = t15.parent_id
-                LEFT JOIN term_taxonomy t17 ON t17.id = t16.parent_id
-                LEFT JOIN term_taxonomy t18 ON t18.id = t17.parent_id
-                LEFT JOIN term_taxonomy t19 ON t19.id = t18.parent_id
-                LEFT JOIN term_taxonomy t20 ON t20.id = t19.parent_id
                 WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )
                     AND u_r.trashed = 0
                     AND u_e.trashed = 0
-                    AND (el1.type_id IS NULL OR el1.type_id = 9)
-                    AND (el2.type_id IS NULL OR el2.type_id = 9)
-                    AND ? IN (t0.id, t1.id, t2.id, t3.id, t4.id, t5.id, t6.id,
-                              t7.id, t8.id, t9.id, t10.id, t11.id, t12.id, t13.id,
-                              t14.id, t15.id, t16.id, t17.id, t18.id, t19.id, t20.id)
                 ORDER BY r.id
             "#,
-            taxonomy_term_id
         )
         .fetch_all(executor)
         .await?
@@ -694,8 +663,8 @@ impl Entity {
         .map(|record| record.id as i32)
         .collect();
 
-        Ok(UnrevisedRevisionsQueryResult {
-            unrevised_revision_ids,
+        Ok(UnrevisedEntitiesQueryResult {
+            unrevised_entity_ids,
         })
     }
 }

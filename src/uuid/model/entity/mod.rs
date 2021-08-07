@@ -646,7 +646,9 @@ impl Entity {
     {
         let unrevised_entity_ids = sqlx::query!(
             r#"
-                SELECT DISTINCT(r.id)
+                SELECT
+                    MIN(e.id) as entity_id,
+                    MIN(r.id) as min_revision_id
                 FROM entity_revision r
                 JOIN uuid u_r ON r.id = u_r.id
                 JOIN entity e ON e.id = r.repository_id
@@ -654,13 +656,14 @@ impl Entity {
                 WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )
                     AND u_r.trashed = 0
                     AND u_e.trashed = 0
-                ORDER BY r.id
+                GROUP BY e.id
+                ORDER BY min_revision_id
             "#,
         )
         .fetch_all(executor)
         .await?
         .iter()
-        .map(|record| record.id as i32)
+        .map(|record| record.entity_id.unwrap() as i32)
         .collect();
 
         Ok(UnrevisedEntitiesQueryResult {

@@ -2012,17 +2012,29 @@
       ]
     }
   },
-  "d121fd6dc5fc9d7dfa144ab7400b289f770e709857e4f1e29af22f27daf212ee": {
-    "query": "\n                SELECT DISTINCT(r.id)\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                ORDER BY r.id\n            ",
+  "d00937304e4e8f2ce6834a49203a12933695782368e45f70679f3a945e857d5f": {
+    "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            ",
     "describe": {
       "columns": [
         {
           "ordinal": 0,
-          "name": "id",
+          "name": "entity_id",
           "type_info": {
             "type": "LongLong",
             "flags": {
-              "bits": 4107
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "min_revision_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 128
             },
             "char_set": 63,
             "max_size": 20
@@ -2033,7 +2045,8 @@
         "Right": 0
       },
       "nullable": [
-        false
+        true,
+        true
       ]
     }
   },

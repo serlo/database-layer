@@ -555,6 +555,44 @@
       ]
     }
   },
+  "2cbdc7207a5bb3f12364dacfc66c9b1cec92e919b6f0afe847df32093bc16c70": {
+    "query": "\n                SELECT t.name as name, t1.id as id\n                    FROM term_taxonomy t0\n                    JOIN term_taxonomy t1 ON t1.parent_id = t0.id\n                    LEFT JOIN term_taxonomy t2 ON t2.parent_id = t1.id\n                    LEFT JOIN term_taxonomy t3 ON t3.parent_id = t2.id\n                    LEFT JOIN term_taxonomy t4 ON t4.parent_id = t3.id\n                    LEFT JOIN term_taxonomy t5 ON t5.parent_id = t4.id\n                    LEFT JOIN term_taxonomy t6 ON t6.parent_id = t5.id\n                    LEFT JOIN term_taxonomy t7 ON t7.parent_id = t6.id\n                    LEFT JOIN term_taxonomy t8 ON t8.parent_id = t7.id\n                    LEFT JOIN term_taxonomy t9 ON t9.parent_id = t8.id\n                    LEFT JOIN term_taxonomy t10 ON t10.parent_id = t9.id\n                    LEFT JOIN term_taxonomy t11 ON t11.parent_id = t10.id\n                    LEFT JOIN term_taxonomy t12 ON t12.parent_id = t11.id\n                    LEFT JOIN term_taxonomy t13 ON t13.parent_id = t12.id\n                    LEFT JOIN term_taxonomy t14 ON t14.parent_id = t13.id\n                    LEFT JOIN term_taxonomy t15 ON t15.parent_id = t14.id\n                    LEFT JOIN term_taxonomy t16 ON t16.parent_id = t15.id\n                    LEFT JOIN term_taxonomy t17 ON t17.parent_id = t16.id\n                    LEFT JOIN term_taxonomy t18 ON t18.parent_id = t17.id\n                    LEFT JOIN term_taxonomy t19 ON t19.parent_id = t18.id\n                    LEFT JOIN term_taxonomy t20 ON t20.parent_id = t19.id\n                    JOIN term t on t1.term_id = t.id\n                    WHERE\n                        t0.parent_id IS NULL AND\n                        (\n                            t1.id = ? OR t2.id = ? OR t3.id = ? OR t4.id = ? OR t5.id = ? OR t6.id = ? OR t7.id = ? OR t8.id = ? OR t9.id = ? OR t10.id = ? OR\n                            t11.id = ? OR t12.id = ? OR t13.id = ? OR t14.id = ? OR t15.id = ? OR t16.id = ? OR t17.id = ? OR t18.id = ? OR t19.id = ? OR t20.id = ?\n                        )\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 20
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "2cfe0f4498a487a637ea1cb30708575d034c365423432ae23a167bc33ca248a0": {
     "query": "\n                        UPDATE entity\n                            SET current_revision_id = ?\n                            WHERE id = ?\n                    ",
     "describe": {
@@ -1936,6 +1974,82 @@
       ]
     }
   },
+  "cfca515fb4bf1ec23708898e83d552c620dd9c72afa7301a6df55b08944c1f9d": {
+    "query": "\n                SELECT\n                    subject.id,\n                    subject_instance.subdomain as instance\n                FROM term_taxonomy AS subject\n                JOIN term_taxonomy AS root ON root.id = subject.parent_id\n                JOIN uuid as subject_uuid ON subject_uuid.id = subject.id\n                JOIN taxonomy AS subject_taxonomy ON subject_taxonomy.id = subject.taxonomy_id\n                JOIN type AS subject_type ON subject_type.id = subject_taxonomy.type_id\n                JOIN term AS subject_term ON subject_term.id = subject.term_id\n                JOIN instance AS subject_instance ON subject_instance.id = subject_term.instance_id\n                WHERE\n                    (root.parent_id IS NULL OR root.id = 106081)\n                    AND subject_uuid.trashed = 0\n                    AND (subject_type.name = \"subject\" or subject_type.name = \"topic\")\n                ORDER BY subject.id;\n\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "instance",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "d00937304e4e8f2ce6834a49203a12933695782368e45f70679f3a945e857d5f": {
+    "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "entity_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "min_revision_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        true,
+        true
+      ]
+    }
+  },
   "d4c1b33938809466906554f5bc60faadae4d6e5781bb9acc02f47c7385960e3a": {
     "query": "\n                SELECT n.name, s.value\n                    FROM event_parameter p\n                    JOIN event_parameter_name n ON n.id = p.name_id\n                    JOIN event_parameter_string s ON s.event_parameter_id = p.id\n                    WHERE p.name_id = n.id AND p.log_id = ?\n            ",
     "describe": {
@@ -1982,31 +2096,6 @@
         "Right": 3
       },
       "nullable": []
-    }
-  },
-  "dd1b7b672c5e386ab4319b213697960bcb5fd22407f9e710657af27b592c4a9a": {
-    "query": "\n                SELECT t.name\n                    FROM term_taxonomy t0\n                    LEFT JOIN term_taxonomy t1 ON t1.parent_id = t0.id\n                    LEFT JOIN term_taxonomy t2 ON t2.parent_id = t1.id\n                    LEFT JOIN term_taxonomy t3 ON t3.parent_id = t2.id\n                    LEFT JOIN term_taxonomy t4 ON t4.parent_id = t3.id\n                    LEFT JOIN term_taxonomy t5 ON t5.parent_id = t4.id\n                    LEFT JOIN term_taxonomy t6 ON t6.parent_id = t5.id\n                    LEFT JOIN term_taxonomy t7 ON t7.parent_id = t6.id\n                    LEFT JOIN term_taxonomy t8 ON t8.parent_id = t7.id\n                    LEFT JOIN term_taxonomy t9 ON t9.parent_id = t8.id\n                    LEFT JOIN term_taxonomy t10 ON t10.parent_id = t9.id\n                    LEFT JOIN term_taxonomy t11 ON t11.parent_id = t10.id\n                    LEFT JOIN term_taxonomy t12 ON t12.parent_id = t11.id\n                    LEFT JOIN term_taxonomy t13 ON t13.parent_id = t12.id\n                    LEFT JOIN term_taxonomy t14 ON t14.parent_id = t13.id\n                    LEFT JOIN term_taxonomy t15 ON t15.parent_id = t14.id\n                    LEFT JOIN term_taxonomy t16 ON t16.parent_id = t15.id\n                    LEFT JOIN term_taxonomy t17 ON t17.parent_id = t16.id\n                    LEFT JOIN term_taxonomy t18 ON t18.parent_id = t17.id\n                    LEFT JOIN term_taxonomy t19 ON t19.parent_id = t18.id\n                    LEFT JOIN term_taxonomy t20 ON t20.parent_id = t19.id\n                    JOIN term t on t1.term_id = t.id\n                    WHERE\n                        t0.parent_id IS NULL AND\n                        (\n                            t1.id = ? OR t2.id = ? OR t3.id = ? OR t4.id = ? OR t5.id = ? OR t6.id = ? OR t7.id = ? OR t8.id = ? OR t9.id = ? OR t10.id = ? OR\n                            t11.id = ? OR t12.id = ? OR t13.id = ? OR t14.id = ? OR t15.id = ? OR t16.id = ? OR t17.id = ? OR t18.id = ? OR t19.id = ? OR t20.id = ?\n                        )\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "name",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 224,
-            "max_size": 1020
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 20
-      },
-      "nullable": [
-        false
-      ]
     }
   },
   "de8954840e9300a85d37e36f88909aac12801755043e241637bca623ed0ed245": {

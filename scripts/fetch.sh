@@ -11,9 +11,12 @@ function init() {
 }
 
 function main() {
-  time curl --request POST \
-    --header "Content-Type: application/json" \
-    --data "{ \"type\": \"$1\", \"payload\": $2 }" \
+  DATA="{ \"type\": \"$1\", \"payload\": $2 }"
+
+  log "INFO: Fetch with data $(echo "$DATA" | jq)"
+
+  time curl --header "Content-Type: application/json" \
+    --data "$DATA" \
     --verbose \
     http://localhost:8080/ | jq
 }

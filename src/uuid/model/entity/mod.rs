@@ -1,3 +1,4 @@
+use crate::uuid::Subject;
 use async_trait::async_trait;
 use futures::try_join;
 use serde::{Deserialize, Serialize};
@@ -128,6 +129,9 @@ macro_rules! to_entity {
             date: $entity.date.into(),
             license_id: $entity.license_id,
             taxonomy_term_ids: $taxonomy_terms.iter().map(|term| term.id as i32).collect(),
+            canonical_subject_id: $subject
+                .as_ref()
+                .map(|subject| subject.taxonomy_term_id.clone()),
 
             current_revision_id: $entity.current_revision_id,
             revision_ids: $revisions
@@ -193,7 +197,7 @@ macro_rules! to_entity {
             id: $id,
             trashed: $entity.trashed != 0,
             alias: format_alias(
-                $subject.as_deref(),
+                $subject.map(|subject| subject.name).as_deref(),
                 $id,
                 Some(
                     $entity
@@ -284,7 +288,7 @@ impl Entity {
     pub async fn fetch_canonical_subject(
         id: i32,
         pool: &MySqlPool,
-    ) -> Result<Option<String>, sqlx::Error> {
+    ) -> Result<Option<Subject>, sqlx::Error> {
         let taxonomy_terms = fetch_all_taxonomy_terms_ancestors!(id, pool).await?;
         let subject = fetch_canonical_subject!(taxonomy_terms, pool);
         Ok(subject)
@@ -293,7 +297,7 @@ impl Entity {
     pub async fn fetch_canonical_subject_via_transaction<'a, E>(
         id: i32,
         executor: E,
-    ) -> Result<Option<String>, sqlx::Error>
+    ) -> Result<Option<Subject>, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -624,6 +628,47 @@ impl Entity {
         } else {
             Err(EntityRejectRevisionError::InvalidRevision { uuid: revision })
         }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnrevisedEntitiesQueryResult {
+    pub unrevised_entity_ids: Vec<i32>,
+}
+
+impl Entity {
+    pub async fn unrevised_entities<'a, E>(
+        executor: E,
+    ) -> Result<UnrevisedEntitiesQueryResult, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        let unrevised_entity_ids = sqlx::query!(
+            r#"
+                SELECT
+                    MIN(e.id) as entity_id,
+                    MIN(r.id) as min_revision_id
+                FROM entity_revision r
+                JOIN uuid u_r ON r.id = u_r.id
+                JOIN entity e ON e.id = r.repository_id
+                JOIN uuid u_e ON e.id = u_e.id
+                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )
+                    AND u_r.trashed = 0
+                    AND u_e.trashed = 0
+                GROUP BY e.id
+                ORDER BY min_revision_id
+            "#,
+        )
+        .fetch_all(executor)
+        .await?
+        .iter()
+        .map(|record| record.entity_id.unwrap() as i32)
+        .collect();
+
+        Ok(UnrevisedEntitiesQueryResult {
+            unrevised_entity_ids,
+        })
     }
 }
 

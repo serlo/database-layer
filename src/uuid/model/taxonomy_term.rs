@@ -97,7 +97,11 @@ macro_rules! to_taxonomy_term {
         Ok(Uuid {
             id: $id,
             trashed: taxonomy_term.trashed != 0,
-            alias: format_alias(subject.as_deref(), $id, Some(&taxonomy_term.name)),
+            alias: format_alias(
+                subject.map(|subject| subject.name).as_deref(),
+                $id,
+                Some(&taxonomy_term.name),
+            ),
             concrete_uuid: ConcreteUuid::TaxonomyTerm(TaxonomyTerm {
                 __typename: "TaxonomyTerm".to_string(),
                 term_type: TaxonomyTerm::normalize_type(taxonomy_term.term_type.as_str()),
@@ -146,20 +150,25 @@ impl UuidFetcher for TaxonomyTerm {
     }
 }
 
+pub struct Subject {
+    pub taxonomy_term_id: i32,
+    pub name: String,
+}
+
 impl TaxonomyTerm {
     pub async fn fetch_canonical_subject<'a, E>(
         id: i32,
         executor: E,
-    ) -> Result<Option<String>, sqlx::Error>
+    ) -> Result<Option<Subject>, sqlx::Error>
     where
         E: Executor<'a>,
     {
         // Yes, this is super hacky. Didn't find a better way to handle recursion in MySQL 5 (in production, the max depth is around 10 at the moment)
         let subjects = sqlx::query!(
             r#"
-                SELECT t.name
+                SELECT t.name as name, t1.id as id
                     FROM term_taxonomy t0
-                    LEFT JOIN term_taxonomy t1 ON t1.parent_id = t0.id
+                    JOIN term_taxonomy t1 ON t1.parent_id = t0.id
                     LEFT JOIN term_taxonomy t2 ON t2.parent_id = t1.id
                     LEFT JOIN term_taxonomy t3 ON t3.parent_id = t2.id
                     LEFT JOIN term_taxonomy t4 ON t4.parent_id = t3.id
@@ -209,7 +218,10 @@ impl TaxonomyTerm {
             id
         ).fetch_one(executor).await;
         match subjects {
-            Ok(subject) => Ok(Some(subject.name)),
+            Ok(subject) => Ok(Some(Subject {
+                taxonomy_term_id: subject.id as i32,
+                name: subject.name,
+            })),
             Err(sqlx::Error::RowNotFound) => Ok(None),
             Err(inner) => Err(inner),
         }

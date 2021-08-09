@@ -1,19 +1,11 @@
 use std::env;
 
 use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
-use thiserror::Error;
 
 use crate::database::Executor;
 use crate::datetime::DateTime;
 
 pub struct User {}
-
-#[derive(Error, Debug)]
-pub enum UserError {
-    #[error("Users cannot be fetched because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserActivityByType {
@@ -23,20 +15,8 @@ pub struct UserActivityByType {
     taxonomy: i32,
 }
 
-impl From<sqlx::Error> for UserError {
-    fn from(inner: sqlx::Error) -> Self {
-        UserError::DatabaseError { inner }
-    }
-}
-
 impl User {
-    pub async fn fetch_active_authors(pool: &MySqlPool) -> Result<Vec<i32>, UserError> {
-        Self::fetch_active_authors_via_transaction(pool).await
-    }
-
-    pub async fn fetch_active_authors_via_transaction<'a, E>(
-        executor: E,
-    ) -> Result<Vec<i32>, UserError>
+    pub async fn fetch_active_authors<'a, E>(executor: E) -> Result<Vec<i32>, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -56,13 +36,7 @@ impl User {
         Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }
 
-    pub async fn fetch_active_reviewers(pool: &MySqlPool) -> Result<Vec<i32>, UserError> {
-        Self::fetch_active_reviewers_via_transaction(pool).await
-    }
-
-    pub async fn fetch_active_reviewers_via_transaction<'a, E>(
-        executor: E,
-    ) -> Result<Vec<i32>, UserError>
+    pub async fn fetch_active_reviewers<'a, E>(executor: E) -> Result<Vec<i32>, sqlx::Error>
     where
         E: Executor<'a>,
     {

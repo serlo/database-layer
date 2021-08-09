@@ -9,7 +9,7 @@ use crate::message::MessageResponder;
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum SubjectsMessage {
-    SubjectsQuery,
+    SubjectsQuery(Option<serde_json::Value>),
 }
 
 #[async_trait]
@@ -17,7 +17,7 @@ impl MessageResponder for SubjectsMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            SubjectsMessage::SubjectsQuery => subjects_query(connection).await,
+            SubjectsMessage::SubjectsQuery(_) => subjects_query(connection).await,
         }
     }
 }

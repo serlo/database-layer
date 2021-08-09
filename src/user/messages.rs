@@ -9,8 +9,8 @@ use crate::message::MessageResponder;
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum UserMessage {
-    ActiveAuthorsQuery,
-    ActiveReviewersQuery,
+    ActiveAuthorsQuery(Option<serde_json::Value>),
+    ActiveReviewersQuery(Option<serde_json::Value>),
     ActivityByTypeQuery(UserActivityByTypeQuery),
 }
 
@@ -25,8 +25,8 @@ impl MessageResponder for UserMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            UserMessage::ActiveAuthorsQuery => active_authors_query(connection).await,
-            UserMessage::ActiveReviewersQuery => active_reviewers_query(connection).await,
+            UserMessage::ActiveAuthorsQuery(_) => active_authors_query(connection).await,
+            UserMessage::ActiveReviewersQuery(_) => active_reviewers_query(connection).await,
             UserMessage::ActivityByTypeQuery(payload) => {
                 activity_by_type(payload, connection).await
             }

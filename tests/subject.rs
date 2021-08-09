@@ -12,10 +12,7 @@ mod tests {
         let app = test::init_service(app).await;
         let req = test::TestRequest::post()
             .uri("/")
-            .set_json(&serde_json::json!({
-                "type": "SubjectsQuery",
-                "payload": {}
-            }))
+            .set_json(&serde_json::json!({ "type": "SubjectsQuery" }))
             .to_request();
         let resp = test::call_service(&app, req).await;
 

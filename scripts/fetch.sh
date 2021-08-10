@@ -11,7 +11,11 @@ function init() {
 }
 
 function main() {
-  DATA="{ \"type\": \"$1\", \"payload\": $2 }"
+  if [ -n "$2" ]; then
+    DATA="{ \"type\": \"$1\", \"payload\": $2 }"
+  else
+    DATA="{ \"type\": \"$1\" }"
+  fi
 
   log "INFO: Fetch with data $(echo "$DATA" | jq)"
 

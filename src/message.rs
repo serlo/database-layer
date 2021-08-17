@@ -20,6 +20,30 @@ pub trait MessageResponder {
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse;
 }
 
+pub enum MessageResult<T> {
+    Ok(T),
+    BadRequest(String),
+    InternalServerError,
+}
+
+#[async_trait]
+pub trait Payload {
+    type Output: Serialize;
+    async fn execute(&self, connection: Connection<'_, '_>) -> MessageResult<Self::Output>;
+}
+
+#[async_trait]
+impl<T: Serialize> MessageResponder for dyn Payload<Output = T> + Sync {
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        match &self.execute(connection).await {
+            MessageResult::Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(data),
+            _ => HttpResponse::InternalServerError().finish(),
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Message {

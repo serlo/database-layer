@@ -1,19 +1,10 @@
 use std::env;
 
-use serde::{Deserialize, Serialize};
-
 use crate::database::Executor;
 use crate::datetime::DateTime;
+use crate::user::messages::UserActivityByTypeResult;
 
 pub struct User {}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UserActivityByType {
-    edits: i32,
-    reviews: i32,
-    comments: i32,
-    taxonomy: i32,
-}
 
 impl User {
     pub async fn fetch_active_authors<'a, E>(executor: E) -> Result<Vec<i32>, sqlx::Error>
@@ -60,7 +51,7 @@ impl User {
     pub async fn fetch_activity_by_type<'a, E>(
         user_id: i32,
         executor: E,
-    ) -> Result<UserActivityByType, sqlx::Error>
+    ) -> Result<UserActivityByTypeResult, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -93,7 +84,7 @@ impl User {
                 .unwrap_or(0) as i32
         };
 
-        Ok(UserActivityByType {
+        Ok(UserActivityByTypeResult {
             edits: find_counts("edits"),
             reviews: find_counts("reviews"),
             comments: find_counts("comments"),

@@ -11,7 +11,7 @@ use crate::message::{MessageResponder, MessageResult, Payload};
 pub enum UserMessage {
     ActiveAuthorsQuery(Option<serde_json::Value>),
     ActiveReviewersQuery(Option<serde_json::Value>),
-    ActivityByTypeQuery(UserActivityByTypePayload),
+    ActivityByTypeQuery(ActivityByTypePayload),
 }
 
 #[async_trait]
@@ -22,7 +22,7 @@ impl MessageResponder for UserMessage {
             UserMessage::ActiveAuthorsQuery(_) => active_authors_query(connection).await,
             UserMessage::ActiveReviewersQuery(_) => active_reviewers_query(connection).await,
             UserMessage::ActivityByTypeQuery(payload) => {
-                (payload as &(dyn Payload<Output = UserActivityByTypeResult> + Sync))
+                (payload as &(dyn Payload<Output = ActivityByTypeResult> + Sync))
                     .handle(connection)
                     .await
             }
@@ -64,12 +64,12 @@ async fn active_reviewers_query(connection: Connection<'_, '_>) -> HttpResponse 
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UserActivityByTypePayload {
+pub struct ActivityByTypePayload {
     user_id: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UserActivityByTypeResult {
+pub struct ActivityByTypeResult {
     pub edits: i32,
     pub reviews: i32,
     pub comments: i32,
@@ -77,13 +77,10 @@ pub struct UserActivityByTypeResult {
 }
 
 #[async_trait]
-impl Payload for UserActivityByTypePayload {
-    type Output = UserActivityByTypeResult;
+impl Payload for ActivityByTypePayload {
+    type Output = ActivityByTypeResult;
 
-    async fn execute(
-        &self,
-        connection: Connection<'_, '_>,
-    ) -> MessageResult<UserActivityByTypeResult> {
+    async fn execute(&self, connection: Connection<'_, '_>) -> MessageResult<ActivityByTypeResult> {
         let activity = match connection {
             Connection::Pool(pool) => User::fetch_activity_by_type(self.user_id, pool).await,
             Connection::Transaction(transaction) => {

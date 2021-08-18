@@ -36,12 +36,15 @@ pub trait Payload {
 
     async fn execute(&self, connection: Connection<'_, '_>) -> Result<Self::Output, MessageError>;
 
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle(&self, operation_type: &str, connection: Connection<'_, '_>) -> HttpResponse {
         match &self.execute(connection).await {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),
-            Err(_error) => HttpResponse::InternalServerError().finish(),
+            Err(error) => {
+                println!("{}: {}", operation_type, error);
+                HttpResponse::InternalServerError().finish()
+            }
         }
     }
 }

@@ -21,7 +21,9 @@ impl MessageResponder for UserMessage {
         match self {
             UserMessage::ActiveAuthorsQuery(_) => active_authors_query(connection).await,
             UserMessage::ActiveReviewersQuery(_) => active_reviewers_query(connection).await,
-            UserMessage::ActivityByTypeQuery(payload) => payload.handle(connection).await,
+            UserMessage::ActivityByTypeQuery(payload) => {
+                payload.handle("ActivityByTypeQuery", connection).await
+            }
         }
     }
 }
@@ -88,10 +90,7 @@ impl Payload for ActivityByTypePayload {
         };
         match activity {
             Ok(data) => Ok(data),
-            Err(e) => {
-                println!("/user/activity-by-type: {:?}", e);
-                Err(MessageError::InternalServerError(Box::new(e)))
-            }
+            Err(e) => Err(MessageError::InternalServerError(Box::new(e))),
         }
     }
 }

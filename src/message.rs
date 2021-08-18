@@ -37,12 +37,13 @@ impl From<sqlx::Error> for OperationError {
     }
 }
 
+pub type OperationResult<T> = Result<T, OperationError>;
+
 #[async_trait]
 pub trait Operation {
     type Output: Serialize;
 
-    async fn execute(&self, connection: Connection<'_, '_>)
-        -> Result<Self::Output, OperationError>;
+    async fn execute(&self, connection: Connection<'_, '_>) -> OperationResult<Self::Output>;
 
     async fn handle(&self, operation_type: &str, connection: Connection<'_, '_>) -> HttpResponse {
         match &self.execute(connection).await {

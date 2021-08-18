@@ -45,6 +45,7 @@ pub trait Operation {
 
     async fn execute(&self, connection: Connection<'_, '_>) -> OperationResult<Self::Output>;
 
+    #[allow(clippy::async_yields_async)]
     async fn handle(&self, operation_type: &str, connection: Connection<'_, '_>) -> HttpResponse {
         match &self.execute(connection).await {
             Ok(data) => HttpResponse::Ok()

@@ -24,24 +24,25 @@ pub trait MessageResponder {
 }
 
 #[derive(Debug, Error)]
-pub enum MessageError {
+pub enum OperationError {
     #[error("BadRequest: {0}")]
     BadRequest(String),
     #[error("InternalServerError: {0}")]
     InternalServerError(Box<dyn std::error::Error>),
 }
 
-impl From<sqlx::Error> for MessageError {
+impl From<sqlx::Error> for OperationError {
     fn from(error: sqlx::Error) -> Self {
-        MessageError::InternalServerError(Box::new(error))
+        OperationError::InternalServerError(Box::new(error))
     }
 }
 
 #[async_trait]
-pub trait Payload {
+pub trait Operation {
     type Output: Serialize;
 
-    async fn execute(&self, connection: Connection<'_, '_>) -> Result<Self::Output, MessageError>;
+    async fn execute(&self, connection: Connection<'_, '_>)
+        -> Result<Self::Output, OperationError>;
 
     async fn handle(&self, operation_type: &str, connection: Connection<'_, '_>) -> HttpResponse {
         match &self.execute(connection).await {
@@ -53,10 +54,10 @@ pub trait Payload {
                 println!("{}: {}", operation_type, error);
 
                 match error {
-                    MessageError::BadRequest(reason) => HttpResponse::BadRequest()
+                    OperationError::BadRequest(reason) => HttpResponse::BadRequest()
                         .content_type("application/json; charset=utf-8")
                         .json(json!({ "success": false, "reason": reason })),
-                    MessageError::InternalServerError(_) => {
+                    OperationError::InternalServerError(_) => {
                         HttpResponse::InternalServerError().finish()
                     }
                 }

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::model::User;
 use crate::database::Connection;
-use crate::message::{MessageError, MessageResponder, Payload};
+use crate::message::{MessageResponder, Operation, OperationError};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -75,13 +75,13 @@ pub struct ActivityByTypeResult {
 }
 
 #[async_trait]
-impl Payload for ActivityByTypePayload {
+impl Operation for ActivityByTypePayload {
     type Output = ActivityByTypeResult;
 
     async fn execute(
         &self,
         connection: Connection<'_, '_>,
-    ) -> Result<ActivityByTypeResult, MessageError> {
+    ) -> Result<ActivityByTypeResult, OperationError> {
         Ok(match connection {
             Connection::Pool(pool) => User::fetch_activity_by_type(self.user_id, pool).await?,
             Connection::Transaction(transaction) => {

@@ -19,8 +19,16 @@ impl MessageResponder for UserMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            UserMessage::ActiveAuthorsQuery(_) => active_authors_query(connection).await,
-            UserMessage::ActiveReviewersQuery(_) => active_reviewers_query(connection).await,
+            UserMessage::ActiveAuthorsQuery(_) => {
+                active_authors_query::Payload {}
+                    .handle("ActiveAuthorsQuery", connection)
+                    .await
+            }
+            UserMessage::ActiveReviewersQuery(_) => {
+                active_reviewers_query::Payload {}
+                    .handle("ActiveReviewersQuery", connection)
+                    .await
+            }
             UserMessage::ActivityByTypeQuery(payload) => {
                 payload.handle("ActivityByTypeQuery", connection).await
             }
@@ -28,34 +36,52 @@ impl MessageResponder for UserMessage {
     }
 }
 
-async fn active_authors_query(connection: Connection<'_, '_>) -> HttpResponse {
-    let active_authors = match connection {
-        Connection::Pool(pool) => User::fetch_active_authors(pool).await,
-        Connection::Transaction(transaction) => User::fetch_active_authors(transaction).await,
-    };
-    match active_authors {
-        Ok(data) => HttpResponse::Ok()
-            .content_type("application/json; charset=utf-8")
-            .json(data),
-        Err(e) => {
-            println!("/user/active-authors: {:?}", e);
-            HttpResponse::InternalServerError().finish()
+pub mod active_authors_query {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {}
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Vec<i32>;
+
+        async fn execute(
+            &self,
+            connection: Connection<'_, '_>,
+        ) -> Result<Self::Output, OperationError> {
+            Ok(match connection {
+                Connection::Pool(pool) => User::fetch_active_authors(pool).await?,
+                Connection::Transaction(transaction) => {
+                    User::fetch_active_authors(transaction).await?
+                }
+            })
         }
     }
 }
 
-async fn active_reviewers_query(connection: Connection<'_, '_>) -> HttpResponse {
-    let active_reviewers = match connection {
-        Connection::Pool(pool) => User::fetch_active_reviewers(pool).await,
-        Connection::Transaction(transaction) => User::fetch_active_reviewers(transaction).await,
-    };
-    match active_reviewers {
-        Ok(data) => HttpResponse::Ok()
-            .content_type("application/json; charset=utf-8")
-            .json(data),
-        Err(e) => {
-            println!("/user/active-reviewers: {:?}", e);
-            HttpResponse::InternalServerError().finish()
+pub mod active_reviewers_query {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {}
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Vec<i32>;
+
+        async fn execute(
+            &self,
+            connection: Connection<'_, '_>,
+        ) -> Result<Self::Output, OperationError> {
+            Ok(match connection {
+                Connection::Pool(pool) => User::fetch_active_reviewers(pool).await?,
+                Connection::Transaction(transaction) => {
+                    User::fetch_active_reviewers(transaction).await?
+                }
+            })
         }
     }
 }
@@ -63,7 +89,7 @@ async fn active_reviewers_query(connection: Connection<'_, '_>) -> HttpResponse 
 pub mod activity_by_type_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         user_id: i32,
@@ -81,7 +107,10 @@ pub mod activity_by_type_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> Result<Output, OperationError> {
+        async fn execute(
+            &self,
+            connection: Connection<'_, '_>,
+        ) -> Result<Self::Output, OperationError> {
             Ok(match connection {
                 Connection::Pool(pool) => User::fetch_activity_by_type(self.user_id, pool).await?,
                 Connection::Transaction(transaction) => {

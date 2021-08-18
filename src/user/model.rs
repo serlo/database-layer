@@ -2,7 +2,7 @@ use std::env;
 
 use crate::database::Executor;
 use crate::datetime::DateTime;
-use crate::user::messages::ActivityByTypeResult;
+use crate::user::messages::activity_by_type_query;
 
 pub struct User {}
 
@@ -51,7 +51,7 @@ impl User {
     pub async fn fetch_activity_by_type<'a, E>(
         user_id: i32,
         executor: E,
-    ) -> Result<ActivityByTypeResult, sqlx::Error>
+    ) -> Result<activity_by_type_query::Output, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -84,7 +84,7 @@ impl User {
                 .unwrap_or(0) as i32
         };
 
-        Ok(ActivityByTypeResult {
+        Ok(activity_by_type_query::Output {
             edits: find_counts("edits"),
             reviews: find_counts("reviews"),
             comments: find_counts("comments"),

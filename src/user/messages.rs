@@ -11,7 +11,7 @@ use crate::message::{MessageResponder, Operation, OperationError};
 pub enum UserMessage {
     ActiveAuthorsQuery(Option<serde_json::Value>),
     ActiveReviewersQuery(Option<serde_json::Value>),
-    ActivityByTypeQuery(ActivityByTypePayload),
+    ActivityByTypeQuery(activity_by_type_query::Payload),
 }
 
 #[async_trait]
@@ -60,33 +60,34 @@ async fn active_reviewers_query(connection: Connection<'_, '_>) -> HttpResponse 
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ActivityByTypePayload {
-    user_id: i32,
-}
+pub mod activity_by_type_query {
+    use super::*;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ActivityByTypeResult {
-    pub edits: i32,
-    pub reviews: i32,
-    pub comments: i32,
-    pub taxonomy: i32,
-}
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        user_id: i32,
+    }
 
-#[async_trait]
-impl Operation for ActivityByTypePayload {
-    type Output = ActivityByTypeResult;
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct Output {
+        pub edits: i32,
+        pub reviews: i32,
+        pub comments: i32,
+        pub taxonomy: i32,
+    }
 
-    async fn execute(
-        &self,
-        connection: Connection<'_, '_>,
-    ) -> Result<ActivityByTypeResult, OperationError> {
-        Ok(match connection {
-            Connection::Pool(pool) => User::fetch_activity_by_type(self.user_id, pool).await?,
-            Connection::Transaction(transaction) => {
-                User::fetch_activity_by_type(self.user_id, transaction).await?
-            }
-        })
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> Result<Output, OperationError> {
+            Ok(match connection {
+                Connection::Pool(pool) => User::fetch_activity_by_type(self.user_id, pool).await?,
+                Connection::Transaction(transaction) => {
+                    User::fetch_activity_by_type(self.user_id, transaction).await?
+                }
+            })
+        }
     }
 }

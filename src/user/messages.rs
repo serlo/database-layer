@@ -82,15 +82,11 @@ impl Payload for ActivityByTypePayload {
         &self,
         connection: Connection<'_, '_>,
     ) -> Result<ActivityByTypeResult, MessageError> {
-        let activity = match connection {
-            Connection::Pool(pool) => User::fetch_activity_by_type(self.user_id, pool).await,
+        Ok(match connection {
+            Connection::Pool(pool) => User::fetch_activity_by_type(self.user_id, pool).await?,
             Connection::Transaction(transaction) => {
-                User::fetch_activity_by_type(self.user_id, transaction).await
+                User::fetch_activity_by_type(self.user_id, transaction).await?
             }
-        };
-        match activity {
-            Ok(data) => Ok(data),
-            Err(e) => Err(MessageError::InternalServerError(Box::new(e))),
-        }
+        })
     }
 }

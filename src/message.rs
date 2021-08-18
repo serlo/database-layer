@@ -30,6 +30,12 @@ pub enum MessageError {
     InternalServerError(Box<dyn std::error::Error>),
 }
 
+impl From<sqlx::Error> for MessageError {
+    fn from(error: sqlx::Error) -> Self {
+        MessageError::InternalServerError(Box::new(error))
+    }
+}
+
 #[async_trait]
 pub trait Payload {
     type Output: Serialize;

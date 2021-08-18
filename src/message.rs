@@ -14,7 +14,7 @@ use crate::notification::NotificationMessage;
 use crate::subject::SubjectsMessage;
 use crate::subscription::SubscriptionMessage;
 use crate::thread::ThreadMessage;
-use crate::user::UserMessage;
+use crate::user::UserMessages;
 use crate::uuid::{EntityMessage, PageMessage, UuidMessage};
 
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]
@@ -80,7 +80,7 @@ pub enum Message {
     SubjectsMessage(SubjectsMessage),
     SubscriptionMessage(SubscriptionMessage),
     ThreadMessage(ThreadMessage),
-    UserMessage(UserMessage),
+    UserMessage(UserMessages),
     UuidMessage(UuidMessage),
 }
 

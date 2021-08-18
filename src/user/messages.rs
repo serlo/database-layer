@@ -8,28 +8,28 @@ use crate::message::{MessageResponder, Operation, OperationResult};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
-pub enum UserMessage {
+pub enum UserMessages {
     ActiveAuthorsQuery(Option<serde_json::Value>),
     ActiveReviewersQuery(Option<serde_json::Value>),
     ActivityByTypeQuery(activity_by_type_query::Payload),
 }
 
 #[async_trait]
-impl MessageResponder for UserMessage {
+impl MessageResponder for UserMessages {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            UserMessage::ActiveAuthorsQuery(_) => {
+            UserMessages::ActiveAuthorsQuery(_) => {
                 active_authors_query::Payload {}
                     .handle("ActiveAuthorsQuery", connection)
                     .await
             }
-            UserMessage::ActiveReviewersQuery(_) => {
+            UserMessages::ActiveReviewersQuery(_) => {
                 active_reviewers_query::Payload {}
                     .handle("ActiveReviewersQuery", connection)
                     .await
             }
-            UserMessage::ActivityByTypeQuery(payload) => {
+            UserMessages::ActivityByTypeQuery(payload) => {
                 payload.handle("ActivityByTypeQuery", connection).await
             }
         }

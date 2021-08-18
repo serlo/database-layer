@@ -1,4 +1,4 @@
-pub use messages::UserMessage;
+pub use messages::UserMessages;
 pub use model::*;
 
 mod messages;

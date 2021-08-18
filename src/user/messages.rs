@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::model::User;
 use crate::database::Connection;
-use crate::message::{MessageResponder, MessageResult, Payload};
+use crate::message::{MessageError, MessageResponder, Payload};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -76,7 +76,10 @@ pub struct ActivityByTypeResult {
 impl Payload for ActivityByTypePayload {
     type Output = ActivityByTypeResult;
 
-    async fn execute(&self, connection: Connection<'_, '_>) -> MessageResult<ActivityByTypeResult> {
+    async fn execute(
+        &self,
+        connection: Connection<'_, '_>,
+    ) -> Result<ActivityByTypeResult, MessageError> {
         let activity = match connection {
             Connection::Pool(pool) => User::fetch_activity_by_type(self.user_id, pool).await,
             Connection::Transaction(transaction) => {
@@ -84,10 +87,10 @@ impl Payload for ActivityByTypePayload {
             }
         };
         match activity {
-            Ok(data) => MessageResult::Ok(data),
+            Ok(data) => Ok(data),
             Err(e) => {
                 println!("/user/activity-by-type: {:?}", e);
-                MessageResult::InternalServerError
+                Err(MessageError::InternalServerError(Box::new(e)))
             }
         }
     }

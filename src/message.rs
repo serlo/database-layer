@@ -2,6 +2,8 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
+use thiserror::Error;
+
 use crate::alias::AliasMessage;
 use crate::database::Connection;
 use crate::event::EventMessage;
@@ -20,24 +22,26 @@ pub trait MessageResponder {
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse;
 }
 
-pub enum MessageResult<T> {
-    Ok(T),
+#[derive(Debug, Error)]
+pub enum MessageError {
+    #[error("BadRequest: {0}")]
     BadRequest(String),
-    InternalServerError,
+    #[error("InternalServerError: {0}")]
+    InternalServerError(Box<dyn std::error::Error>),
 }
 
 #[async_trait]
 pub trait Payload {
     type Output: Serialize;
 
-    async fn execute(&self, connection: Connection<'_, '_>) -> MessageResult<Self::Output>;
+    async fn execute(&self, connection: Connection<'_, '_>) -> Result<Self::Output, MessageError>;
 
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match &self.execute(connection).await {
-            MessageResult::Ok(data) => HttpResponse::Ok()
+            Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),
-            _ => HttpResponse::InternalServerError().finish(),
+            Err(_error) => HttpResponse::InternalServerError().finish(),
         }
     }
 }

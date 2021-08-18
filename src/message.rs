@@ -1,6 +1,7 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use thiserror::Error;
 
@@ -47,9 +48,18 @@ pub trait Payload {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),
+
             Err(error) => {
                 println!("{}: {}", operation_type, error);
-                HttpResponse::InternalServerError().finish()
+
+                match error {
+                    MessageError::BadRequest(reason) => HttpResponse::BadRequest()
+                        .content_type("application/json; charset=utf-8")
+                        .json(json!({ "success": false, "reason": reason })),
+                    MessageError::InternalServerError(_) => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                }
             }
         }
     }

@@ -21,11 +21,7 @@ impl MessageResponder for UserMessage {
         match self {
             UserMessage::ActiveAuthorsQuery(_) => active_authors_query(connection).await,
             UserMessage::ActiveReviewersQuery(_) => active_reviewers_query(connection).await,
-            UserMessage::ActivityByTypeQuery(payload) => {
-                (payload as &(dyn Payload<Output = ActivityByTypeResult> + Sync))
-                    .handle(connection)
-                    .await
-            }
+            UserMessage::ActivityByTypeQuery(payload) => payload.handle(connection).await,
         }
     }
 }

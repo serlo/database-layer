@@ -29,11 +29,9 @@ pub enum MessageResult<T> {
 #[async_trait]
 pub trait Payload {
     type Output: Serialize;
-    async fn execute(&self, connection: Connection<'_, '_>) -> MessageResult<Self::Output>;
-}
 
-#[async_trait]
-impl<T: Serialize> MessageResponder for dyn Payload<Output = T> + Sync {
+    async fn execute(&self, connection: Connection<'_, '_>) -> MessageResult<Self::Output>;
+
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match &self.execute(connection).await {
             MessageResult::Ok(data) => HttpResponse::Ok()

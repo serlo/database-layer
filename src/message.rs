@@ -14,7 +14,7 @@ use crate::notification::NotificationMessage;
 use crate::subject::SubjectsMessage;
 use crate::subscription::SubscriptionMessage;
 use crate::thread::ThreadMessage;
-use crate::user::UserMessages;
+use crate::user::UserMessage;
 use crate::uuid::{EntityMessage, PageMessage, UuidMessage};
 
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]
@@ -25,15 +25,17 @@ pub trait MessageResponder {
 
 #[derive(Debug, Error)]
 pub enum OperationError {
-    #[error("BadRequest: {0}")]
-    BadRequest(String),
-    #[error("InternalServerError: {0}")]
-    InternalServerError(Box<dyn std::error::Error>),
+    #[error("BadRequest: {reason:?}")]
+    BadRequest { reason: String },
+    #[error("InternalServerError: {error:?}")]
+    InternalServerError { error: Box<dyn std::error::Error> },
 }
 
 impl From<sqlx::Error> for OperationError {
     fn from(error: sqlx::Error) -> Self {
-        OperationError::InternalServerError(Box::new(error))
+        OperationError::InternalServerError {
+            error: Box::new(error),
+        }
     }
 }
 
@@ -56,10 +58,10 @@ pub trait Operation {
                 println!("{}: {}", operation_type, error);
 
                 match error {
-                    OperationError::BadRequest(reason) => HttpResponse::BadRequest()
+                    OperationError::BadRequest { reason } => HttpResponse::BadRequest()
                         .content_type("application/json; charset=utf-8")
                         .json(json!({ "success": false, "reason": reason })),
-                    OperationError::InternalServerError(_) => {
+                    OperationError::InternalServerError { error: _ } => {
                         HttpResponse::InternalServerError().finish()
                     }
                 }
@@ -81,7 +83,7 @@ pub enum Message {
     SubjectsMessage(SubjectsMessage),
     SubscriptionMessage(SubscriptionMessage),
     ThreadMessage(ThreadMessage),
-    UserMessage(UserMessages),
+    UserMessage(UserMessage),
     UuidMessage(UuidMessage),
 }
 

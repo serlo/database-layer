@@ -1,42 +1,13 @@
 use std::env;
 
-use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
-use thiserror::Error;
-
 use crate::database::Executor;
 use crate::datetime::DateTime;
+use crate::user::messages::activity_by_type_query;
 
 pub struct User {}
 
-#[derive(Error, Debug)]
-pub enum UserError {
-    #[error("Users cannot be fetched because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UserActivityByType {
-    edits: i32,
-    reviews: i32,
-    comments: i32,
-    taxonomy: i32,
-}
-
-impl From<sqlx::Error> for UserError {
-    fn from(inner: sqlx::Error) -> Self {
-        UserError::DatabaseError { inner }
-    }
-}
-
 impl User {
-    pub async fn fetch_active_authors(pool: &MySqlPool) -> Result<Vec<i32>, UserError> {
-        Self::fetch_active_authors_via_transaction(pool).await
-    }
-
-    pub async fn fetch_active_authors_via_transaction<'a, E>(
-        executor: E,
-    ) -> Result<Vec<i32>, UserError>
+    pub async fn fetch_active_authors<'a, E>(executor: E) -> Result<Vec<i32>, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -56,13 +27,7 @@ impl User {
         Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }
 
-    pub async fn fetch_active_reviewers(pool: &MySqlPool) -> Result<Vec<i32>, UserError> {
-        Self::fetch_active_reviewers_via_transaction(pool).await
-    }
-
-    pub async fn fetch_active_reviewers_via_transaction<'a, E>(
-        executor: E,
-    ) -> Result<Vec<i32>, UserError>
+    pub async fn fetch_active_reviewers<'a, E>(executor: E) -> Result<Vec<i32>, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -86,7 +51,7 @@ impl User {
     pub async fn fetch_activity_by_type<'a, E>(
         user_id: i32,
         executor: E,
-    ) -> Result<UserActivityByType, sqlx::Error>
+    ) -> Result<activity_by_type_query::Output, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -119,7 +84,7 @@ impl User {
                 .unwrap_or(0) as i32
         };
 
-        Ok(UserActivityByType {
+        Ok(activity_by_type_query::Output {
             edits: find_counts("edits"),
             reviews: find_counts("reviews"),
             comments: find_counts("comments"),

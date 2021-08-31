@@ -1,47 +1,13 @@
-use serde::Serialize;
-use sqlx::MySqlPool;
-use thiserror::Error;
-
 use crate::database::Executor;
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Subjects {
-    pub subjects: Vec<Subject>,
-}
+use super::messages::subjects_query;
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Subject {
-    instance: String,
-    taxonomy_term_id: i32,
-}
-
-#[derive(Error, Debug)]
-pub enum SubjectsError {
-    #[error("Subjects cannot be fetched because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Subjects cannot be fetched because the instance is invalid.")]
-    InvalidInstance,
-}
-
-impl From<sqlx::Error> for SubjectsError {
-    fn from(inner: sqlx::Error) -> Self {
-        SubjectsError::DatabaseError { inner }
-    }
-}
-
-impl Subjects {
-    pub async fn fetch(pool: &MySqlPool) -> Result<Subjects, SubjectsError> {
-        Self::fetch_via_transaction(pool).await
-    }
-
-    pub async fn fetch_via_transaction<'a, E>(executor: E) -> Result<Subjects, SubjectsError>
-    where
-        E: Executor<'a>,
-    {
-        let subjects = sqlx::query!(
-            r#"
+pub async fn fetch_subjects<'a, E>(executor: E) -> Result<subjects_query::Output, sqlx::Error>
+where
+    E: Executor<'a>,
+{
+    let subjects = sqlx::query!(
+        r#"
                 SELECT
                     subject.id,
                     subject_instance.subdomain as instance
@@ -59,16 +25,15 @@ impl Subjects {
                 ORDER BY subject.id;
 
             "#,
-        )
-        .fetch_all(executor)
-        .await?
-        .iter()
-        .map(|record| Subject {
-            taxonomy_term_id: record.id as i32,
-            instance: record.instance.clone(),
-        })
-        .collect();
+    )
+    .fetch_all(executor)
+    .await?
+    .iter()
+    .map(|record| subjects_query::Subject {
+        taxonomy_term_id: record.id as i32,
+        instance: record.instance.clone(),
+    })
+    .collect();
 
-        Ok(Subjects { subjects })
-    }
+    Ok(subjects_query::Output { subjects })
 }

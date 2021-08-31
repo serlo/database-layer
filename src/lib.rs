@@ -21,6 +21,7 @@ pub mod license;
 pub mod message;
 pub mod navigation;
 pub mod notification;
+pub mod operation;
 pub mod routes;
 pub mod subject;
 pub mod subscription;

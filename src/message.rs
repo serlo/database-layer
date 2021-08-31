@@ -1,9 +1,6 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
-
-use thiserror::Error;
 
 use crate::alias::AliasMessage;
 use crate::database::Connection;
@@ -21,53 +18,6 @@ use crate::uuid::{EntityMessage, PageMessage, UuidMessage};
 #[async_trait]
 pub trait MessageResponder {
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse;
-}
-
-#[derive(Debug, Error)]
-pub enum OperationError {
-    #[error("BadRequest: {reason:?}")]
-    BadRequest { reason: String },
-    #[error("InternalServerError: {error:?}")]
-    InternalServerError { error: Box<dyn std::error::Error> },
-}
-
-impl From<sqlx::Error> for OperationError {
-    fn from(error: sqlx::Error) -> Self {
-        OperationError::InternalServerError {
-            error: Box::new(error),
-        }
-    }
-}
-
-pub type OperationResult<T> = Result<T, OperationError>;
-
-#[async_trait]
-pub trait Operation {
-    type Output: Serialize;
-
-    async fn execute(&self, connection: Connection<'_, '_>) -> OperationResult<Self::Output>;
-
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, operation_type: &str, connection: Connection<'_, '_>) -> HttpResponse {
-        match &self.execute(connection).await {
-            Ok(data) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(data),
-
-            Err(error) => {
-                println!("{}: {}", operation_type, error);
-
-                match error {
-                    OperationError::BadRequest { reason } => HttpResponse::BadRequest()
-                        .content_type("application/json; charset=utf-8")
-                        .json(json!({ "success": false, "reason": reason })),
-                    OperationError::InternalServerError { error: _ } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                }
-            }
-        }
-    }
 }
 
 #[derive(Deserialize, Serialize)]

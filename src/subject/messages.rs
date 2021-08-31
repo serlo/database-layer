@@ -3,7 +3,8 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::database::Connection;
-use crate::message::{MessageResponder, Operation, OperationResult};
+use crate::message::MessageResponder;
+use crate::operation::{self, Operation};
 
 use super::model::fetch_subjects;
 
@@ -51,7 +52,7 @@ pub mod subjects_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> OperationResult<Self::Output> {
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => fetch_subjects(pool).await?,
                 Connection::Transaction(transaction) => fetch_subjects(transaction).await?,

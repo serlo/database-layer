@@ -84,7 +84,7 @@ impl Serialize for DateTime {
 
 impl sqlx::Type<MySql> for DateTime {
     fn type_info() -> MySqlTypeInfo {
-        chrono::DateTime::type_info()
+        chrono::DateTime::<Utc>::type_info()
     }
 }
 

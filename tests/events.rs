@@ -6,6 +6,7 @@ mod tests {
     use serlo_org_database_layer::{configure_app, create_database_pool};
 
     #[actix_rt::test]
+    #[allow(clippy::bool_assert_comparison)]
     async fn events_query_without_after_parameter() {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);
@@ -40,6 +41,7 @@ mod tests {
     }
 
     #[actix_rt::test]
+    #[allow(clippy::bool_assert_comparison)]
     async fn events_query_with_after_parameter() {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);
@@ -74,6 +76,7 @@ mod tests {
     }
 
     #[actix_rt::test]
+    #[allow(clippy::bool_assert_comparison)]
     async fn events_query_with_actor_id_parameter() {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);
@@ -110,6 +113,7 @@ mod tests {
     }
 
     #[actix_rt::test]
+    #[allow(clippy::bool_assert_comparison)]
     async fn events_query_with_object_id_parameter() {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);
@@ -145,6 +149,7 @@ mod tests {
     }
 
     #[actix_rt::test]
+    #[allow(clippy::bool_assert_comparison)]
     async fn events_query_with_instance_parameter() {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);

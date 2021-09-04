@@ -28,6 +28,7 @@ pub mod subscription;
 pub mod thread;
 pub mod user;
 pub mod uuid;
+pub mod vocabulary;
 
 pub fn format_alias(prefix: Option<&str>, id: i32, suffix: Option<&str>) -> String {
     let prefix = prefix

@@ -11,7 +11,7 @@ use super::model::Vocabulary;
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum VocabularyMessage {
-    TaxonomyVocabularyQuery(taxonomy_vocabulary_query::Payload),
+    VocabularyTaxonomyQuery(taxonomy_vocabulary_query::Payload),
 }
 
 #[async_trait]
@@ -19,8 +19,8 @@ impl MessageResponder for VocabularyMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            VocabularyMessage::TaxonomyVocabularyQuery(payload) => {
-                payload.handle("TaxonomyVocabularyQuery", connection).await
+            VocabularyMessage::VocabularyTaxonomyQuery(payload) => {
+                payload.handle("VocabularyTaxonomyQuery", connection).await
             }
         }
     }
@@ -41,7 +41,6 @@ pub mod taxonomy_vocabulary_query {
     impl Operation for Payload {
         type Output = String;
 
-        // TODO: error handling
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             match connection {
                 Connection::Pool(pool) => {

@@ -239,12 +239,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anyhow"
-version = "1.0.43"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28ae2b3dec75a406790005a200b1bd89785afc02517a00ca99ecfe093ee9e6cf"
-
-[[package]]
 name = "async-trait"
 version = "0.1.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1822,7 +1816,6 @@ dependencies = [
  "actix-rt",
  "actix-service",
  "actix-web",
- "anyhow",
  "async-trait",
  "chrono",
  "chrono-tz",

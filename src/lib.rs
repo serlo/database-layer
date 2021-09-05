@@ -107,7 +107,7 @@ pub enum ApplicationError {
 
 impl From<sqlx::Error> for ApplicationError {
     fn from(inner: sqlx::Error) -> Self {
-        ApplicationError::DatabaseError { inner }
+        Self::DatabaseError { inner }
     }
 }
 

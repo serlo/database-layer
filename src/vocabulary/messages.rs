@@ -47,8 +47,8 @@ pub mod taxonomy_vocabulary_query {
                 Connection::Pool(pool) => {
                     match Vocabulary::fetch_taxonomy_vocabulary(self.instance.clone(), pool).await {
                         Ok(result) => Ok(result),
-                        Err(_) => Err(operation::Error::BadRequest {
-                            reason: String::from("whatever"),
+                        Err(error) => Err(operation::Error::InternalServerError {
+                            error: Box::new(error),
                         }),
                     }
                 }
@@ -57,8 +57,8 @@ pub mod taxonomy_vocabulary_query {
                         .await
                     {
                         Ok(result) => Ok(result),
-                        Err(_) => Err(operation::Error::BadRequest {
-                            reason: String::from("whatever"),
+                        Err(error) => Err(operation::Error::InternalServerError {
+                            error: Box::new(error),
                         }),
                     }
                 }

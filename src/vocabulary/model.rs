@@ -1,3 +1,5 @@
+use std::collections::{BTreeSet, HashSet};
+
 use serde::{Deserialize, Serialize};
 use sophia::graph::{inmem::FastGraph, *};
 use sophia::iri::Iri;
@@ -37,13 +39,26 @@ impl Vocabulary {
             Instance::Ta => "வகைப்பாடு ta.serlo.org",
         };
         let creator = "Serlo Education e.V.";
-        let types = vec![
+        let types_allowlist = vec![
             TaxonomyType::Subject,
             TaxonomyType::Topic,
             TaxonomyType::TopicFolder,
         ];
-        Self::fetch_taxonomy_terms_vocabulary(&base, title, creator, instance, &types, executor)
-            .await
+        let terms_blocklist: Vec<i64> = vec![
+            87993,  // de.serlo.org Community
+            93176,  // de.serlo.org Testbereich
+            181883, // de.serlo.org Lerntipps
+        ];
+        Self::fetch_taxonomy_terms_vocabulary(
+            &base,
+            title,
+            creator,
+            instance,
+            &types_allowlist,
+            &terms_blocklist,
+            executor,
+        )
+        .await
     }
 
     async fn fetch_taxonomy_terms_vocabulary<'a, E>(
@@ -51,12 +66,16 @@ impl Vocabulary {
         title: &str,
         creator: &str,
         instance: Instance,
-        types: &[TaxonomyType],
+        types_allowlist: &[TaxonomyType],
+        terms_blocklist: &[i64],
         executor: E,
     ) -> Result<String, VocabularyError>
     where
         E: Executor<'a>,
     {
+        let types_allowlist: HashSet<TaxonomyType> = types_allowlist.iter().cloned().collect();
+        let mut terms_blocklist: BTreeSet<i64> = terms_blocklist.iter().cloned().collect();
+
         const DCT: &str = "http://purl.org/dc/terms/";
         const SKOS: &str = "http://www.w3.org/2004/02/skos/core#";
 
@@ -95,11 +114,15 @@ impl Vocabulary {
                 continue;
             }
 
+            if terms_blocklist.contains(&term.id) {
+                continue;
+            }
+
             let typename = term
                 .typename
                 .parse()
                 .map_err(|_| VocabularyError::InvalidTaxonomyType)?;
-            if typename != TaxonomyType::Root && !types.contains(&typename) {
+            if typename != TaxonomyType::Root && !types_allowlist.contains(&typename) {
                 continue;
             }
 
@@ -120,6 +143,11 @@ impl Vocabulary {
                     &Literal::<String>::new_lang_unchecked(creator, lang.clone()),
                 )?;
             } else if let Some(parent_id) = term.parent_id {
+                if terms_blocklist.contains(&parent_id) {
+                    terms_blocklist.insert(term.id);
+                    continue;
+                }
+
                 graph.insert(
                     &Iri::new(format!("{}{}", base, term.id).as_str())?,
                     &a_token,
@@ -185,7 +213,7 @@ impl Vocabulary {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum TaxonomyType {
     Root, // Level 0

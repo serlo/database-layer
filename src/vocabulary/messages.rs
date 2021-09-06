@@ -6,7 +6,7 @@ use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 
-use super::model::Vocabulary;
+use super::model::{Vocabulary, VocabularyError};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -42,25 +42,22 @@ pub mod taxonomy_vocabulary_query {
         type Output = String;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
+            Ok(match connection {
                 Connection::Pool(pool) => {
-                    match Vocabulary::fetch_taxonomy_vocabulary(self.instance.clone(), pool).await {
-                        Ok(result) => Ok(result),
-                        Err(error) => Err(operation::Error::InternalServerError {
-                            error: Box::new(error),
-                        }),
-                    }
+                    Vocabulary::fetch_taxonomy_vocabulary(self.instance.clone(), pool).await?
                 }
                 Connection::Transaction(transaction) => {
-                    match Vocabulary::fetch_taxonomy_vocabulary(self.instance.clone(), transaction)
-                        .await
-                    {
-                        Ok(result) => Ok(result),
-                        Err(error) => Err(operation::Error::InternalServerError {
-                            error: Box::new(error),
-                        }),
-                    }
+                    Vocabulary::fetch_taxonomy_vocabulary(self.instance.clone(), transaction)
+                        .await?
                 }
+            })
+        }
+    }
+
+    impl From<VocabularyError> for operation::Error {
+        fn from(error: VocabularyError) -> Self {
+            Self::InternalServerError {
+                error: Box::new(error),
             }
         }
     }

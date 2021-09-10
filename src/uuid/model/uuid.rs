@@ -284,7 +284,7 @@ impl Uuid {
             .fetch_one(&mut transaction)
             .await;
 
-            let instance: Instance = match result {
+            match result {
                 Ok(uuid) => {
                     if uuid.discriminator == "entityRevision" || uuid.discriminator == "user" {
                         return Err(operation::Error::BadRequest {
@@ -300,11 +300,17 @@ impl Uuid {
                     if (uuid.trashed != 0) == payload.trashed {
                         continue;
                     }
-                    uuid.subdomain
-                        .parse()
-                        .map_err(|_| operation::Error::InternalServerError {
-                            error: Box::new(EventError::InvalidInstance),
-                        })?
+                    let instance: Instance = uuid.subdomain.parse().map_err(|error| {
+                        operation::Error::InternalServerError {
+                            error: Box::new(error),
+                        }
+                    })?;
+
+                    Uuid::set_state(*id, payload.trashed, &mut transaction).await?;
+
+                    SetUuidStateEventPayload::new(payload.trashed, payload.user_id, *id, instance)
+                        .save(&mut transaction)
+                        .await?;
                 }
                 Err(sqlx::Error::RowNotFound) => {
                     // UUID not found, skip
@@ -314,12 +320,6 @@ impl Uuid {
                     return Err(inner.into());
                 }
             };
-
-            Uuid::set_state(*id, payload.trashed, &mut transaction).await?;
-
-            SetUuidStateEventPayload::new(payload.trashed, payload.user_id, *id, instance)
-                .save(&mut transaction)
-                .await?;
         }
 
         transaction.commit().await?;

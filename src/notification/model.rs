@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::database::Executor;
 use crate::event::{AbstractEvent, Event};
-use crate::subscription::{Subscriptions, SubscriptionsError};
+use crate::subscription::Subscriptions;
 use sqlx::MySqlPool;
 
 #[derive(Serialize)]
@@ -134,11 +134,7 @@ impl Notifications {
         object_ids.extend(event.abstract_event.uuid_parameters.values());
 
         for object_id in object_ids {
-            let subscriptions = Subscriptions::fetch_by_object(object_id, &mut transaction)
-                .await
-                .map_err(|error| match error {
-                    SubscriptionsError::DatabaseError { inner } => NotificationsError::from(inner),
-                })?;
+            let subscriptions = Subscriptions::fetch_by_object(object_id, &mut transaction).await?;
             let subscriptions = subscriptions
                 .0
                 .iter()

@@ -1,6 +1,7 @@
 use crate::operation;
+use crate::uuid::messages::uuid_set_state_mutation;
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
@@ -233,50 +234,28 @@ impl Uuid {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SetUuidStatePayload {
-    pub ids: Vec<i32>,
-    pub user_id: i32,
-    pub trashed: bool,
-}
-
-#[derive(Error, Debug)]
-pub enum SetUuidStateError {
-    #[error("UUID state cannot be set because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("UUID state cannot be set because of an internal error: {inner:?}.")]
-    EventError { inner: EventError },
-    #[error("{reason:?}")]
-    UuidCannotBeTrashed { reason: String },
-}
-
-impl From<sqlx::Error> for SetUuidStateError {
-    fn from(inner: sqlx::Error) -> Self {
-        SetUuidStateError::DatabaseError { inner }
-    }
-}
-
-impl From<EventError> for SetUuidStateError {
+impl From<EventError> for operation::Error {
     fn from(error: EventError) -> Self {
         match error {
             EventError::DatabaseError { inner } => inner.into(),
-            inner => SetUuidStateError::EventError { inner },
+            _ => operation::Error::InternalServerError {
+                error: Box::new(error),
+            },
         }
     }
 }
 
 impl Uuid {
     pub async fn set_uuid_state<'a, E>(
-        payload: SetUuidStatePayload,
+        payload: &uuid_set_state_mutation::Payload,
         executor: E,
-    ) -> Result<(), SetUuidStateError>
+    ) -> Result<(), operation::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
 
-        for id in payload.ids.into_iter() {
+        for id in &payload.ids {
             let result = sqlx::query!(
                 r#"
                     SELECT u.trashed, i.subdomain, u.discriminator
@@ -308,7 +287,7 @@ impl Uuid {
             let instance: Instance = match result {
                 Ok(uuid) => {
                     if uuid.discriminator == "entityRevision" || uuid.discriminator == "user" {
-                        return Err(SetUuidStateError::UuidCannotBeTrashed {
+                        return Err(operation::Error::BadRequest {
                             reason: format!(
                                 "uuid {} with type \"{}\" cannot be deleted via a setState mutation",
                                 id,
@@ -323,8 +302,8 @@ impl Uuid {
                     }
                     uuid.subdomain
                         .parse()
-                        .map_err(|_| SetUuidStateError::EventError {
-                            inner: EventError::InvalidInstance,
+                        .map_err(|_| operation::Error::InternalServerError {
+                            error: Box::new(EventError::InvalidInstance),
                         })?
                 }
                 Err(sqlx::Error::RowNotFound) => {
@@ -336,9 +315,9 @@ impl Uuid {
                 }
             };
 
-            Uuid::set_state(id, payload.trashed, &mut transaction).await?;
+            Uuid::set_state(*id, payload.trashed, &mut transaction).await?;
 
-            SetUuidStateEventPayload::new(payload.trashed, payload.user_id, id, instance)
+            SetUuidStateEventPayload::new(payload.trashed, payload.user_id, *id, instance)
                 .save(&mut transaction)
                 .await?;
         }
@@ -369,7 +348,7 @@ mod tests {
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
 
-    use super::{SetUuidStatePayload, Uuid};
+    use super::{uuid_set_state_mutation, Uuid};
 
     #[actix_rt::test]
     async fn set_uuid_state_no_id() {
@@ -377,7 +356,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Uuid::set_uuid_state(
-            SetUuidStatePayload {
+            &uuid_set_state_mutation::Payload {
                 ids: vec![],
                 user_id: 1,
                 trashed: true,
@@ -394,7 +373,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Uuid::set_uuid_state(
-            SetUuidStatePayload {
+            &uuid_set_state_mutation::Payload {
                 ids: vec![1855],
                 user_id: 1,
                 trashed: true,
@@ -424,7 +403,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Uuid::set_uuid_state(
-            SetUuidStatePayload {
+            &uuid_set_state_mutation::Payload {
                 ids: vec![1855],
                 user_id: 1,
                 trashed: false,

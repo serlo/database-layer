@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use super::model::{
     fetch_subscriptions_by_user, fetch_subscriptions_by_user_via_transaction, Subscription,
-    SubscriptionChangeError, SubscriptionChangePayload,
 };
 use crate::database::Connection;
 use crate::message::MessageResponder;
@@ -14,7 +13,7 @@ use crate::message::MessageResponder;
 #[serde(tag = "type", content = "payload")]
 pub enum SubscriptionMessage {
     SubscriptionsQuery(subscriptions_query::Payload),
-    SubscriptionSetMutation(SubscriptionSetMutation),
+    SubscriptionSetMutation(subscription_set_mutation::Payload),
 }
 
 #[async_trait]
@@ -26,7 +25,7 @@ impl MessageResponder for SubscriptionMessage {
                 message.handle("SubscriptionsQuery", connection).await
             }
             SubscriptionMessage::SubscriptionSetMutation(message) => {
-                message.handle(connection).await
+                message.handle("SubscriptionSetMutation", connection).await
             }
         }
     }
@@ -69,41 +68,35 @@ pub mod subscriptions_query {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SubscriptionSetMutation {
-    pub ids: Vec<i32>,
-    pub user_id: i32,
-    pub subscribe: bool,
-    pub send_email: bool,
-}
+pub mod subscription_set_mutation {
+    use super::*;
 
-#[async_trait]
-impl MessageResponder for SubscriptionSetMutation {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let payload = SubscriptionChangePayload {
-            ids: self.ids.clone(),
-            user_id: self.user_id,
-            subscribe: self.subscribe,
-            send_email: self.send_email,
-        };
-        let response = match connection {
-            Connection::Pool(pool) => Subscription::change_subscription(payload, pool).await,
-            Connection::Transaction(transaction) => {
-                Subscription::change_subscription(payload, transaction).await
-            }
-        };
-        match response {
-            Ok(_) => HttpResponse::Ok().finish(),
-            Err(e) => {
-                println!("{:?}: {:?}", self, e);
-                match e {
-                    SubscriptionChangeError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub ids: Vec<i32>,
+        pub user_id: i32,
+        pub subscribe: bool,
+        pub send_email: bool,
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        success: bool,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => Subscription::change_subscription(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Subscription::change_subscription(self, transaction).await?
                 }
-            }
+            };
+            Ok(Output { success: true })
         }
     }
 }

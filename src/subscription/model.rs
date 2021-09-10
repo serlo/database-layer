@@ -1,7 +1,5 @@
-use crate::subscription::messages::subscriptions_query;
-use serde::Deserialize;
+use crate::subscription::messages::{subscription_set_mutation, subscriptions_query};
 use sqlx::MySqlPool;
-use thiserror::Error;
 
 use crate::database::Executor;
 use crate::datetime::DateTime;
@@ -72,7 +70,7 @@ impl Subscriptions {
 }
 
 impl Subscription {
-    pub async fn save<'a, E>(&self, executor: E) -> Result<(), SubscriptionChangeError>
+    pub async fn save<'a, E>(&self, executor: E) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -97,7 +95,7 @@ impl Subscription {
         Ok(())
     }
 
-    pub async fn remove<'a, E>(&self, executor: E) -> Result<(), SubscriptionChangeError>
+    pub async fn remove<'a, E>(&self, executor: E) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -143,40 +141,19 @@ where
     Ok(subscriptions_query::Output { subscriptions })
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SubscriptionChangePayload {
-    pub ids: Vec<i32>,
-    pub user_id: i32,
-    pub subscribe: bool,
-    pub send_email: bool,
-}
-
-#[derive(Error, Debug)]
-pub enum SubscriptionChangeError {
-    #[error("Subscription cannot be changed because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
-
-impl From<sqlx::Error> for SubscriptionChangeError {
-    fn from(inner: sqlx::Error) -> Self {
-        SubscriptionChangeError::DatabaseError { inner }
-    }
-}
-
 impl Subscription {
     pub async fn change_subscription<'a, E>(
-        payload: SubscriptionChangePayload,
+        payload: &subscription_set_mutation::Payload,
         executor: E,
-    ) -> Result<(), SubscriptionChangeError>
+    ) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
 
-        for id in payload.ids.into_iter() {
+        for id in &payload.ids {
             let subscription = Subscription {
-                object_id: id,
+                object_id: *id,
                 user_id: payload.user_id,
                 send_email: payload.send_email,
             };

@@ -1,3 +1,4 @@
+use crate::operation;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
@@ -59,6 +60,23 @@ pub enum UuidError {
 impl From<sqlx::Error> for UuidError {
     fn from(inner: sqlx::Error) -> Self {
         UuidError::DatabaseError { inner }
+    }
+}
+
+impl From<UuidError> for operation::Error {
+    fn from(error: UuidError) -> Self {
+        match error {
+            UuidError::UnsupportedDiscriminator { .. }
+            | UuidError::UnsupportedEntityType { .. }
+            | UuidError::UnsupportedEntityRevisionType { .. }
+            | UuidError::EntityMissingRequiredParent
+            | UuidError::NotFound => operation::Error::NotFoundError,
+            UuidError::DatabaseError { .. } | UuidError::InvalidInstance => {
+                operation::Error::InternalServerError {
+                    error: Box::new(error),
+                }
+            }
+        }
     }
 }
 

@@ -12,7 +12,10 @@ use crate::operation::{self, Operation};
 pub enum UserMessage {
     ActiveAuthorsQuery(Option<serde_json::Value>),
     ActiveReviewersQuery(Option<serde_json::Value>),
-    ActivityByTypeQuery(activity_by_type_query::Payload),
+    // TODO: Delete when not needed any more in api.serlo.org
+    // See https://github.com/serlo/api.serlo.org/issues/459
+    ActivityByTypeQuery(user_activity_by_type_query::Payload),
+    UserActivityByTypeQuery(user_activity_by_type_query::Payload),
 }
 
 #[async_trait]
@@ -31,6 +34,9 @@ impl MessageResponder for UserMessage {
                     .await
             }
             UserMessage::ActivityByTypeQuery(payload) => {
+                payload.handle("ActivityByTypeQuery", connection).await
+            }
+            UserMessage::UserActivityByTypeQuery(payload) => {
                 payload.handle("ActivityByTypeQuery", connection).await
             }
         }
@@ -81,7 +87,7 @@ pub mod active_reviewers_query {
     }
 }
 
-pub mod activity_by_type_query {
+pub mod user_activity_by_type_query {
     use super::*;
 
     #[derive(Debug, Deserialize, Serialize)]

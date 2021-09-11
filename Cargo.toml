@@ -21,6 +21,7 @@ sentry = { git = "https://github.com/fourbs-net/sentry-rust", branch = "update-a
 sentry-actix = { git = "https://github.com/fourbs-net/sentry-rust", branch = "update-actix" }
 serde = "1.0.0"
 serde_json = "1.0.0"
+sophia = "0.7.0"
 sqlx = { version = "0.5.0", features = ["chrono", "offline", "json", "mysql", "runtime-actix-native-tls"] }
 thiserror = "1.0.0"
 

@@ -7,7 +7,7 @@ use crate::datetime::DateTime;
 use crate::event::{
     CreateCommentEventPayload, CreateThreadEventPayload, EventError, SetThreadStateEventPayload,
 };
-use crate::subscription::{Subscription, SubscriptionChangeError};
+use crate::subscription::Subscription;
 use crate::uuid::{Uuid, UuidError, UuidFetcher};
 
 #[derive(Serialize)]
@@ -263,12 +263,7 @@ impl Threads {
                     user_id: payload.user_id,
                     send_email: payload.send_email,
                 };
-                subscription
-                    .save(&mut transaction)
-                    .await
-                    .map_err(|error| match error {
-                        SubscriptionChangeError::DatabaseError { inner } => EventError::from(inner),
-                    })?;
+                subscription.save(&mut transaction).await?;
             }
         }
 
@@ -412,12 +407,7 @@ impl Threads {
                 user_id: payload.user_id,
                 send_email: payload.send_email,
             };
-            subscription
-                .save(&mut transaction)
-                .await
-                .map_err(|error| match error {
-                    SubscriptionChangeError::DatabaseError { inner } => EventError::from(inner),
-                })?;
+            subscription.save(&mut transaction).await?;
         }
 
         let comment = Uuid::fetch_via_transaction(thread_id, &mut transaction).await?;

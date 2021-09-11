@@ -1,17 +1,17 @@
+use crate::operation::{self, Operation};
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{Uuid, UuidError, UuidFetcher};
+use super::model::{Uuid, UuidFetcher};
 use crate::database::Connection;
 use crate::message::MessageResponder;
-use crate::uuid::{SetUuidStateError, SetUuidStatePayload};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum UuidMessage {
-    UuidQuery(UuidQuery),
-    UuidSetStateMutation(UuidSetStateMutation),
+    UuidQuery(uuid_query::Payload),
+    UuidSetStateMutation(uuid_set_state_mutation::Payload),
 }
 
 #[async_trait]
@@ -19,104 +19,67 @@ impl MessageResponder for UuidMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            UuidMessage::UuidQuery(message) => message.handle(connection).await,
-            UuidMessage::UuidSetStateMutation(message) => message.handle(connection).await,
-        }
-    }
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UuidQuery {
-    pub id: i32,
-}
-
-#[async_trait]
-impl MessageResponder for UuidQuery {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let uuid = match connection {
-            Connection::Pool(pool) => Uuid::fetch(self.id, pool).await,
-            Connection::Transaction(transaction) => {
-                Uuid::fetch_via_transaction(self.id, transaction).await
-            }
-        };
-        match uuid {
-            Ok(uuid) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(&uuid),
-            Err(e) => {
-                println!("/uuid/{}: {:?}", self.id, e);
-                match e {
-                    UuidError::DatabaseError { .. } => HttpResponse::InternalServerError().finish(),
-                    UuidError::InvalidInstance => HttpResponse::InternalServerError().finish(),
-                    UuidError::UnsupportedDiscriminator { .. } => {
-                        HttpResponse::NotFound().json(&None::<String>)
-                    }
-                    UuidError::UnsupportedEntityType { .. } => {
-                        HttpResponse::NotFound().json(&None::<String>)
-                    }
-                    UuidError::UnsupportedEntityRevisionType { .. } => {
-                        HttpResponse::NotFound().json(&None::<String>)
-                    }
-                    UuidError::EntityMissingRequiredParent => {
-                        HttpResponse::NotFound().json(&None::<String>)
-                    }
-                    UuidError::NotFound => HttpResponse::NotFound().json(&None::<String>),
-                }
+            UuidMessage::UuidQuery(message) => message.handle("UuidQuery", connection).await,
+            UuidMessage::UuidSetStateMutation(message) => {
+                message.handle("UuidSetStateMutation", connection).await
             }
         }
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UuidSetStateMutation {
-    pub ids: Vec<i32>,
-    pub user_id: i32,
-    pub trashed: bool,
-}
+pub mod uuid_query {
+    use super::*;
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UuidSetUuidStateResult {
-    pub success: bool,
-    pub reason: Option<String>,
-}
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub id: i32,
+    }
 
-#[async_trait]
-impl MessageResponder for UuidSetStateMutation {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let payload = SetUuidStatePayload {
-            ids: self.ids.clone(),
-            user_id: self.user_id,
-            trashed: self.trashed,
-        };
-        let response = match connection {
-            Connection::Pool(pool) => Uuid::set_uuid_state(payload, pool).await,
-            Connection::Transaction(transaction) => {
-                Uuid::set_uuid_state(payload, transaction).await
-            }
-        };
-        match response {
-            Ok(_) => HttpResponse::Ok().finish(),
-            Err(e) => {
-                println!("/set-uuid-state: {:?}", e);
-                match e {
-                    SetUuidStateError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    SetUuidStateError::EventError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    SetUuidStateError::UuidCannotBeTrashed { reason } => HttpResponse::BadRequest()
-                        .json(UuidSetUuidStateResult {
-                            success: false,
-                            reason: Some(reason),
-                        }),
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Uuid;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(match connection {
+                Connection::Pool(pool) => Uuid::fetch(self.id, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Uuid::fetch_via_transaction(self.id, transaction).await?
                 }
-            }
+            })
+        }
+    }
+}
+
+pub mod uuid_set_state_mutation {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub ids: Vec<i32>,
+        pub user_id: i32,
+        pub trashed: bool,
+    }
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        success: bool,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => Uuid::set_uuid_state(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Uuid::set_uuid_state(self, transaction).await?
+                }
+            };
+            Ok(Output { success: true })
         }
     }
 }

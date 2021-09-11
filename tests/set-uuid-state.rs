@@ -4,7 +4,6 @@ mod tests {
     use actix_web::{test, App};
     use std::str::from_utf8;
 
-    use serlo_org_database_layer::uuid::{UuidMessage, UuidSetStateMutation};
     use serlo_org_database_layer::{configure_app, create_database_pool};
 
     #[actix_rt::test]
@@ -27,10 +26,13 @@ mod tests {
 
             let req = test::TestRequest::post()
                 .uri("/")
-                .set_json(&UuidMessage::UuidSetStateMutation(UuidSetStateMutation {
-                    ids: vec![revision_id],
-                    user_id: 1,
-                    trashed: true,
+                .set_json(&serde_json::json!({
+                    "type": "UuidSetStateMutation",
+                    "payload": {
+                        "ids": vec![revision_id],
+                        "userId": 1,
+                        "trashed": true,
+                    }
                 }))
                 .to_request();
             let resp = test::call_service(&app, req).await;

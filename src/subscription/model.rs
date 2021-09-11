@@ -1,24 +1,11 @@
-use serde::{Deserialize, Serialize};
+use crate::subscription::messages::{subscription_set_mutation, subscriptions_query};
 use sqlx::MySqlPool;
-use thiserror::Error;
 
 use crate::database::Executor;
 use crate::datetime::DateTime;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Subscriptions(pub Vec<Subscription>);
-
-#[derive(Error, Debug)]
-pub enum SubscriptionsError {
-    #[error("Subscriptions cannot be fetched because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
-
-impl From<sqlx::Error> for SubscriptionsError {
-    fn from(inner: sqlx::Error) -> Self {
-        SubscriptionsError::DatabaseError { inner }
-    }
-}
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Subscription {
@@ -28,7 +15,7 @@ pub struct Subscription {
 }
 
 impl Subscriptions {
-    pub async fn fetch_by_user<'a, E>(user_id: i32, executor: E) -> Result<Self, SubscriptionsError>
+    pub async fn fetch_by_user<'a, E>(user_id: i32, executor: E) -> Result<Self, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -58,10 +45,7 @@ impl Subscriptions {
         Ok(Subscriptions(subscriptions))
     }
 
-    pub async fn fetch_by_object<'a, E>(
-        object_id: i32,
-        executor: E,
-    ) -> Result<Self, SubscriptionsError>
+    pub async fn fetch_by_object<'a, E>(object_id: i32, executor: E) -> Result<Self, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -86,7 +70,7 @@ impl Subscriptions {
 }
 
 impl Subscription {
-    pub async fn save<'a, E>(&self, executor: E) -> Result<(), SubscriptionChangeError>
+    pub async fn save<'a, E>(&self, executor: E) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -111,7 +95,7 @@ impl Subscription {
         Ok(())
     }
 
-    pub async fn remove<'a, E>(&self, executor: E) -> Result<(), SubscriptionChangeError>
+    pub async fn remove<'a, E>(&self, executor: E) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -130,79 +114,46 @@ impl Subscription {
     }
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SubscriptionsByUser {
-    subscriptions: Vec<SubscriptionByUser>,
+pub async fn fetch_subscriptions_by_user(
+    user_id: i32,
+    pool: &MySqlPool,
+) -> Result<subscriptions_query::Output, sqlx::Error> {
+    fetch_subscriptions_by_user_via_transaction(user_id, pool).await
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SubscriptionByUser {
-    object_id: i32,
-    send_email: bool,
-}
+pub async fn fetch_subscriptions_by_user_via_transaction<'a, E>(
+    user_id: i32,
+    executor: E,
+) -> Result<subscriptions_query::Output, sqlx::Error>
+where
+    E: Executor<'a>,
+{
+    let subscriptions = Subscriptions::fetch_by_user(user_id, executor).await?;
+    let subscriptions = subscriptions
+        .0
+        .iter()
+        .map(|child| subscriptions_query::SubscriptionByUser {
+            object_id: child.object_id,
+            send_email: child.send_email,
+        })
+        .collect();
 
-impl SubscriptionsByUser {
-    pub async fn fetch(user_id: i32, pool: &MySqlPool) -> Result<Self, SubscriptionsError> {
-        Self::fetch_via_transaction(user_id, pool).await
-    }
-
-    pub async fn fetch_via_transaction<'a, E>(
-        user_id: i32,
-        executor: E,
-    ) -> Result<Self, SubscriptionsError>
-    where
-        E: Executor<'a>,
-    {
-        let subscriptions = Subscriptions::fetch_by_user(user_id, executor).await?;
-        let subscriptions = subscriptions
-            .0
-            .iter()
-            .map(|child| SubscriptionByUser {
-                object_id: child.object_id,
-                send_email: child.send_email,
-            })
-            .collect();
-
-        Ok(SubscriptionsByUser { subscriptions })
-    }
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SubscriptionChangePayload {
-    pub ids: Vec<i32>,
-    pub user_id: i32,
-    pub subscribe: bool,
-    pub send_email: bool,
-}
-
-#[derive(Error, Debug)]
-pub enum SubscriptionChangeError {
-    #[error("Subscription cannot be changed because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
-
-impl From<sqlx::Error> for SubscriptionChangeError {
-    fn from(inner: sqlx::Error) -> Self {
-        SubscriptionChangeError::DatabaseError { inner }
-    }
+    Ok(subscriptions_query::Output { subscriptions })
 }
 
 impl Subscription {
     pub async fn change_subscription<'a, E>(
-        payload: SubscriptionChangePayload,
+        payload: &subscription_set_mutation::Payload,
         executor: E,
-    ) -> Result<(), SubscriptionChangeError>
+    ) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
 
-        for id in payload.ids.into_iter() {
+        for id in &payload.ids {
             let subscription = Subscription {
-                object_id: id,
+                object_id: *id,
                 user_id: payload.user_id,
                 send_email: payload.send_email,
             };
@@ -221,7 +172,7 @@ impl Subscription {
 
 #[cfg(test)]
 mod tests {
-    use super::{Subscription, Subscriptions, SubscriptionsError};
+    use super::{Subscription, Subscriptions};
     use crate::create_database_pool;
     use crate::database::Executor;
 
@@ -265,7 +216,7 @@ mod tests {
     async fn assert_get_subscriptions_does_not_return<'a, E>(
         uuid_id: i32,
         executor: E,
-    ) -> Result<(), SubscriptionsError>
+    ) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -377,7 +328,7 @@ mod tests {
         user_id: i32,
         object_id: i32,
         executor: E,
-    ) -> Result<Option<Subscription>, SubscriptionsError>
+    ) -> Result<Option<Subscription>, sqlx::Error>
     where
         E: Executor<'a>,
     {

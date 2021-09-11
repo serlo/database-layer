@@ -2,7 +2,7 @@ use crate::database::Connection;
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::Serialize;
-use serde_json::json;
+use serde_json::{json, Value};
 
 use thiserror::Error;
 
@@ -12,6 +12,8 @@ pub enum Error {
     BadRequest { reason: String },
     #[error("InternalServerError: {error:?}")]
     InternalServerError { error: Box<dyn std::error::Error> },
+    #[error("Requested value could not be found.")]
+    NotFoundError,
 }
 
 impl From<sqlx::Error> for Error {
@@ -41,6 +43,9 @@ pub trait Operation {
                 println!("{}: {}", operation_type, error);
 
                 match error {
+                    Error::NotFoundError => HttpResponse::NotFound()
+                        .content_type("application/json; charset=utf8")
+                        .json(Value::Null),
                     Error::BadRequest { reason } => HttpResponse::BadRequest()
                         .content_type("application/json; charset=utf-8")
                         .json(json!({ "success": false, "reason": reason })),

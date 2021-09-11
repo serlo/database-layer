@@ -3,7 +3,7 @@ mod tests {
     use actix_web::{test, App};
     use std::str::from_utf8;
 
-    use serlo_org_database_layer::uuid::{UuidMessage, UuidQuery};
+    use serlo_org_database_layer::uuid::{uuid_query, UuidMessage};
     use serlo_org_database_layer::{configure_app, create_database_pool};
 
     #[actix_rt::test]
@@ -11,7 +11,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let app = configure_app(App::new(), pool);
         let app = test::init_service(app).await;
-        let message = UuidMessage::UuidQuery(UuidQuery { id: 1 });
+        let message = UuidMessage::UuidQuery(uuid_query::Payload { id: 1 });
         let req = test::TestRequest::post()
             .uri("/")
             .set_json(&message)

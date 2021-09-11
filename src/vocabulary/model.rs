@@ -31,12 +31,12 @@ impl Vocabulary {
     {
         let base = format!("{}{}/taxonomy/", BASE, instance);
         let title = match instance {
-            Instance::De => "Taxonomie de.serlo.org",
-            Instance::En => "Taxonomy en.serlo.org",
-            Instance::Es => "Taxonomía es.serlo.org",
-            Instance::Fr => "Taxonomie fr.serlo.org",
-            Instance::Hi => "वर्गीकरण hi.serlo.org",
-            Instance::Ta => "வகைப்பாடு ta.serlo.org",
+            Instance::De => "de.serlo.org Taxonomie",
+            Instance::En => "en.serlo.org Taxonomy",
+            Instance::Es => "es.serlo.org Taxonomía",
+            Instance::Fr => "fr.serlo.org Taxonomie",
+            Instance::Hi => "hi.serlo.org वर्गीकरण",
+            Instance::Ta => "ta.serlo.org வகைப்பாடு",
         };
         let creator = "Serlo Education e.V.";
         let types_allowlist = vec![
@@ -85,7 +85,8 @@ impl Vocabulary {
         let dct = Namespace::new(DCT)?;
         let skos = Namespace::new(SKOS)?;
 
-        let terms = sqlx::query!(
+        let terms = sqlx::query_as!(
+            TaxonomyTerm,
             r#"
                 SELECT tt.id, t.name, tt.parent_id, u.trashed, type.name AS typename
                 FROM term t
@@ -101,11 +102,7 @@ impl Vocabulary {
         .fetch_all(executor)
         .await?;
 
-        let root = terms
-            .iter()
-            .find(|term| term.parent_id.is_none())
-            .ok_or(VocabularyError::RootMissing)?;
-        let root_id = root.id;
+        let (root_id, terms) = Self::sort_terms_by_depth(&terms)?;
 
         let mut graph = FastGraph::new();
 
@@ -157,7 +154,7 @@ impl Vocabulary {
                 graph.insert(
                     &Iri::new(format!("{}{}", base, term.id).as_str())?,
                     &skos.get("prefLabel")?,
-                    &Literal::<String>::new_lang_unchecked(term.name, lang.clone()),
+                    &Literal::<String>::new_lang_unchecked(term.name.clone(), lang.clone()),
                 )?;
 
                 if parent_id == root_id {
@@ -211,6 +208,51 @@ impl Vocabulary {
         );
         Ok(output)
     }
+
+    fn sort_terms_by_depth(
+        unsorted_terms: &[TaxonomyTerm],
+    ) -> Result<(i64, Vec<&TaxonomyTerm>), VocabularyError> {
+        let mut sorted_terms = Vec::with_capacity(unsorted_terms.len());
+
+        let (mut roots, mut remaining_terms): (Vec<_>, Vec<_>) = unsorted_terms
+            .iter()
+            .partition(|term| term.parent_id.is_none());
+        if roots.len() != 1 {
+            return Err(VocabularyError::InvalidTree);
+        }
+        let root_id = roots.first().unwrap().id;
+        sorted_terms.append(&mut roots);
+
+        let mut previous_parents: BTreeSet<Option<i64>> = [Some(root_id)].iter().cloned().collect();
+
+        while !remaining_terms.is_empty() {
+            let (mut terms_in_current_depth, terms_in_deeper_depths): (Vec<_>, Vec<_>) =
+                remaining_terms
+                    .into_iter()
+                    .partition(|term| previous_parents.contains(&term.parent_id));
+
+            if terms_in_current_depth.is_empty() {
+                return Err(VocabularyError::InvalidTree);
+            }
+
+            remaining_terms = terms_in_deeper_depths;
+            previous_parents = terms_in_current_depth
+                .iter()
+                .map(|term| Some(term.id))
+                .collect();
+            sorted_terms.append(&mut terms_in_current_depth);
+        }
+
+        Ok((root_id, sorted_terms))
+    }
+}
+
+struct TaxonomyTerm {
+    id: i64,
+    name: String,
+    parent_id: Option<i64>,
+    trashed: i8,
+    typename: String,
 }
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Deserialize, Serialize)]
@@ -269,8 +311,8 @@ pub enum VocabularyError {
     },
     #[error("Invalid taxonomy type.")]
     InvalidTaxonomyType,
-    #[error("No root found.")]
-    RootMissing,
+    #[error("Invalid tree.")]
+    InvalidTree,
     #[error("Stream error: {inner:?}.")]
     StreamError {
         inner: sophia::quad::stream::StreamError<std::convert::Infallible, std::io::Error>,

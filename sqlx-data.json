@@ -138,31 +138,6 @@
       ]
     }
   },
-  "12aaac08ca467cb635a913bd5c73532a4ca90bd2189018f257b7b7a345490c29": {
-    "query": "select id from uuid where discriminator = ? and trashed = false",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
   "12ed467d6c81bc00bddc5a10220b65925488fc0521f1e62a81308d2296a961fe": {
     "query": "\n                SELECT u.trashed, i.subdomain, p.current_revision_id, p.license_id, r.title\n                    FROM page_repository p\n                    JOIN uuid u ON u.id = p.id\n                    JOIN instance i ON i.id = p.instance_id\n                    LEFT JOIN page_revision r ON r.id = p.current_revision_id\n                    WHERE p.id = ?\n            ",
     "describe": {

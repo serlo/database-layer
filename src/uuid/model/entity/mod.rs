@@ -403,6 +403,24 @@ impl Entity {
             .await
             .map(|children| children.first().cloned())
     }
+
+    async fn find_entity_ids<'a, E>(
+        after: Option<i32>,
+        executor: E,
+    ) -> Result<Vec<i32>, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        Ok(sqlx::query!(
+            "select entity.id from entity where entity.id > ? order by entity.id limit 500",
+            after.unwrap_or(0)
+        )
+        .fetch_all(executor)
+        .await?
+        .into_iter()
+        .map(|x| x.id as i32)
+        .collect())
+    }
 }
 
 #[derive(Debug, Deserialize)]

@@ -8,6 +8,7 @@ use super::{
 };
 use crate::database::Connection;
 use crate::message::MessageResponder;
+use crate::operation::{self, Operation};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -15,6 +16,7 @@ pub enum EntityMessage {
     EntityCheckoutRevisionMutation(EntityCheckoutRevisionMutation),
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
+    EntitiesQuery(entities_query::Payload),
 }
 
 #[async_trait]
@@ -29,6 +31,41 @@ impl MessageResponder for EntityMessage {
                 message.handle(connection).await
             }
             EntityMessage::UnrevisedEntitiesQuery(message) => message.handle(connection).await,
+            EntityMessage::EntitiesQuery(payload) => {
+                payload.handle("EntitiesQuery", connection).await
+            }
+        }
+    }
+}
+
+mod entities_query {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        after: Option<i32>,
+    }
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        entity_ids: Vec<i32>,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let entity_ids = match connection {
+                Connection::Pool(pool) => Entity::find_entity_ids(self.after, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Entity::find_entity_ids(self.after, transaction).await?
+                }
+            };
+
+            Ok(Output { entity_ids })
         }
     }
 }

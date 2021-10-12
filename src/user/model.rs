@@ -1,8 +1,8 @@
-use std::env;
-
 use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::user::messages::user_activity_by_type_query;
+use crate::user::messages::user_delete_bots_mutation;
+use std::env;
 
 pub struct User {}
 
@@ -91,6 +91,84 @@ impl User {
             taxonomy: find_counts("taxonomy"),
         })
     }
+
+    // maybe always use delete_user since performace should not matter here?
+    pub async fn delete_bot<'a, E>(
+        payload: &user_delete_bots_mutation::Payload,
+        executor: E,
+    ) -> Result<(), sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        for user_id in &payload.user_ids {
+            sqlx::query!(
+                r#"
+                    DELETE FROM uuid WHERE id = ? AND discriminator = 'user';
+                    DELETE FROM subscription WHERE uuid_id = ?;
+                    DELETE FROM comment WHERE author_id = ?;
+                "#,
+                user_id,
+                user_id,
+                user_id
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
+
+    /*
+    pub async fn delete_user<'a, E>(
+        payload: &user_delete_users_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        for user_id in &payload.user_ids {
+            sqlx::query!(
+                r#"
+                    UPDATE ad SET author_id = 4 WHERE author_id = ?;
+                    UPDATE blog_post SET author_id = 4 WHERE author_id = ?;
+                    UPDATE comment SET author_id = 4 WHERE author_id = ?;
+                    DELETE FROM comment_vote WHERE user_id = ?;
+                    UPDATE entity_revision SET author_id = 4 WHERE author_id = ?;
+                    UPDATE event_log SET actor_id = 4 WHERE actor_id = ?;
+                    DELETE FROM flag WHERE reporter_id = ?;
+                    DELETE FROM notification WHERE user_id = ?;
+                    UPDATE page_revision SET author_id = 4 WHERE author_id = ?;
+                    DELETE FROM role_user WHERE user_id = ?;
+                    DELETE FROM subscription WHERE uuid_id = ?;
+                    DELETE FROM uuid WHERE id = ? AND discriminator = 'user';
+                "#,
+                user_id,
+                user_id,
+                user_id,
+                user_id,
+                user_id,
+                user_id,
+                user_id,
+                user_id,
+                user_id,
+                user_id,
+                user_id,
+                user_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(())
+    }*/
 
     fn now() -> DateTime {
         // In the development database there are no recent edits so we use an old timestamp.

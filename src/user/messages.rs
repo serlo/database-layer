@@ -17,7 +17,6 @@ pub enum UserMessage {
     ActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
-    // UserDeleteUsersMutation(user_delete_users_mutation::Payload),
 }
 
 #[async_trait]

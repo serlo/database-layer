@@ -406,14 +406,26 @@ impl Entity {
 
     async fn find_entity_ids<'a, E>(
         after: Option<i32>,
+        instance: Option<&String>,
         executor: E,
     ) -> Result<Vec<i32>, sqlx::Error>
     where
         E: Executor<'a>,
     {
         Ok(sqlx::query!(
-            "select entity.id from entity where entity.id > ? order by entity.id limit 500",
-            after.unwrap_or(0)
+            r#"
+                SELECT entity.id
+                    FROM entity
+                    INNER JOIN uuid ON uuid.id = entity.id
+                    INNER JOIN instance ON entity.instance_id = instance.id
+                    WHERE entity.id > ?
+                    AND (? is NULL or instance.subdomain = ?)
+                    AND uuid.trashed = 0
+                    ORDER by entity.id limit 500
+            "#,
+            after.unwrap_or(0),
+            instance,
+            instance
         )
         .fetch_all(executor)
         .await?

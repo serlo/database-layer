@@ -45,6 +45,7 @@ mod entities_query {
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         after: Option<i32>,
+        instance: Option<String>,
     }
 
     #[derive(Deserialize, Serialize)]
@@ -59,9 +60,11 @@ mod entities_query {
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             let entity_ids = match connection {
-                Connection::Pool(pool) => Entity::find_entity_ids(self.after, pool).await?,
+                Connection::Pool(pool) => {
+                    Entity::find_entity_ids(self.after, self.instance.as_ref(), pool).await?
+                }
                 Connection::Transaction(transaction) => {
-                    Entity::find_entity_ids(self.after, transaction).await?
+                    Entity::find_entity_ids(self.after, self.instance.as_ref(), transaction).await?
                 }
             };
 

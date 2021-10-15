@@ -1,6 +1,7 @@
 FROM rust:1.54 as build
 WORKDIR /usr/src/app
 COPY src src
+COPY test-utils test-utils
 COPY Cargo.lock .
 COPY Cargo.toml .
 COPY sqlx-data.json .

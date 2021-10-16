@@ -421,6 +421,12 @@ impl Entity {
                     WHERE entity.id > ?
                     AND (? is NULL or instance.subdomain = ?)
                     AND uuid.trashed = 0
+                    AND entity.type_id != 48
+                    AND entity.type_id != 3
+                    AND entity.type_id != 7
+                    AND entity.type_id != 1
+                    AND entity.type_id != 4
+                    AND entity.type_id != 6
                     ORDER by entity.id limit 500
             "#,
             after.unwrap_or(0),

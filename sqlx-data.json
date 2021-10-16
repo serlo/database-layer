@@ -215,6 +215,31 @@
       ]
     }
   },
+  "154122f41019f022b7a2be766cbe5b5ebe0d08d51e545434411fcce250caac1b": {
+    "query": "\n                SELECT entity.id\n                    FROM entity\n                    INNER JOIN uuid ON uuid.id = entity.id\n                    INNER JOIN instance ON entity.instance_id = instance.id\n                    WHERE entity.id > ?\n                    AND (? is NULL or instance.subdomain = ?)\n                    AND uuid.trashed = 0\n                    AND entity.type_id != 48\n                    AND entity.type_id != 3\n                    AND entity.type_id != 7\n                    AND entity.type_id != 1\n                    AND entity.type_id != 4\n                    AND entity.type_id != 6\n                    ORDER by entity.id limit 500\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "1d29fa3ec059188475b89dd62c131002f744586b21ee747a9fbac8a705b218f7": {
     "query": "\n                    INSERT INTO event_parameter (log_id, name_id)\n                        SELECT ?, id\n                        FROM event_parameter_name\n                        WHERE name = ?\n                ",
     "describe": {
@@ -1273,31 +1298,6 @@
         "Right": 5
       },
       "nullable": []
-    }
-  },
-  "81a73142e17586fd065fc6c819b0c5c44ffd91e506fd2895ee4525fb8c861543": {
-    "query": "select entity.id from entity where entity.id > ? order by entity.id limit 500",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4107
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false
-      ]
     }
   },
   "82e05bbc646bebf37b97af3f23e8599937749cb7ecf4b03bfd079ec152651862": {

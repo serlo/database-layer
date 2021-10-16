@@ -40,12 +40,14 @@ impl MessageResponder for EntityMessage {
 
 mod entities_query {
     use super::*;
+    use crate::operation::Error;
 
     #[derive(Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         after: Option<i32>,
         instance: Option<String>,
+        first: Option<i32>,
     }
 
     #[derive(Deserialize, Serialize)]
@@ -59,12 +61,25 @@ mod entities_query {
         type Output = Output;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            if self.first >= Some(10_000) {
+                return Err(Error::BadRequest {
+                    reason: "The 'first' value should be less than 10.000".to_string(),
+                });
+            };
+
             let entity_ids = match connection {
                 Connection::Pool(pool) => {
-                    Entity::find_entity_ids(self.after, self.instance.as_ref(), pool).await?
+                    Entity::find_entity_ids(self.after, self.instance.as_ref(), self.first, pool)
+                        .await?
                 }
                 Connection::Transaction(transaction) => {
-                    Entity::find_entity_ids(self.after, self.instance.as_ref(), transaction).await?
+                    Entity::find_entity_ids(
+                        self.after,
+                        self.instance.as_ref(),
+                        self.first,
+                        transaction,
+                    )
+                    .await?
                 }
             };
 

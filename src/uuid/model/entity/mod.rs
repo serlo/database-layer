@@ -407,6 +407,7 @@ impl Entity {
     async fn find_entity_ids<'a, E>(
         after: Option<i32>,
         instance: Option<&String>,
+        first: Option<i32>,
         executor: E,
     ) -> Result<Vec<i32>, sqlx::Error>
     where
@@ -427,11 +428,12 @@ impl Entity {
                     AND entity.type_id != 1
                     AND entity.type_id != 4
                     AND entity.type_id != 6
-                    ORDER by entity.id limit 500
+                    ORDER by entity.id limit ?
             "#,
             after.unwrap_or(0),
             instance,
-            instance
+            instance,
+            first
         )
         .fetch_all(executor)
         .await?

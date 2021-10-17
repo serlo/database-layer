@@ -404,6 +404,14 @@ impl Entity {
             .map(|children| children.first().cloned())
     }
 
+    /// Returns an array of queried entity ids
+    ///
+    /// Entities with the following properties will not be queried
+    /// - trashed
+    /// - of type applet (type.id 48), article (3), course (7),
+    ///   text-exercise (1), text-exercise-group(4), video(6)
+    ///
+    /// See Issue #144
     async fn find_entity_ids<'a, E>(
         after: Option<i32>,
         instance: Option<&String>,
@@ -422,13 +430,9 @@ impl Entity {
                     WHERE entity.id > ?
                     AND (? is NULL or instance.subdomain = ?)
                     AND uuid.trashed = 0
-                    AND entity.type_id != 48
-                    AND entity.type_id != 3
-                    AND entity.type_id != 7
-                    AND entity.type_id != 1
-                    AND entity.type_id != 4
-                    AND entity.type_id != 6
-                    ORDER by entity.id limit ?
+                    AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
+                    ORDER by entity.id
+                    LIMIT ?
             "#,
             after.unwrap_or(0),
             instance,

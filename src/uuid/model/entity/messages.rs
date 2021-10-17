@@ -61,10 +61,16 @@ mod entities_query {
         type Output = Output;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            if self.first >= Some(10_000) {
-                return Err(Error::BadRequest {
-                    reason: "The 'first' value should be less than 10.000".to_string(),
-                });
+            let maximum = 10_000;
+
+            match self.first {
+                f if f >= Some(maximum) => return Err(Error::BadRequest {
+                    reason: "The 'first' value should be less than 10_000".to_string(),
+                }),
+                None => return Err(Error::BadRequest {
+                    reason: "The 'first' key is required".to_string(),
+                }),
+                _ => ()
             };
 
             let entity_ids = match connection {

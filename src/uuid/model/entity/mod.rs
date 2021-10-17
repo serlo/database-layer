@@ -416,6 +416,7 @@ impl Entity {
         after: Option<i32>,
         instance: Option<&String>,
         first: Option<i32>,
+        last_modified: Option<&String>,
         executor: E,
     ) -> Result<Vec<i32>, sqlx::Error>
     where
@@ -431,12 +432,14 @@ impl Entity {
                     AND (? is NULL or instance.subdomain = ?)
                     AND uuid.trashed = 0
                     AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
+                    AND entity.date > ?
                     ORDER by entity.id
                     LIMIT ?
             "#,
             after.unwrap_or(0),
             instance,
             instance,
+            last_modified,
             first
         )
         .fetch_all(executor)

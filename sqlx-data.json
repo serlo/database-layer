@@ -505,6 +505,31 @@
       ]
     }
   },
+  "26830cae50a19d0a2119184dac9d07b3e8d5db9b655cd89ba77def5f6229a50f": {
+    "query": "\n                SELECT entity.id\n                    FROM entity\n                    INNER JOIN uuid ON uuid.id = entity.id\n                    INNER JOIN instance ON entity.instance_id = instance.id\n                    WHERE entity.id > ?\n                    AND (? is NULL or instance.subdomain = ?)\n                    AND uuid.trashed = 0\n                    AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)\n                    AND entity.date > ?\n                    ORDER by entity.id\n                    LIMIT ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "2b40b2053d2083dbdc2ba4229260ef613c0b10e606099d083ffe75dc2117e4ac": {
     "query": "SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC",
     "describe": {
@@ -1494,31 +1519,6 @@
         "Right": 2
       },
       "nullable": []
-    }
-  },
-  "9b1947eb4980b55e7fc296facd2d117eb0337a2623655d028738c8d39f3624cc": {
-    "query": "\n                SELECT entity.id\n                    FROM entity\n                    INNER JOIN uuid ON uuid.id = entity.id\n                    INNER JOIN instance ON entity.instance_id = instance.id\n                    WHERE entity.id > ?\n                    AND (? is NULL or instance.subdomain = ?)\n                    AND uuid.trashed = 0\n                    AND entity.type_id != 48\n                    AND entity.type_id != 3\n                    AND entity.type_id != 7\n                    AND entity.type_id != 1\n                    AND entity.type_id != 4\n                    AND entity.type_id != 6\n                    ORDER by entity.id limit ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4107
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 4
-      },
-      "nullable": [
-        false
-      ]
     }
   },
   "a400f2b325f4baa03878fd49187085fb2b95d0ca886494a2fca05f1ec65b7ed1": {

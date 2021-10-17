@@ -48,6 +48,7 @@ mod entities_query {
         after: Option<i32>,
         instance: Option<String>,
         first: Option<i32>,
+        last_modified: Option<String>, // TODO?: prefer datetime? In that case Deserialize has to be implemented
     }
 
     #[derive(Deserialize, Serialize)]
@@ -64,25 +65,44 @@ mod entities_query {
             let maximum = 10_000;
 
             match self.first {
-                f if f >= Some(maximum) => return Err(Error::BadRequest {
-                    reason: "The 'first' value should be less than 10_000".to_string(),
-                }),
-                None => return Err(Error::BadRequest {
-                    reason: "The 'first' key is required".to_string(),
-                }),
-                _ => ()
+                f if f >= Some(maximum) => {
+                    return Err(Error::BadRequest {
+                        reason: "The 'first' value should be less than 10_000".to_string(),
+                    })
+                }
+                None => {
+                    return Err(Error::BadRequest {
+                        reason: "The 'first' key is required".to_string(),
+                    })
+                }
+                _ => (),
             };
+
+            if self.last_modified == None {
+                return Err(Error::BadRequest {
+                    reason:
+                        "The key 'lastModified' is required. Note: 'last_modified' is not accepted"
+                            .to_string(),
+                });
+            }
 
             let entity_ids = match connection {
                 Connection::Pool(pool) => {
-                    Entity::find_entity_ids(self.after, self.instance.as_ref(), self.first, pool)
-                        .await?
+                    Entity::find_entity_ids(
+                        self.after,
+                        self.instance.as_ref(),
+                        self.first,
+                        self.last_modified.as_ref(),
+                        pool,
+                    )
+                    .await?
                 }
                 Connection::Transaction(transaction) => {
                     Entity::find_entity_ids(
                         self.after,
                         self.instance.as_ref(),
                         self.first,
+                        self.last_modified.as_ref(),
                         transaction,
                     )
                     .await?

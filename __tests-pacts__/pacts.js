@@ -10,9 +10,12 @@ jest.setTimeout(120 * 1000)
 test('Pacts', async () => {
   async function fetchCargoToml() {
     const readFile = util.promisify(fs.readFile)
-    const file = await readFile(path.join(__dirname, '..', 'Cargo.toml'), {
-      encoding: 'utf-8',
-    })
+    const file = await readFile(
+      path.join(__dirname, '..', 'server', 'Cargo.toml'),
+      {
+        encoding: 'utf-8',
+      }
+    )
     const { package: pkg } = await toml.parse(file)
     return { version: pkg.version }
   }

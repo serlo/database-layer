@@ -1,29 +1,6 @@
-[package]
-name = "serlo-org-database-layer"
-version = "0.3.22"
-authors = ["Serlo Education e.V."]
-license = "Apache-2.0"
-edition = "2018"
+[workspace]
 
-[dependencies]
-actix-rt = "2.0.0"
-actix-service = "2.0.0"
-actix-web = "4.0.0-beta"
-async-trait = "0.1.0"
-chrono = "0.4.0"
-chrono-tz = "0.5.0"
-convert_case = "0.4.0"
-dotenv = "0.15.0"
-futures = "0.3.0"
-json = "0.12.0"
-regex = "1.0.0"
-sentry = { git = "https://github.com/fourbs-net/sentry-rust", branch = "update-actix" }
-sentry-actix = { git = "https://github.com/fourbs-net/sentry-rust", branch = "update-actix" }
-serde = "1.0.0"
-serde_json = "1.0.0"
-sophia = "0.7.0"
-sqlx = { version = "0.5.0", features = ["chrono", "offline", "json", "mysql", "runtime-actix-native-tls"] }
-thiserror = "1.0.0"
-
-[dev-dependencies]
-rand = "0.8.0"
+members = [
+    "server",
+    "test-utils"
+]

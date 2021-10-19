@@ -7,7 +7,7 @@ import * as toml from 'toml'
 import * as util from 'util'
 
 const root = path.join(__dirname, '..')
-const cargoTomlPath = path.join(root, 'Cargo.toml')
+const cargoTomlPath = path.join(root, 'server', 'Cargo.toml')
 
 const fsOptions: { encoding: BufferEncoding } = { encoding: 'utf-8' }
 

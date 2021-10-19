@@ -19,7 +19,7 @@ use sqlx::MySql;
 /// To construct a `DateTime` representing the current date, use [`DateTime::now`]:
 ///
 /// ```rust
-/// use serlo_org_database_layer::datetime::DateTime;
+/// use server::datetime::DateTime;
 ///
 /// let current_datetime = DateTime::now();
 /// ```
@@ -27,7 +27,7 @@ use sqlx::MySql;
 /// Timestamps from the database can be converted using the `From` trait:
 ///
 /// ```rust
-/// use serlo_org_database_layer::datetime::DateTime;
+/// use server::datetime::DateTime;
 ///
 /// # async fn fetch(pool: &sqlx::MySqlPool) -> Result<(), sqlx::Error> {
 /// let event = sqlx::query!(r#"SELECT date FROM event_log WHERE id = 1"#)

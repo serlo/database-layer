@@ -1,5 +1,4 @@
 use rand::{distributions::Alphanumeric, Rng};
-use sqlx;
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>
 where

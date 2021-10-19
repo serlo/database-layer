@@ -4,7 +4,7 @@ mod tests {
     use serde_json::json;
     use std::str::from_utf8;
 
-    use serlo_org_database_layer::{configure_app, create_database_pool};
+    use server::{configure_app, create_database_pool};
     use test_utils::create_new_test_user;
 
     #[actix_rt::test]

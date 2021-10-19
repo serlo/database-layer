@@ -10,7 +10,7 @@ impl<'a, A> Acquire<'a> for A where A: sqlx::Acquire<'a, Database = sqlx::MySql>
 /// If you have on query, you can use `executor` directly:
 ///
 /// ```rust
-/// use serlo_org_database_layer::database::Executor;
+/// use server::database::Executor;
 ///
 /// async fn fetch_via_transaction<'a, E>(executor: E) -> Result<(), sqlx::Error>
 /// where
@@ -24,7 +24,7 @@ impl<'a, A> Acquire<'a> for A where A: sqlx::Acquire<'a, Database = sqlx::MySql>
 /// If you have more than one query, you'll need to start a new transaction:
 ///
 /// ```rust
-/// use serlo_org_database_layer::database::Executor;
+/// use server::database::Executor;
 ///
 /// async fn fetch_via_transaction<'a, E>(executor: E) -> Result<(), sqlx::Error>
 /// where

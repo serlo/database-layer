@@ -1,4 +1,6 @@
 /target
+/server/target
+/test-utils/target
 
 # Logs
 logs

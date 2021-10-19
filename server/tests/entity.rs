@@ -3,7 +3,7 @@ mod tests {
     use actix_web::{test, App};
     use std::str::from_utf8;
 
-    use serlo_org_database_layer::{configure_app, create_database_pool};
+    use server::{configure_app, create_database_pool};
 
     #[actix_rt::test]
     async fn unrevised_entities_query() {

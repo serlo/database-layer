@@ -2,7 +2,7 @@ use std::env;
 
 use actix_web::{App, HttpServer, Result};
 
-use serlo_org_database_layer::{configure_app, create_database_pool, ApplicationError};
+use server::{configure_app, create_database_pool, ApplicationError};
 
 #[actix_web::main]
 async fn main() -> Result<(), ApplicationError> {

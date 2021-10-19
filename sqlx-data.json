@@ -215,6 +215,16 @@
       ]
     }
   },
+  "1bbd68e4d7f5588adc8fe6bec65438fcb11cefccf9144d7fe3712b025ddc0fac": {
+    "query": "\n                INSERT INTO user (id, username, email, password, token)\n                VALUES (?, ?, ?, \"\", ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 4
+      },
+      "nullable": []
+    }
+  },
   "1d29fa3ec059188475b89dd62c131002f744586b21ee747a9fbac8a705b218f7": {
     "query": "\n                    INSERT INTO event_parameter (log_id, name_id)\n                        SELECT ?, id\n                        FROM event_parameter_name\n                        WHERE name = ?\n                ",
     "describe": {
@@ -1486,6 +1496,16 @@
       ]
     }
   },
+  "94c2ed2ebecab18a1e77b2e02f2aa629296f21d012fdfb6dd0e0b7916ea9c9d8": {
+    "query": "DELETE FROM uuid WHERE id = ? AND discriminator = 'user'",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
+    }
+  },
   "95cd88b4c06459122c191536fbef5c1c71a523fbf84a008593af1002721218d3": {
     "query": "UPDATE uuid SET trashed = ? WHERE id = ?",
     "describe": {
@@ -1494,6 +1514,31 @@
         "Right": 2
       },
       "nullable": []
+    }
+  },
+  "9bd4c7f005e7e5f56c58e3efe7fbe64ba6a51ca405228bca0af0df42f2ebef71": {
+    "query": "SELECT LAST_INSERT_ID() as id FROM uuid",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 161
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        false
+      ]
     }
   },
   "a400f2b325f4baa03878fd49187085fb2b95d0ca886494a2fca05f1ec65b7ed1": {
@@ -2086,6 +2131,16 @@
         false,
         false
       ]
+    }
+  },
+  "d5ce4d4ab57af95bef49585911255eadaa615a4e4ff690202df7e276d9b1b645": {
+    "query": "\n                INSERT INTO uuid (trashed, discriminator) VALUES (0, \"user\")\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": []
     }
   },
   "d96a45d0d014aece234428d2b3deeb6740e956e7c1d0f380d2bdbc258180d5aa": {

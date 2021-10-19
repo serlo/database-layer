@@ -68,32 +68,4 @@ mod tests {
 
         assert_eq!(resp.status(), 404);
     }
-
-    #[actix_rt::test]
-    async fn user_delete_bots_mutation_returns_error_when_user_does_not_exist() {
-        let pool = create_database_pool().await.unwrap();
-        let app = configure_app(App::new(), pool);
-        let app = test::init_service(app).await;
-
-        let taxonomy_term_id = 5;
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&json!({
-                "type": "UserDeleteBotsMutation",
-                "payload": { "userIds": [taxonomy_term_id] }
-            }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
-
-        assert_eq!(resp.status(), 400);
-
-        let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
-        assert_eq!(
-            result,
-            json::object! {
-                "success": false,
-                "reason": "user with id 5 does not exist"
-            }
-        );
-    }
 }

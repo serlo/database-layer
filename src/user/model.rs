@@ -1,6 +1,5 @@
 use crate::database::Executor;
 use crate::datetime::DateTime;
-use crate::operation;
 use crate::user::messages::user_activity_by_type_query;
 use crate::user::messages::user_delete_bots_mutation;
 use std::env;
@@ -96,25 +95,19 @@ impl User {
     pub async fn delete_bot<'a, E>(
         payload: &user_delete_bots_mutation::Payload,
         executor: E,
-    ) -> Result<(), operation::Error>
+    ) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
 
         for user_id in &payload.user_ids {
-            let result = sqlx::query!(
+            sqlx::query!(
                 r#"DELETE FROM uuid WHERE id = ? AND discriminator = 'user'"#,
                 user_id,
             )
             .execute(&mut transaction)
             .await?;
-
-            if result.rows_affected() == 0 {
-                return Err(operation::Error::BadRequest {
-                    reason: format!("user with id {} does not exist", user_id),
-                });
-            }
         }
 
         transaction.commit().await?;

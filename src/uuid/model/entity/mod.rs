@@ -410,6 +410,8 @@ impl Entity {
     /// - trashed
     /// - of type applet (type.id 48), article (3), course (7),
     ///   text-exercise (1), text-exercise-group(4), video(6)
+    /// - being hierarchically in the taxonomy under 75211
+    ///   (you can test it in dev env using 35559)
     ///
     /// See Issue #144
     async fn find_entity_ids<'a, E>(
@@ -426,13 +428,25 @@ impl Entity {
             r#"
                 SELECT entity.id
                     FROM entity
-                    INNER JOIN uuid ON uuid.id = entity.id
-                    INNER JOIN instance ON entity.instance_id = instance.id
+                    JOIN uuid ON uuid.id = entity.id
+                    JOIN instance ON entity.instance_id = instance.id
+                    LEFT JOIN term_taxonomy_entity tte ON entity.id = tte.entity_id
+                    LEFT JOIN term_taxonomy t0 ON tte.term_taxonomy_id = t0.id
+                    LEFT JOIN term_taxonomy t1 ON t0.parent_id = t1.id
+                    LEFT JOIN term_taxonomy t2 ON t1.parent_id = t2.id
+                    LEFT JOIN term_taxonomy t3 ON t2.parent_id = t3.id
+                    LEFT JOIN term_taxonomy t4 ON t3.parent_id = t4.id
+                    LEFT JOIN term_taxonomy t5 ON t4.parent_id = t5.id
                     WHERE entity.id > ?
                     AND (? is NULL or instance.subdomain = ?)
                     AND uuid.trashed = 0
                     AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
                     AND entity.date > ?
+                    AND (t1.id IS NULL OR t1.id != 75211)
+                    AND (t2.id IS NULL OR t2.id != 75211)
+                    AND (t3.id IS NULL OR t3.id != 75211)
+                    AND (t4.id IS NULL OR t4.id != 75211)
+                    AND (t5.id IS NULL OR t5.id != 75211)
                     ORDER by entity.id
                     LIMIT ?
             "#,

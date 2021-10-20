@@ -78,14 +78,6 @@ mod entities_query {
                 _ => (),
             };
 
-            if self.last_modified == None {
-                return Err(Error::BadRequest {
-                    reason:
-                        "The key 'lastModified' is required. Note: 'last_modified' is not accepted"
-                            .to_string(),
-                });
-            }
-
             let entity_ids = match connection {
                 Connection::Pool(pool) => {
                     Entity::find_entity_ids(

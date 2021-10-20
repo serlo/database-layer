@@ -430,6 +430,7 @@ impl Entity {
                     FROM entity
                     JOIN uuid ON uuid.id = entity.id
                     JOIN instance ON entity.instance_id = instance.id
+                    JOIN entity_revision ON entity.current_revision_id = entity_revision.id
                     LEFT JOIN term_taxonomy_entity tte ON entity.id = tte.entity_id
                     LEFT JOIN term_taxonomy t0 ON tte.term_taxonomy_id = t0.id
                     LEFT JOIN term_taxonomy t1 ON t0.parent_id = t1.id
@@ -439,9 +440,9 @@ impl Entity {
                     LEFT JOIN term_taxonomy t5 ON t4.parent_id = t5.id
                     WHERE entity.id > ?
                     AND (? is NULL or instance.subdomain = ?)
+                    AND (? is NULL or entity_revision.date > Date(?))
                     AND uuid.trashed = 0
                     AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
-                    AND entity.date > ?
                     AND (t1.id IS NULL OR t1.id != 75211)
                     AND (t2.id IS NULL OR t2.id != 75211)
                     AND (t3.id IS NULL OR t3.id != 75211)
@@ -453,6 +454,7 @@ impl Entity {
             after.unwrap_or(0),
             instance,
             instance,
+            last_modified,
             last_modified,
             first
         )

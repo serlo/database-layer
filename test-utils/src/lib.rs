@@ -22,11 +22,12 @@ where
     sqlx::query!(
         r#"
                 INSERT INTO user (id, username, email, password, token)
-                VALUES (?, ?, ?, "", ?)
+                VALUES (?, ?, ?, ?, ?)
             "#,
         new_user_id,
         random_string(10),
         random_string(10),
+        "test_user",
         random_string(10)
     )
     .execute(&mut transaction)
@@ -35,6 +36,34 @@ where
     transaction.commit().await?;
 
     Ok(new_user_id)
+}
+
+pub async fn delete_all_test_user<'a, E>(executor: E) -> Result<(), sqlx::Error>
+where
+    E: sqlx::mysql::MySqlExecutor<'a>,
+{
+    sqlx::query!(r#"delete from user where user.password = "test_user""#)
+        .execute(executor)
+        .await?;
+    Ok(())
+}
+
+pub async fn set_description<'a, E>(
+    user_id: i32,
+    description: &str,
+    executor: E,
+) -> Result<(), sqlx::Error>
+where
+    E: sqlx::mysql::MySqlExecutor<'a>,
+{
+    sqlx::query!(
+        "update user set description = ? where id = ?",
+        description,
+        user_id
+    )
+    .execute(executor)
+    .await?;
+    Ok(())
 }
 
 fn random_string(nr: usize) -> String {

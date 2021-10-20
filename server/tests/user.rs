@@ -47,7 +47,7 @@ mod tests {
             .uri("/")
             .set_json(&json!({
                 "type": "UserDeleteBotsMutation",
-                "payload": { "userIds": [user_id] }
+                "payload": { "botIds": [user_id] }
             }))
             .to_request();
         let resp = test::call_service(&app, req).await;

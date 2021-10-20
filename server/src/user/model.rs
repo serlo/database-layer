@@ -101,10 +101,10 @@ impl User {
     {
         let mut transaction = executor.begin().await?;
 
-        for user_id in &payload.user_ids {
+        for bot_id in &payload.bot_ids {
             sqlx::query!(
                 r#"DELETE FROM uuid WHERE id = ? AND discriminator = 'user'"#,
-                user_id,
+                bot_id,
             )
             .execute(&mut transaction)
             .await?;

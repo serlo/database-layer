@@ -129,7 +129,7 @@ pub mod user_delete_bots_mutation {
     #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        pub user_ids: Vec<i32>,
+        pub bot_ids: Vec<i32>,
     }
 
     #[derive(Debug, Serialize, Deserialize)]

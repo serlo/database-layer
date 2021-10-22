@@ -178,6 +178,11 @@ pub mod potential_spam_users_query {
         type Output = Output;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            if self.first > 10_000 {
+                return Err(operation::Error::BadRequest {
+                    reason: "parameter `first` is too high".to_string(),
+                });
+            };
             Ok(Output {
                 user_ids: match connection {
                     Connection::Pool(pool) => User::potential_spam_users(self, pool).await?,

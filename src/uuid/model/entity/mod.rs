@@ -406,12 +406,14 @@ impl Entity {
 
     /// Returns an array of queried entity ids
     ///
-    /// Entities with the following properties will not be queried
+    /// Entities with the following properties will NOT be queried
     /// - trashed
-    /// - of type applet (type.id 48), article (3), course (7),
+    /// - of type applet (type_id 48), article (3), course (7),
     ///   text-exercise (1), text-exercise-group(4), video(6)
     /// - being hierarchically in the taxonomy under 75211
     ///   (you can test it in dev env using 35559)
+    /// - being hierarchically in the taxonomy under 87993
+    ///   except those under 106081
     ///
     /// See Issue #144
     async fn find_entity_ids<'a, E>(
@@ -430,7 +432,7 @@ impl Entity {
                     FROM entity
                     JOIN uuid ON uuid.id = entity.id
                     JOIN instance ON entity.instance_id = instance.id
-                    JOIN entity_revision ON entity.current_revision_id = entity_revision.id
+                    LEFT JOIN entity_revision ON entity.current_revision_id = entity_revision.id
                     LEFT JOIN term_taxonomy_entity tte ON entity.id = tte.entity_id
                     LEFT JOIN term_taxonomy t0 ON tte.term_taxonomy_id = t0.id
                     LEFT JOIN term_taxonomy t1 ON t0.parent_id = t1.id
@@ -439,15 +441,21 @@ impl Entity {
                     LEFT JOIN term_taxonomy t4 ON t3.parent_id = t4.id
                     LEFT JOIN term_taxonomy t5 ON t4.parent_id = t5.id
                     WHERE entity.id > ?
-                    AND (? is NULL or instance.subdomain = ?)
-                    AND (? is NULL or entity_revision.date > Date(?))
-                    AND uuid.trashed = 0
-                    AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
-                    AND (t1.id IS NULL OR t1.id != 75211)
-                    AND (t2.id IS NULL OR t2.id != 75211)
-                    AND (t3.id IS NULL OR t3.id != 75211)
-                    AND (t4.id IS NULL OR t4.id != 75211)
-                    AND (t5.id IS NULL OR t5.id != 75211)
+                        AND (? is NULL OR instance.subdomain = ?)
+                        AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))
+                        AND uuid.trashed = 0
+                        AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
+                        AND (t0.id IS NULL OR t0.id != 75211)
+                        AND (t1.id IS NULL OR t1.id != 75211)
+                        AND (t2.id IS NULL OR t2.id != 75211)
+                        AND (t3.id IS NULL OR t3.id != 75211)
+                        AND (t4.id IS NULL OR t4.id != 75211)
+                        AND (t5.id IS NULL OR t5.id != 75211)
+                        AND (t0.id IS NULL OR (t0.id = 106081 OR t0.id != 87993))
+                        AND (t1.id IS NULL OR t1.id = 106081 OR (t0.id != 106081 AND (t1.id = 106081 OR t1.id != 87993)))
+                        AND (t2.id IS NULL OR (t1.id = 106081 OR t2.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND (t2.id = 106081 OR t2.id != 87993)))
+                        AND (t3.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND (t3.id = 106081 OR t3.id != 87993)))
+                        AND (t4.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081 OR t4.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND t3.id != 106081 AND (t4.id = 106081 OR t4.id != 87993)))
                     ORDER by entity.id
                     LIMIT ?
             "#,

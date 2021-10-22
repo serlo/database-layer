@@ -1046,6 +1046,31 @@
       ]
     }
   },
+  "579c5ed35b97301c8f4bd41e10e74b0f25a08fd7e53673255baf3c22df7e0e97": {
+    "query": "\n                SELECT entity.id\n                    FROM entity\n                    JOIN uuid ON uuid.id = entity.id\n                    JOIN instance ON entity.instance_id = instance.id\n                    LEFT JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                    LEFT JOIN term_taxonomy_entity tte ON entity.id = tte.entity_id\n                    LEFT JOIN term_taxonomy t0 ON tte.term_taxonomy_id = t0.id\n                    LEFT JOIN term_taxonomy t1 ON t0.parent_id = t1.id\n                    LEFT JOIN term_taxonomy t2 ON t1.parent_id = t2.id\n                    LEFT JOIN term_taxonomy t3 ON t2.parent_id = t3.id\n                    LEFT JOIN term_taxonomy t4 ON t3.parent_id = t4.id\n                    LEFT JOIN term_taxonomy t5 ON t4.parent_id = t5.id\n                    WHERE entity.id > ?\n                        AND (? is NULL OR instance.subdomain = ?)\n                        AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))\n                        AND uuid.trashed = 0\n                        AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)\n                        AND (t0.id IS NULL OR t0.id != 75211)\n                        AND (t1.id IS NULL OR t1.id != 75211)\n                        AND (t2.id IS NULL OR t2.id != 75211)\n                        AND (t3.id IS NULL OR t3.id != 75211)\n                        AND (t4.id IS NULL OR t4.id != 75211)\n                        AND (t5.id IS NULL OR t5.id != 75211)\n                        AND (t0.id IS NULL OR (t0.id = 106081 OR t0.id != 87993))\n                        AND (t1.id IS NULL OR t1.id = 106081 OR (t0.id != 106081 AND (t1.id = 106081 OR t1.id != 87993)))\n                        AND (t2.id IS NULL OR (t1.id = 106081 OR t2.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND (t2.id = 106081 OR t2.id != 87993)))\n                        AND (t3.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND (t3.id = 106081 OR t3.id != 87993)))\n                        AND (t4.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081 OR t4.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND t3.id != 106081 AND (t4.id = 106081 OR t4.id != 87993)))\n                    ORDER by entity.id\n                    LIMIT ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 6
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "59220da9f5e4677a6fdc380eca9b95923728d0efd09277eb85290b3b4aafa118": {
     "query": "\n                SELECT instance_id, archived\n                    FROM comment\n                    WHERE id = ?\n            ",
     "describe": {
@@ -1656,31 +1681,6 @@
       ],
       "parameters": {
         "Right": 1
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
-  "a9a27456b7ad31a0f73aebe96245e018b82c4e313367f775af644d381ac0d4f0": {
-    "query": "\n                SELECT entity.id\n                    FROM entity\n                    JOIN uuid ON uuid.id = entity.id\n                    JOIN instance ON entity.instance_id = instance.id\n                    JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                    LEFT JOIN term_taxonomy_entity tte ON entity.id = tte.entity_id\n                    LEFT JOIN term_taxonomy t0 ON tte.term_taxonomy_id = t0.id\n                    LEFT JOIN term_taxonomy t1 ON t0.parent_id = t1.id\n                    LEFT JOIN term_taxonomy t2 ON t1.parent_id = t2.id\n                    LEFT JOIN term_taxonomy t3 ON t2.parent_id = t3.id\n                    LEFT JOIN term_taxonomy t4 ON t3.parent_id = t4.id\n                    LEFT JOIN term_taxonomy t5 ON t4.parent_id = t5.id\n                    WHERE entity.id > ?\n                    AND (? is NULL or instance.subdomain = ?)\n                    AND (? is NULL or entity_revision.date > Date(?))\n                    AND uuid.trashed = 0\n                    AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)\n                    AND (t1.id IS NULL OR t1.id != 75211)\n                    AND (t2.id IS NULL OR t2.id != 75211)\n                    AND (t3.id IS NULL OR t3.id != 75211)\n                    AND (t4.id IS NULL OR t4.id != 75211)\n                    AND (t5.id IS NULL OR t5.id != 75211)\n                    ORDER by entity.id\n                    LIMIT ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4107
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 6
       },
       "nullable": [
         false

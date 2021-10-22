@@ -215,12 +215,12 @@
       ]
     }
   },
-  "1bbd68e4d7f5588adc8fe6bec65438fcb11cefccf9144d7fe3712b025ddc0fac": {
-    "query": "\n                INSERT INTO user (id, username, email, password, token)\n                VALUES (?, ?, ?, \"\", ?)\n            ",
+  "1a79acc8b765565cef5fce4ef62cbe9780f80c247db9d16827a1f786c6cccf05": {
+    "query": "delete from user where user.password = \"test_user\"",
     "describe": {
       "columns": [],
       "parameters": {
-        "Right": 4
+        "Right": 0
       },
       "nullable": []
     }
@@ -1119,6 +1119,16 @@
       ]
     }
   },
+  "65c764b58fbe6ce246e2d35773b7af5ae8222e831f50b5791cfb8ed318d203d8": {
+    "query": "update user set description = ? where id = ?",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
   "65d605e2dbfb889b8efc8300283a96aae8696bb8f61aab612e652bc765211d30": {
     "query": "\n                INSERT INTO notification_event (notification_id, event_log_id)\n                    SELECT LAST_INSERT_ID(), ?\n            ",
     "describe": {
@@ -1707,6 +1717,16 @@
       ]
     }
   },
+  "a9b10de6cee0d4af82377604c14d566e0445000f270f3f154d794ab8913adc1f": {
+    "query": "\n                INSERT INTO user (id, username, email, password, token)\n                VALUES (?, ?, ?, ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": []
+    }
+  },
   "a9c55fc1d7e840f81ced9ce394cf29d5ab4e23812a6b9766cd540deeb991d100": {
     "query": "SELECT instance_id FROM comment WHERE id = ?",
     "describe": {
@@ -2013,6 +2033,31 @@
       ],
       "parameters": {
         "Right": 2
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "cd5636ac7ae6ef50a03423416289bfc3439a2c76beb99a64f84f5344874777e9": {
+    "query": "\n                select user.id\n                from user\n                where\n                    user.description is not null\n                    and (? is null or user.id > ?)\n                order by user.id desc\n                limit ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 3
       },
       "nullable": [
         false

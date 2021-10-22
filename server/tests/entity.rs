@@ -119,7 +119,6 @@ mod tests {
         );
     }
 
-
     #[actix_rt::test]
     #[allow(clippy::bool_assert_comparison)]
     async fn entities_query_with_last_modified_parameter() {

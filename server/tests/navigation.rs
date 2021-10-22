@@ -3,9 +3,9 @@ mod tests {
     use actix_web::{test, App};
     use std::str::from_utf8;
 
-    use serlo_org_database_layer::instance::Instance;
-    use serlo_org_database_layer::navigation::{NavigationMessage, NavigationQuery};
-    use serlo_org_database_layer::{configure_app, create_database_pool};
+    use server::instance::Instance;
+    use server::navigation::{NavigationMessage, NavigationQuery};
+    use server::{configure_app, create_database_pool};
 
     #[actix_rt::test]
     async fn de() {

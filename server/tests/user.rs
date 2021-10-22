@@ -76,6 +76,8 @@ mod tests {
         delete_all_test_user(&pool).await.unwrap();
         let user_id = create_new_test_user(&pool).await.unwrap();
         set_description(user_id, "Test", &pool).await.unwrap();
+        let user_id2 = create_new_test_user(&pool).await.unwrap();
+        set_description(user_id2, "Test", &pool).await.unwrap();
 
         let app = configure_app(App::new(), pool);
         let app = test::init_service(app).await;
@@ -92,6 +94,21 @@ mod tests {
         assert!(resp.status().is_success());
 
         let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
-        assert_eq!(result, json::object! { "userIds": [user_id] },);
+        assert_eq!(result, json::object! { "userIds": [user_id2, user_id] });
+
+        let req = test::TestRequest::post()
+            .uri("/")
+            .set_json(&json!({
+                "type": "UserPotentialSpamUsersQuery",
+                "payload": { "first": 10, "after": user_id }
+            }))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert!(resp.status().is_success());
+
+        let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
+        dbg!(&result);
+        assert_eq!(result, json::object! { "userIds": [user_id2] });
     }
 }

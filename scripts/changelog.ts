@@ -15,6 +15,15 @@ exec()
   })
 
 async function exec(): Promise<void> {
-  const content = await generateChangelog({ releases: [] })
+  const content = await generateChangelog({
+    releases: [
+      {
+        tagName: 'v0.3.25',
+        name: '0.3.25',
+        date: '2021-10-20',
+        added: ['Add mutation `UserDeleteBotsMutation`'],
+      },
+    ],
+  })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)
 }

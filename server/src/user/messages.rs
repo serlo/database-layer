@@ -16,6 +16,7 @@ pub enum UserMessage {
     // See https://github.com/serlo/api.serlo.org/issues/459
     ActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserActivityByTypeQuery(user_activity_by_type_query::Payload),
+    UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
 }
 
 #[async_trait]
@@ -38,6 +39,9 @@ impl MessageResponder for UserMessage {
             }
             UserMessage::UserActivityByTypeQuery(payload) => {
                 payload.handle("ActivityByTypeQuery", connection).await
+            }
+            UserMessage::UserDeleteBotsMutation(payload) => {
+                payload.handle("UserDeleteBotsMutation", connection).await
             }
         }
     }
@@ -115,6 +119,34 @@ pub mod user_activity_by_type_query {
                     User::fetch_activity_by_type(self.user_id, transaction).await?
                 }
             })
+        }
+    }
+}
+
+pub mod user_delete_bots_mutation {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub bot_ids: Vec<i32>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct Output {
+        pub success: bool,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => User::delete_bot(self, pool).await?,
+                Connection::Transaction(transaction) => User::delete_bot(self, transaction).await?,
+            };
+            Ok(Output { success: true })
         }
     }
 }

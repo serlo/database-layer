@@ -59,7 +59,7 @@ macro_rules! fetch_one_revision {
             "#,
             $id
         )
-        .fetch_one($executor);
+        .fetch_one($executor)
     };
 }
 

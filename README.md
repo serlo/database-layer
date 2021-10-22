@@ -2,9 +2,11 @@
 
 # Serlo.org Database Layer
 
+The database layer provides a Restful API in front of the database of Serlo.
+
 ## Setup
 
-You need [Docker](https://docs.docker.com/engine/installation/) and [Rust](https://www.rust-lang.org) installed on your system.
+You need [Docker](https://docs.docker.com/engine/installation/) and [Rust](https://www.rust-lang.org) installed on your system. In order to run the pact tests (= contract test suite we use) you need to install [Node.js](https://nodejs.org/) version `14.x` and [yarn](https://yarnpkg.com/).
 
 ### Clone
 
@@ -21,6 +23,10 @@ You need to install [`sqlx-cli`](https://github.com/launchbadge/sqlx/tree/master
 ```sh
 cargo install sqlx-cli
 ```
+
+### Install dependencies for yarn and contract tests
+
+Run `yarn` to install all necessary node dependencies (needed for development and running the contract tests).
 
 ### Database
 
@@ -45,7 +51,7 @@ You can reuse the same database as a local serlo.org development environment. Th
 
 You can also use the database schema in this repository.
 
-- Run `docker-compose up` to start the database. It will be available under `mysql://root:secret@localhost:3306/serlo`.
+- Run `yarn start` to start the database. It will be available under `mysql://root:secret@localhost:3306/serlo`.
 
 ## Development
 
@@ -59,10 +65,9 @@ curl -H "Content-Type: application/json" -X POST -d '{"type":"UuidQuery","payloa
 
 Happy coding!
 
-### Helpful commands
+### sqlx and `yarn sqlx:prepare`
 
-- `cargo test` – Run all tests (see https://doc.rust-lang.org/book/ch11-01-writing-tests.html )
-- `cargo clippy` – Lint the whole codebase (see https://github.com/rust-lang/rust-clippy )
+We use [sqlx](https://github.com/launchbadge/sqlx) for creating and executing SQL queries. Here it is necessary that you run locally a local database (see section above) in order to be able to compile the source code. Also in the end of each PR the command `yarn sqlx:prepare` needs to be executed and the changes in [`sqlx-data.json`](./sqlx-data.json) need to be commited.
 
 ### Run all checks
 
@@ -74,3 +79,33 @@ In case you want to run all tests automatically before pushing you can use a [gi
 echo "yarn check:all --no-uncommitted-changes" > .git/hooks/pre-push
 chmod +x .git/hooks/pre-push
 ```
+
+### Test endpoints with `yarn fetch`
+
+With `yarn fetch` you can test queries against the database layer. The script will compile and run a local version of the database layer if necessary. You can call it via
+
+```sh
+yarn fetch [Message] [Payload]
+```
+
+Example:
+
+```sh
+yarn fetch UuidQuery '{"id": 1}'
+```
+
+You can also omit the second argument if the endpoint does not need a payload:
+
+```sh
+yarn fetch SubjectsQuery
+```
+
+### Other helpful commands
+
+- `cargo test` – Run all tests (see https://doc.rust-lang.org/book/ch11-01-writing-tests.html )
+- `cargo clippy` – Lint the whole codebase (see https://github.com/rust-lang/rust-clippy )
+- `yarn mysql` – Start a MySQL shell for the local mysql server.
+- `yarn format` – Format all local source files.
+- `yarn pacts` – Run contract tests
+
+See also [`package.json`](./package.json) for the list of all yarn scripts.

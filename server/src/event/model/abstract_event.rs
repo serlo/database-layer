@@ -91,7 +91,7 @@ macro_rules! fetch_all_string_parameters {
             "#,
             $id
         )
-        .fetch_all($executor);
+        .fetch_all($executor)
     };
 }
 

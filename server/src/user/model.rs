@@ -1,7 +1,8 @@
 use crate::database::Executor;
 use crate::datetime::DateTime;
-use crate::user::messages::user_activity_by_type_query;
-use crate::user::messages::user_delete_bots_mutation;
+use crate::user::messages::{
+    potential_spam_users_query, user_activity_by_type_query, user_delete_bots_mutation,
+};
 use std::env;
 
 pub struct User {}
@@ -113,6 +114,35 @@ impl User {
         transaction.commit().await?;
 
         Ok(())
+    }
+
+    pub async fn potential_spam_users<'a, E>(
+        payload: &potential_spam_users_query::Payload,
+        executor: E,
+    ) -> Result<Vec<i32>, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        println!("{:?}", payload.after);
+        Ok(sqlx::query!(
+            r#"
+                select user.id
+                from user
+                where
+                    user.description is not null
+                    and (? is null or user.id > ?)
+                order by user.id desc
+                limit ?
+            "#,
+            payload.after,
+            payload.after,
+            payload.first,
+        )
+        .fetch_all(executor)
+        .await?
+        .into_iter()
+        .map(|x| x.id as i32)
+        .collect())
     }
 
     fn now() -> DateTime {

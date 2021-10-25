@@ -1742,6 +1742,44 @@
       "nullable": []
     }
   },
+  "a9fe8f8381f1b612670f0902c04422619076166160ca00aec25c68eb5f3fc6e4": {
+    "query": "\n                SELECT events.type AS event_type, count(*) AS counts\n                    FROM (\n                        SELECT CASE\n                            WHEN event_id = 5 THEN \"edits\"\n                            WHEN event_id in (6,11) THEN \"reviews\"\n                            WHEN event_id in (8,9,14,16) THEN \"comments\"\n                            ELSE \"taxonomy\"\n                        END AS type\n                        FROM event_log\n                        WHERE actor_id = ?\n                            AND event_id IN (5,6,11,8,9,14,16,1,2,12,15,17)\n                    ) events\n                GROUP BY events.type;\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "event_type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 224,
+            "max_size": 32
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "counts",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
   "b67a6cd1168e030043fc309da009c241d88b7543ce11598b7e183086dd2f5077": {
     "query": "\n                SELECT entity_id\n                    FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n                    ORDER BY position ASC\n            ",
     "describe": {
@@ -2442,44 +2480,6 @@
             },
             "char_set": 63,
             "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
-  "f66c955309e4c90e6770a684e22849edf3ca9c395f6117efed1686a391cb7379": {
-    "query": "\n                SELECT events.type AS event_type, count(*) AS counts\n                    FROM (\n                        SELECT CASE\n                            WHEN event_id = 5 THEN \"edits\"\n                            WHEN event_id in (6,11) THEN \"reviews\"\n                            WHEN event_id in (9,14,16) THEN \"comments\"\n                            ELSE \"taxonomy\"\n                        END AS type\n                        FROM event_log\n                        WHERE actor_id = ?\n                            AND event_id IN (5,6,11,9,14,16,1,2,12,15,17)\n                    ) events\n                GROUP BY events.type;\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "event_type",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 1
-            },
-            "char_set": 224,
-            "max_size": 32
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "counts",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 129
-            },
-            "char_set": 63,
-            "max_size": 21
           }
         }
       ],

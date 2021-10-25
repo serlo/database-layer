@@ -102,11 +102,14 @@ function getTags(version: semver.SemVer) {
   const { major, minor, patch, prerelease } = version
 
   return prerelease.length > 0
-    ? R.range(0, prerelease.length).map(
-        (i) =>
-          `${major}.${minor}.${patch}-${prerelease.slice(0, i + 1).join('.')}`
-      )
-    : [`${major}`, `${major}.${minor}`, `${major}.${minor}.${patch}`]
+    ? [
+        'next',
+        ...R.range(0, prerelease.length).map(
+          (i) =>
+            `${major}.${minor}.${patch}-${prerelease.slice(0, i + 1).join('.')}`
+        ),
+      ]
+    : ['latest', `${major}`, `${major}.${minor}`, `${major}.${minor}.${patch}`]
 }
 
 interface DockerImageOptions {

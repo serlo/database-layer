@@ -41,9 +41,9 @@ function buildDockerImage({
   Dockerfile,
   context,
 }: DockerImageOptions) {
-  if (!semver.valid(version)) {
-    return
-  }
+  const semanticVersion = semver.parse(version)
+
+  if (semanticVersion === null) throw new Error(`illegal version ${version}`)
 
   const remoteName = `eu.gcr.io/serlo-shared/${name}`
   const result = spawnSync(
@@ -75,7 +75,9 @@ function buildDockerImage({
       'build',
       '-f',
       Dockerfile,
-      ...R.flatten(getTags(version).map((tag) => ['-t', `${name}:${tag}`])),
+      ...R.flatten(
+        getTags(semanticVersion).map((tag) => ['-t', `${name}:${tag}`])
+      ),
       context,
     ],
     {
@@ -83,7 +85,10 @@ function buildDockerImage({
     }
   )
 
-  const remoteTags = R.map((tag) => `${remoteName}:${tag}`, getTags(version))
+  const remoteTags = R.map(
+    (tag) => `${remoteName}:${tag}`,
+    getTags(semanticVersion)
+  )
   remoteTags.forEach((remoteTag) => {
     console.log('Pushing', remoteTag)
     spawnSync('docker', ['tag', `${name}:latest`, remoteTag], {
@@ -93,15 +98,15 @@ function buildDockerImage({
   })
 }
 
-function getTags(version: string) {
-  return [
-    'latest',
-    semver.major(version),
-    `${semver.major(version)}.${semver.minor(version)}`,
-    `${semver.major(version)}.${semver.minor(version)}.${semver.patch(
-      version
-    )}`,
-  ]
+function getTags(version: semver.SemVer) {
+  const { major, minor, patch, prerelease } = version
+
+  return prerelease.length > 0
+    ? R.range(0, prerelease.length).map(
+        (i) =>
+          `${major}.${minor}.${patch}-${prerelease.slice(0, i + 1).join('.')}`
+      )
+    : [`${major}`, `${major}.${minor}`, `${major}.${minor}.${patch}`]
 }
 
 interface DockerImageOptions {

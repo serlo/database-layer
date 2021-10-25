@@ -11,7 +11,7 @@ pub struct ExerciseGroupRevision {
 
 impl From<&AbstractEntityRevision> for ExerciseGroupRevision {
     fn from(abstract_entity_revision: &AbstractEntityRevision) -> Self {
-        let content = abstract_entity_revision.fields.get_or("description", "");
+        let content = abstract_entity_revision.fields.get_or("content", "");
         let cohesive = abstract_entity_revision.fields.get_or("cohesive", "false") == "true";
 
         ExerciseGroupRevision {

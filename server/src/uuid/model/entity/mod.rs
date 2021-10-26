@@ -114,7 +114,7 @@ macro_rules! fetch_all_taxonomy_terms_parents {
             r#"SELECT term_taxonomy_id as id FROM term_taxonomy_entity WHERE entity_id = ?"#,
             $id
         )
-        .fetch_all($executor);
+        .fetch_all($executor)
     };
 }
 

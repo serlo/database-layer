@@ -11,6 +11,7 @@ use self::article_revision::ArticleRevision;
 use self::course_page_revision::CoursePageRevision;
 use self::course_revision::CourseRevision;
 use self::event_revision::EventRevision;
+use self::exercise_group_revision::ExerciseGroupRevision;
 use self::generic_entity_revision::GenericRevision;
 use self::video_revision::VideoRevision;
 use super::entity::Entity;
@@ -23,6 +24,7 @@ mod article_revision;
 mod course_page_revision;
 mod course_revision;
 mod event_revision;
+mod exercise_group_revision;
 mod generic_entity_revision;
 mod video_revision;
 
@@ -42,6 +44,7 @@ pub enum ConcreteEntityRevision {
     Article(ArticleRevision),
     Course(CourseRevision),
     CoursePage(CoursePageRevision),
+    ExerciseGroupRevision(ExerciseGroupRevision),
     Event(EventRevision),
     Video(VideoRevision),
 }
@@ -59,7 +62,7 @@ macro_rules! fetch_one_revision {
             "#,
             $id
         )
-        .fetch_one($executor);
+        .fetch_one($executor)
     };
 }
 
@@ -117,7 +120,7 @@ macro_rules! to_entity_revisions {
                 ConcreteEntityRevision::Generic(abstract_entity_revision_ref.into())
             }
             EntityRevisionType::ExerciseGroup => {
-                ConcreteEntityRevision::Generic(abstract_entity_revision_ref.into())
+                ConcreteEntityRevision::ExerciseGroupRevision(abstract_entity_revision_ref.into())
             }
             EntityRevisionType::GroupedExercise => {
                 ConcreteEntityRevision::Generic(abstract_entity_revision_ref.into())

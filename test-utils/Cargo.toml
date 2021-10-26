@@ -3,7 +3,7 @@ name = "test-utils"
 version = "0.1.0"
 authors = ["Serlo Education e.V."]
 license = "Apache-2.0"
-edition = "2018"
+edition = "2021"
 
 [lib]
 test = false

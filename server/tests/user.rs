@@ -29,7 +29,7 @@ mod tests {
             json::object! {
                 "edits": 209,
                 "reviews": 213,
-                "comments": 37,
+                "comments": 62,
                 "taxonomy": 836
             }
         );

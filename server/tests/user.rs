@@ -100,7 +100,7 @@ mod tests {
             .uri("/")
             .set_json(&json!({
                 "type": "UserPotentialSpamUsersQuery",
-                "payload": { "first": 10, "after": user_id }
+                "payload": { "first": 10, "after": user_id2 }
             }))
             .to_request();
         let resp = test::call_service(&app, req).await;
@@ -109,7 +109,7 @@ mod tests {
 
         let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
         dbg!(&result);
-        assert_eq!(result, json::object! { "userIds": [user_id2] });
+        assert_eq!(result, json::object! { "userIds": [user_id] });
     }
 
     #[actix_rt::test]

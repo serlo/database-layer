@@ -37,6 +37,38 @@ where
     Ok(new_user_id)
 }
 
+pub async fn set_entity_revision_field<'a>(
+    revision_id: i32,
+    field: &str,
+    value: &str,
+    executor: impl sqlx::Acquire<'a, Database = sqlx::MySql>,
+) -> Result<(), sqlx::Error> {
+    let mut transaction = executor.begin().await?;
+
+    if sqlx::query!(
+        "update entity_revision_field set value = ? where id = ? and field = ?",
+        value,
+        revision_id,
+        value
+    )
+    .execute(&mut transaction)
+    .await?
+    .rows_affected()
+        == 0
+    {
+        sqlx::query!(
+            "insert into entity_revision_field (entity_revision_id, field, value) values (?, ?, ?)",
+            revision_id,
+            field,
+            value
+        )
+        .execute(&mut transaction)
+        .await?;
+    };
+    transaction.commit().await?;
+    Ok(())
+}
+
 fn random_string(nr: usize) -> String {
     rand::thread_rng()
         .sample_iter(&Alphanumeric)

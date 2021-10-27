@@ -1,11 +1,12 @@
 #[cfg(test)]
 mod tests {
+    use actix_web::body::to_bytes;
     use actix_web::{test, App};
     use serde_json::json;
     use std::str::from_utf8;
 
     use server::{configure_app, create_database_pool};
-    use test_utils::{create_new_test_user, delete_all_test_user, set_description};
+    use test_utils::{create_new_test_user, handle_message, set_description};
 
     #[actix_rt::test]
     async fn user_activity_by_type() {
@@ -71,44 +72,41 @@ mod tests {
 
     #[actix_rt::test]
     async fn user_potential_spam_users_query() {
-        let pool = create_database_pool().await.unwrap();
+        let mut transaction = create_database_pool().await.unwrap().begin().await.unwrap();
 
-        delete_all_test_user(&pool).await.unwrap();
-        let user_id = create_new_test_user(&pool).await.unwrap();
-        set_description(user_id, "Test", &pool).await.unwrap();
-        let user_id2 = create_new_test_user(&pool).await.unwrap();
-        set_description(user_id2, "Test", &pool).await.unwrap();
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+        set_description(user_id, "Test", &mut transaction)
+            .await
+            .unwrap();
+        let user_id2 = create_new_test_user(&mut transaction).await.unwrap();
+        set_description(user_id2, "Test", &mut transaction)
+            .await
+            .unwrap();
 
-        let app = configure_app(App::new(), pool);
-        let app = test::init_service(app).await;
-
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&json!({
-                "type": "UserPotentialSpamUsersQuery",
-                "payload": { "first": 10 }
-            }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
+        let resp = handle_message(
+            &mut transaction,
+            "UserPotentialSpamUsersQuery",
+            json!({ "first": 10 }),
+        )
+        .await;
 
         assert!(resp.status().is_success());
 
-        let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
+        let result =
+            json::parse(from_utf8(&to_bytes(resp.into_body()).await.unwrap()).unwrap()).unwrap();
         assert_eq!(result, json::object! { "userIds": [user_id2, user_id] });
 
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&json!({
-                "type": "UserPotentialSpamUsersQuery",
-                "payload": { "first": 10, "after": user_id2 }
-            }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
+        let resp = handle_message(
+            &mut transaction,
+            "UserPotentialSpamUsersQuery",
+            json!({ "first": 10, "after": user_id2 }),
+        )
+        .await;
 
         assert!(resp.status().is_success());
 
-        let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
-        dbg!(&result);
+        let result =
+            json::parse(from_utf8(&to_bytes(resp.into_body()).await.unwrap()).unwrap()).unwrap();
         assert_eq!(result, json::object! { "userIds": [user_id] });
     }
 

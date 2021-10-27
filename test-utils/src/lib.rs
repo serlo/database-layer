@@ -1,4 +1,18 @@
+use actix_web::HttpResponse;
 use rand::{distributions::Alphanumeric, Rng};
+use serde_json::{from_value, json, Value};
+use server::database::Connection;
+use server::message::{Message, MessageResponder};
+
+pub async fn handle_message<'c>(
+    transaction: &mut sqlx::Transaction<'c, sqlx::MySql>,
+    message_type: &str,
+    payload: Value,
+) -> HttpResponse {
+    let message = json!({ "type": message_type, "payload": payload });
+    let message = from_value::<Message>(message).unwrap();
+    message.handle(Connection::Transaction(transaction)).await
+}
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>
 where
@@ -27,7 +41,7 @@ where
         new_user_id,
         random_string(10),
         random_string(10),
-        "test_user",
+        "",
         random_string(10)
     )
     .execute(&mut transaction)
@@ -36,16 +50,6 @@ where
     transaction.commit().await?;
 
     Ok(new_user_id)
-}
-
-pub async fn delete_all_test_user<'a, E>(executor: E) -> Result<(), sqlx::Error>
-where
-    E: sqlx::mysql::MySqlExecutor<'a>,
-{
-    sqlx::query!(r#"delete from user where user.password = "test_user""#)
-        .execute(executor)
-        .await?;
-    Ok(())
 }
 
 pub async fn set_description<'a, E>(

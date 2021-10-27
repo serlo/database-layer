@@ -2,7 +2,7 @@
 mod tests {
     use actix_web::body::to_bytes;
     use actix_web::{test, App};
-    use serde_json::json;
+    use serde_json::{from_slice, from_str, json, Value};
     use std::str::from_utf8;
 
     use server::{configure_app, create_database_pool};
@@ -92,9 +92,8 @@ mod tests {
 
         assert!(resp.status().is_success());
 
-        let result =
-            json::parse(from_utf8(&to_bytes(resp.into_body()).await.unwrap()).unwrap()).unwrap();
-        assert_eq!(result, json::object! { "userIds": [user_id2, user_id] });
+        let result: Value = from_slice(&to_bytes(resp.into_body()).await.unwrap()).unwrap();
+        assert_eq!(result, json!({ "userIds": [user_id2, user_id] }));
 
         let resp = handle_message(
             &mut transaction,
@@ -105,9 +104,8 @@ mod tests {
 
         assert!(resp.status().is_success());
 
-        let result =
-            json::parse(from_utf8(&to_bytes(resp.into_body()).await.unwrap()).unwrap()).unwrap();
-        assert_eq!(result, json::object! { "userIds": [user_id] });
+        let result: Value = from_slice(&to_bytes(resp.into_body()).await.unwrap()).unwrap();
+        assert_eq!(result, json!({ "userIds": [user_id] }));
     }
 
     #[actix_rt::test]

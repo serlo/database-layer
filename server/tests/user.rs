@@ -6,7 +6,7 @@ mod tests {
     use std::str::from_utf8;
 
     use server::{configure_app, create_database_pool};
-    use test_utils::{create_new_test_user, handle_message, set_description};
+    use test_utils::{begin_transaction, create_new_test_user, handle_message, set_description};
 
     #[actix_rt::test]
     async fn user_activity_by_type() {
@@ -72,7 +72,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn user_potential_spam_users_query() {
-        let mut transaction = create_database_pool().await.unwrap().begin().await.unwrap();
+        let mut transaction = begin_transaction().await;
 
         let user_id = create_new_test_user(&mut transaction).await.unwrap();
         set_description(user_id, "Test", &mut transaction)
@@ -94,7 +94,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn user_potential_spam_users_query_with_after_parameter() {
-        let mut transaction = create_database_pool().await.unwrap().begin().await.unwrap();
+        let mut transaction = begin_transaction().await;
 
         let user_id = create_new_test_user(&mut transaction).await.unwrap();
         set_description(user_id, "Test", &mut transaction)

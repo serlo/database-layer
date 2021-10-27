@@ -1,11 +1,16 @@
 use actix_web::HttpResponse;
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::{from_value, json, Value};
+use server::create_database_pool;
 use server::database::Connection;
 use server::message::{Message, MessageResponder};
 
-pub async fn handle_message<'c>(
-    transaction: &mut sqlx::Transaction<'c, sqlx::MySql>,
+pub async fn begin_transaction<'a>() -> sqlx::Transaction<'a, sqlx::MySql> {
+    create_database_pool().await.unwrap().begin().await.unwrap()
+}
+
+pub async fn handle_message<'a>(
+    transaction: &mut sqlx::Transaction<'a, sqlx::MySql>,
     message_type: &str,
     payload: Value,
 ) -> HttpResponse {

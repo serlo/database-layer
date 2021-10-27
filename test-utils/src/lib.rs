@@ -10,8 +10,8 @@ pub async fn begin_transaction<'a>() -> sqlx::Transaction<'a, sqlx::MySql> {
     create_database_pool().await.unwrap().begin().await.unwrap()
 }
 
-pub async fn handle_message<'a>(
-    transaction: &mut sqlx::Transaction<'a, sqlx::MySql>,
+pub async fn handle_message(
+    transaction: &mut sqlx::Transaction<'_, sqlx::MySql>,
     message_type: &str,
     payload: Value,
 ) -> HttpResponse {

@@ -1,12 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use actix_web::body::to_bytes;
     use actix_web::{test, App};
-    use serde_json::{from_slice, json, Value};
+    use serde_json::json;
     use std::str::from_utf8;
 
     use server::{configure_app, create_database_pool};
-    use test_utils::{begin_transaction, create_new_test_user, handle_message, set_description};
+    use test_utils::{
+        assert_ok_response, begin_transaction, create_new_test_user, handle_message,
+        set_description,
+    };
 
     #[actix_rt::test]
     async fn user_activity_by_type() {
@@ -79,17 +81,14 @@ mod tests {
             .await
             .unwrap();
 
-        let resp = handle_message(
+        let response = handle_message(
             &mut transaction,
             "UserPotentialSpamUsersQuery",
             json!({ "first": 10 }),
         )
         .await;
 
-        assert!(resp.status().is_success());
-
-        let result: Value = from_slice(&to_bytes(resp.into_body()).await.unwrap()).unwrap();
-        assert_eq!(result, json!({ "userIds": [user_id] }));
+        assert_ok_response(response, json!({ "userIds": [user_id] })).await;
     }
 
     #[actix_rt::test]
@@ -105,17 +104,14 @@ mod tests {
             .await
             .unwrap();
 
-        let resp = handle_message(
+        let response = handle_message(
             &mut transaction,
             "UserPotentialSpamUsersQuery",
             json!({ "first": 10, "after": user_id2 }),
         )
         .await;
 
-        assert!(resp.status().is_success());
-
-        let result: Value = from_slice(&to_bytes(resp.into_body()).await.unwrap()).unwrap();
-        assert_eq!(result, json!({ "userIds": [user_id] }));
+        assert_ok_response(response, json!({ "userIds": [user_id] })).await;
     }
 
     #[actix_rt::test]

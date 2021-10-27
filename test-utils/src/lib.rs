@@ -1,6 +1,7 @@
+use actix_web::body::to_bytes;
 use actix_web::HttpResponse;
 use rand::{distributions::Alphanumeric, Rng};
-use serde_json::{from_value, json, Value};
+use serde_json::{from_slice, from_value, json, Value};
 use server::create_database_pool;
 use server::database::Connection;
 use server::message::{Message, MessageResponder};
@@ -17,6 +18,14 @@ pub async fn handle_message<'a>(
     let message = json!({ "type": message_type, "payload": payload });
     let message = from_value::<Message>(message).unwrap();
     message.handle(Connection::Transaction(transaction)).await
+}
+
+pub async fn assert_ok_response(response: HttpResponse, expected_result: Value) {
+    assert!(response.status().is_success());
+
+    let body = to_bytes(response.into_body()).await.unwrap();
+    let result: Value = from_slice(&body).unwrap();
+    assert_eq!(result, expected_result);
 }
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>

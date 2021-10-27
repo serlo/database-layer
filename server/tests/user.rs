@@ -2,7 +2,7 @@
 mod tests {
     use actix_web::body::to_bytes;
     use actix_web::{test, App};
-    use serde_json::{from_slice, from_str, json, Value};
+    use serde_json::{from_slice, json, Value};
     use std::str::from_utf8;
 
     use server::{configure_app, create_database_pool};
@@ -78,10 +78,6 @@ mod tests {
         set_description(user_id, "Test", &mut transaction)
             .await
             .unwrap();
-        let user_id2 = create_new_test_user(&mut transaction).await.unwrap();
-        set_description(user_id2, "Test", &mut transaction)
-            .await
-            .unwrap();
 
         let resp = handle_message(
             &mut transaction,
@@ -93,7 +89,21 @@ mod tests {
         assert!(resp.status().is_success());
 
         let result: Value = from_slice(&to_bytes(resp.into_body()).await.unwrap()).unwrap();
-        assert_eq!(result, json!({ "userIds": [user_id2, user_id] }));
+        assert_eq!(result, json!({ "userIds": [user_id] }));
+    }
+
+    #[actix_rt::test]
+    async fn user_potential_spam_users_query_with_after_parameter() {
+        let mut transaction = create_database_pool().await.unwrap().begin().await.unwrap();
+
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+        set_description(user_id, "Test", &mut transaction)
+            .await
+            .unwrap();
+        let user_id2 = create_new_test_user(&mut transaction).await.unwrap();
+        set_description(user_id2, "Test", &mut transaction)
+            .await
+            .unwrap();
 
         let resp = handle_message(
             &mut transaction,

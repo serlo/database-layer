@@ -215,16 +215,6 @@
       ]
     }
   },
-  "1a79acc8b765565cef5fce4ef62cbe9780f80c247db9d16827a1f786c6cccf05": {
-    "query": "delete from user where user.password = \"test_user\"",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 0
-      },
-      "nullable": []
-    }
-  },
   "1d29fa3ec059188475b89dd62c131002f744586b21ee747a9fbac8a705b218f7": {
     "query": "\n                    INSERT INTO event_parameter (log_id, name_id)\n                        SELECT ?, id\n                        FROM event_parameter_name\n                        WHERE name = ?\n                ",
     "describe": {

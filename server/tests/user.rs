@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use test_utils::*;
 
     #[actix_rt::test]

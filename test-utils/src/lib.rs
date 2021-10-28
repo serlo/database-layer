@@ -41,6 +41,10 @@ pub async fn assert_ok(response: HttpResponse, expected_result: Value) -> () {
     assert_response_is(response, 200, expected_result).await;
 }
 
+pub async fn assert_not_found(response: HttpResponse) -> () {
+    assert_response_is(response, 404, Value::Null).await;
+}
+
 pub async fn assert_bad_request(response: HttpResponse, reason: &str) -> () {
     assert_response_is(response, 400, json!({ "success": false, "reason": reason })).await;
 }

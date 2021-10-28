@@ -38,19 +38,19 @@ impl<'a> Message<'a> {
 }
 
 pub async fn assert_ok(response: HttpResponse, expected_result: Value) -> () {
-    assert!(response.status().is_success());
+    assert_response_is(response, 200, expected_result).await;
+}
+
+pub async fn assert_bad_request(response: HttpResponse, reason: &str) -> () {
+    assert_response_is(response, 400, json!({ "success": false, "reason": reason })).await;
+}
+
+async fn assert_response_is(response: HttpResponse, expected_status: u16, expected_result: Value) {
+    assert_eq!(response.status(), expected_status);
 
     let body = to_bytes(response.into_body()).await.unwrap();
     let result: Value = from_slice(&body).unwrap();
     assert_eq!(result, expected_result);
-}
-
-pub async fn assert_bad_request(response: HttpResponse, reason: &str) -> () {
-    assert_eq!(response.status(), 400);
-
-    let body = to_bytes(response.into_body()).await.unwrap();
-    let result: Value = from_slice(&body).unwrap();
-    assert_eq!(result, json!({ "success": false, "reason": reason }));
 }
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>

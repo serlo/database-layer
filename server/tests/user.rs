@@ -1,72 +1,36 @@
 #[cfg(test)]
 mod tests {
-    use actix_web::{test, App};
     use serde_json::json;
-    use std::str::from_utf8;
-
-    use server::{configure_app, create_database_pool};
     use test_utils::*;
 
     #[actix_rt::test]
     async fn user_activity_by_type() {
-        let pool = create_database_pool().await.unwrap();
-        let app = configure_app(App::new(), pool);
-        let app = test::init_service(app).await;
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&json!({
-                "type": "UserActivityByTypeQuery",
-                "payload": { "userId": 1 }
-            }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
+        let response = Message::new("UserActivityByTypeQuery", json!({ "userId": 1 }))
+            .execute()
+            .await;
 
-        assert!(resp.status().is_success());
-
-        let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
-        assert_eq!(
-            result,
-            json::object! {
-                "edits": 209,
-                "reviews": 213,
-                "comments": 62,
-                "taxonomy": 836
-            }
-        );
+        assert_ok(
+            response,
+            json!({ "edits": 209, "reviews": 213, "comments": 62, "taxonomy": 836 }),
+        )
+        .await;
     }
 
     #[actix_rt::test]
     async fn user_delete_bots_mutation() {
-        let pool = create_database_pool().await.unwrap();
-        let user_id = create_new_test_user(&pool).await.unwrap();
+        let mut transaction = begin_transaction().await;
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
 
-        let app = configure_app(App::new(), pool);
-        let app = test::init_service(app).await;
+        let response = Message::new("UserDeleteBotsMutation", json!({ "botIds": [user_id] }))
+            .execute_on(&mut transaction)
+            .await;
+        assert_ok(response, json!({ "success": true })).await;
 
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&json!({
-                "type": "UserDeleteBotsMutation",
-                "payload": { "botIds": [user_id] }
-            }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
+        let req = Message::new("UuidQuery", json!({ "id": user_id }))
+            .execute_on(&mut transaction)
+            .await;
 
-        assert!(resp.status().is_success());
-
-        let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
-        assert_eq!(result, json::object! { "success": true });
-
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&json!({
-                "type": "UuidQuery",
-                "payload": { "id": user_id }
-            }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
-
-        assert_eq!(resp.status(), 404);
+        assert_not_found(req).await;
     }
 
     #[actix_rt::test]

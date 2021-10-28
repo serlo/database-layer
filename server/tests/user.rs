@@ -6,8 +6,7 @@ mod tests {
 
     use server::{configure_app, create_database_pool};
     use test_utils::{
-        assert_ok_response, begin_transaction, create_new_test_user, handle_message,
-        set_description,
+        begin_transaction, create_new_test_user, set_description, Message, ResponseAssertations,
     };
 
     #[actix_rt::test]
@@ -81,14 +80,10 @@ mod tests {
             .await
             .unwrap();
 
-        let response = handle_message(
-            &mut transaction,
-            "UserPotentialSpamUsersQuery",
-            json!({ "first": 10 }),
-        )
-        .await;
-
-        assert_ok_response(response, json!({ "userIds": [user_id] })).await;
+        Message::new("UserPotentialSpamUsersQuery", json!({ "first": 10 }))
+            .execute(&mut transaction)
+            .assert_ok(json!({ "userIds": [user_id] }))
+            .await;
     }
 
     #[actix_rt::test]
@@ -104,14 +99,13 @@ mod tests {
             .await
             .unwrap();
 
-        let response = handle_message(
-            &mut transaction,
+        Message::new(
             "UserPotentialSpamUsersQuery",
             json!({ "first": 10, "after": user_id2 }),
         )
+        .execute(&mut transaction)
+        .assert_ok(json!({ "userIds": [user_id] }))
         .await;
-
-        assert_ok_response(response, json!({ "userIds": [user_id] })).await;
     }
 
     #[actix_rt::test]

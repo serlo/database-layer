@@ -1,31 +1,58 @@
 use actix_web::body::to_bytes;
 use actix_web::HttpResponse;
+use async_trait::async_trait;
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::{from_slice, from_value, json, Value};
 use server::create_database_pool;
 use server::database::Connection;
-use server::message::{Message, MessageResponder};
+use server::message::{Message as ServerMessage, MessageResponder};
+use std::future::Future;
 
 pub async fn begin_transaction<'a>() -> sqlx::Transaction<'a, sqlx::MySql> {
     create_database_pool().await.unwrap().begin().await.unwrap()
 }
 
-pub async fn handle_message(
-    transaction: &mut sqlx::Transaction<'_, sqlx::MySql>,
-    message_type: &str,
+pub struct Message<'a> {
+    message_type: &'a str,
     payload: Value,
-) -> HttpResponse {
-    let message = json!({ "type": message_type, "payload": payload });
-    let message = from_value::<Message>(message).unwrap();
-    message.handle(Connection::Transaction(transaction)).await
 }
 
-pub async fn assert_ok_response(response: HttpResponse, expected_result: Value) {
-    assert!(response.status().is_success());
+impl<'a> Message<'a> {
+    pub fn new(message_type: &'a str, payload: Value) -> Self {
+        Self {
+            message_type,
+            payload,
+        }
+    }
 
-    let body = to_bytes(response.into_body()).await.unwrap();
-    let result: Value = from_slice(&body).unwrap();
-    assert_eq!(result, expected_result);
+    pub async fn execute(
+        &self,
+        transaction: &mut sqlx::Transaction<'_, sqlx::MySql>,
+    ) -> HttpResponse {
+        let message = json!({ "type": self.message_type, "payload": self.payload });
+        let message = from_value::<ServerMessage>(message).unwrap();
+        message.handle(Connection::Transaction(transaction)).await
+    }
+}
+
+#[async_trait(?Send)]
+pub trait ResponseAssertations {
+    async fn assert_ok(self, expected_result: Value) -> ();
+    //fn assert_not_found();
+    //fn assert_bad_request(reason: &str);
+}
+
+#[async_trait(?Send)]
+impl<T: Future<Output = HttpResponse>> ResponseAssertations for T {
+    async fn assert_ok(self, expected_result: Value) -> () {
+        let response = self.await;
+
+        assert!(response.status().is_success());
+
+        let body = to_bytes(response.into_body()).await.unwrap();
+        let result: Value = from_slice(&body).unwrap();
+        assert_eq!(result, expected_result);
+    }
 }
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>

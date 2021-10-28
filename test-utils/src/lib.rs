@@ -23,13 +23,17 @@ impl<'a> Message<'a> {
         }
     }
 
-    pub async fn execute(
+    pub async fn execute_on(
         &self,
         transaction: &mut sqlx::Transaction<'_, sqlx::MySql>,
     ) -> HttpResponse {
         let message = json!({ "type": self.message_type, "payload": self.payload });
         let message = from_value::<ServerMessage>(message).unwrap();
         message.handle(Connection::Transaction(transaction)).await
+    }
+
+    pub async fn execute(&self) -> HttpResponse {
+        self.execute_on(&mut begin_transaction().await).await
     }
 }
 
@@ -39,6 +43,14 @@ pub async fn assert_ok(response: HttpResponse, expected_result: Value) -> () {
     let body = to_bytes(response.into_body()).await.unwrap();
     let result: Value = from_slice(&body).unwrap();
     assert_eq!(result, expected_result);
+}
+
+pub async fn assert_bad_request(response: HttpResponse, reason: &str) -> () {
+    assert_eq!(response.status(), 400);
+
+    let body = to_bytes(response.into_body()).await.unwrap();
+    let result: Value = from_slice(&body).unwrap();
+    assert_eq!(result, json!({ "success": false, "reason": reason }));
 }
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>

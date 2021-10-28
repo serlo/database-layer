@@ -79,7 +79,7 @@ mod tests {
             .unwrap();
 
         let response = Message::new("UserPotentialSpamUsersQuery", json!({ "first": 10 }))
-            .execute(&mut transaction)
+            .execute_on(&mut transaction)
             .await;
 
         assert_ok(response, json!({ "userIds": [user_id] })).await;
@@ -102,7 +102,7 @@ mod tests {
             "UserPotentialSpamUsersQuery",
             json!({ "first": 10, "after": user_id2 }),
         )
-        .execute(&mut transaction)
+        .execute_on(&mut transaction)
         .await;
 
         assert_ok(response, json!({ "userIds": [user_id] })).await;
@@ -110,26 +110,10 @@ mod tests {
 
     #[actix_rt::test]
     async fn potential_spam_users_query_fails_when_first_parameter_is_too_high() {
-        let pool = create_database_pool().await.unwrap();
-        let app = configure_app(App::new(), pool);
-        let app = test::init_service(app).await;
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&serde_json::json!({
-                "type": "UserPotentialSpamUsersQuery",
-                "payload": { "first": 1_000_000 }
-            }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
+        let response = Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1_000_000 }))
+            .execute()
+            .await;
 
-        assert_eq!(resp.status(), 400);
-
-        let result =
-            json::parse(std::str::from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
-
-        assert_eq!(
-            result,
-            json::object! { "success": false, "reason": "parameter `first` is too high" }
-        );
+        assert_bad_request(response, "parameter `first` is too high").await;
     }
 }

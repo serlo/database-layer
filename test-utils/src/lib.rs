@@ -1,4 +1,32 @@
+use actix_web::body::to_bytes;
+use actix_web::HttpResponse;
 use rand::{distributions::Alphanumeric, Rng};
+use serde_json::{from_slice, from_value, json, Value};
+use server::create_database_pool;
+use server::database::Connection;
+use server::message::{Message, MessageResponder};
+
+pub async fn begin_transaction<'a>() -> sqlx::Transaction<'a, sqlx::MySql> {
+    create_database_pool().await.unwrap().begin().await.unwrap()
+}
+
+pub async fn handle_message(
+    transaction: &mut sqlx::Transaction<'_, sqlx::MySql>,
+    message_type: &str,
+    payload: Value,
+) -> HttpResponse {
+    let message = json!({ "type": message_type, "payload": payload });
+    let message = from_value::<Message>(message).unwrap();
+    message.handle(Connection::Transaction(transaction)).await
+}
+
+pub async fn assert_ok_response(response: HttpResponse, expected_result: Value) {
+    assert!(response.status().is_success());
+
+    let body = to_bytes(response.into_body()).await.unwrap();
+    let result: Value = from_slice(&body).unwrap();
+    assert_eq!(result, expected_result);
+}
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>
 where
@@ -27,7 +55,7 @@ where
         new_user_id,
         random_string(10),
         random_string(10),
-        "test_user",
+        "",
         random_string(10)
     )
     .execute(&mut transaction)
@@ -36,16 +64,6 @@ where
     transaction.commit().await?;
 
     Ok(new_user_id)
-}
-
-pub async fn delete_all_test_user<'a, E>(executor: E) -> Result<(), sqlx::Error>
-where
-    E: sqlx::mysql::MySqlExecutor<'a>,
-{
-    sqlx::query!(r#"delete from user where user.password = "test_user""#)
-        .execute(executor)
-        .await?;
-    Ok(())
 }
 
 pub async fn set_description<'a, E>(

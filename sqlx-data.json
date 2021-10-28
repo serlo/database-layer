@@ -215,16 +215,6 @@
       ]
     }
   },
-  "1a79acc8b765565cef5fce4ef62cbe9780f80c247db9d16827a1f786c6cccf05": {
-    "query": "delete from user where user.password = \"test_user\"",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 0
-      },
-      "nullable": []
-    }
-  },
   "1d29fa3ec059188475b89dd62c131002f744586b21ee747a9fbac8a705b218f7": {
     "query": "\n                    INSERT INTO event_parameter (log_id, name_id)\n                        SELECT ?, id\n                        FROM event_parameter_name\n                        WHERE name = ?\n                ",
     "describe": {
@@ -1478,6 +1468,31 @@
         false,
         true,
         true
+      ]
+    }
+  },
+  "8bc485a59520f399b822928901b4cbd6a3e74c56775810e87c0cc6a25131d28b": {
+    "query": "\n                select user.id\n                from user\n                where\n                    user.description is not null\n                    and user.description != \"NULL\"\n                    and (? is null or user.id < ?)\n                order by user.id desc\n                limit ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": [
+        false
       ]
     }
   },

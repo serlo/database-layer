@@ -2255,7 +2255,6 @@ name = "test-utils"
 version = "0.1.0"
 dependencies = [
  "actix-web",
- "async-trait",
  "rand",
  "serde_json",
  "server",

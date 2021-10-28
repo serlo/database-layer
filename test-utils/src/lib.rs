@@ -1,12 +1,10 @@
 use actix_web::body::to_bytes;
 use actix_web::HttpResponse;
-use async_trait::async_trait;
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::{from_slice, from_value, json, Value};
 use server::create_database_pool;
 use server::database::Connection;
 use server::message::{Message as ServerMessage, MessageResponder};
-use std::future::Future;
 
 pub async fn begin_transaction<'a>() -> sqlx::Transaction<'a, sqlx::MySql> {
     create_database_pool().await.unwrap().begin().await.unwrap()
@@ -35,24 +33,12 @@ impl<'a> Message<'a> {
     }
 }
 
-#[async_trait(?Send)]
-pub trait ResponseAssertations {
-    async fn assert_ok(self, expected_result: Value) -> ();
-    //fn assert_not_found();
-    //fn assert_bad_request(reason: &str);
-}
+pub async fn assert_ok(response: HttpResponse, expected_result: Value) -> () {
+    assert!(response.status().is_success());
 
-#[async_trait(?Send)]
-impl<T: Future<Output = HttpResponse>> ResponseAssertations for T {
-    async fn assert_ok(self, expected_result: Value) -> () {
-        let response = self.await;
-
-        assert!(response.status().is_success());
-
-        let body = to_bytes(response.into_body()).await.unwrap();
-        let result: Value = from_slice(&body).unwrap();
-        assert_eq!(result, expected_result);
-    }
+    let body = to_bytes(response.into_body()).await.unwrap();
+    let result: Value = from_slice(&body).unwrap();
+    assert_eq!(result, expected_result);
 }
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>

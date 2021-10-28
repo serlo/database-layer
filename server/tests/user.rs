@@ -5,9 +5,7 @@ mod tests {
     use std::str::from_utf8;
 
     use server::{configure_app, create_database_pool};
-    use test_utils::{
-        begin_transaction, create_new_test_user, set_description, Message, ResponseAssertations,
-    };
+    use test_utils::*;
 
     #[actix_rt::test]
     async fn user_activity_by_type() {
@@ -80,10 +78,11 @@ mod tests {
             .await
             .unwrap();
 
-        Message::new("UserPotentialSpamUsersQuery", json!({ "first": 10 }))
+        let response = Message::new("UserPotentialSpamUsersQuery", json!({ "first": 10 }))
             .execute(&mut transaction)
-            .assert_ok(json!({ "userIds": [user_id] }))
             .await;
+
+        assert_ok(response, json!({ "userIds": [user_id] })).await;
     }
 
     #[actix_rt::test]
@@ -99,13 +98,14 @@ mod tests {
             .await
             .unwrap();
 
-        Message::new(
+        let response = Message::new(
             "UserPotentialSpamUsersQuery",
             json!({ "first": 10, "after": user_id2 }),
         )
         .execute(&mut transaction)
-        .assert_ok(json!({ "userIds": [user_id] }))
         .await;
+
+        assert_ok(response, json!({ "userIds": [user_id] })).await;
     }
 
     #[actix_rt::test]

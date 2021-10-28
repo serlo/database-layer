@@ -428,31 +428,6 @@
       ]
     }
   },
-  "2583b6580de42367a6ce6ed54e2269bc8f76ac44613506a2bcbce1b6aa80031b": {
-    "query": "\n                select user.id\n                from user\n                where\n                    user.description is not null\n                    and (? is null or user.id < ?)\n                order by user.id desc\n                limit ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4107
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 3
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
   "2594f7eb0db4993eb684ae6fdf173a8999df485653a8544733a6ce29da94842d": {
     "query": "\n                SELECT t.name, u.trashed, r.date, r.author_id, r.repository_id\n                    FROM entity_revision r\n                    JOIN uuid u ON u.id = r.id\n                    JOIN entity e ON e.id = r.repository_id\n                    JOIN type t ON t.id = e.type_id\n                    WHERE r.id = ?\n            ",
     "describe": {
@@ -1468,6 +1443,31 @@
         false,
         true,
         true
+      ]
+    }
+  },
+  "8bc485a59520f399b822928901b4cbd6a3e74c56775810e87c0cc6a25131d28b": {
+    "query": "\n                select user.id\n                from user\n                where\n                    user.description is not null\n                    and user.description != \"NULL\"\n                    and (? is null or user.id < ?)\n                order by user.id desc\n                limit ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": [
+        false
       ]
     }
   },

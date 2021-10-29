@@ -1,576 +1,562 @@
 #[cfg(test)]
 mod tests {
-    use actix_web::{test, App};
-    use std::str::from_utf8;
-
-    use server::instance::Instance;
-    use server::navigation::{NavigationMessage, NavigationQuery};
-    use server::{configure_app, create_database_pool};
+    use test_utils::*;
 
     #[actix_rt::test]
     async fn de() {
-        let pool = create_database_pool().await.unwrap();
-        let app = configure_app(App::new(), pool);
-        let app = test::init_service(app).await;
-        let message = NavigationMessage::NavigationQuery(NavigationQuery {
-            instance: Instance::De,
-        });
-        let request = test::TestRequest::post()
-            .uri("/")
-            .set_json(&message)
-            .to_request();
-        let response = test::call_service(&app, request).await;
+        let response = Message::new("NavigationQuery", json!({ "instance": "de" }))
+            .execute()
+            .await;
 
-        assert!(response.status().is_success());
-
-        let actual = json::parse(from_utf8(&test::read_body(response).await).unwrap()).unwrap();
-        let expected = json::parse(
-            r#"
-                {
-                  "data": [
+        assert_ok(
+            response,
+            serde_json::from_str::<serde_json::Value>(
+                r#"
                     {
-                      "children": [
+                      "data": [
                         {
-                          "label": "Mathe Startseite",
-                          "id": 19767
-                        },
-                        {
-                          "label": "Thema auswählen",
+                          "children": [
+                            {
+                              "label": "Mathe Startseite",
+                              "id": 19767
+                            },
+                            {
+                              "label": "Thema auswählen",
+                              "id": 5
+                            },
+                            {
+                              "label": "Nach Lehrplan (Gymnasium Bayern)",
+                              "id": 16042
+                            },
+                            {
+                              "children": [
+                                {
+                                  "label": "Neu hier?",
+                                  "id": 19852
+                                },
+                                {
+                                  "label": "Aktuelles und Planung",
+                                  "id": 19880
+                                },
+                                {
+                                  "label": "Übersicht aller Diskussionen",
+                                  "url": "/discussions/15465"
+                                },
+                                {
+                                  "label": "Arbeitsgruppen",
+                                  "id": 26639
+                                },
+                                {
+                                  "label": "Zuständigkeiten",
+                                  "id": 19763
+                                },
+                                {
+                                  "label": "Richtlinien",
+                                  "id": 19723
+                                },
+                                {
+                                  "label": "Neue Bearbeitungen",
+                                  "url": "/mathe/entity/trash-bin"
+                                },
+                                {
+                                  "label": "Lehrplan-Struktur im Aufbau",
+                                  "id": 5
+                                },
+                                {
+                                  "label": "Taxonomy bearbeiten",
+                                  "url": "/taxonomy/term/organize/5"
+                                },
+                                {
+                                  "label": "Papierkorb",
+                                  "url": "/mathe/entity/trash-bin"
+                                }
+                              ],
+                              "label": "Mathe Community"
+                            }
+                          ],
+                          "label": "Mathematik",
                           "id": 5
-                        },
-                        {
-                          "label": "Nach Lehrplan (Gymnasium Bayern)",
-                          "id": 16042
                         },
                         {
                           "children": [
                             {
-                              "label": "Neu hier?",
-                              "id": 19852
+                              "label": "Permakultur Startseite",
+                              "id": 24711
                             },
                             {
-                              "label": "Aktuelles und Planung",
-                              "id": 19880
+                              "label": "Thema auswählen",
+                              "id": 17744
                             },
                             {
-                              "label": "Übersicht aller Diskussionen",
-                              "url": "/discussions/15465"
-                            },
-                            {
-                              "label": "Arbeitsgruppen",
-                              "id": 26639
-                            },
-                            {
-                              "label": "Zuständigkeiten",
-                              "id": 19763
-                            },
-                            {
-                              "label": "Richtlinien",
-                              "id": 19723
-                            },
-                            {
-                              "label": "Neue Bearbeitungen",
-                              "url": "/mathe/entity/trash-bin"
-                            },
-                            {
-                              "label": "Lehrplan-Struktur im Aufbau",
-                              "id": 5
-                            },
-                            {
-                              "label": "Taxonomy bearbeiten",
-                              "url": "/taxonomy/term/organize/5"
-                            },
-                            {
-                              "label": "Papierkorb",
-                              "url": "/mathe/entity/trash-bin"
+                              "children": [
+                                {
+                                  "label": "Neu hier?",
+                                  "id": 25294
+                                },
+                                {
+                                  "label": "Aktuelles und Planung",
+                                  "id": 21541
+                                },
+                                {
+                                  "label": "Übersicht aller Diskussionen",
+                                  "url": "/discussions/17746"
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "label": "Themenbaum bearbeiten",
+                                      "id": 25373
+                                    }
+                                  ],
+                                  "label": "Arbeitsgruppen"
+                                },
+                                {
+                                  "label": "Zuständigkeiten",
+                                  "id": 21543
+                                },
+                                {
+                                  "label": "Richtlinien",
+                                  "id": 25363
+                                },
+                                {
+                                  "label": "Neue Bearbeitungen",
+                                  "url": "/permakultur/entity/trash-bin"
+                                },
+                                {
+                                  "label": "Struktur bearbeiten",
+                                  "url": "/taxonomy/term/organize/17744"
+                                }
+                              ],
+                              "label": "Permakultur Community"
                             }
                           ],
-                          "label": "Mathe Community"
-                        }
-                      ],
-                      "label": "Mathematik",
-                      "id": 5
-                    },
-                    {
-                      "children": [
-                        {
-                          "label": "Permakultur Startseite",
-                          "id": 24711
-                        },
-                        {
-                          "label": "Thema auswählen",
+                          "label": "Permakultur",
                           "id": 17744
                         },
                         {
                           "children": [
                             {
-                              "label": "Neu hier?",
-                              "id": 25294
+                              "label": "Chemie Startseite",
+                              "id": 24706
                             },
                             {
-                              "label": "Aktuelles und Planung",
-                              "id": 21541
-                            },
-                            {
-                              "label": "Übersicht aller Diskussionen",
-                              "url": "/discussions/17746"
+                              "label": "Thema auswählen",
+                              "id": 18230
                             },
                             {
                               "children": [
                                 {
-                                  "label": "Themenbaum bearbeiten",
-                                  "id": 25373
+                                  "label": "Neu hier?",
+                                  "id": 26633
+                                },
+                                {
+                                  "label": "Aktuelles und Planung",
+                                  "id": 31996
+                                },
+                                {
+                                  "label": "Neue Bearbeitungen",
+                                  "url": "/Chemie/entity/trash-bin"
+                                },
+                                {
+                                  "label": "Übersicht aller Diskussionen",
+                                  "url": "/discussions/18234"
+                                },
+                                {
+                                  "label": "Richtlinien",
+                                  "id": 26087
+                                },
+                                {
+                                  "label": "Taxonomy bearbeiten",
+                                  "url": "/taxonomy/term/organize/18230"
                                 }
                               ],
-                              "label": "Arbeitsgruppen"
-                            },
-                            {
-                              "label": "Zuständigkeiten",
-                              "id": 21543
-                            },
-                            {
-                              "label": "Richtlinien",
-                              "id": 25363
-                            },
-                            {
-                              "label": "Neue Bearbeitungen",
-                              "url": "/permakultur/entity/trash-bin"
-                            },
-                            {
-                              "label": "Struktur bearbeiten",
-                              "url": "/taxonomy/term/organize/17744"
+                              "label": "Chemie Community"
                             }
                           ],
-                          "label": "Permakultur Community"
-                        }
-                      ],
-                      "label": "Permakultur",
-                      "id": 17744
-                    },
-                    {
-                      "children": [
-                        {
-                          "label": "Chemie Startseite",
-                          "id": 24706
-                        },
-                        {
-                          "label": "Thema auswählen",
+                          "label": "Chemie",
                           "id": 18230
                         },
                         {
                           "children": [
                             {
-                              "label": "Neu hier?",
-                              "id": 26633
+                              "label": "Auf einen Blick",
+                              "id": 18922
                             },
                             {
-                              "label": "Aktuelles und Planung",
-                              "id": 31996
+                              "children": [
+                                {
+                                  "label": "Grundprinzipien",
+                                  "id": 21408
+                                },
+                                {
+                                  "label": "Vision und Werte",
+                                  "id": 21398
+                                },
+                                {
+                                  "label": "Wirkung",
+                                  "id": 21406
+                                },
+                                {
+                                  "label": "Die Geschichte von Serlo",
+                                  "id": 21413
+                                },
+                                {
+                                  "label": "Eigene Softwareentwicklung",
+                                  "id": 21431
+                                }
+                              ],
+                              "label": "Was Serlo ausmacht"
                             },
                             {
-                              "label": "Neue Bearbeitungen",
-                              "url": "/Chemie/entity/trash-bin"
+                              "children": [
+                                {
+                                  "label": "Didaktisches Konzept",
+                                  "id": 21423
+                                },
+                                {
+                                  "label": "Qualitätssicherung",
+                                  "id": 21429
+                                },
+                                {
+                                  "label": "Kooperation mit Schulen",
+                                  "id": 21433
+                                }
+                              ],
+                              "label": "Lernen und Qualität"
+                            },
+                            {
+                              "children": [
+                                {
+                                  "label": "Übersicht",
+                                  "id": 21468
+                                },
+                                {
+                                  "label": "Nutzungsstatistiken",
+                                  "id": 23534
+                                },
+                                {
+                                  "label": "Entscheidungsfindung",
+                                  "id": 21470
+                                },
+                                {
+                                  "label": "Jahresberichte und Finanzen",
+                                  "id": 21472
+                                }
+                              ],
+                              "label": "Transparenz"
+                            },
+                            {
+                              "label": "Menschen",
+                              "id": 21439
+                            },
+                            {
+                              "label": "Partner und Förderer",
+                              "id": 21456
+                            },
+                            {
+                              "label": "Trägerverein",
+                              "id": 21437
+                            },
+                            {
+                              "label": "Kontakt",
+                              "id": 21657
+                            }
+                          ],
+                          "label": "Über Serlo"
+                        },
+                        {
+                          "children": [
+                            {
+                              "label": "Community Startseite",
+                              "id": 19882
+                            },
+                            {
+                              "label": "Verhaltenskodex",
+                              "id": 19875
+                            },
+                            {
+                              "label": "Portal der Richtlinien",
+                              "id": 20076
+                            },
+                            {
+                              "label": "Portal der Hilfeseiten",
+                              "id": 20064
+                            },
+                            {
+                              "children": [
+                                {
+                                  "label": "Fächerübergreifende Zuständigkeiten",
+                                  "id": 21570
+                                },
+                                {
+                                  "label": "Vergabe aller Zuständigkeiten",
+                                  "id": 19856
+                                }
+                              ],
+                              "label": "Zuständigkeiten"
+                            },
+                            {
+                              "label": "Alle Aktivitäten auf Serlo",
+                              "url": "/event/history"
                             },
                             {
                               "label": "Übersicht aller Diskussionen",
-                              "url": "/discussions/18234"
-                            },
-                            {
-                              "label": "Richtlinien",
-                              "id": 26087
-                            },
-                            {
-                              "label": "Taxonomy bearbeiten",
-                              "url": "/taxonomy/term/organize/18230"
-                            }
-                          ],
-                          "label": "Chemie Community"
-                        }
-                      ],
-                      "label": "Chemie",
-                      "id": 18230
-                    },
-                    {
-                      "children": [
-                        {
-                          "label": "Auf einen Blick",
-                          "id": 18922
-                        },
-                        {
-                          "children": [
-                            {
-                              "label": "Grundprinzipien",
-                              "id": 21408
-                            },
-                            {
-                              "label": "Vision und Werte",
-                              "id": 21398
-                            },
-                            {
-                              "label": "Wirkung",
-                              "id": 21406
-                            },
-                            {
-                              "label": "Die Geschichte von Serlo",
-                              "id": 21413
-                            },
-                            {
-                              "label": "Eigene Softwareentwicklung",
-                              "id": 21431
-                            }
-                          ],
-                          "label": "Was Serlo ausmacht"
-                        },
-                        {
-                          "children": [
-                            {
-                              "label": "Didaktisches Konzept",
-                              "id": 21423
-                            },
-                            {
-                              "label": "Qualitätssicherung",
-                              "id": 21429
-                            },
-                            {
-                              "label": "Kooperation mit Schulen",
-                              "id": 21433
-                            }
-                          ],
-                          "label": "Lernen und Qualität"
-                        },
-                        {
-                          "children": [
-                            {
-                              "label": "Übersicht",
-                              "id": 21468
-                            },
-                            {
-                              "label": "Nutzungsstatistiken",
-                              "id": 23534
-                            },
-                            {
-                              "label": "Entscheidungsfindung",
-                              "id": 21470
-                            },
-                            {
-                              "label": "Jahresberichte und Finanzen",
-                              "id": 21472
-                            }
-                          ],
-                          "label": "Transparenz"
-                        },
-                        {
-                          "label": "Menschen",
-                          "id": 21439
-                        },
-                        {
-                          "label": "Partner und Förderer",
-                          "id": 21456
-                        },
-                        {
-                          "label": "Trägerverein",
-                          "id": 21437
-                        },
-                        {
-                          "label": "Kontakt",
-                          "id": 21657
-                        }
-                      ],
-                      "label": "Über Serlo"
-                    },
-                    {
-                      "children": [
-                        {
-                          "label": "Community Startseite",
-                          "id": 19882
-                        },
-                        {
-                          "label": "Verhaltenskodex",
-                          "id": 19875
-                        },
-                        {
-                          "label": "Portal der Richtlinien",
-                          "id": 20076
-                        },
-                        {
-                          "label": "Portal der Hilfeseiten",
-                          "id": 20064
-                        },
-                        {
-                          "children": [
-                            {
-                              "label": "Fächerübergreifende Zuständigkeiten",
-                              "id": 21570
-                            },
-                            {
-                              "label": "Vergabe aller Zuständigkeiten",
-                              "id": 19856
-                            }
-                          ],
-                          "label": "Zuständigkeiten"
-                        },
-                        {
-                          "label": "Alle Aktivitäten auf Serlo",
-                          "url": "/event/history"
-                        },
-                        {
-                          "label": "Übersicht aller Diskussionen",
-                          "url": "/discussions"
-                        },
-                        {
-                          "children": [
-                            {
-                              "label": "Moderation",
-                              "id": 20112
-                            },
-                            {
-                              "label": "Vertretung der Community",
-                              "id": 20114
-                            },
-                            {
-                              "label": "Verwaltung der DE Sprachversion",
-                              "id": 20103
-                            },
-                            {
-                              "label": "Neue Fächer",
-                              "id": 19863
-                            },
-                            {
-                              "label": "Horizont",
-                              "id": 18340
-                            },
-                            {
-                              "label": "Blog schreiben",
-                              "id": 20125
+                              "url": "/discussions"
                             },
                             {
                               "children": [
                                 {
-                                  "label": "Ausbildungen auf Serlo",
-                                  "id": 19865
+                                  "label": "Moderation",
+                                  "id": 20112
                                 },
                                 {
-                                  "label": "Lernbausteine",
-                                  "id": 20205
-                                }
-                              ],
-                              "label": "Besondere Projekte"
-                            },
-                            {
-                              "label": "Lizenzen verwalten",
-                              "id": 20307
-                            },
-                            {
-                              "label": "Internationalisierung",
-                              "id": 24214
-                            },
-                            {
-                              "label": "International system administration",
-                              "id": 20182
-                            },
-                            {
-                              "children": [
-                                {
-                                  "label": "development process",
-                                  "id": 21160
+                                  "label": "Vertretung der Community",
+                                  "id": 20114
                                 },
                                 {
-                                  "label": "Feature suggestions",
-                                  "id": 21163
+                                  "label": "Verwaltung der DE Sprachversion",
+                                  "id": 20103
+                                },
+                                {
+                                  "label": "Neue Fächer",
+                                  "id": 19863
+                                },
+                                {
+                                  "label": "Horizont",
+                                  "id": 18340
+                                },
+                                {
+                                  "label": "Blog schreiben",
+                                  "id": 20125
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "label": "Ausbildungen auf Serlo",
+                                      "id": 19865
+                                    },
+                                    {
+                                      "label": "Lernbausteine",
+                                      "id": 20205
+                                    }
+                                  ],
+                                  "label": "Besondere Projekte"
+                                },
+                                {
+                                  "label": "Lizenzen verwalten",
+                                  "id": 20307
+                                },
+                                {
+                                  "label": "Internationalisierung",
+                                  "id": 24214
+                                },
+                                {
+                                  "label": "International system administration",
+                                  "id": 20182
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "label": "development process",
+                                      "id": 21160
+                                    },
+                                    {
+                                      "label": "Feature suggestions",
+                                      "id": 21163
+                                    }
+                                  ],
+                                  "label": "Software development"
                                 }
                               ],
-                              "label": "Software development"
+                              "label": "Arbeitsgruppen"
                             }
                           ],
-                          "label": "Arbeitsgruppen"
-                        }
-                      ],
-                      "label": "Community"
-                    },
-                    {
-                      "children": [
-                        {
-                          "label": "Engagier dich!",
-                          "id": 19869
+                          "label": "Community"
                         },
                         {
                           "children": [
                             {
-                              "label": "als Schüler*in",
-                              "id": 21511
+                              "label": "Engagier dich!",
+                              "id": 19869
                             },
                             {
-                              "label": "als Lehrer*in",
-                              "id": 21526
+                              "children": [
+                                {
+                                  "label": "als Schüler*in",
+                                  "id": 21511
+                                },
+                                {
+                                  "label": "als Lehrer*in",
+                                  "id": 21526
+                                },
+                                {
+                                  "label": "als Student*in",
+                                  "id": 21549
+                                },
+                                {
+                                  "label": "als Uni / Lehrstuhl",
+                                  "id": 21551
+                                },
+                                {
+                                  "label": "als Softwareentwickler*in",
+                                  "id": 21555
+                                },
+                                {
+                                  "label": "als Organisation",
+                                  "id": 21559
+                                },
+                                {
+                                  "label": "als Unternehmen",
+                                  "id": 21561
+                                },
+                                {
+                                  "label": "in anderen Sprachen",
+                                  "id": 23320
+                                },
+                                {
+                                  "label": "als Bildungsbegeisterte*r",
+                                  "id": 21557
+                                }
+                              ],
+                              "label": "Was kann ich tun"
                             },
                             {
-                              "label": "als Student*in",
-                              "id": 21549
+                              "label": "Spenden",
+                              "id": 21565
                             },
                             {
-                              "label": "als Uni / Lehrstuhl",
-                              "id": 21551
-                            },
-                            {
-                              "label": "als Softwareentwickler*in",
-                              "id": 21555
-                            },
-                            {
-                              "label": "als Organisation",
-                              "id": 21559
-                            },
-                            {
-                              "label": "als Unternehmen",
-                              "id": 21561
-                            },
-                            {
-                              "label": "in anderen Sprachen",
-                              "id": 23320
-                            },
-                            {
-                              "label": "als Bildungsbegeisterte*r",
-                              "id": 21557
+                              "label": "Praktika & Jobs",
+                              "id": 21563
                             }
                           ],
-                          "label": "Was kann ich tun"
+                          "label": "Mitmachen"
                         },
                         {
-                          "label": "Spenden",
-                          "id": 21565
-                        },
-                        {
-                          "label": "Praktika & Jobs",
-                          "id": 21563
-                        }
-                      ],
-                      "label": "Mitmachen"
-                    },
-                    {
-                      "children": [
-                        {
-                          "label": "Biologie Startseite",
+                          "children": [
+                            {
+                              "label": "Biologie Startseite",
+                              "id": 23950
+                            },
+                            {
+                              "label": "Thema auswählen",
+                              "id": 23362
+                            },
+                            {
+                              "label": "Lehrplan auswählen",
+                              "id": 23362
+                            },
+                            {
+                              "children": [
+                                {
+                                  "label": "Neu hier?",
+                                  "id": 25017
+                                },
+                                {
+                                  "label": "Aktuelles und Planung",
+                                  "id": 27203
+                                },
+                                {
+                                  "label": "Übersicht aller Diskussionen",
+                                  "url": "/discussions/23382"
+                                },
+                                {
+                                  "label": "Richtlinien",
+                                  "id": 25019
+                                },
+                                {
+                                  "label": "Neue Bearbeitungen",
+                                  "url": "/biologie/entity/trash-bin"
+                                },
+                                {
+                                  "label": "Taxonomy bearbeiten",
+                                  "url": "/taxonomy/term/organize/23362"
+                                },
+                                {
+                                  "label": "Papierkorb",
+                                  "url": "/biologie/entity/trash-bin"
+                                }
+                              ],
+                              "label": "Biologie Community"
+                            }
+                          ],
+                          "label": "Biologie",
                           "id": 23950
                         },
                         {
-                          "label": "Thema auswählen",
-                          "id": 23362
-                        },
-                        {
-                          "label": "Lehrplan auswählen",
-                          "id": 23362
-                        },
-                        {
                           "children": [
                             {
-                              "label": "Neu hier?",
-                              "id": 25017
+                              "label": "Englisch Startseite",
+                              "id": 25985
                             },
                             {
-                              "label": "Aktuelles und Planung",
-                              "id": 27203
+                              "label": "Thema auswählen",
+                              "id": 25979
                             },
                             {
-                              "label": "Übersicht aller Diskussionen",
-                              "url": "/discussions/23382"
-                            },
-                            {
-                              "label": "Richtlinien",
-                              "id": 25019
-                            },
-                            {
-                              "label": "Neue Bearbeitungen",
-                              "url": "/biologie/entity/trash-bin"
-                            },
-                            {
-                              "label": "Taxonomy bearbeiten",
-                              "url": "/taxonomy/term/organize/23362"
-                            },
-                            {
-                              "label": "Papierkorb",
-                              "url": "/biologie/entity/trash-bin"
+                              "children": [
+                                {
+                                  "label": "Neu hier?",
+                                  "id": 26874
+                                },
+                                {
+                                  "label": "Taxonomy bearbeiten",
+                                  "url": "/taxonomy/term/organize/25979"
+                                },
+                                {
+                                  "label": "Neue Bearbeitungen",
+                                  "url": "/Englisch/entity/trash-bin"
+                                },
+                                {
+                                  "label": "Übersicht aller Diskussionen",
+                                  "url": "/discussions/26876"
+                                }
+                              ],
+                              "label": "Englisch Community"
                             }
                           ],
-                          "label": "Biologie Community"
-                        }
-                      ],
-                      "label": "Biologie",
-                      "id": 23950
-                    },
-                    {
-                      "children": [
-                        {
-                          "label": "Englisch Startseite",
-                          "id": 25985
-                        },
-                        {
-                          "label": "Thema auswählen",
+                          "label": "Englisch",
                           "id": 25979
                         },
                         {
                           "children": [
                             {
-                              "label": "Neu hier?",
-                              "id": 26874
+                              "label": "BWR Startseite",
+                              "id": 26524
                             },
                             {
-                              "label": "Taxonomy bearbeiten",
-                              "url": "/taxonomy/term/organize/25979"
+                              "label": "Thema auswählen",
+                              "id": 26523
                             },
                             {
-                              "label": "Neue Bearbeitungen",
-                              "url": "/Englisch/entity/trash-bin"
-                            },
-                            {
-                              "label": "Übersicht aller Diskussionen",
-                              "url": "/discussions/26876"
+                              "children": [
+                                {
+                                  "label": "Taxonomy bearbeiten",
+                                  "url": "/taxonomy/term/organize/26523"
+                                }
+                              ],
+                              "label": "BWR Community"
                             }
                           ],
-                          "label": "Englisch Community"
-                        }
-                      ],
-                      "label": "Englisch",
-                      "id": 25979
-                    },
-                    {
-                      "children": [
-                        {
-                          "label": "BWR Startseite",
-                          "id": 26524
-                        },
-                        {
-                          "label": "Thema auswählen",
+                          "label": "BWR",
                           "id": 26523
                         },
                         {
                           "children": [
                             {
-                              "label": "Taxonomy bearbeiten",
-                              "url": "/taxonomy/term/organize/26523"
+                              "label": "Blog auswählen",
+                              "url": "/blog"
                             }
                           ],
-                          "label": "BWR Community"
-                        }
-                      ],
-                      "label": "BWR",
-                      "id": 26523
-                    },
-                    {
-                      "children": [
-                        {
-                          "label": "Blog auswählen",
+                          "label": "Blog",
                           "url": "/blog"
                         }
                       ],
-                      "label": "Blog",
-                      "url": "/blog"
+                      "instance": "de"
                     }
-                  ],
-                  "instance": "de"
-                }
-            "#,
+                "#,
+            )
+            .unwrap(),
         )
-        .unwrap();
-
-        assert_eq!(actual, expected);
+        .await;
     }
 }

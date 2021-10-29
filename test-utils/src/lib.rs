@@ -41,21 +41,21 @@ impl<'a> Message<'a> {
 
 pub async fn assert_ok_with<F>(response: HttpResponse, assert_func: F)
 where
-    F: Fn(Value) -> (),
+    F: Fn(Value),
 {
     assert_eq!(response.status(), 200);
     assert_func(get_json(response).await);
 }
 
-pub async fn assert_ok(response: HttpResponse, expected_result: Value) -> () {
+pub async fn assert_ok(response: HttpResponse, expected_result: Value) {
     assert_response_is(response, 200, expected_result).await;
 }
 
-pub async fn assert_not_found(response: HttpResponse) -> () {
+pub async fn assert_not_found(response: HttpResponse) {
     assert_response_is(response, 404, Value::Null).await;
 }
 
-pub async fn assert_bad_request(response: HttpResponse, reason: &str) -> () {
+pub async fn assert_bad_request(response: HttpResponse, reason: &str) {
     assert_response_is(response, 400, json!({ "success": false, "reason": reason })).await;
 }
 

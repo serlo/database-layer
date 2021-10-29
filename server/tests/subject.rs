@@ -1,9 +1,9 @@
 #[cfg(test)]
-mod tests {
+mod subjects_query {
     use test_utils::*;
 
     #[actix_rt::test]
-    async fn subjects_query() {
+    async fn returns_list_of_subjects() {
         let response = Message::new("SubjectsQuery", Value::Null).execute().await;
 
         assert_ok(

@@ -1,9 +1,9 @@
 #[cfg(test)]
-mod tests {
+mod start_thread_mutation {
     use test_utils::*;
 
     #[actix_rt::test]
-    async fn start_thread_rejects_when_content_is_empty() {
+    async fn fails_when_content_is_empty() {
         let response = Message::new(
             "ThreadCreateThreadMutation",
             json!({
@@ -20,9 +20,14 @@ mod tests {
 
         assert_bad_request(response, "Cannot create thread: content is empty").await;
     }
+}
+
+#[cfg(test)]
+mod create_comment_mutation {
+    use test_utils::*;
 
     #[actix_rt::test]
-    async fn create_comment_rejects_when_content_is_empty() {
+    async fn fails_when_content_is_empty() {
         let response = Message::new(
             "ThreadCreateCommentMutation",
             json!({

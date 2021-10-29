@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests {
+mod uuid_query {
     use actix_web::{test, App};
     use test_utils::*;
 
@@ -23,7 +23,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn exercise_group_property_cohesive() {
+    async fn returns_property_cohesive_on_exercise_groups() {
         let mut transaction = begin_transaction().await;
 
         let exercise_group_revision_id = 26070;
@@ -41,5 +41,43 @@ mod tests {
             .await;
 
         assert_ok_with(response, |result| assert_eq!(result["cohesive"], true)).await;
+    }
+}
+
+#[cfg(test)]
+mod set_uuid_state_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn fails_for_untrashable_uuids() {
+        for discriminator in ["entityRevision", "user"].iter() {
+            let mut transaction = begin_transaction().await;
+
+            let revision_id = sqlx::query!(
+                "select id from uuid where discriminator = ? and trashed = false",
+                discriminator
+            )
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap()
+            .id as i32;
+
+            let response = Message::new(
+                "UuidSetStateMutation",
+                json!({ "ids": [revision_id], "userId": 1, "trashed": true }),
+            )
+            .execute()
+            .await;
+
+            assert_bad_request(
+                response,
+                format!(
+                    "uuid {} with type \"{}\" cannot be deleted via a setState mutation",
+                    revision_id, discriminator
+                )
+                .as_str(),
+            )
+            .await;
+        }
     }
 }

@@ -1,9 +1,9 @@
 #[cfg(test)]
-mod tests {
+mod user_activity_by_type_query {
     use test_utils::*;
 
     #[actix_rt::test]
-    async fn user_activity_by_type() {
+    async fn returns_user_activity() {
         let response = Message::new("UserActivityByTypeQuery", json!({ "userId": 1 }))
             .execute()
             .await;
@@ -14,9 +14,14 @@ mod tests {
         )
         .await;
     }
+}
+
+#[cfg(test)]
+mod user_delete_bots_mutation {
+    use test_utils::*;
 
     #[actix_rt::test]
-    async fn user_delete_bots_mutation() {
+    async fn deletes_a_user_permanentely() {
         let mut transaction = begin_transaction().await;
         let user_id = create_new_test_user(&mut transaction).await.unwrap();
 
@@ -31,9 +36,14 @@ mod tests {
 
         assert_not_found(req).await;
     }
+}
+
+#[cfg(test)]
+mod user_potential_spam_users_query {
+    use test_utils::*;
 
     #[actix_rt::test]
-    async fn user_potential_spam_users_query() {
+    async fn returns_user_with_a_description() {
         let mut transaction = begin_transaction().await;
 
         let user_id = create_new_test_user(&mut transaction).await.unwrap();
@@ -49,7 +59,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn user_potential_spam_users_query_with_after_parameter() {
+    async fn with_after_parameter() {
         let mut transaction = begin_transaction().await;
 
         let user_id = create_new_test_user(&mut transaction).await.unwrap();
@@ -72,7 +82,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn potential_spam_users_query_fails_when_first_parameter_is_too_high() {
+    async fn fails_when_first_parameter_is_too_high() {
         let response = Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1_000_000 }))
             .execute()
             .await;

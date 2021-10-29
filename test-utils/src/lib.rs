@@ -39,6 +39,14 @@ impl<'a> Message<'a> {
     }
 }
 
+pub async fn assert_ok_with<F>(response: HttpResponse, assert_func: F)
+where
+    F: Fn(Value) -> (),
+{
+    assert_eq!(response.status(), 200);
+    assert_func(get_json(response).await);
+}
+
 pub async fn assert_ok(response: HttpResponse, expected_result: Value) -> () {
     assert_response_is(response, 200, expected_result).await;
 }
@@ -51,12 +59,17 @@ pub async fn assert_bad_request(response: HttpResponse, reason: &str) -> () {
     assert_response_is(response, 400, json!({ "success": false, "reason": reason })).await;
 }
 
+pub fn assert_has_length(value: &Value, length: usize) {
+    assert_eq!(value.as_array().unwrap().len(), length);
+}
+
 async fn assert_response_is(response: HttpResponse, expected_status: u16, expected_result: Value) {
     assert_eq!(response.status(), expected_status);
+    assert_eq!(get_json(response).await, expected_result);
+}
 
-    let body = to_bytes(response.into_body()).await.unwrap();
-    let result: Value = from_slice(&body).unwrap();
-    assert_eq!(result, expected_result);
+async fn get_json(response: HttpResponse) -> Value {
+    from_slice(&to_bytes(response.into_body()).await.unwrap()).unwrap()
 }
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>

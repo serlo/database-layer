@@ -37,7 +37,7 @@ mod tests {
         .unwrap();
 
         let response = Message::new("UuidQuery", json!({ "id": exercise_group_revision_id }))
-            .execute()
+            .execute_on(&mut transaction)
             .await;
 
         assert_ok_with(response, |result| assert_eq!(result["cohesive"], true)).await;

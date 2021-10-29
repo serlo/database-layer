@@ -10,7 +10,7 @@ mod tests {
 
         assert_ok(
             response,
-            serde_json::from_str::<serde_json::Value>(
+            serde_json::from_str::<Value>(
                 r#"
                     {
                       "data": [

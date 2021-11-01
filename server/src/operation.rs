@@ -18,8 +18,11 @@ pub enum Error {
 
 impl From<sqlx::Error> for Error {
     fn from(error: sqlx::Error) -> Self {
-        Error::InternalServerError {
-            error: Box::new(error),
+        match error {
+            sqlx::Error::RowNotFound => Error::NotFoundError,
+            _ => Error::InternalServerError {
+                error: Box::new(error),
+            },
         }
     }
 }

@@ -1,50 +1,19 @@
 use regex::Regex;
 use sqlx::MySqlPool;
-use thiserror::Error;
 
 use crate::alias::messages::alias_query;
 use crate::database::Executor;
 use crate::instance::Instance;
-use crate::uuid::{Uuid, UuidError, UuidFetcher};
+use crate::operation;
+use crate::uuid::{Uuid, UuidFetcher};
 
 type Alias = alias_query::Output;
 
-#[derive(Error, Debug)]
-pub enum AliasError {
-    #[error("Alias cannot be fetched because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Alias cannot be fetched because its instance is invalid.")]
-    InvalidInstance,
-    #[error("Alias is a legacy route.")]
-    LegacyRoute,
-    #[error("Alias cannot be fetched because it does not exist.")]
-    NotFound,
-}
-
-impl From<sqlx::Error> for AliasError {
-    fn from(inner: sqlx::Error) -> Self {
-        match inner {
-            sqlx::Error::RowNotFound => AliasError::NotFound,
-            _ => AliasError::DatabaseError { inner },
-        }
-    }
-}
-
-impl From<UuidError> for AliasError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => AliasError::DatabaseError { inner },
-            UuidError::InvalidInstance => AliasError::InvalidInstance,
-            UuidError::UnsupportedDiscriminator { .. }
-            | UuidError::UnsupportedEntityType { .. }
-            | UuidError::UnsupportedEntityRevisionType { .. }
-            | UuidError::EntityMissingRequiredParent
-            | UuidError::NotFound => AliasError::NotFound,
-        }
-    }
-}
-
-pub async fn fetch(path: &str, instance: Instance, pool: &MySqlPool) -> Result<Alias, AliasError> {
+pub async fn fetch(
+    path: &str,
+    instance: Instance,
+    pool: &MySqlPool,
+) -> Result<Alias, operation::Error> {
     fetch_via_transaction(path, instance, pool).await
 }
 
@@ -52,7 +21,7 @@ pub async fn fetch_via_transaction<'a, E>(
     path: &str,
     instance: Instance,
     executor: E,
-) -> Result<Alias, AliasError>
+) -> Result<Alias, operation::Error>
 where
     E: Executor<'a>,
 {
@@ -106,7 +75,7 @@ where
         || path.starts_with("user/remove/")
         || path.starts_with("uuid/")
     {
-        return Err(AliasError::LegacyRoute);
+        return Err(operation::Error::NotFoundError);
     }
 
     let re = Regex::new(r"^user/profile/(?P<username>.+)$").unwrap();

@@ -17,6 +17,7 @@ pub enum UserMessage {
     ActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
+    UserPotentialSpamUsersQuery(potential_spam_users_query::Payload),
 }
 
 #[async_trait]
@@ -42,6 +43,11 @@ impl MessageResponder for UserMessage {
             }
             UserMessage::UserDeleteBotsMutation(payload) => {
                 payload.handle("UserDeleteBotsMutation", connection).await
+            }
+            UserMessage::UserPotentialSpamUsersQuery(payload) => {
+                payload
+                    .handle("UserPotentialSpamUsersQuery", connection)
+                    .await
             }
         }
     }
@@ -147,6 +153,44 @@ pub mod user_delete_bots_mutation {
                 Connection::Transaction(transaction) => User::delete_bot(self, transaction).await?,
             };
             Ok(Output { success: true })
+        }
+    }
+}
+
+pub mod potential_spam_users_query {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub first: i32,
+        pub after: Option<i32>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub user_ids: Vec<i32>,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            if self.first > 10_000 {
+                return Err(operation::Error::BadRequest {
+                    reason: "parameter `first` is too high".to_string(),
+                });
+            };
+            Ok(Output {
+                user_ids: match connection {
+                    Connection::Pool(pool) => User::potential_spam_users(self, pool).await?,
+                    Connection::Transaction(transaction) => {
+                        User::potential_spam_users(self, transaction).await?
+                    }
+                },
+            })
         }
     }
 }

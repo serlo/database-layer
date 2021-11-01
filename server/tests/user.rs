@@ -5,7 +5,10 @@ mod tests {
     use std::str::from_utf8;
 
     use server::{configure_app, create_database_pool};
-    use test_utils::create_new_test_user;
+    use test_utils::{
+        assert_ok_response, begin_transaction, create_new_test_user, handle_message,
+        set_description,
+    };
 
     #[actix_rt::test]
     async fn user_activity_by_type() {
@@ -67,5 +70,72 @@ mod tests {
         let resp = test::call_service(&app, req).await;
 
         assert_eq!(resp.status(), 404);
+    }
+
+    #[actix_rt::test]
+    async fn user_potential_spam_users_query() {
+        let mut transaction = begin_transaction().await;
+
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+        set_description(user_id, "Test", &mut transaction)
+            .await
+            .unwrap();
+
+        let response = handle_message(
+            &mut transaction,
+            "UserPotentialSpamUsersQuery",
+            json!({ "first": 10 }),
+        )
+        .await;
+
+        assert_ok_response(response, json!({ "userIds": [user_id] })).await;
+    }
+
+    #[actix_rt::test]
+    async fn user_potential_spam_users_query_with_after_parameter() {
+        let mut transaction = begin_transaction().await;
+
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+        set_description(user_id, "Test", &mut transaction)
+            .await
+            .unwrap();
+        let user_id2 = create_new_test_user(&mut transaction).await.unwrap();
+        set_description(user_id2, "Test", &mut transaction)
+            .await
+            .unwrap();
+
+        let response = handle_message(
+            &mut transaction,
+            "UserPotentialSpamUsersQuery",
+            json!({ "first": 10, "after": user_id2 }),
+        )
+        .await;
+
+        assert_ok_response(response, json!({ "userIds": [user_id] })).await;
+    }
+
+    #[actix_rt::test]
+    async fn potential_spam_users_query_fails_when_first_parameter_is_too_high() {
+        let pool = create_database_pool().await.unwrap();
+        let app = configure_app(App::new(), pool);
+        let app = test::init_service(app).await;
+        let req = test::TestRequest::post()
+            .uri("/")
+            .set_json(&serde_json::json!({
+                "type": "UserPotentialSpamUsersQuery",
+                "payload": { "first": 1_000_000 }
+            }))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), 400);
+
+        let result =
+            json::parse(std::str::from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
+
+        assert_eq!(
+            result,
+            json::object! { "success": false, "reason": "parameter `first` is too high" }
+        );
     }
 }

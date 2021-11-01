@@ -23,7 +23,24 @@ pub enum AliasError {
 
 impl From<sqlx::Error> for AliasError {
     fn from(inner: sqlx::Error) -> Self {
-        AliasError::DatabaseError { inner }
+        match inner {
+            sqlx::Error::RowNotFound => AliasError::NotFound,
+            _ => AliasError::DatabaseError { inner },
+        }
+    }
+}
+
+impl From<UuidError> for AliasError {
+    fn from(error: UuidError) -> Self {
+        match error {
+            UuidError::DatabaseError { inner } => AliasError::DatabaseError { inner },
+            UuidError::InvalidInstance => AliasError::InvalidInstance,
+            UuidError::UnsupportedDiscriminator { .. }
+            | UuidError::UnsupportedEntityType { .. }
+            | UuidError::UnsupportedEntityRevisionType { .. }
+            | UuidError::EntityMissingRequiredParent
+            | UuidError::NotFound => AliasError::NotFound,
+        }
     }
 }
 
@@ -108,49 +125,33 @@ where
                 username
             )
             .fetch_one(&mut transaction)
-            .await
-            .map_err(|error| match error {
-                sqlx::Error::RowNotFound => AliasError::NotFound,
-                error => error.into(),
-            })
-            .map(|user| user.id as i32)?
+            .await?
+            .id as i32
         }
         _ => {
             let re = Regex::new(r"^(?P<subject>[^/]+/)?(?P<id>\d+)/(?P<title>[^/]*)$").unwrap();
             match re.captures(path) {
                 Some(captures) => captures.name("id").unwrap().as_str().parse().unwrap(),
-                _ => sqlx::query!(
-                    r#"
+                _ => {
+                    sqlx::query!(
+                        r#"
                             SELECT a.uuid_id FROM url_alias a
                                 JOIN instance i on i.id = a.instance_id
                                 WHERE i.subdomain = ? AND a.alias = ?
                                 ORDER BY a.timestamp DESC
                         "#,
-                    instance,
-                    path
-                )
-                .fetch_one(&mut transaction)
-                .await
-                .map_err(|error| match error {
-                    sqlx::Error::RowNotFound => AliasError::NotFound,
-                    error => error.into(),
-                })
-                .map(|alias| alias.uuid_id as i32)?,
+                        instance,
+                        path
+                    )
+                    .fetch_one(&mut transaction)
+                    .await?
+                    .uuid_id as i32
+                }
             }
         }
     };
 
-    let uuid = Uuid::fetch_via_transaction(id, &mut transaction)
-        .await
-        .map_err(|error| match error {
-            UuidError::DatabaseError { inner } => AliasError::DatabaseError { inner },
-            UuidError::InvalidInstance => AliasError::InvalidInstance,
-            UuidError::UnsupportedDiscriminator { .. } => AliasError::NotFound,
-            UuidError::UnsupportedEntityType { .. } => AliasError::NotFound,
-            UuidError::UnsupportedEntityRevisionType { .. } => AliasError::NotFound,
-            UuidError::EntityMissingRequiredParent => AliasError::NotFound,
-            UuidError::NotFound => AliasError::NotFound,
-        })?;
+    let uuid = Uuid::fetch_via_transaction(id, &mut transaction).await?;
 
     transaction.commit().await?;
 

@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{fetch, fetch_via_transaction, LicenseError};
+use super::model::{fetch, fetch_via_transaction};
 use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
@@ -59,19 +59,6 @@ pub mod license_query {
                     fetch_via_transaction(self.id, transaction).await?
                 }
             })
-        }
-    }
-
-    impl From<LicenseError> for operation::Error {
-        fn from(error: LicenseError) -> Self {
-            match error {
-                LicenseError::InvalidInstance | LicenseError::DatabaseError { .. } => {
-                    operation::Error::InternalServerError {
-                        error: Box::new(error),
-                    }
-                }
-                LicenseError::NotFound => operation::Error::NotFoundError,
-            }
         }
     }
 }

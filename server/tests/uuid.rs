@@ -42,6 +42,15 @@ mod uuid_query {
 
         assert_ok_with(response, |result| assert_eq!(result["cohesive"], true)).await;
     }
+
+    #[actix_rt::test]
+    async fn returns_property_taxonomy_id_on_taxonomy_terms() {
+        let response = Message::new("UuidQuery", json!({ "id": 1385 }))
+            .execute()
+            .await;
+
+        assert_ok_with(response, |result| assert_eq!(result["taxonomyId"], 4)).await;
+    }
 }
 
 #[cfg(test)]

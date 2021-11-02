@@ -1,9 +1,9 @@
 #[cfg(test)]
-mod tests {
+mod events_query {
     use test_utils::*;
 
     #[actix_rt::test]
-    async fn events_query_without_after_parameter() {
+    async fn without_after_parameter() {
         let response = Message::new("EventsQuery", json!({ "first": 100 }))
             .execute()
             .await;
@@ -28,7 +28,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn events_query_with_after_parameter() {
+    async fn with_after_parameter() {
         let response = Message::new("EventsQuery", json!({ "first": 100, "after": 80_015 }))
             .execute()
             .await;
@@ -52,7 +52,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn events_query_with_actor_id_parameter() {
+    async fn with_actor_id_parameter() {
         let response = Message::new("EventsQuery", json!({ "first": 100, "actorId": 2 }))
             .execute()
             .await;
@@ -78,7 +78,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn events_query_with_object_id_parameter() {
+    async fn with_object_id_parameter() {
         let response = Message::new("EventsQuery", json!({ "first": 100, "objectId": 1565 }))
             .execute()
             .await;
@@ -103,7 +103,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn events_query_with_instance_parameter() {
+    async fn with_instance_parameter() {
         let response = Message::new("EventsQuery", json!({ "first": 100, "instance": "en" }))
             .execute()
             .await;
@@ -127,7 +127,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn events_query_fails_when_first_parameter_is_too_high() {
+    async fn fails_when_first_parameter_is_too_high() {
         let response = Message::new("EventsQuery", json!({ "first": 1_000_000 }))
             .execute()
             .await;

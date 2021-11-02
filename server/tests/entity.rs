@@ -1,9 +1,9 @@
 #[cfg(test)]
-mod tests {
+mod unrevised_entities_query {
     use test_utils::*;
 
     #[actix_rt::test]
-    async fn unrevised_entities_query() {
+    async fn returns_list_of_unrevised_entities() {
         let r = Message::new("UnrevisedEntitiesQuery", json!({}))
             .execute()
             .await;

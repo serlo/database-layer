@@ -1,9 +1,9 @@
 #[cfg(test)]
-mod tests {
+mod navigation_query {
     use test_utils::*;
 
     #[actix_rt::test]
-    async fn de() {
+    async fn returns_navigatigation_config() {
         let response = Message::new("NavigationQuery", json!({ "instance": "de" }))
             .execute()
             .await;

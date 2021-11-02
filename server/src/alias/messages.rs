@@ -2,15 +2,16 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{Alias, AliasError};
+use super::model::{fetch, fetch_via_transaction, AliasError};
 use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
+use crate::operation::{self, Operation};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum AliasMessage {
-    AliasQuery(AliasQuery),
+    AliasQuery(alias_query::Payload),
 }
 
 #[async_trait]
@@ -18,44 +19,56 @@ impl MessageResponder for AliasMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            AliasMessage::AliasQuery(message) => message.handle(connection).await,
+            AliasMessage::AliasQuery(payload) => payload.handle("AliasQuery", connection).await,
         }
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AliasQuery {
-    pub instance: Instance,
-    pub path: String,
-}
+pub mod alias_query {
+    use super::*;
 
-#[async_trait]
-impl MessageResponder for AliasQuery {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let path = self.path.as_str();
-        let instance = self.instance.clone();
-        let alias = match connection {
-            Connection::Pool(pool) => Alias::fetch(path, instance, pool).await,
-            Connection::Transaction(transaction) => {
-                Alias::fetch_via_transaction(path, instance, transaction).await
-            }
-        };
-        match alias {
-            Ok(data) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(&data),
-            Err(e) => {
-                println!("/alias/{:?}/{}: {:?}", self.instance, self.path, e);
-                match e {
-                    AliasError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    AliasError::InvalidInstance => HttpResponse::InternalServerError().finish(),
-                    AliasError::LegacyRoute => HttpResponse::NotFound().json(&None::<String>),
-                    AliasError::NotFound => HttpResponse::NotFound().json(&None::<String>),
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub instance: Instance,
+        pub path: String,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub id: i32,
+        pub instance: Instance,
+        pub path: String,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        #[allow(clippy::async_yields_async)]
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let path = self.path.as_str();
+            let instance = self.instance.clone();
+            Ok(match connection {
+                Connection::Pool(pool) => fetch(path, instance, pool).await?,
+                Connection::Transaction(transaction) => {
+                    fetch_via_transaction(path, instance, transaction).await?
                 }
+            })
+        }
+    }
+
+    impl From<AliasError> for operation::Error {
+        fn from(error: AliasError) -> Self {
+            match error {
+                AliasError::DatabaseError { inner } => operation::Error::InternalServerError {
+                    error: Box::new(inner),
+                },
+                AliasError::InvalidInstance => operation::Error::InternalServerError {
+                    error: Box::new(error),
+                },
+                AliasError::LegacyRoute | AliasError::NotFound => operation::Error::NotFoundError,
             }
         }
     }

@@ -42,4 +42,20 @@ mod tests {
 
         assert_ok_with(response, |result| assert_eq!(result["cohesive"], true)).await;
     }
+
+    #[actix_rt::test]
+    async fn taxonomy_terms_return_term_id() {
+        let pool = create_database_pool().await.unwrap();
+        let app = configure_app(App::new(), pool);
+        let app = test::init_service(app).await;
+        let message = UuidMessage::UuidQuery(uuid_query::Payload { id: 1385 });
+        let req = test::TestRequest::post()
+            .uri("/")
+            .set_json(&message)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        let uuid = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
+        assert_eq!(uuid["taxonomyId"], 4);
+    }
 }

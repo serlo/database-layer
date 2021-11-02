@@ -22,20 +22,24 @@ pub struct TaxonomyTerm {
     pub weight: i32,
     pub parent_id: Option<i32>,
     pub children_ids: Vec<i32>,
+    pub taxonomy_id: i32,
 }
 
 macro_rules! fetch_one_taxonomy_term {
     ($id: expr, $executor: expr) => {
         sqlx::query!(
             r#"
-                SELECT u.trashed, term.name, type.name as term_type, instance.subdomain, term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id
-                    FROM term_taxonomy
-                    JOIN term ON term.id = term_taxonomy.term_id
-                    JOIN taxonomy ON taxonomy.id = term_taxonomy.taxonomy_id
-                    JOIN type ON type.id = taxonomy.type_id
-                    JOIN instance ON instance.id = taxonomy.instance_id
-                    JOIN uuid u ON u.id = term_taxonomy.id
-                    WHERE term_taxonomy.id = ?
+                SELECT
+                    u.trashed, term.name, type.name as term_type, instance.subdomain,
+                    term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id,
+                    term_taxonomy.taxonomy_id
+                FROM term_taxonomy
+                JOIN term ON term.id = term_taxonomy.term_id
+                JOIN taxonomy ON taxonomy.id = term_taxonomy.taxonomy_id
+                JOIN type ON type.id = taxonomy.type_id
+                JOIN instance ON instance.id = taxonomy.instance_id
+                JOIN uuid u ON u.id = term_taxonomy.id
+                WHERE term_taxonomy.id = ?
             "#,
             $id
         )
@@ -114,6 +118,7 @@ macro_rules! to_taxonomy_term {
                 weight: taxonomy_term.weight.unwrap_or(0),
                 parent_id: taxonomy_term.parent_id.map(|id| id as i32),
                 children_ids,
+                taxonomy_id: taxonomy_term.taxonomy_id as i32,
             }),
         })
     }};

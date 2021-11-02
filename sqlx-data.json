@@ -428,31 +428,6 @@
       ]
     }
   },
-  "2583b6580de42367a6ce6ed54e2269bc8f76ac44613506a2bcbce1b6aa80031b": {
-    "query": "\n                select user.id\n                from user\n                where\n                    user.description is not null\n                    and (? is null or user.id < ?)\n                order by user.id desc\n                limit ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4107
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 3
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
   "2594f7eb0db4993eb684ae6fdf173a8999df485653a8544733a6ce29da94842d": {
     "query": "\n                SELECT t.name, u.trashed, r.date, r.author_id, r.repository_id\n                    FROM entity_revision r\n                    JOIN uuid u ON u.id = r.id\n                    JOIN entity e ON e.id = r.repository_id\n                    JOIN type t ON t.id = e.type_id\n                    WHERE r.id = ?\n            ",
     "describe": {
@@ -838,109 +813,6 @@
         "Right": 6
       },
       "nullable": []
-    }
-  },
-  "4a16769bbf6692e80b38d9eec15eaeceb3d8b99315639131d8dadc7ea1f8166e": {
-    "query": "\n                SELECT u.trashed, term.name, type.name as term_type, instance.subdomain, term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id\n                    FROM term_taxonomy\n                    JOIN term ON term.id = term_taxonomy.term_id\n                    JOIN taxonomy ON taxonomy.id = term_taxonomy.taxonomy_id\n                    JOIN type ON type.id = taxonomy.type_id\n                    JOIN instance ON instance.id = taxonomy.instance_id\n                    JOIN uuid u ON u.id = term_taxonomy.id\n                    WHERE term_taxonomy.id = ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "trashed",
-          "type_info": {
-            "type": "Tiny",
-            "flags": {
-              "bits": 1
-            },
-            "char_set": 63,
-            "max_size": 1
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "name",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 224,
-            "max_size": 1020
-          }
-        },
-        {
-          "ordinal": 2,
-          "name": "term_type",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4101
-            },
-            "char_set": 224,
-            "max_size": 1020
-          }
-        },
-        {
-          "ordinal": 3,
-          "name": "subdomain",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4097
-            },
-            "char_set": 224,
-            "max_size": 40
-          }
-        },
-        {
-          "ordinal": 4,
-          "name": "description",
-          "type_info": {
-            "type": "Blob",
-            "flags": {
-              "bits": 16
-            },
-            "char_set": 224,
-            "max_size": 262140
-          }
-        },
-        {
-          "ordinal": 5,
-          "name": "weight",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 0
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        },
-        {
-          "ordinal": 6,
-          "name": "parent_id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 8
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true
-      ]
     }
   },
   "4bd4cb77bc482eddecb3feb2065aab19c8e282612f2b01d46fbdaa36939337fa": {
@@ -1468,6 +1340,31 @@
         false,
         true,
         true
+      ]
+    }
+  },
+  "8bc485a59520f399b822928901b4cbd6a3e74c56775810e87c0cc6a25131d28b": {
+    "query": "\n                select user.id\n                from user\n                where\n                    user.description is not null\n                    and user.description != \"NULL\"\n                    and (? is null or user.id < ?)\n                order by user.id desc\n                limit ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": [
+        false
       ]
     }
   },
@@ -2543,6 +2440,122 @@
       },
       "nullable": [
         false,
+        false
+      ]
+    }
+  },
+  "fc0ca0f5bbca56646e9a9cbad7d897b684ca6301e1c63c108d1497592ef3f34b": {
+    "query": "\n                SELECT\n                    u.trashed, term.name, type.name as term_type, instance.subdomain,\n                    term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id,\n                    term_taxonomy.taxonomy_id\n                FROM term_taxonomy\n                JOIN term ON term.id = term_taxonomy.term_id\n                JOIN taxonomy ON taxonomy.id = term_taxonomy.taxonomy_id\n                JOIN type ON type.id = taxonomy.type_id\n                JOIN instance ON instance.id = taxonomy.instance_id\n                JOIN uuid u ON u.id = term_taxonomy.id\n                WHERE term_taxonomy.id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "trashed",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "term_type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4101
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "subdomain",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "description",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 16
+            },
+            "char_set": 224,
+            "max_size": 262140
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "weight",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "parent_id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 8
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "taxonomy_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
         false
       ]
     }

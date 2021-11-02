@@ -130,6 +130,7 @@ impl User {
                 from user
                 where
                     user.description is not null
+                    and user.description != "NULL"
                     and (? is null or user.id < ?)
                 order by user.id desc
                 limit ?

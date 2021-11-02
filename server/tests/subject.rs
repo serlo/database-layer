@@ -1,28 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use actix_web::{test, App};
-    use std::str::from_utf8;
-
-    use server::{configure_app, create_database_pool};
+    use test_utils::*;
 
     #[actix_rt::test]
     async fn subjects_query() {
-        let pool = create_database_pool().await.unwrap();
-        let app = configure_app(App::new(), pool);
-        let app = test::init_service(app).await;
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&serde_json::json!({ "type": "SubjectsQuery" }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
+        let response = Message::new("SubjectsQuery", Value::Null).execute().await;
 
-        assert!(resp.status().is_success());
-
-        let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
-
-        assert_eq!(
-            result,
-            json::object! {
+        assert_ok(
+            response,
+            json!({
               "subjects": [
                 {
                   "instance": "de",
@@ -65,7 +51,8 @@ mod tests {
                   "taxonomyTermId": 35608
                 }
               ]
-            }
-        );
+            }),
+        )
+        .await;
     }
 }

@@ -139,8 +139,10 @@ pub mod user_delete_bots_mutation {
     }
 
     #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
     pub struct Output {
         pub success: bool,
+        pub email_hashes: Vec<String>,
     }
 
     #[async_trait]
@@ -148,11 +150,14 @@ pub mod user_delete_bots_mutation {
         type Output = Output;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
+            let email_hashes = match connection {
                 Connection::Pool(pool) => User::delete_bot(self, pool).await?,
                 Connection::Transaction(transaction) => User::delete_bot(self, transaction).await?,
             };
-            Ok(Output { success: true })
+            Ok(Output {
+                success: true,
+                email_hashes,
+            })
         }
     }
 }

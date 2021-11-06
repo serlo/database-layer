@@ -96,13 +96,23 @@ impl User {
     pub async fn delete_bot<'a, E>(
         payload: &user_delete_bots_mutation::Payload,
         executor: E,
-    ) -> Result<(), sqlx::Error>
+    ) -> Result<Vec<String>, sqlx::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
+        let mut email_hashes: Vec<String> = Vec::new();
 
         for bot_id in &payload.bot_ids {
+            let result = sqlx::query!("select email from user where id = ?", bot_id)
+                .fetch_optional(&mut transaction)
+                .await?
+                .map(|user| user.email);
+
+            if let Some(email) = result {
+                email_hashes.push(format!("{:x}", md5::compute(email.as_bytes())).to_string());
+            }
+
             sqlx::query!(
                 r#"DELETE FROM uuid WHERE id = ? AND discriminator = 'user'"#,
                 bot_id,
@@ -113,7 +123,7 @@ impl User {
 
         transaction.commit().await?;
 
-        Ok(())
+        Ok(email_hashes)
     }
 
     pub async fn potential_spam_users<'a, E>(

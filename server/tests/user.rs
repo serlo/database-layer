@@ -25,10 +25,18 @@ mod user_delete_bots_mutation {
         let mut transaction = begin_transaction().await;
         let user_id = create_new_test_user(&mut transaction).await.unwrap();
 
+        set_email(user_id, "testuser@example.org", &mut transaction)
+            .await
+            .unwrap();
+
         let response = Message::new("UserDeleteBotsMutation", json!({ "botIds": [user_id] }))
             .execute_on(&mut transaction)
             .await;
-        assert_ok(response, json!({ "success": true })).await;
+        assert_ok(
+            response,
+            json!({ "success": true, "emailHashes": ["cd5610c5b6be1e5a62fb621031ae3856"] }),
+        )
+        .await;
 
         let req = Message::new("UuidQuery", json!({ "id": user_id }))
             .execute_on(&mut transaction)

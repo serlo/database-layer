@@ -128,6 +128,16 @@ where
     Ok(())
 }
 
+pub async fn set_email<'a, E>(user_id: i32, email: &str, executor: E) -> Result<(), sqlx::Error>
+where
+    E: sqlx::mysql::MySqlExecutor<'a>,
+{
+    sqlx::query!("update user set email = ? where id = ?", email, user_id)
+        .execute(executor)
+        .await?;
+    Ok(())
+}
+
 pub async fn set_entity_revision_field<'a>(
     revision_id: i32,
     field: &str,

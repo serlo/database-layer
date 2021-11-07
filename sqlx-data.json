@@ -1483,6 +1483,31 @@
       ]
     }
   },
+  "9e88bbbd1ac7d5ee3321bc38b7cbe2056ad0d68766e014ce413c9d1822aa6fe4": {
+    "query": "select email from user where id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "email",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4101
+            },
+            "char_set": 224,
+            "max_size": 508
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "a400f2b325f4baa03878fd49187085fb2b95d0ca886494a2fca05f1ec65b7ed1": {
     "query": "SELECT repository_id FROM entity_revision WHERE id = ?",
     "describe": {
@@ -1919,6 +1944,16 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "c226097970dc8f6303ae58f2d12f1c39f46200ae321f8ec8e369c35d8a07ccde": {
+    "query": "update user set email = ? where id = ?",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
     }
   },
   "c59169ef14ada9959cae905ce9f60992497174d2f8cb57332d855974f911040a": {

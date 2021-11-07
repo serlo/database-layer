@@ -41,6 +41,14 @@ async function exec(): Promise<void> {
           'Add support for deploying prereleases',
         ],
       },
+      {
+        tagName: 'v0.3.27',
+        name: '0.3.27',
+        date: '2021-11-07',
+        added: [
+          '`UserDeleteBotsMutation` also returns md5 hashes of removed user',
+        ],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

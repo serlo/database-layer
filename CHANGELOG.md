@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.27](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.26..v0.3.27) - November 7, 2021
+
+### Added
+
+- `UserDeleteBotsMutation` also returns md5 hashes of removed user
+
 ## [0.3.26](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.25..v0.3.26) - November 1, 2021
 
 ### Added

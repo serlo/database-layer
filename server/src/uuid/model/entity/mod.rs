@@ -454,29 +454,11 @@ impl EntityMetadata {
                 JOIN entity_revision ON entity.current_revision_id = entity_revision.id
                 join entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id
 
-                /*--LEFT JOIN term_taxonomy_entity tte ON entity.id = tte.entity_id
-                --LEFT JOIN term_taxonomy t0 ON tte.term_taxonomy_id = t0.id
-                --LEFT JOIN term_taxonomy t1 ON t0.parent_id = t1.id
-                --LEFT JOIN term_taxonomy t2 ON t1.parent_id = t2.id
-                --LEFT JOIN term_taxonomy t3 ON t2.parent_id = t3.id
-                --LEFT JOIN term_taxonomy t4 ON t3.parent_id = t4.id
-                --LEFT JOIN term_taxonomy t5 ON t4.parent_id = t5.id*/
                 WHERE entity.id > ?
                     AND (? is NULL OR instance.subdomain = ?)
                     AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))
                     AND uuid.trashed = 0
                     AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
-                    /*--AND (t0.id IS NULL OR t0.id != 75211)
-                    --AND (t1.id IS NULL OR t1.id != 75211)
-                    --AND (t2.id IS NULL OR t2.id != 75211)
-                    --AND (t3.id IS NULL OR t3.id != 75211)
-                    --AND (t4.id IS NULL OR t4.id != 75211)
-                    --AND (t5.id IS NULL OR t5.id != 75211)
-                    --AND (t0.id IS NULL OR (t0.id = 106081 OR t0.id != 87993))
-                    --AND (t1.id IS NULL OR t1.id = 106081 OR (t0.id != 106081 AND (t1.id = 106081 OR t1.id != 87993)))
-                    --AND (t2.id IS NULL OR (t1.id = 106081 OR t2.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND (t2.id = 106081 OR t2.id != 87993)))
-                    --AND (t3.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND (t3.id = 106081 OR t3.id != 87993)))
-                    --AND (t4.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081 OR t4.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND t3.id != 106081 AND (t4.id = 106081 OR t4.id != 87993)))*/
                 GROUP BY entity.id
                 ORDER by entity.id
                 LIMIT ?

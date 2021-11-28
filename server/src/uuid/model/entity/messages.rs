@@ -52,10 +52,10 @@ mod entities_query {
         last_modified: Option<String>, // TODO?: prefer datetime? In that case Deserialize has to be implemented
     }
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Output {
-        entity_ids: Vec<i32>,
+        entities: Vec<EntityMetadata>,
     }
 
     #[async_trait]
@@ -79,7 +79,7 @@ mod entities_query {
                 _ => (),
             };
 
-            let entity_ids = match connection {
+            let entities = match connection {
                 Connection::Pool(pool) => {
                     EntityMetadata::find_all(
                         self.after,
@@ -102,7 +102,7 @@ mod entities_query {
                 }
             };
 
-            Ok(Output { entity_ids })
+            Ok(Output { entities })
         }
     }
 }

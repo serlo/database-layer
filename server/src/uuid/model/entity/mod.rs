@@ -298,8 +298,8 @@ impl Entity {
         id: i32,
         executor: E,
     ) -> Result<Option<Subject>, sqlx::Error>
-        where
-            E: Executor<'a>,
+    where
+        E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
         let taxonomy_terms = fetch_all_taxonomy_terms_ancestors!(id, &mut transaction).await?;
@@ -309,8 +309,8 @@ impl Entity {
     }
 
     async fn find_parent_by_id<'a, E>(id: i32, executor: E) -> Result<i32, UuidError>
-        where
-            E: Executor<'a>,
+    where
+        E: Executor<'a>,
     {
         let parents = sqlx::query!(
             r#"
@@ -320,8 +320,8 @@ impl Entity {
             "#,
             id
         )
-            .fetch_all(executor)
-            .await?;
+        .fetch_all(executor)
+        .await?;
         parents
             .iter()
             .map(|parent| parent.id as i32)
@@ -336,8 +336,8 @@ impl Entity {
         parent_types: [EntityType; N],
         executor: E,
     ) -> Result<i32, UuidError>
-        where
-            E: Executor<'a>,
+    where
+        E: Executor<'a>,
     {
         let query = format!(
             r#"
@@ -371,8 +371,8 @@ impl Entity {
         child_type: EntityType,
         executor: E,
     ) -> Result<Vec<i32>, UuidError>
-        where
-            E: Executor<'a>,
+    where
+        E: Executor<'a>,
     {
         let children = sqlx::query!(
             r#"
@@ -386,8 +386,8 @@ impl Entity {
             id,
             child_type,
         )
-            .fetch_all(executor)
-            .await?;
+        .fetch_all(executor)
+        .await?;
         Ok(children.iter().map(|child| child.id as i32).collect())
     }
 
@@ -396,8 +396,8 @@ impl Entity {
         child_type: EntityType,
         executor: E,
     ) -> Result<Option<i32>, UuidError>
-        where
-            E: Executor<'a>,
+    where
+        E: Executor<'a>,
     {
         Self::find_children_by_id_and_type(id, child_type, executor)
             .await
@@ -407,127 +407,80 @@ impl Entity {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntityMetadata {
-// TODO
+    #[serde(rename = "@context")]
+    context: serde_json::Value,
+    id: String,
+    #[serde(rename = "type")]
+    schema_type: Vec<String>,
+    learning_resource_type: String,
+    name: String,
+    description: String,
+    date_created: String,
+    date_modified: String,
+    license: String,
+    version: String,
 }
 
 impl EntityMetadata {
-    async fn find_all<'a,E>(
+    async fn find_all<'a, E>(
         after: Option<i32>,
         instance: Option<&String>,
         first: Option<i32>,
         last_modified: Option<&String>,
         executor: E,
-    ) -> Result<Vec<i32>, sqlx::Error> // TODO
-    where
-        E: Executor<'a>,
-    {
-        let rows = sqlx::query!(
-            r#"
-                select entity.id, type.name,
-                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value),
-                    entity.date, entity_revision.date, entity.current_revision_id,
-                    license.url, instance.subdomain
-
-                    FROM entity
-                    JOIN uuid ON uuid.id = entity.id
-                    JOIN instance ON entity.instance_id = instance.id
-
-                    join type on entity.type_id = type.id
-                    join license on license.id = entity.license_id
-
-                    JOIN entity_revision ON entity.current_revision_id = entity_revision.id
-                    join entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id
-
-                    LEFT JOIN term_taxonomy_entity tte ON entity.id = tte.entity_id
-                    LEFT JOIN term_taxonomy t0 ON tte.term_taxonomy_id = t0.id
-                    LEFT JOIN term_taxonomy t1 ON t0.parent_id = t1.id
-                    LEFT JOIN term_taxonomy t2 ON t1.parent_id = t2.id
-                    LEFT JOIN term_taxonomy t3 ON t2.parent_id = t3.id
-                    LEFT JOIN term_taxonomy t4 ON t3.parent_id = t4.id
-                    LEFT JOIN term_taxonomy t5 ON t4.parent_id = t5.id
-                    WHERE entity.id > ?
-                        AND (? is NULL OR instance.subdomain = ?)
-                        AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))
-                        AND uuid.trashed = 0
-                        AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
-                        AND (t0.id IS NULL OR t0.id != 75211)
-                        AND (t1.id IS NULL OR t1.id != 75211)
-                        AND (t2.id IS NULL OR t2.id != 75211)
-                        AND (t3.id IS NULL OR t3.id != 75211)
-                        AND (t4.id IS NULL OR t4.id != 75211)
-                        AND (t5.id IS NULL OR t5.id != 75211)
-                        AND (t0.id IS NULL OR (t0.id = 106081 OR t0.id != 87993))
-                        AND (t1.id IS NULL OR t1.id = 106081 OR (t0.id != 106081 AND (t1.id = 106081 OR t1.id != 87993)))
-                        AND (t2.id IS NULL OR (t1.id = 106081 OR t2.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND (t2.id = 106081 OR t2.id != 87993)))
-                        AND (t3.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND (t3.id = 106081 OR t3.id != 87993)))
-                        AND (t4.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081 OR t4.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND t3.id != 106081 AND (t4.id = 106081 OR t4.id != 87993)))
-                    group by entity.id
-                    ORDER by entity.id
-                    LIMIT ?
-
-            "#,
-            ids_list
-        ).fetch_all(executor)
-            .await?
-            .into_iter()
-            .collect();
-    }
-
-
-    /// Returns an array of queried entity ids
-    ///
-    /// Entities with the following properties will NOT be queried
-    /// - trashed
-    /// - of type applet (type_id 48), article (3), course (7),
-    ///   text-exercise (1), text-exercise-group(4), video(6)
-    /// - being hierarchically in the taxonomy under 75211
-    ///   (you can test it in dev env using 35559)
-    /// - being hierarchically in the taxonomy under 87993
-    ///   except those under 106081
-    ///
-    /// See Issue #144
-    async fn find_entity_ids<'a, E>(
-        after: Option<i32>,
-        instance: Option<&String>,
-        first: Option<i32>,
-        last_modified: Option<&String>,
-        executor: E,
-    ) -> Result<Vec<i32>, sqlx::Error>
+    ) -> Result<Vec<EntityMetadata>, sqlx::Error>
     where
         E: Executor<'a>,
     {
         Ok(sqlx::query!(
             r#"
-                SELECT entity.id
-                    FROM entity
-                    JOIN uuid ON uuid.id = entity.id
-                    JOIN instance ON entity.instance_id = instance.id
-                    LEFT JOIN entity_revision ON entity.current_revision_id = entity_revision.id
-                    LEFT JOIN term_taxonomy_entity tte ON entity.id = tte.entity_id
-                    LEFT JOIN term_taxonomy t0 ON tte.term_taxonomy_id = t0.id
-                    LEFT JOIN term_taxonomy t1 ON t0.parent_id = t1.id
-                    LEFT JOIN term_taxonomy t2 ON t1.parent_id = t2.id
-                    LEFT JOIN term_taxonomy t3 ON t2.parent_id = t3.id
-                    LEFT JOIN term_taxonomy t4 ON t3.parent_id = t4.id
-                    LEFT JOIN term_taxonomy t5 ON t4.parent_id = t5.id
-                    WHERE entity.id > ?
-                        AND (? is NULL OR instance.subdomain = ?)
-                        AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))
-                        AND uuid.trashed = 0
-                        AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
-                        AND (t0.id IS NULL OR t0.id != 75211)
-                        AND (t1.id IS NULL OR t1.id != 75211)
-                        AND (t2.id IS NULL OR t2.id != 75211)
-                        AND (t3.id IS NULL OR t3.id != 75211)
-                        AND (t4.id IS NULL OR t4.id != 75211)
-                        AND (t5.id IS NULL OR t5.id != 75211)
-                        AND (t0.id IS NULL OR (t0.id = 106081 OR t0.id != 87993))
-                        AND (t1.id IS NULL OR t1.id = 106081 OR (t0.id != 106081 AND (t1.id = 106081 OR t1.id != 87993)))
-                        AND (t2.id IS NULL OR (t1.id = 106081 OR t2.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND (t2.id = 106081 OR t2.id != 87993)))
-                        AND (t3.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND (t3.id = 106081 OR t3.id != 87993)))
-                        AND (t4.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081 OR t4.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND t3.id != 106081 AND (t4.id = 106081 OR t4.id != 87993)))
-                    ORDER by entity.id
-                    LIMIT ?
+                select
+                    entity.id,
+                    type.name,
+                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) as parameters,
+                    entity.date as date_created,
+                    entity_revision.date as date_modified,
+                    entity.current_revision_id,
+                    license.url as license_url,
+                    instance.subdomain
+
+                FROM entity
+                JOIN uuid ON uuid.id = entity.id
+                JOIN instance ON entity.instance_id = instance.id
+
+                join type on entity.type_id = type.id
+                join license on license.id = entity.license_id
+
+                JOIN entity_revision ON entity.current_revision_id = entity_revision.id
+                join entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id
+
+                /*--LEFT JOIN term_taxonomy_entity tte ON entity.id = tte.entity_id
+                --LEFT JOIN term_taxonomy t0 ON tte.term_taxonomy_id = t0.id
+                --LEFT JOIN term_taxonomy t1 ON t0.parent_id = t1.id
+                --LEFT JOIN term_taxonomy t2 ON t1.parent_id = t2.id
+                --LEFT JOIN term_taxonomy t3 ON t2.parent_id = t3.id
+                --LEFT JOIN term_taxonomy t4 ON t3.parent_id = t4.id
+                --LEFT JOIN term_taxonomy t5 ON t4.parent_id = t5.id*/
+                WHERE entity.id > ?
+                    AND (? is NULL OR instance.subdomain = ?)
+                    AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))
+                    AND uuid.trashed = 0
+                    AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
+                    /*--AND (t0.id IS NULL OR t0.id != 75211)
+                    --AND (t1.id IS NULL OR t1.id != 75211)
+                    --AND (t2.id IS NULL OR t2.id != 75211)
+                    --AND (t3.id IS NULL OR t3.id != 75211)
+                    --AND (t4.id IS NULL OR t4.id != 75211)
+                    --AND (t5.id IS NULL OR t5.id != 75211)
+                    --AND (t0.id IS NULL OR (t0.id = 106081 OR t0.id != 87993))
+                    --AND (t1.id IS NULL OR t1.id = 106081 OR (t0.id != 106081 AND (t1.id = 106081 OR t1.id != 87993)))
+                    --AND (t2.id IS NULL OR (t1.id = 106081 OR t2.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND (t2.id = 106081 OR t2.id != 87993)))
+                    --AND (t3.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND (t3.id = 106081 OR t3.id != 87993)))
+                    --AND (t4.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081 OR t4.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND t3.id != 106081 AND (t4.id = 106081 OR t4.id != 87993)))*/
+                GROUP BY entity.id
+                ORDER by entity.id
+                LIMIT ?
+
             "#,
             after.unwrap_or(0),
             instance,
@@ -535,13 +488,27 @@ impl EntityMetadata {
             last_modified,
             last_modified,
             first
-        )
-        .fetch_all(executor)
-        .await?
-        .into_iter()
-        .map(|x| x.id as i32)
-        .collect())
+        ).fetch_all(executor)
+            .await?
+            .into_iter()
+            .map(|result| EntityMetadata {
+                context: serde_json::Value::Null,
+                id: get_iri(result.id as i32),
+                schema_type: vec!["type".to_string(), "".to_string()],
+                learning_resource_type: "".to_string(),
+                name: "".to_string(),
+                description: "".to_string(),
+                date_created: "".to_string(),
+                date_modified: "".to_string(),
+                license: "".to_string(),
+                version: "".to_string(),
+            })
+            .collect())
     }
+}
+
+fn get_iri(id: i32) -> String {
+    format!("https://serlo.org/{}", id).to_string()
 }
 
 #[derive(Debug, Deserialize)]

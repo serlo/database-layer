@@ -515,6 +515,122 @@
       ]
     }
   },
+  "28569db6fe82d1e4dd98d27fda3bbb61c1522067b41a75c4596d24b07dbc3e0b": {
+    "query": "\n                select\n                    entity.id,\n                    type.name,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) as parameters,\n                    entity.date as date_created,\n                    entity_revision.date as date_modified,\n                    entity.current_revision_id,\n                    license.url as license_url,\n                    instance.subdomain\n\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n\n                join type on entity.type_id = type.id\n                join license on license.id = entity.license_id\n\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                join entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))\n                    AND uuid.trashed = 0\n                    AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)\n                GROUP BY entity.id\n                ORDER by entity.id\n                LIMIT ?\n\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4101
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "parameters",
+          "type_info": {
+            "type": "Json",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 16777216
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "date_created",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "date_modified",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "current_revision_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "license_url",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "subdomain",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 6
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false
+      ]
+    }
+  },
   "2b40b2053d2083dbdc2ba4229260ef613c0b10e606099d083ffe75dc2117e4ac": {
     "query": "SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC",
     "describe": {
@@ -1050,31 +1166,6 @@
       ],
       "parameters": {
         "Right": 1
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
-  "579c5ed35b97301c8f4bd41e10e74b0f25a08fd7e53673255baf3c22df7e0e97": {
-    "query": "\n                SELECT entity.id\n                    FROM entity\n                    JOIN uuid ON uuid.id = entity.id\n                    JOIN instance ON entity.instance_id = instance.id\n                    LEFT JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                    LEFT JOIN term_taxonomy_entity tte ON entity.id = tte.entity_id\n                    LEFT JOIN term_taxonomy t0 ON tte.term_taxonomy_id = t0.id\n                    LEFT JOIN term_taxonomy t1 ON t0.parent_id = t1.id\n                    LEFT JOIN term_taxonomy t2 ON t1.parent_id = t2.id\n                    LEFT JOIN term_taxonomy t3 ON t2.parent_id = t3.id\n                    LEFT JOIN term_taxonomy t4 ON t3.parent_id = t4.id\n                    LEFT JOIN term_taxonomy t5 ON t4.parent_id = t5.id\n                    WHERE entity.id > ?\n                        AND (? is NULL OR instance.subdomain = ?)\n                        AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))\n                        AND uuid.trashed = 0\n                        AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)\n                        AND (t0.id IS NULL OR t0.id != 75211)\n                        AND (t1.id IS NULL OR t1.id != 75211)\n                        AND (t2.id IS NULL OR t2.id != 75211)\n                        AND (t3.id IS NULL OR t3.id != 75211)\n                        AND (t4.id IS NULL OR t4.id != 75211)\n                        AND (t5.id IS NULL OR t5.id != 75211)\n                        AND (t0.id IS NULL OR (t0.id = 106081 OR t0.id != 87993))\n                        AND (t1.id IS NULL OR t1.id = 106081 OR (t0.id != 106081 AND (t1.id = 106081 OR t1.id != 87993)))\n                        AND (t2.id IS NULL OR (t1.id = 106081 OR t2.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND (t2.id = 106081 OR t2.id != 87993)))\n                        AND (t3.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND (t3.id = 106081 OR t3.id != 87993)))\n                        AND (t4.id IS NULL OR (t1.id = 106081 OR t2.id = 106081 OR t3.id = 106081 OR t4.id = 106081) OR (t0.id != 106081 AND t1.id != 106081 AND t2.id != 106081 AND t3.id != 106081 AND (t4.id = 106081 OR t4.id != 87993)))\n                    ORDER by entity.id\n                    LIMIT ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4107
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 6
       },
       "nullable": [
         false

@@ -41,6 +41,7 @@ impl MessageResponder for EntityMessage {
 mod entities_query {
     use super::*;
     use crate::operation::Error;
+    use crate::uuid::EntityMetadata;
 
     #[derive(Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
@@ -80,7 +81,7 @@ mod entities_query {
 
             let entity_ids = match connection {
                 Connection::Pool(pool) => {
-                    Entity::find_entity_ids(
+                    EntityMetadata::find_all(
                         self.after,
                         self.instance.as_ref(),
                         self.first,
@@ -90,7 +91,7 @@ mod entities_query {
                     .await?
                 }
                 Connection::Transaction(transaction) => {
-                    Entity::find_entity_ids(
+                    EntityMetadata::find_all(
                         self.after,
                         self.instance.as_ref(),
                         self.first,

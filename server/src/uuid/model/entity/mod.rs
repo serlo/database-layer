@@ -2,6 +2,7 @@ use crate::uuid::Subject;
 use async_trait::async_trait;
 use futures::try_join;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use sqlx::MySqlPool;
 use sqlx::Row;
 use thiserror::Error;
@@ -417,7 +418,7 @@ pub struct EntityMetadata {
     description: String,
     date_created: String,
     date_modified: String,
-    license: String,
+    license: serde_json::Value,
     version: String,
 }
 
@@ -442,7 +443,7 @@ impl EntityMetadata {
                     entity_revision.date as date_modified,
                     entity.current_revision_id as version,
                     license.url as license_url,
-                    instance.subdomain
+                    instance.subdomain as instance
                 FROM entity
                 JOIN uuid ON uuid.id = entity.id
                 JOIN instance ON entity.instance_id = instance.id
@@ -469,7 +470,10 @@ impl EntityMetadata {
             .await?
             .into_iter()
             .map(|result| EntityMetadata {
-                context: serde_json::Value::Null,
+                context: json!([
+                    "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                    { "@language": result.instance }
+                ]),
                 id: get_iri(result.id as i32),
                 schema_type: vec!["LearningResource".to_string(), get_learning_resource_type(&result.resource_type)],
                 learning_resource_type: get_learning_resource_type(&result.resource_type),
@@ -477,8 +481,8 @@ impl EntityMetadata {
                 description: "".to_string(),
                 date_created: result.date_created.to_rfc3339(),
                 date_modified: result.date_modified.to_rfc3339(),
-                license:  "".to_string(), // result.license_url,
-                version: "".to_string() // result.version,
+                license: json!({"id": result.license_url}),
+                version: get_iri(result.version.unwrap())
             })
             .collect())
     }

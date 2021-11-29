@@ -1154,6 +1154,122 @@
       ]
     }
   },
+  "6d263f11fd8d438476af72ac90413b0b5483d6cfe236316402bbf5b8fb62aa06": {
+    "query": "\n                SELECT\n                    entity.id,\n                    type.name as resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) as parameters,\n                    entity.date as date_created,\n                    entity_revision.date as date_modified,\n                    entity.current_revision_id as version,\n                    license.url as license_url,\n                    instance.subdomain as instance\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))\n                    AND uuid.trashed = 0\n                    AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)\n                GROUP BY entity.id\n                ORDER by entity.id\n                LIMIT ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "resource_type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4101
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "parameters",
+          "type_info": {
+            "type": "Json",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 16777216
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "date_created",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "date_modified",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "version",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "license_url",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "instance",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 6
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false
+      ]
+    }
+  },
   "6e6f238121fd4dc0bebe9ca259e0ab7c864b1b8c257078ddbb172e90ea0c64b8": {
     "query": "SELECT id FROM instance WHERE subdomain = ?",
     "describe": {
@@ -1306,122 +1422,6 @@
         "Right": 1
       },
       "nullable": [
-        false
-      ]
-    }
-  },
-  "8657b27c8cac5b8efcf2c27f456ca9ff8b8f146cb2c109f0b76dacbb865cb34f": {
-    "query": "\n                SELECT\n                    entity.id,\n                    type.name as resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) as parameters,\n                    entity.date as date_created,\n                    entity_revision.date as date_modified,\n                    entity.current_revision_id as version,\n                    license.url as license_url,\n                    instance.subdomain\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))\n                    AND uuid.trashed = 0\n                    AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)\n                GROUP BY entity.id\n                ORDER by entity.id\n                LIMIT ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 4107
-            },
-            "char_set": 63,
-            "max_size": 20
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "resource_type",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4101
-            },
-            "char_set": 224,
-            "max_size": 1020
-          }
-        },
-        {
-          "ordinal": 2,
-          "name": "parameters",
-          "type_info": {
-            "type": "Json",
-            "flags": {
-              "bits": 128
-            },
-            "char_set": 63,
-            "max_size": 16777216
-          }
-        },
-        {
-          "ordinal": 3,
-          "name": "date_created",
-          "type_info": {
-            "type": "Timestamp",
-            "flags": {
-              "bits": 1153
-            },
-            "char_set": 63,
-            "max_size": 19
-          }
-        },
-        {
-          "ordinal": 4,
-          "name": "date_modified",
-          "type_info": {
-            "type": "Timestamp",
-            "flags": {
-              "bits": 1153
-            },
-            "char_set": 63,
-            "max_size": 19
-          }
-        },
-        {
-          "ordinal": 5,
-          "name": "version",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 0
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        },
-        {
-          "ordinal": 6,
-          "name": "license_url",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4097
-            },
-            "char_set": 224,
-            "max_size": 1020
-          }
-        },
-        {
-          "ordinal": 7,
-          "name": "subdomain",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4097
-            },
-            "char_set": 224,
-            "max_size": 40
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 6
-      },
-      "nullable": [
-        false,
-        false,
-        true,
-        false,
-        false,
-        true,
-        false,
         false
       ]
     }

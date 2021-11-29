@@ -434,26 +434,22 @@ impl EntityMetadata {
     {
         Ok(sqlx::query!(
             r#"
-                select
+                SELECT
                     entity.id,
-                    type.name,
+                    type.name as resource_type,
                     JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) as parameters,
                     entity.date as date_created,
                     entity_revision.date as date_modified,
-                    entity.current_revision_id,
+                    entity.current_revision_id as version,
                     license.url as license_url,
                     instance.subdomain
-
                 FROM entity
                 JOIN uuid ON uuid.id = entity.id
                 JOIN instance ON entity.instance_id = instance.id
-
-                join type on entity.type_id = type.id
-                join license on license.id = entity.license_id
-
+                JOIN type on entity.type_id = type.id
+                JOIN license on license.id = entity.license_id
                 JOIN entity_revision ON entity.current_revision_id = entity_revision.id
-                join entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id
-
+                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id
                 WHERE entity.id > ?
                     AND (? is NULL OR instance.subdomain = ?)
                     AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))
@@ -462,7 +458,6 @@ impl EntityMetadata {
                 GROUP BY entity.id
                 ORDER by entity.id
                 LIMIT ?
-
             "#,
             after.unwrap_or(0),
             instance,
@@ -476,14 +471,14 @@ impl EntityMetadata {
             .map(|result| EntityMetadata {
                 context: serde_json::Value::Null,
                 id: get_iri(result.id as i32),
-                schema_type: vec!["type".to_string(), "".to_string()],
-                learning_resource_type: "".to_string(),
+                schema_type: vec!["LearningResource".to_string(), get_learning_resource_type(&result.resource_type)],
+                learning_resource_type: get_learning_resource_type(&result.resource_type),
                 name: "".to_string(),
                 description: "".to_string(),
-                date_created: "".to_string(),
-                date_modified: "".to_string(),
-                license: "".to_string(),
-                version: "".to_string(),
+                date_created: result.date_created.to_rfc3339(),
+                date_modified: result.date_modified.to_rfc3339(),
+                license:  "".to_string(), // result.license_url,
+                version: "".to_string() // result.version,
             })
             .collect())
     }
@@ -491,6 +486,17 @@ impl EntityMetadata {
 
 fn get_iri(id: i32) -> String {
     format!("https://serlo.org/{}", id).to_string()
+}
+
+fn get_learning_resource_type(entity_type: &String) -> String {
+    let resource_type = match entity_type.as_str() {
+        "article" | "course-page" => "Article",
+        "course" => "Course",
+        "text-exercise-group" | "text-exercise"=> "Quiz",
+        "video" => "Video",
+        _ => "" // TODO: maybe None is better
+    };
+    resource_type.to_string()
 }
 
 #[derive(Debug, Deserialize)]

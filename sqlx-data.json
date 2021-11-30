@@ -2479,6 +2479,122 @@
       ]
     }
   },
+  "f30e91f1ffb74b58820db4cef8b7f3f38ba4a9ff30e48958e4fdeaf0603439bd": {
+    "query": "\n                SELECT\n                    entity.id,\n                    type.name AS resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND entity.type_id IN (48, 3, 7, 1, 4, 6)\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "resource_type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4101
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "params",
+          "type_info": {
+            "type": "Json",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 16777216
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "date_created",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "date_modified",
+          "type_info": {
+            "type": "Timestamp",
+            "flags": {
+              "bits": 1153
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "version",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 0
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "license_url",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "instance",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 40
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 6
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false
+      ]
+    }
+  },
   "fc0ca0f5bbca56646e9a9cbad7d897b684ca6301e1c63c108d1497592ef3f34b": {
     "query": "\n                SELECT\n                    u.trashed, term.name, type.name as term_type, instance.subdomain,\n                    term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id,\n                    term_taxonomy.taxonomy_id\n                FROM term_taxonomy\n                JOIN term ON term.id = term_taxonomy.term_id\n                JOIN taxonomy ON taxonomy.id = term_taxonomy.taxonomy_id\n                JOIN type ON type.id = taxonomy.type_id\n                JOIN instance ON instance.id = taxonomy.instance_id\n                JOIN uuid u ON u.id = term_taxonomy.id\n                WHERE term_taxonomy.id = ?\n            ",
     "describe": {

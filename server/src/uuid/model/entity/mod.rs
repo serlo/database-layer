@@ -425,10 +425,7 @@ pub struct EntityMetadata {
 
 impl EntityMetadata {
     async fn find_all<'a, E>(
-        after: Option<i32>,
-        instance: Option<&String>,
-        first: i32,
-        modified_after: Option<&String>,
+        payload: &messages::entities_metadata_query::Payload,
         executor: E,
     ) -> Result<Vec<EntityMetadata>, sqlx::Error>
     where
@@ -461,12 +458,12 @@ impl EntityMetadata {
                 ORDER BY entity.id
                 LIMIT ?
             "#,
-            after.unwrap_or(0),
-            instance,
-            instance,
-            modified_after,
-            modified_after,
-            first
+            payload.after.unwrap_or(0),
+            payload.instance,
+            payload.instance,
+            payload.modified_after,
+            payload.modified_after,
+            payload.first
         ).fetch_all(executor)
             .await?
             .into_iter()

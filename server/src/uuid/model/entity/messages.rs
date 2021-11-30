@@ -3,11 +3,12 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload, EntityRejectRevisionError,
-    EntityRejectRevisionPayload,
+    Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload, EntityMetadata,
+    EntityRejectRevisionError, EntityRejectRevisionPayload,
 };
 use crate::database::Connection;
 use crate::message::MessageResponder;
+use crate::operation::Error;
 use crate::operation::{self, Operation};
 
 #[derive(Deserialize, Serialize)]
@@ -16,7 +17,7 @@ pub enum EntityMessage {
     EntityCheckoutRevisionMutation(EntityCheckoutRevisionMutation),
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
-    EntitiesMetadataQuery(entities_query::Payload),
+    EntitiesMetadataQuery(entities_metadata_query::Payload),
 }
 
 #[async_trait]
@@ -38,18 +39,16 @@ impl MessageResponder for EntityMessage {
     }
 }
 
-mod entities_query {
+pub mod entities_metadata_query {
     use super::*;
-    use crate::operation::Error;
-    use crate::uuid::EntityMetadata;
 
     #[derive(Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        first: i32,
-        after: Option<i32>,
-        instance: Option<String>,
-        modified_after: Option<String>, // TODO?: prefer datetime? In that case Deserialize has to be implemented
+        pub first: i32,
+        pub after: Option<i32>,
+        pub instance: Option<String>,
+        pub modified_after: Option<String>, // TODO?: prefer datetime? In that case Deserialize has to be implemented
     }
 
     #[derive(Serialize)]
@@ -70,25 +69,9 @@ mod entities_query {
             };
 
             let entities = match connection {
-                Connection::Pool(pool) => {
-                    EntityMetadata::find_all(
-                        self.after,
-                        self.instance.as_ref(),
-                        self.first,
-                        self.modified_after.as_ref(),
-                        pool,
-                    )
-                    .await?
-                }
+                Connection::Pool(pool) => EntityMetadata::find_all(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    EntityMetadata::find_all(
-                        self.after,
-                        self.instance.as_ref(),
-                        self.first,
-                        self.modified_after.as_ref(),
-                        transaction,
-                    )
-                    .await?
+                    EntityMetadata::find_all(self, transaction).await?
                 }
             };
 

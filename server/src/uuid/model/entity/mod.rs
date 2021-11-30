@@ -453,7 +453,7 @@ impl EntityMetadata {
                     AND (? is NULL OR instance.subdomain = ?)
                     AND (? is NULL OR entity_revision.date > Date(?))
                     AND uuid.trashed = 0
-                    AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
+                    AND entity.type_id IN (48, 3, 7, 1, 4, 6)
                 GROUP BY entity.id
                 ORDER BY entity.id
                 LIMIT ?

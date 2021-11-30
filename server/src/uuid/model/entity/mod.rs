@@ -415,8 +415,8 @@ pub struct EntityMetadata {
     #[serde(rename = "type")]
     schema_type: Vec<String>,
     learning_resource_type: String,
-    name: String,
-    description: String,
+    name: Option<String>,
+    description: Option<String>,
     date_created: String,
     date_modified: String,
     license: serde_json::Value,
@@ -436,7 +436,7 @@ impl EntityMetadata {
                 SELECT
                     entity.id,
                     type.name AS resource_type,
-                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS parameters,
+                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,
                     entity.date AS date_created,
                     entity_revision.date AS date_modified,
                     entity.current_revision_id AS version,
@@ -476,16 +476,26 @@ impl EntityMetadata {
                 // TODO: Sollte "http" genutzt werden?!
                 id: get_iri(result.id as i32),
                 uuid: result.id as i32,
-                schema_type: vec!["LearningResource".to_string(), get_learning_resource_type(&result.resource_type)],
+                schema_type: vec![
+                    "LearningResource".to_string(),
+                    get_learning_resource_type(&result.resource_type)
+                ],
                 learning_resource_type: get_learning_resource_type(&result.resource_type),
-                name: "".to_string(),
-                description: "".to_string(),
+                name: result.params.as_ref()
+                    .and_then(|params| params.get("title"))
+                    .and_then(|title| title.as_str())
+                    .map(|title| title.to_string()),
+                description: result.params.as_ref()
+                    .and_then(|params| params.get("meta_description"))
+                    .and_then(|title| title.as_str())
+                    .map(|title| title.to_string()),
                 date_created: result.date_created.to_rfc3339(),
                 date_modified: result.date_modified.to_rfc3339(),
                 license: json!({"id": result.license_url}),
                 version: get_iri(result.version.unwrap())
             })
-            .collect())
+            .collect()
+        )
     }
 }
 

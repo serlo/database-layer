@@ -411,7 +411,7 @@ pub struct EntityMetadata {
     #[serde(rename = "@context")]
     context: serde_json::Value,
     id: String,
-    identfier: serde_json::Value,
+    identifier: serde_json::Value,
     #[serde(rename = "type")]
     schema_type: Vec<String>,
     learning_resource_type: String,

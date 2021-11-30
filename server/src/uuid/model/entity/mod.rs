@@ -411,6 +411,7 @@ pub struct EntityMetadata {
     #[serde(rename = "@context")]
     context: serde_json::Value,
     id: String,
+    uuid: i32,
     #[serde(rename = "type")]
     schema_type: Vec<String>,
     learning_resource_type: String,
@@ -475,6 +476,7 @@ impl EntityMetadata {
                     { "@language": result.instance }
                 ]),
                 id: get_iri(result.id as i32),
+                uuid: result.id as i32,
                 schema_type: vec!["LearningResource".to_string(), get_learning_resource_type(&result.resource_type)],
                 learning_resource_type: get_learning_resource_type(&result.resource_type),
                 name: "".to_string(),

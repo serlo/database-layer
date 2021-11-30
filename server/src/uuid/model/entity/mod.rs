@@ -507,14 +507,13 @@ fn get_iri(id: i32) -> String {
 }
 
 fn get_learning_resource_type(entity_type: &String) -> String {
-    let resource_type = match entity_type.as_str() {
+    match entity_type.as_str() {
         "article" | "course-page" => "Article",
         "course" => "Course",
         "text-exercise-group" | "text-exercise" => "Quiz",
         "video" => "Video",
-        _ => "", // TODO: maybe None is better
-    };
-    resource_type.to_string()
+        _ => "",
+    }.to_string()
 }
 
 #[derive(Debug, Deserialize)]

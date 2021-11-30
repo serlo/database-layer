@@ -438,13 +438,13 @@ impl EntityMetadata {
             r#"
                 SELECT
                     entity.id,
-                    type.name as resource_type,
-                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) as parameters,
-                    entity.date as date_created,
-                    entity_revision.date as date_modified,
-                    entity.current_revision_id as version,
-                    license.url as license_url,
-                    instance.subdomain as instance
+                    type.name AS resource_type,
+                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS parameters,
+                    entity.date AS date_created,
+                    entity_revision.date AS date_modified,
+                    entity.current_revision_id AS version,
+                    license.url AS license_url,
+                    instance.subdomain AS instance
                 FROM entity
                 JOIN uuid ON uuid.id = entity.id
                 JOIN instance ON entity.instance_id = instance.id
@@ -454,11 +454,11 @@ impl EntityMetadata {
                 JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id
                 WHERE entity.id > ?
                     AND (? is NULL OR instance.subdomain = ?)
-                    AND (entity_revision.id IS NULL OR ? is NULL OR entity_revision.date > Date(?))
+                    AND (? is NULL OR entity_revision.date > Date(?))
                     AND uuid.trashed = 0
                     AND entity.type_id NOT IN (48, 3, 7, 1, 4, 6)
                 GROUP BY entity.id
-                ORDER by entity.id
+                ORDER BY entity.id
                 LIMIT ?
             "#,
             after.unwrap_or(0),

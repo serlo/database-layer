@@ -16,7 +16,7 @@ pub enum EntityMessage {
     EntityCheckoutRevisionMutation(EntityCheckoutRevisionMutation),
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
-    EntitiesQuery(entities_query::Payload),
+    EntitiesMetadataQuery(entities_query::Payload),
 }
 
 #[async_trait]
@@ -31,7 +31,7 @@ impl MessageResponder for EntityMessage {
                 message.handle(connection).await
             }
             EntityMessage::UnrevisedEntitiesQuery(message) => message.handle(connection).await,
-            EntityMessage::EntitiesQuery(payload) => {
+            EntityMessage::EntitiesMetadataQuery(payload) => {
                 payload.handle("EntitiesQuery", connection).await
             }
         }

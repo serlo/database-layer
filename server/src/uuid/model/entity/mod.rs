@@ -474,7 +474,7 @@ impl EntityMetadata {
                 ]),
                 // TODO: Sollte "http" genutzt werden?!
                 id: get_iri(result.id as i32),
-                identfier: json!({
+                identifier: json!({
                     "type": "PropertyValue",
                     "propertyID": "UUID",
                     "value": result.id as i32,

@@ -411,7 +411,7 @@ pub struct EntityMetadata {
     #[serde(rename = "@context")]
     context: serde_json::Value,
     id: String,
-    uuid: i32,
+    identfier: serde_json::Value,
     #[serde(rename = "type")]
     schema_type: Vec<String>,
     learning_resource_type: String,
@@ -468,14 +468,17 @@ impl EntityMetadata {
             .await?
             .into_iter()
             .map(|result| EntityMetadata {
-                // TODO: "uuid" beschreiben
                 context: json!([
                     "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
                     { "@language": result.instance }
                 ]),
                 // TODO: Sollte "http" genutzt werden?!
                 id: get_iri(result.id as i32),
-                uuid: result.id as i32,
+                identfier: json!({
+                    "type": "PropertyValue",
+                    "propertyID": "UUID",
+                    "value": result.id as i32,
+                }),
                 schema_type: vec![
                     "LearningResource".to_string(),
                     get_learning_resource_type(&result.resource_type)

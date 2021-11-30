@@ -427,7 +427,7 @@ impl EntityMetadata {
         after: Option<i32>,
         instance: Option<&String>,
         first: Option<i32>,
-        last_modified: Option<&String>,
+        modified_after: Option<&String>,
         executor: E,
     ) -> Result<Vec<EntityMetadata>, sqlx::Error>
     where
@@ -463,8 +463,8 @@ impl EntityMetadata {
             after.unwrap_or(0),
             instance,
             instance,
-            last_modified,
-            last_modified,
+            modified_after,
+            modified_after,
             first
         ).fetch_all(executor)
             .await?
@@ -496,9 +496,9 @@ fn get_learning_resource_type(entity_type: &String) -> String {
     let resource_type = match entity_type.as_str() {
         "article" | "course-page" => "Article",
         "course" => "Course",
-        "text-exercise-group" | "text-exercise"=> "Quiz",
+        "text-exercise-group" | "text-exercise" => "Quiz",
         "video" => "Video",
-        _ => "" // TODO: maybe None is better
+        _ => "", // TODO: maybe None is better
     };
     resource_type.to_string()
 }

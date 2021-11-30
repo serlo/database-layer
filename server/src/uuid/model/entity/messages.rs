@@ -46,10 +46,11 @@ mod entities_query {
     #[derive(Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
+        // TODO: make i32
+        first: Option<i32>,
         after: Option<i32>,
         instance: Option<String>,
-        first: Option<i32>,
-        last_modified: Option<String>, // TODO?: prefer datetime? In that case Deserialize has to be implemented
+        modified_after: Option<String>, // TODO?: prefer datetime? In that case Deserialize has to be implemented
     }
 
     #[derive(Serialize)]
@@ -85,7 +86,7 @@ mod entities_query {
                         self.after,
                         self.instance.as_ref(),
                         self.first,
-                        self.last_modified.as_ref(),
+                        self.modified_after.as_ref(),
                         pool,
                     )
                     .await?
@@ -95,7 +96,7 @@ mod entities_query {
                         self.after,
                         self.instance.as_ref(),
                         self.first,
-                        self.last_modified.as_ref(),
+                        self.modified_after.as_ref(),
                         transaction,
                     )
                     .await?

@@ -46,8 +46,7 @@ mod entities_query {
     #[derive(Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        // TODO: make i32
-        first: Option<i32>,
+        first: i32,
         after: Option<i32>,
         instance: Option<String>,
         modified_after: Option<String>, // TODO?: prefer datetime? In that case Deserialize has to be implemented
@@ -64,20 +63,10 @@ mod entities_query {
         type Output = Output;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            let maximum = 10_000;
-
-            match self.first {
-                f if f >= Some(maximum) => {
-                    return Err(Error::BadRequest {
-                        reason: "The 'first' value should be less than 10_000".to_string(),
-                    })
-                }
-                None => {
-                    return Err(Error::BadRequest {
-                        reason: "The 'first' key is required".to_string(),
-                    })
-                }
-                _ => (),
+            if self.first >= 10_000 {
+                return Err(Error::BadRequest {
+                    reason: "The 'first' value should be less than 10_000".to_string(),
+                });
             };
 
             let entities = match connection {

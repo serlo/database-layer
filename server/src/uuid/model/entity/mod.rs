@@ -427,7 +427,7 @@ impl EntityMetadata {
     async fn find_all<'a, E>(
         after: Option<i32>,
         instance: Option<&String>,
-        first: Option<i32>,
+        first: i32,
         modified_after: Option<&String>,
         executor: E,
     ) -> Result<Vec<EntityMetadata>, sqlx::Error>
@@ -471,10 +471,12 @@ impl EntityMetadata {
             .await?
             .into_iter()
             .map(|result| EntityMetadata {
+                // TODO: "uuid" beschreiben
                 context: json!([
                     "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
                     { "@language": result.instance }
                 ]),
+                // TODO: Sollte "http" genutzt werden?!
                 id: get_iri(result.id as i32),
                 uuid: result.id as i32,
                 schema_type: vec!["LearningResource".to_string(), get_learning_resource_type(&result.resource_type)],

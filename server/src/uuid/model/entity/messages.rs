@@ -1,5 +1,6 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -48,7 +49,7 @@ pub mod entities_metadata_query {
         pub first: i32,
         pub after: Option<i32>,
         pub instance: Option<String>,
-        pub modified_after: Option<String>, // TODO?: prefer datetime? In that case Deserialize has to be implemented
+        pub modified_after: Option<DateTime<Utc>>,
     }
 
     #[derive(Serialize)]

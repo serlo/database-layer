@@ -451,7 +451,7 @@ impl EntityMetadata {
                 JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id
                 WHERE entity.id > ?
                     AND (? is NULL OR instance.subdomain = ?)
-                    AND (? is NULL OR entity_revision.date > Date(?))
+                    AND (? is NULL OR entity_revision.date > ?)
                     AND uuid.trashed = 0
                     AND entity.type_id IN (48, 3, 7, 1, 4, 6)
                 GROUP BY entity.id

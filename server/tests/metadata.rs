@@ -33,6 +33,8 @@ mod entities_metadata_query {
                     "propertyID": "UUID",
                     "value": 1495
                   },
+                  "isAccessibleForFree": true,
+                  "isFamilyFriendly": true,
                   "inLanguage": "de",
                   "learningResourceType": "Article",
                   "license": {

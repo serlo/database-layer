@@ -106,11 +106,11 @@ impl EntityMetadata {
 }
 
 fn get_iri(id: i32) -> String {
-    format!("https://serlo.org/{}", id).to_string()
+    format!("https://serlo.org/{}", id)
 }
 
-fn get_learning_resource_type(entity_type: &String) -> String {
-    match entity_type.as_str() {
+fn get_learning_resource_type(entity_type: &str) -> String {
+    match entity_type {
         "article" | "course-page" => "Article",
         "course" => "Course",
         "text-exercise-group" | "text-exercise" => "Quiz",

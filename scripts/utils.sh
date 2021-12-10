@@ -3,7 +3,7 @@
 BOLD=$(tput bold)
 NORMAL=$(tput sgr0)
 CARGO_BACKGROUND_PID=
-WAIT_FOR_CARGO_TIMEOUT=60
+WAIT_FOR_CARGO_TIMEOUT=180
 
 function setup_server() {
   if ! server_is_running; then

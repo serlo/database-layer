@@ -20,25 +20,25 @@ mod entities_metadata_query {
                     }
                   ],
                   "id": "https://serlo.org/1495",
+                  "type": [
+                    "LearningResource",
+                    "Article"
+                  ],
+                  "dateCreated": "2014-03-01T20:36:44+00:00",
+                  "dateModified": "2014-10-31T15:56:50+00:00",
+                  "description": null,
                   "identifier": {
                     "type": "PropertyValue",
                     "propertyID": "UUID",
                     "value": 1495
                   },
-                  "type": [
-                    "LearningResource",
-                    "Article"
-                  ],
                   "learningResourceType": "Article",
-                  "name": "Addition",
-                  "description": null,
-                  "dateCreated": "2014-03-01T20:36:44+00:00",
-                  "dateModified": "2014-10-31T15:56:50+00:00",
-                  "publisher": "https://serlo.org/",
-                  "maintainer": "https://serlo.org/",
                   "license": {
                     "id": "https://creativecommons.org/licenses/by-sa/4.0/"
                   },
+                  "maintainer": "https://serlo.org/",
+                  "name": "Addition",
+                  "publisher": "https://serlo.org/",
                   "version": "https://serlo.org/32614"
                 }
               ]

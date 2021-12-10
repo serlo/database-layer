@@ -10,17 +10,17 @@ pub struct EntityMetadata {
     #[serde(rename = "@context")]
     context: serde_json::Value,
     id: String,
-    identifier: serde_json::Value,
     #[serde(rename = "type")]
     schema_type: Vec<String>,
-    learning_resource_type: String,
-    name: Option<String>,
-    description: Option<String>,
     date_created: String,
     date_modified: String,
+    description: Option<String>,
+    identifier: serde_json::Value,
+    learning_resource_type: String,
     license: serde_json::Value,
-    publisher: String,
     maintainer: String,
+    name: Option<String>,
+    publisher: String,
     version: String,
 }
 
@@ -73,31 +73,30 @@ impl EntityMetadata {
                     "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
                     { "@language": result.instance }
                 ]),
-                // TODO: Sollte "http" genutzt werden?!
-                id: get_iri(result.id as i32),
-                identifier: json!({
-                    "type": "PropertyValue",
-                    "propertyID": "UUID",
-                    "value": result.id as i32,
-                }),
                 schema_type: vec![
                     "LearningResource".to_string(),
                     get_learning_resource_type(&result.resource_type)
                 ],
-                learning_resource_type: get_learning_resource_type(&result.resource_type),
-                name: result.params.as_ref()
-                    .and_then(|params| params.get("title"))
-                    .and_then(|title| title.as_str())
-                    .map(|title| title.to_string()),
                 description: result.params.as_ref()
                     .and_then(|params| params.get("meta_description"))
                     .and_then(|title| title.as_str())
                     .map(|title| title.to_string()),
                 date_created: result.date_created.to_rfc3339(),
                 date_modified: result.date_modified.to_rfc3339(),
-                publisher: "https://serlo.org/".to_string(),
-                maintainer: "https://serlo.org/".to_string(),
+                id: get_iri(result.id as i32),
+                identifier: json!({
+                    "type": "PropertyValue",
+                    "propertyID": "UUID",
+                    "value": result.id as i32,
+                }),
+                learning_resource_type: get_learning_resource_type(&result.resource_type),
                 license: json!({"id": result.license_url}),
+                maintainer: "https://serlo.org/".to_string(),
+                name: result.params.as_ref()
+                    .and_then(|params| params.get("title"))
+                    .and_then(|title| title.as_str())
+                    .map(|title| title.to_string()),
+                publisher: "https://serlo.org/".to_string(),
                 version: get_iri(result.version.unwrap())
             })
             .collect()

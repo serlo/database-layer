@@ -15,11 +15,12 @@ pub struct EntityMetadata {
     date_created: String,
     date_modified: String,
     description: Option<String>,
+    headline: Option<String>,
     identifier: serde_json::Value,
     learning_resource_type: String,
     license: serde_json::Value,
     maintainer: String,
-    name: Option<String>,
+    name: String,
     publisher: String,
     version: String,
 }
@@ -68,36 +69,44 @@ impl EntityMetadata {
         ).fetch_all(executor)
             .await?
             .into_iter()
-            .map(|result| EntityMetadata {
-                context: json!([
-                    "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
-                    { "@language": result.instance }
-                ]),
-                schema_type: vec![
-                    "LearningResource".to_string(),
-                    get_learning_resource_type(&result.resource_type)
-                ],
-                description: result.params.as_ref()
-                    .and_then(|params| params.get("meta_description"))
-                    .and_then(|title| title.as_str())
-                    .map(|title| title.to_string()),
-                date_created: result.date_created.to_rfc3339(),
-                date_modified: result.date_modified.to_rfc3339(),
-                id: get_iri(result.id as i32),
-                identifier: json!({
-                    "type": "PropertyValue",
-                    "propertyID": "UUID",
-                    "value": result.id as i32,
-                }),
-                learning_resource_type: get_learning_resource_type(&result.resource_type),
-                license: json!({"id": result.license_url}),
-                maintainer: "https://serlo.org/".to_string(),
-                name: result.params.as_ref()
+            .map(|result| {
+                let title: Option<String> = result.params.as_ref()
                     .and_then(|params| params.get("title"))
                     .and_then(|title| title.as_str())
-                    .map(|title| title.to_string()),
-                publisher: "https://serlo.org/".to_string(),
-                version: get_iri(result.version.unwrap())
+                    .map(|title| title.to_string());
+                let id = get_iri(result.id as i32);
+                let learning_resource_type = get_learning_resource_type(&result.resource_type);
+                let name = title.clone().unwrap_or_else(|| format!("{}: {}", learning_resource_type, id));
+
+                EntityMetadata {
+                    context: json!([
+                        "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                        { "@language": result.instance }
+                    ]),
+                    schema_type: vec![
+                        "LearningResource".to_string(),
+                        get_learning_resource_type(&result.resource_type)
+                    ],
+                    description: result.params.as_ref()
+                        .and_then(|params| params.get("meta_description"))
+                        .and_then(|title| title.as_str())
+                        .map(|title| title.to_string()),
+                    date_created: result.date_created.to_rfc3339(),
+                    date_modified: result.date_modified.to_rfc3339(),
+                    headline: title,
+                    id,
+                    identifier: json!({
+                        "type": "PropertyValue",
+                        "propertyID": "UUID",
+                        "value": result.id as i32,
+                    }),
+                    learning_resource_type,
+                    license: json!({"id": result.license_url}),
+                    maintainer: "https://serlo.org/".to_string(),
+                    name,
+                    publisher: "https://serlo.org/".to_string(),
+                    version: get_iri(result.version.unwrap())
+                }
             })
             .collect()
         )

@@ -27,6 +27,7 @@ mod entities_metadata_query {
                   "dateCreated": "2014-03-01T20:36:44+00:00",
                   "dateModified": "2014-10-31T15:56:50+00:00",
                   "description": null,
+                  "headline": "Addition",
                   "identifier": {
                     "type": "PropertyValue",
                     "propertyID": "UUID",
@@ -44,6 +45,24 @@ mod entities_metadata_query {
               ]
             }),
         )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn default_value_for_property_name() {
+        let response = Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 20_000 }),
+        )
+        .execute()
+        .await;
+
+        assert_ok_with(response, |value| {
+            assert_eq!(
+                value["entities"][0]["name"],
+                "Quiz: https://serlo.org/20256"
+            )
+        })
         .await;
     }
 

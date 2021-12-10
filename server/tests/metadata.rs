@@ -33,6 +33,7 @@ mod entities_metadata_query {
                     "propertyID": "UUID",
                     "value": 1495
                   },
+                  "inLanguage": "de",
                   "learningResourceType": "Article",
                   "license": {
                     "id": "https://creativecommons.org/licenses/by-sa/4.0/"

@@ -58,9 +58,9 @@ pub mod entities_metadata_query {
             };
 
             let entities = match connection {
-                Connection::Pool(pool) => EntityMetadata::find_all(self, pool).await?,
+                Connection::Pool(pool) => EntityMetadata::query(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    EntityMetadata::find_all(self, transaction).await?
+                    EntityMetadata::query(self, transaction).await?
                 }
             };
 

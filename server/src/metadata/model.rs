@@ -23,7 +23,7 @@ pub struct EntityMetadata {
 }
 
 impl EntityMetadata {
-    pub async fn find_all<'a, E>(
+    pub async fn query<'a, E>(
         payload: &Payload,
         executor: E,
     ) -> Result<Vec<EntityMetadata>, sqlx::Error>

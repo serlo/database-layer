@@ -20,6 +20,7 @@ pub struct EntityMetadata {
     date_modified: String,
     license: serde_json::Value,
     publisher: String,
+    maintainer: String,
     version: String,
 }
 
@@ -95,6 +96,7 @@ impl EntityMetadata {
                 date_created: result.date_created.to_rfc3339(),
                 date_modified: result.date_modified.to_rfc3339(),
                 publisher: "https://serlo.org/".to_string(),
+                maintainer: "https://serlo.org/".to_string(),
                 license: json!({"id": result.license_url}),
                 version: get_iri(result.version.unwrap())
             })

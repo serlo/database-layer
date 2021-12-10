@@ -35,6 +35,7 @@ mod entities_metadata_query {
                   "dateCreated": "2014-03-01T20:36:44+00:00",
                   "dateModified": "2014-10-31T15:56:50+00:00",
                   "publisher": "https://serlo.org/",
+                  "maintainer": "https://serlo.org/",
                   "license": {
                     "id": "https://creativecommons.org/licenses/by-sa/4.0/"
                   },

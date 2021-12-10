@@ -24,6 +24,14 @@ impl From<sqlx::Error> for Error {
     }
 }
 
+impl From<serde_json::Error> for Error {
+    fn from(error: serde_json::Error) -> Self {
+        Error::InternalServerError {
+            error: Box::new(error),
+        }
+    }
+}
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[async_trait]

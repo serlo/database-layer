@@ -1,7 +1,8 @@
 use crate::database::Executor;
 use crate::datetime::DateTime;
-use crate::user::messages::user_activity_by_type_query;
-use crate::user::messages::user_delete_bots_mutation;
+use crate::user::messages::{
+    potential_spam_users_query, user_activity_by_type_query, user_delete_bots_mutation,
+};
 use std::env;
 
 pub struct User {}
@@ -62,12 +63,12 @@ impl User {
                         SELECT CASE
                             WHEN event_id = 5 THEN "edits"
                             WHEN event_id in (6,11) THEN "reviews"
-                            WHEN event_id in (9,14,16) THEN "comments"
+                            WHEN event_id in (8,9,14,16) THEN "comments"
                             ELSE "taxonomy"
                         END AS type
                         FROM event_log
                         WHERE actor_id = ?
-                            AND event_id IN (5,6,11,9,14,16,1,2,12,15,17)
+                            AND event_id IN (5,6,11,8,9,14,16,1,2,12,15,17)
                     ) events
                 GROUP BY events.type;
             "#,
@@ -95,13 +96,23 @@ impl User {
     pub async fn delete_bot<'a, E>(
         payload: &user_delete_bots_mutation::Payload,
         executor: E,
-    ) -> Result<(), sqlx::Error>
+    ) -> Result<Vec<String>, sqlx::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
+        let mut email_hashes: Vec<String> = Vec::new();
 
         for bot_id in &payload.bot_ids {
+            let result = sqlx::query!("select email from user where id = ?", bot_id)
+                .fetch_optional(&mut transaction)
+                .await?
+                .map(|user| user.email);
+
+            if let Some(email) = result {
+                email_hashes.push(format!("{:x}", md5::compute(email.as_bytes())).to_string());
+            }
+
             sqlx::query!(
                 r#"DELETE FROM uuid WHERE id = ? AND discriminator = 'user'"#,
                 bot_id,
@@ -112,7 +123,37 @@ impl User {
 
         transaction.commit().await?;
 
-        Ok(())
+        Ok(email_hashes)
+    }
+
+    pub async fn potential_spam_users<'a, E>(
+        payload: &potential_spam_users_query::Payload,
+        executor: E,
+    ) -> Result<Vec<i32>, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        println!("{:?}", payload.after);
+        Ok(sqlx::query!(
+            r#"
+                select user.id
+                from user
+                where
+                    user.description is not null
+                    and user.description != "NULL"
+                    and (? is null or user.id < ?)
+                order by user.id desc
+                limit ?
+            "#,
+            payload.after,
+            payload.after,
+            payload.first,
+        )
+        .fetch_all(executor)
+        .await?
+        .into_iter()
+        .map(|x| x.id as i32)
+        .collect())
     }
 
     fn now() -> DateTime {

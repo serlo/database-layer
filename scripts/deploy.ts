@@ -41,9 +41,9 @@ function buildDockerImage({
   Dockerfile,
   context,
 }: DockerImageOptions) {
-  if (!semver.valid(version)) {
-    return
-  }
+  const semanticVersion = semver.parse(version)
+
+  if (semanticVersion === null) throw new Error(`illegal version ${version}`)
 
   const remoteName = `eu.gcr.io/serlo-shared/${name}`
   const result = spawnSync(
@@ -69,13 +69,17 @@ function buildDockerImage({
     return
   }
 
+  const targetVersions = getTargetVersions(semanticVersion)
+  const remoteTags = toTags(remoteName, targetVersions)
+  const tags = [...remoteTags, ...toTags(name, targetVersions)]
+
   spawnSync(
     'docker',
     [
       'build',
       '-f',
       Dockerfile,
-      ...R.flatten(getTags(version).map((tag) => ['-t', `${name}:${tag}`])),
+      ...R.flatten(tags.map((tag) => ['-t', tag])),
       context,
     ],
     {
@@ -83,25 +87,28 @@ function buildDockerImage({
     }
   )
 
-  const remoteTags = R.map((tag) => `${remoteName}:${tag}`, getTags(version))
   remoteTags.forEach((remoteTag) => {
     console.log('Pushing', remoteTag)
-    spawnSync('docker', ['tag', `${name}:latest`, remoteTag], {
-      stdio: 'inherit',
-    })
     spawnSync('docker', ['push', remoteTag], { stdio: 'inherit' })
   })
 }
 
-function getTags(version: string) {
-  return [
-    'latest',
-    semver.major(version),
-    `${semver.major(version)}.${semver.minor(version)}`,
-    `${semver.major(version)}.${semver.minor(version)}.${semver.patch(
-      version
-    )}`,
-  ]
+function getTargetVersions(version: semver.SemVer) {
+  const { major, minor, patch, prerelease } = version
+
+  return prerelease.length > 0
+    ? [
+        'next',
+        ...R.range(0, prerelease.length).map(
+          (i) =>
+            `${major}.${minor}.${patch}-${prerelease.slice(0, i + 1).join('.')}`
+        ),
+      ]
+    : ['latest', `${major}`, `${major}.${minor}`, `${major}.${minor}.${patch}`]
+}
+
+function toTags(name: string, versions: string[]) {
+  return versions.map((version) => `${name}:${version}`)
 }
 
 interface DockerImageOptions {

@@ -51,8 +51,8 @@ async function exec(): Promise<void> {
         ],
       },
       {
-        tagName: 'v0.3.29',
-        name: '0.3.29',
+        tagName: 'v0.3.30',
+        name: '0.3.30',
         date: "2021-12-16",
         added: [
             'Add `EntitiesQuery`.'

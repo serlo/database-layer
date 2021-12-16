@@ -21,34 +21,46 @@ async function exec(): Promise<void> {
         tagName: 'v0.3.25',
         name: '0.3.25',
         date: '2021-10-20',
-        added: ['Add mutation `UserDeleteBotsMutation`'],
+        added: ['Add `UserDeleteBotsMutation`.'],
       },
       {
         tagName: 'v0.3.26',
         name: '0.3.26',
         date: '2021-11-01',
         added: [
-          'Add query `UserPotentialSpamQuery`',
-          '`UuidQuery`: Add `ExerciseGroup.cohesive`',
-          '`UuidQuery`: Add `TaxonomyTerm.taxonomyId`',
+          'Add `UserPotentialSpamQuery`.',
+        ],
+        changed: [
+          ['`UuidQuery`', 'Add `ExerciseGroup.cohesive`'],
+          ['`UuidQuery`', 'Add `TaxonomyTerm.taxonomyId`'],
         ],
         fixed: [
-          'Creation of threads shall count towards `comments` count in `UserActivityByTypeQuery`',
+          'Creation of threads now counts towards `comments` in `UserActivityByTypeQuery`.',
         ],
         internal: [
-          'Update to new stable rust version (`1.56.0`)',
-          'Begin of refactoring of integration tests',
-          'Add support for deploying prereleases',
+          'Update to Rust 1.56.0.',
+          'Add support for deploying prereleases.',
         ],
       },
       {
         tagName: 'v0.3.27',
         name: '0.3.27',
         date: '2021-11-07',
-        added: [
-          '`UserDeleteBotsMutation` also returns md5 hashes of removed user',
+        changed: [
+          '`UserDeleteBotsMutation` now also returns md5 hashes of removed users.',
         ],
       },
+      {
+        tagName: 'v0.3.28',
+        name: '0.3.28',
+        date: "2021-12-16",
+        added: [
+            'Add `EntitiesQuery`.'
+        ],
+        internal: [
+          'Update to Rust 1.57.0.',
+        ]
+      }
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

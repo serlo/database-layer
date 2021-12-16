@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.28](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.27..v0.3.28) - December 16, 2021
+## [0.3.29](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.27..v0.3.29) - December 16, 2021
 
 ### Added
 

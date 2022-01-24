@@ -1,9 +1,6 @@
 use crate::database::Executor;
 use crate::datetime::DateTime;
-use crate::user::messages::{
-    potential_spam_users_query, user_activity_by_type_query, user_delete_bots_mutation,
-    user_set_description_mutation,
-};
+use crate::user::messages::{potential_spam_users_query, user_activity_by_type_query, user_delete_bots_mutation, user_set_description_mutation, user_set_email_mutation};
 use std::env;
 
 pub struct User {}
@@ -177,6 +174,23 @@ impl User {
         sqlx::query!(
             "update user set description = ? where id = ?",
             payload.description,
+            payload.user_id
+        )
+        .execute(executor)
+        .await?;
+        Ok(())
+    }
+
+    pub async fn set_email<'a, E>(
+        payload: &user_set_email_mutation::Payload,
+        executor: E,
+    ) -> Result<(), sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        sqlx::query!(
+            "update user set email = ? where id = ?",
+            payload.email,
             payload.user_id
         )
         .execute(executor)

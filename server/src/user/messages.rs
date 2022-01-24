@@ -18,6 +18,7 @@ pub enum UserMessage {
     UserActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
     UserPotentialSpamUsersQuery(potential_spam_users_query::Payload),
+    UserSetDescriptionMutation(user_set_description_mutation::Payload),
 }
 
 #[async_trait]
@@ -47,6 +48,11 @@ impl MessageResponder for UserMessage {
             UserMessage::UserPotentialSpamUsersQuery(payload) => {
                 payload
                     .handle("UserPotentialSpamUsersQuery", connection)
+                    .await
+            }
+            UserMessage::UserSetDescriptionMutation(payload) => {
+                payload
+                    .handle("UserSetDescriptionMutation", connection)
                     .await
             }
         }
@@ -196,6 +202,38 @@ pub mod potential_spam_users_query {
                     }
                 },
             })
+        }
+    }
+}
+
+pub mod user_set_description_mutation {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: i32,
+        pub description: Option<String>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub success: bool,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => User::set_description(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    User::set_description(self, transaction).await?
+                }
+            };
+            Ok(Output { success: true })
         }
     }
 }

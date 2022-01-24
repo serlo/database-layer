@@ -107,14 +107,14 @@ mod user_set_description_mutation {
         let mut transaction = begin_transaction().await;
         let user_id = create_new_test_user(&mut transaction).await.unwrap();
 
-        let response = Message::new(
+        let mutation_response = Message::new(
             "UserSetDescriptionMutation",
-            json!({ "userId": [user_id], "description": "new description".to_string() }),
+            json!({ "userId": user_id, "description": "new description".to_string() }),
         )
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true })).await;
+        assert_ok(mutation_response, json!({ "success": true })).await;
 
         let query_response = Message::new("UuidQuery", json!({ "id": user_id }))
             .execute_on(&mut transaction)

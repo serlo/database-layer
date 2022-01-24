@@ -213,7 +213,7 @@ pub mod user_set_description_mutation {
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub user_id: i32,
-        pub description: Option<String>,
+        pub description: String,
     }
 
     #[derive(Debug, Serialize, Deserialize)]

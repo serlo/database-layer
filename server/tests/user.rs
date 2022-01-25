@@ -98,3 +98,31 @@ mod user_potential_spam_users_query {
         assert_bad_request(response, "parameter `first` is too high").await;
     }
 }
+
+mod user_set_description_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn updates_user_description() {
+        let mut transaction = begin_transaction().await;
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+
+        let mutation_response = Message::new(
+            "UserSetDescriptionMutation",
+            json!({ "userId": user_id, "description": "new description".to_string() }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok(mutation_response, json!({ "success": true })).await;
+
+        let query_response = Message::new("UuidQuery", json!({ "id": user_id }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["description"], "new description".to_string())
+        })
+        .await;
+    }
+}

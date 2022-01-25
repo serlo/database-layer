@@ -703,6 +703,31 @@
       ]
     }
   },
+  "3fc71f9de3677a7918e018e0138d2f3a453c7b58a2b10341e7dc42f8a1063467": {
+    "query": "SELECT email FROM user WHERE id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "email",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4101
+            },
+            "char_set": 224,
+            "max_size": 508
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "436603084c0bc754c6d6baa29d1eb0d64f1ee26047a4b905585949e5ea544b15": {
     "query": "\n                SELECT trashed, username, date, last_login, description\n                    FROM user\n                    JOIN uuid ON user.id = uuid.id\n                    WHERE user.id = ?\n            ",
     "describe": {

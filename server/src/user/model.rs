@@ -1,6 +1,9 @@
 use crate::database::Executor;
 use crate::datetime::DateTime;
-use crate::user::messages::{potential_spam_users_query, user_activity_by_type_query, user_delete_bots_mutation, user_set_description_mutation, user_set_email_mutation};
+use crate::user::messages::{
+    potential_spam_users_query, user_activity_by_type_query, user_delete_bots_mutation,
+    user_set_description_mutation, user_set_email_mutation,
+};
 use std::env;
 
 pub struct User {}

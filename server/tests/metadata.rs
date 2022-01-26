@@ -35,14 +35,16 @@ mod entities_metadata_query {
                   },
                   "isAccessibleForFree": true,
                   "isFamilyFriendly": true,
-                  "inLanguage": "de",
+                  "inLanguage": [ "de" ],
                   "learningResourceType": "Article",
                   "license": {
                     "id": "https://creativecommons.org/licenses/by-sa/4.0/"
                   },
                   "maintainer": "https://serlo.org/",
                   "name": "Addition",
-                  "publisher": "https://serlo.org/",
+                  "publisher": [{
+                      "id": "https://serlo.org/"
+                  }],
                   "version": "https://serlo.org/32614"
                 }
               ]

@@ -17,14 +17,14 @@ pub struct EntityMetadata {
     description: Option<String>,
     headline: Option<String>,
     identifier: serde_json::Value,
-    in_language: String,
+    in_language: Vec<String>,
     is_accessible_for_free: bool,
     is_family_friendly: bool,
     learning_resource_type: String,
     license: serde_json::Value,
     maintainer: String,
     name: String,
-    publisher: String,
+    publisher: serde_json::Value,
     version: String,
 }
 
@@ -103,14 +103,16 @@ impl EntityMetadata {
                         "propertyID": "UUID",
                         "value": result.id as i32,
                     }),
-                    in_language: result.instance,
+                    in_language: vec![result.instance],
                     is_accessible_for_free: true,
                     is_family_friendly: true,
                     learning_resource_type,
                     license: json!({"id": result.license_url}),
                     maintainer: "https://serlo.org/".to_string(),
                     name,
-                    publisher: "https://serlo.org/".to_string(),
+                    publisher: json!([
+                        { "id": "https://serlo.org/".to_string() }
+                    ]),
                     version: get_iri(result.version.unwrap())
                 }
             })

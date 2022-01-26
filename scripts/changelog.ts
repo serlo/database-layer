@@ -27,9 +27,7 @@ async function exec(): Promise<void> {
         tagName: 'v0.3.26',
         name: '0.3.26',
         date: '2021-11-01',
-        added: [
-          'Add `UserPotentialSpamQuery`.',
-        ],
+        added: ['Add `UserPotentialSpamQuery`.'],
         changed: [
           ['`UuidQuery`', 'Add `ExerciseGroup.cohesive`'],
           ['`UuidQuery`', 'Add `TaxonomyTerm.taxonomyId`'],
@@ -53,14 +51,20 @@ async function exec(): Promise<void> {
       {
         tagName: 'v0.3.30',
         name: '0.3.30',
-        date: "2021-12-16",
+        date: '2021-12-16',
+        added: ['Add `EntitiesQuery`.'],
+        internal: ['Update to Rust 1.57.0.'],
+      },
+      {
+        tagName: 'v0.3.31',
+        name: '0.3.31',
+        date: '2022-01-27',
         added: [
-            'Add `EntitiesQuery`.'
+          'add endpoint `UserSetEmailMutation` (#165)',
+          'add endpoint `UserSetDescriptionMutation` (#166)',
         ],
-        internal: [
-          'Update to Rust 1.57.0.',
-        ]
-      }
+        fixed: ['Fix `inLanguage` and `publisher` in metadata api (#167)'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

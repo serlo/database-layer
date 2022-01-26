@@ -2,7 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.29](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.27..v0.3.29) - December 16, 2021
+## [0.3.31](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.30..v0.3.31) - January 27, 2022
+
+### Added
+
+- add endpoint `UserSetEmailMutation` (#165)
+
+- add endpoint `UserSetDescriptionMutation` (#166)
+
+### Fixed
+
+- Fix `inLanguage` and `publisher` in metadata api (#167)
+
+## [0.3.30](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.27..v0.3.30) - December 16, 2021
 
 ### Added
 

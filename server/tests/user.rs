@@ -126,3 +126,27 @@ mod user_set_description_mutation {
         .await;
     }
 }
+
+mod user_set_email_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn updates_user_email() {
+        let mut transaction = begin_transaction().await;
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+        let new_email = "user@example.com".to_string();
+
+        let mutation_response = Message::new(
+            "UserSetEmailMutation",
+            json!({ "userId": user_id, "email": &new_email }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok(mutation_response, json!({ "success": true })).await;
+
+        let email = get_email(user_id, &mut transaction).await.unwrap();
+
+        assert_eq!(email, new_email)
+    }
+}

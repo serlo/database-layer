@@ -19,6 +19,7 @@ pub enum UserMessage {
     UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
     UserPotentialSpamUsersQuery(potential_spam_users_query::Payload),
     UserSetDescriptionMutation(user_set_description_mutation::Payload),
+    UserSetEmailMutation(user_set_email_mutation::Payload),
 }
 
 #[async_trait]
@@ -54,6 +55,9 @@ impl MessageResponder for UserMessage {
                 payload
                     .handle("UserSetDescriptionMutation", connection)
                     .await
+            }
+            UserMessage::UserSetEmailMutation(payload) => {
+                payload.handle("UserSetEmailMutation", connection).await
             }
         }
     }
@@ -232,6 +236,36 @@ pub mod user_set_description_mutation {
                 Connection::Transaction(transaction) => {
                     User::set_description(self, transaction).await?
                 }
+            };
+            Ok(Output { success: true })
+        }
+    }
+}
+
+pub mod user_set_email_mutation {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: i32,
+        pub email: String,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub success: bool,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => User::set_email(self, pool).await?,
+                Connection::Transaction(transaction) => User::set_email(self, transaction).await?,
             };
             Ok(Output { success: true })
         }

@@ -138,6 +138,16 @@ where
     Ok(())
 }
 
+pub async fn get_email<'a, E>(user_id: i32, executor: E) -> Result<String, sqlx::Error>
+where
+    E: sqlx::mysql::MySqlExecutor<'a>,
+{
+    Ok(sqlx::query!("SELECT email FROM user WHERE id = ?", user_id)
+        .fetch_one(executor)
+        .await?
+        .email as String)
+}
+
 pub async fn set_entity_revision_field<'a>(
     revision_id: i32,
     field: &str,

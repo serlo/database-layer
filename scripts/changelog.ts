@@ -16,6 +16,11 @@ exec()
 
 async function exec(): Promise<void> {
   const content = await generateChangelog({
+    repository: {
+      firstCommit: 'a1d5d8261d84ae546914696c363e92ed83b6a17f',
+      owner: 'serlo',
+      repo: 'serlo.org-database-layer',
+    },
     releases: [
       {
         tagName: 'v0.3.25',

@@ -256,6 +256,7 @@ pub mod user_set_email_mutation {
     #[serde(rename_all = "camelCase")]
     pub struct Output {
         pub success: bool,
+        pub username: String,
     }
 
     #[async_trait]
@@ -263,11 +264,14 @@ pub mod user_set_email_mutation {
         type Output = Output;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
+            let username = match connection {
                 Connection::Pool(pool) => User::set_email(self, pool).await?,
                 Connection::Transaction(transaction) => User::set_email(self, transaction).await?,
             };
-            Ok(Output { success: true })
+            Ok(Output {
+                success: true,
+                username,
+            })
         }
     }
 }

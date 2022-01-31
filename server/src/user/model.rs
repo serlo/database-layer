@@ -187,17 +187,24 @@ impl User {
     pub async fn set_email<'a, E>(
         payload: &user_set_email_mutation::Payload,
         executor: E,
-    ) -> Result<(), sqlx::Error>
+    ) -> Result<String, sqlx::Error>
     where
         E: Executor<'a>,
     {
+        let mut transaction = executor.begin().await?;
+
+        let username = sqlx::query!("select username from user where id = ?", payload.user_id)
+            .fetch_one(&mut transaction)
+            .await?
+            .username;
         sqlx::query!(
             "update user set email = ? where id = ?",
             payload.email,
             payload.user_id
         )
-        .execute(executor)
+        .execute(&mut transaction)
         .await?;
-        Ok(())
+        transaction.commit().await?;
+        Ok(username)
     }
 }

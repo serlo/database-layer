@@ -88,6 +88,16 @@
       ]
     }
   },
+  "08d52f52a3f403c1226396383f9810f0e81653e16d2e88d18c9dcf492ef5d2ba": {
+    "query": "\n                INSERT INTO entity_revision (id, author_id, repository_id)\n                    VALUES (?, ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
   "09965570050adbd7f9f7b6e158a1b5e95d13eab605d25b207bc9898dd9a6fe47": {
     "query": "\n                SELECT id\n                    FROM comment\n                    WHERE parent_id = ?\n            ",
     "describe": {
@@ -840,6 +850,16 @@
       "nullable": []
     }
   },
+  "48bc89801f00da61369bfa2f0d1e5ade10b0b042e3fc82ece4932e0d8c1ce87d": {
+    "query": "\n                    INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                        VALUES ('meta_description', ?, ?)\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
   "4bd4cb77bc482eddecb3feb2065aab19c8e282612f2b01d46fbdaa36939337fa": {
     "query": "\n                SELECT l.default, l.title, l.url, l.content, l.agreement, l.icon_href, i.subdomain\n                    FROM license l\n                    JOIN instance i ON i.id = l.instance_id\n                    WHERE l.id = ?\n            ",
     "describe": {
@@ -1213,6 +1233,16 @@
       "columns": [],
       "parameters": {
         "Right": 5
+      },
+      "nullable": []
+    }
+  },
+  "7e34c538baab3f54b402322473b9d7f730122c6023ef4b55f73021d74410e362": {
+    "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, 'entityRevision')\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 0
       },
       "nullable": []
     }
@@ -1782,6 +1812,16 @@
       ]
     }
   },
+  "ab73f1b978a2e63d3f3d65b695e6228ff06edb12993dd4e206f28e638d6783e0": {
+    "query": "\n                INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                    VALUES ('content', ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
   "b67a6cd1168e030043fc309da009c241d88b7543ce11598b7e183086dd2f5077": {
     "query": "\n                SELECT entity_id\n                    FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n                    ORDER BY position ASC\n            ",
     "describe": {
@@ -2203,6 +2243,16 @@
       "nullable": []
     }
   },
+  "dbf5f15824c3f3979c9d6a6a7cdb721e0815d6d18a2be9bdbc8fa103d5b58688": {
+    "query": "\n                INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                    VALUES ('title', ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
   "de8954840e9300a85d37e36f88909aac12801755043e241637bca623ed0ed245": {
     "query": "\n                SELECT term_taxonomy_id as id\n                    FROM (\n                        SELECT term_taxonomy_id, entity_id FROM term_taxonomy_entity\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l ON t.entity_id = l.parent_id\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l2.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l1 ON t.entity_id = l1.parent_id\n                            JOIN entity_link l2 ON l2.parent_id = l1.child_id\n                    ) u\n                    WHERE entity_id = ?\n            ",
     "describe": {
@@ -2226,6 +2276,16 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "e03b7f4104d600d1eafd17a446bf8d2974eda195447abe0506dd5d9a8a5647c9": {
+    "query": "\n                    INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                        VALUES ('meta_title', ?, ?)\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
     }
   },
   "e301aa5d422549cc37a921cfb491915ffe39e03b48bfc5dd7d2c6316a3fca185": {
@@ -2618,6 +2678,16 @@
         false,
         false
       ]
+    }
+  },
+  "f83bf7d1b0caa47293365e99a7c20ea64a89cca9dabfe35983de1a73df478a04": {
+    "query": "\n                INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                    VALUES ('changes', ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
     }
   },
   "fc0ca0f5bbca56646e9a9cbad7d897b684ca6301e1c63c108d1497592ef3f34b": {

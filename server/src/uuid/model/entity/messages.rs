@@ -3,8 +3,8 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload, EntityRejectRevisionError,
-    EntityRejectRevisionPayload,
+    Entity, EntityAddRevisionError, EntityAddRevisionPayload, EntityCheckoutRevisionError,
+    EntityCheckoutRevisionPayload, EntityRejectRevisionError, EntityRejectRevisionPayload,
 };
 use crate::database::Connection;
 use crate::message::MessageResponder;
@@ -12,6 +12,7 @@ use crate::message::MessageResponder;
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum EntityMessage {
+    EntityAddRevisionMutation(EntityAddRevisionMutation),
     EntityCheckoutRevisionMutation(EntityCheckoutRevisionMutation),
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
@@ -22,6 +23,7 @@ impl MessageResponder for EntityMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
+            EntityMessage::EntityAddRevisionMutation(message) => message.handle(connection).await,
             EntityMessage::EntityCheckoutRevisionMutation(message) => {
                 message.handle(connection).await
             }
@@ -29,6 +31,80 @@ impl MessageResponder for EntityMessage {
                 message.handle(connection).await
             }
             EntityMessage::UnrevisedEntitiesQuery(message) => message.handle(connection).await,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EntityAddRevisionMutation {
+    pub changes: String,
+    pub content: String,
+    pub needs_review: bool,
+    pub subscribe_this_by_email: bool,
+    pub subscribe_this: bool,
+    pub entity_id: i32,
+    pub meta_description: Option<String>,
+    pub meta_title: Option<String>,
+    pub title: String,
+    pub user_id: i32,
+}
+
+#[async_trait]
+impl MessageResponder for EntityAddRevisionMutation {
+    #[allow(clippy::async_yields_async)]
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let payload = EntityAddRevisionPayload {
+            changes: self.changes.clone(),
+            content: self.content.clone(),
+            needs_review: self.needs_review,
+            subscribe_this_by_email: self.subscribe_this_by_email,
+            subscribe_this: self.subscribe_this,
+            entity_id: self.entity_id,
+            meta_description: self.meta_description.clone(),
+            meta_title: self.meta_title.clone(),
+            title: self.title.clone(),
+            user_id: self.user_id,
+        };
+
+        let entity_revision = match connection {
+            Connection::Pool(pool) => Entity::add_revision(payload, pool).await,
+            Connection::Transaction(transaction) => {
+                Entity::add_revision(payload, transaction).await
+            }
+        };
+
+        match entity_revision {
+            Ok(_) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(EntityRevisionData {
+                    success: true,
+                    reason: None,
+                }),
+            Err(e) => {
+                println!("/add-revision: {:?}", e);
+                match e {
+                    EntityAddRevisionError::DatabaseError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    EntityAddRevisionError::EventError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    EntityAddRevisionError::UuidError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    EntityAddRevisionError::InvalidRevision { .. } => HttpResponse::BadRequest()
+                        .json(EntityRevisionData {
+                            success: false,
+                            reason: Some("revision invalid".to_string()),
+                        }),
+                    EntityAddRevisionError::InvalidRepository { .. } => HttpResponse::BadRequest()
+                        .json(EntityRevisionData {
+                            success: false,
+                            reason: Some("repository invalid".to_string()),
+                        }),
+                }
+            }
         }
     }
 }

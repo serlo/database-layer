@@ -405,6 +405,170 @@ impl Entity {
     }
 }
 
+impl Entity {
+    pub async fn add_revision<'a, E>(
+        payload: EntityAddRevisionPayload,
+        executor: E,
+    ) -> Result<Uuid, EntityAddRevisionError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        // TODO: validate if entity exists
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (trashed, discriminator)
+                    VALUES (0, 'entityRevision')
+            "#,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let entity_revision_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO entity_revision (id, author_id, repository_id)
+                    VALUES (?, ?, ?)
+            "#,
+            entity_revision_id,
+            payload.user_id,
+            payload.entity_id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        // TODO: put the fields insertions into EntityAddRevisionPayload?
+        // TODO: Only add fields that are supported by each type?
+        sqlx::query!(
+            r#"
+                INSERT INTO entity_revision_field (field, value, entity_revision_id)
+                    VALUES ('changes', ?, ?)
+            "#,
+            payload.changes,
+            entity_revision_id
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO entity_revision_field (field, value, entity_revision_id)
+                    VALUES ('title', ?, ?)
+            "#,
+            payload.title,
+            entity_revision_id
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO entity_revision_field (field, value, entity_revision_id)
+                    VALUES ('content', ?, ?)
+            "#,
+            payload.content,
+            entity_revision_id
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        if payload.meta_title.is_some() {
+            sqlx::query!(
+                r#"
+                    INSERT INTO entity_revision_field (field, value, entity_revision_id)
+                        VALUES ('meta_title', ?, ?)
+                "#,
+                payload.meta_title.unwrap(),
+                entity_revision_id
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        if payload.meta_description.is_some() {
+            sqlx::query!(
+                r#"
+                    INSERT INTO entity_revision_field (field, value, entity_revision_id)
+                        VALUES ('meta_description', ?, ?)
+                "#,
+                payload.meta_description.unwrap(),
+                entity_revision_id
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        // TODO: handle subscribe_this + subscribe_this_by_email and needs_review
+        // TODO: handle needs_review
+        // TODO: trigger event
+
+        // It would be better to return an EntityRevision, instead of a Uuid
+        let uuid =
+            EntityRevision::fetch_via_transaction(entity_revision_id, &mut transaction).await?;
+
+        transaction.commit().await?;
+
+        Ok(uuid)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EntityAddRevisionPayload {
+    pub changes: String,
+    pub content: String,
+    pub needs_review: bool,
+    pub subscribe_this_by_email: bool,
+    pub subscribe_this: bool,
+    pub entity_id: i32,
+    pub meta_description: Option<String>,
+    pub meta_title: Option<String>,
+    pub title: String,
+    pub user_id: i32,
+}
+
+#[derive(Error, Debug)]
+pub enum EntityAddRevisionError {
+    #[error("Revision could not be added because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("Revision could not be added because of an event error: {inner:?}.")]
+    EventError { inner: EventError },
+    #[error("Revision could not be added because of an UUID error: {inner:?}.")]
+    UuidError { inner: UuidError },
+    #[error("Revision addition failed because the provided UUID is not a revision: {uuid:?}.")]
+    InvalidRevision { uuid: Uuid },
+    #[error("Revision addition failed because its repository is invalid: {uuid:?}.")]
+    InvalidRepository { uuid: Uuid },
+}
+impl From<sqlx::Error> for EntityAddRevisionError {
+    fn from(inner: sqlx::Error) -> Self {
+        Self::DatabaseError { inner }
+    }
+}
+
+impl From<UuidError> for EntityAddRevisionError {
+    fn from(error: UuidError) -> Self {
+        match error {
+            UuidError::DatabaseError { inner } => inner.into(),
+            inner => Self::UuidError { inner },
+        }
+    }
+}
+
+impl From<EventError> for EntityAddRevisionError {
+    fn from(error: EventError) -> Self {
+        match error {
+            EventError::DatabaseError { inner } => inner.into(),
+            inner => Self::EventError { inner },
+        }
+    }
+}
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntityCheckoutRevisionPayload {
@@ -672,6 +836,7 @@ impl Entity {
     }
 }
 
+// TODO? move tests to test folders
 #[cfg(test)]
 mod tests {
     use chrono::Duration;
@@ -683,6 +848,8 @@ mod tests {
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
     use crate::uuid::{ConcreteUuid, Uuid, UuidFetcher};
+
+    // TODO: test add_revision
 
     #[actix_rt::test]
     async fn checkout_revision() {

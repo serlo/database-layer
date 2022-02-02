@@ -135,6 +135,13 @@ mod user_set_email_mutation {
         let mut transaction = begin_transaction().await;
         let user_id = create_new_test_user(&mut transaction).await.unwrap();
         let new_email = "user@example.com".to_string();
+        let user = get_json(
+            Message::new("UuidQuery", json!({ "id": user_id }))
+                .execute_on(&mut transaction)
+                .await,
+        )
+        .await;
+        let username = user.get("username").unwrap().as_str().unwrap();
 
         let mutation_response = Message::new(
             "UserSetEmailMutation",
@@ -143,7 +150,11 @@ mod user_set_email_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(mutation_response, json!({ "success": true })).await;
+        assert_ok(
+            mutation_response,
+            json!({ "success": true, "username": username }),
+        )
+        .await;
 
         let email = get_email(user_id, &mut transaction).await.unwrap();
 

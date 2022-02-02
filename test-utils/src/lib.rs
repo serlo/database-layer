@@ -8,10 +8,6 @@ use server::message::{Message as ServerMessage, MessageResponder};
 
 pub use serde_json::{json, Value};
 
-pub async fn begin_transaction<'a>() -> sqlx::Transaction<'a, sqlx::MySql> {
-    create_database_pool().await.unwrap().begin().await.unwrap()
-}
-
 pub struct Message<'a> {
     message_type: &'a str,
     payload: Value,
@@ -63,12 +59,16 @@ pub fn assert_has_length(value: &Value, length: usize) {
     assert_eq!(value.as_array().unwrap().len(), length);
 }
 
+pub async fn begin_transaction<'a>() -> sqlx::Transaction<'a, sqlx::MySql> {
+    create_database_pool().await.unwrap().begin().await.unwrap()
+}
+
 async fn assert_response_is(response: HttpResponse, expected_status: u16, expected_result: Value) {
     assert_eq!(response.status(), expected_status);
     assert_eq!(get_json(response).await, expected_result);
 }
 
-async fn get_json(response: HttpResponse) -> Value {
+pub async fn get_json(response: HttpResponse) -> Value {
     from_slice(&to_bytes(response.into_body()).await.unwrap()).unwrap()
 }
 

@@ -1106,6 +1106,31 @@
       ]
     }
   },
+  "6d0e250fe7d462ed870bb11a30df15c8ee67c71cf963ccfc8fc85f2915df0163": {
+    "query": "select username from user where id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "username",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 5
+            },
+            "char_set": 224,
+            "max_size": 128
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "6e6f238121fd4dc0bebe9ca259e0ab7c864b1b8c257078ddbb172e90ea0c64b8": {
     "query": "SELECT id FROM instance WHERE subdomain = ?",
     "describe": {

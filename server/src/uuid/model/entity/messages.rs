@@ -81,9 +81,9 @@ impl MessageResponder for EntityAddRevisionMutation {
                     success: true,
                     reason: None,
                 }),
-            Err(e) => {
-                println!("/add-revision: {:?}", e);
-                match e {
+            Err(error) => {
+                println!("/add-revision: {:?}", error);
+                match error {
                     EntityAddRevisionError::DatabaseError { .. } => {
                         HttpResponse::InternalServerError().finish()
                     }

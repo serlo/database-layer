@@ -842,14 +842,77 @@ mod tests {
     use chrono::Duration;
 
     use super::{
-        Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload,
-        EntityRejectRevisionError, EntityRejectRevisionPayload, EntityRevision,
+        Entity, EntityAddRevisionPayload, EntityCheckoutRevisionError,
+        EntityCheckoutRevisionPayload, EntityRejectRevisionError, EntityRejectRevisionPayload,
+        EntityRevision,
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
     use crate::uuid::{ConcreteUuid, Uuid, UuidFetcher};
 
-    // TODO: test add_revision
+    #[actix_rt::test]
+    async fn add_revision() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Entity::add_revision(
+            EntityAddRevisionPayload {
+                changes: "test changes".to_string(),
+                content: "test content".to_string(),
+                needs_review: true,
+                subscribe_this_by_email: false,
+                subscribe_this: false,
+                entity_id: 1495,
+                meta_description: Some("test meta-description".to_string()),
+                meta_title: Some("test meta-title".to_string()),
+                title: "test title".to_string(),
+                user_id: 1,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        // to get the last revision. Better would be to get the revision back in the response
+        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision GROUP BY id desc limit 1"#)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap()
+            .id as i32;
+
+        let revision = EntityRevision::fetch_via_transaction(revision_id, &mut transaction)
+            .await
+            .unwrap();
+
+        if let ConcreteUuid::EntityRevision(EntityRevision {
+            abstract_entity_revision,
+            ..
+        }) = revision.concrete_uuid
+        {
+            assert_eq!(abstract_entity_revision.changes, "test changes".to_string());
+            assert_eq!(
+                abstract_entity_revision.fields.0["title"],
+                "test title".to_string()
+            );
+            assert_eq!(
+                abstract_entity_revision.fields.0["content"],
+                "test content".to_string()
+            );
+            assert_eq!(
+                abstract_entity_revision.fields.0["meta_description"],
+                "test meta-description".to_string()
+            );
+            assert_eq!(
+                abstract_entity_revision.fields.0["meta_title"],
+                "test meta-title".to_string()
+            );
+        } else {
+            panic!(
+                "Entity Revision does not fulfill assertions: {:?}",
+                revision
+            )
+        }
+    }
 
     #[actix_rt::test]
     async fn checkout_revision() {

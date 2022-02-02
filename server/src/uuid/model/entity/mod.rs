@@ -415,7 +415,9 @@ impl Entity {
     {
         let mut transaction = executor.begin().await?;
 
-        // TODO: validate if entity exists
+        if let Err(..) = Entity::fetch_via_transaction(payload.entity_id, &mut transaction).await {
+            return Err(EntityAddRevisionError::EntityNotFound);
+        }
 
         sqlx::query!(
             r#"
@@ -541,10 +543,8 @@ pub enum EntityAddRevisionError {
     EventError { inner: EventError },
     #[error("Revision could not be added because of an UUID error: {inner:?}.")]
     UuidError { inner: UuidError },
-    #[error("Revision addition failed because the provided UUID is not a revision: {uuid:?}.")]
-    InvalidRevision { uuid: Uuid },
-    #[error("Revision addition failed because its repository is invalid: {uuid:?}.")]
-    InvalidRepository { uuid: Uuid },
+    #[error("Revision could not be added because entity was not found.")]
+    EntityNotFound,
 }
 impl From<sqlx::Error> for EntityAddRevisionError {
     fn from(inner: sqlx::Error) -> Self {
@@ -848,7 +848,7 @@ mod tests {
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-    use crate::uuid::{ConcreteUuid, Uuid, UuidFetcher};
+    use crate::uuid::{ConcreteUuid, EntityAddRevisionError, Uuid, UuidFetcher};
 
     #[actix_rt::test]
     async fn add_revision() {
@@ -911,6 +911,35 @@ mod tests {
                 "Entity Revision does not fulfill assertions: {:?}",
                 revision
             )
+        }
+    }
+
+    #[actix_rt::test]
+    async fn add_revision_invalid_entity() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let result = Entity::add_revision(
+            EntityAddRevisionPayload {
+                changes: "test changes".to_string(),
+                content: "test content".to_string(),
+                needs_review: true,
+                subscribe_this_by_email: false,
+                subscribe_this: false,
+                entity_id: 1,
+                meta_description: Some("test meta-description".to_string()),
+                meta_title: Some("test meta-title".to_string()),
+                title: "test title".to_string(),
+                user_id: 1,
+            },
+            &mut transaction,
+        )
+        .await;
+
+        if let Err(EntityAddRevisionError::EntityNotFound) = result {
+            // This is the expected branch.
+        } else {
+            panic!("Expected `EntityNotFound` error, got: {:?}", result)
         }
     }
 

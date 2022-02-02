@@ -93,15 +93,10 @@ impl MessageResponder for EntityAddRevisionMutation {
                     EntityAddRevisionError::UuidError { .. } => {
                         HttpResponse::InternalServerError().finish()
                     }
-                    EntityAddRevisionError::InvalidRevision { .. } => HttpResponse::BadRequest()
+                    EntityAddRevisionError::EntityNotFound { .. } => HttpResponse::BadRequest()
                         .json(EntityRevisionData {
                             success: false,
-                            reason: Some("revision invalid".to_string()),
-                        }),
-                    EntityAddRevisionError::InvalidRepository { .. } => HttpResponse::BadRequest()
-                        .json(EntityRevisionData {
-                            success: false,
-                            reason: Some("repository invalid".to_string()),
+                            reason: Some("no entity found for provided entity_id".to_string()),
                         }),
                 }
             }

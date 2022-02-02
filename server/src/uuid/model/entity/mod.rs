@@ -506,8 +506,18 @@ impl Entity {
             .await?;
         }
 
-        // TODO: handle subscribe_this + subscribe_this_by_email and needs_review
-        // TODO: handle needs_review
+        if !payload.needs_review {
+            let _ = Entity::checkout_revision(
+                EntityCheckoutRevisionPayload {
+                    revision_id: entity_revision_id,
+                    user_id: payload.user_id,
+                    reason: "Approved".to_string(), // TODO: is it the reason?
+                },
+                &mut transaction,
+            )
+            .await;
+        }
+        // TODO: handle subscribe_this + subscribe_this_by_email
         // TODO: trigger event
 
         // It would be better to return an EntityRevision, instead of a Uuid
@@ -940,6 +950,94 @@ mod tests {
             // This is the expected branch.
         } else {
             panic!("Expected `EntityNotFound` error, got: {:?}", result)
+        }
+    }
+
+    #[actix_rt::test]
+    async fn add_revision_needs_review_param() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Entity::add_revision(
+            EntityAddRevisionPayload {
+                changes: "test changes needs review true".to_string(),
+                content: "test content needs review true".to_string(),
+                needs_review: true,
+                subscribe_this_by_email: false,
+                subscribe_this: false,
+                entity_id: 1495,
+                meta_description: Some("test meta-description needs review true".to_string()),
+                meta_title: Some("test meta-title needs review true".to_string()),
+                title: "test title needs review true".to_string(),
+                user_id: 1,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        // to get the last revision. Better would be to get the revision back in the response
+        let not_checked_out_revision_id =
+            sqlx::query!(r#"SELECT id FROM entity_revision GROUP BY id desc limit 1"#)
+                .fetch_one(&mut transaction)
+                .await
+                .unwrap()
+                .id as i32;
+
+        let entity = Entity::fetch_via_transaction(1495, &mut transaction)
+            .await
+            .unwrap();
+        if let ConcreteUuid::Entity(Entity {
+            abstract_entity, ..
+        }) = entity.concrete_uuid
+        {
+            assert_ne!(
+                abstract_entity.current_revision_id,
+                Some(not_checked_out_revision_id)
+            );
+        } else {
+            panic!("Entity does not fulfill assertions: {:?}", entity)
+        }
+
+        Entity::add_revision(
+            EntityAddRevisionPayload {
+                changes: "test changes needs review false".to_string(),
+                content: "test content needs review false".to_string(),
+                needs_review: false,
+                subscribe_this_by_email: false,
+                subscribe_this: false,
+                entity_id: 1495,
+                meta_description: Some("test meta-description needs review false".to_string()),
+                meta_title: Some("test meta-title needs review false".to_string()),
+                title: "test title needs review false".to_string(),
+                user_id: 1,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        // to get the last revision. Better would be to get the revision back in the response
+        let checked_out_revision_id =
+            sqlx::query!(r#"SELECT id FROM entity_revision GROUP BY id desc limit 1"#)
+                .fetch_one(&mut transaction)
+                .await
+                .unwrap()
+                .id as i32;
+
+        let entity = Entity::fetch_via_transaction(1495, &mut transaction)
+            .await
+            .unwrap();
+        if let ConcreteUuid::Entity(Entity {
+            abstract_entity, ..
+        }) = entity.concrete_uuid
+        {
+            assert_eq!(
+                abstract_entity.current_revision_id,
+                Some(checked_out_revision_id)
+            );
+        } else {
+            panic!("Entity does not fulfill assertions: {:?}", entity)
         }
     }
 

@@ -68,7 +68,7 @@ async fn assert_response_is(response: HttpResponse, expected_status: u16, expect
     assert_eq!(get_json(response).await, expected_result);
 }
 
-async fn get_json(response: HttpResponse) -> Value {
+pub async fn get_json(response: HttpResponse) -> Value {
     from_slice(&to_bytes(response.into_body()).await.unwrap()).unwrap()
 }
 

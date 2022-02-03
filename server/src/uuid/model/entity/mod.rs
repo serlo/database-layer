@@ -15,6 +15,7 @@ use crate::database::Executor;
 use crate::event::{EventError, RevisionEventPayload};
 use crate::format_alias;
 
+use crate::subscription::Subscription;
 pub use messages::*;
 
 mod abstract_entity;
@@ -517,7 +518,18 @@ impl Entity {
             )
             .await;
         }
-        // TODO: handle subscribe_this + subscribe_this_by_email
+
+        if payload.subscribe_this {
+            Subscription::save(
+                &Subscription {
+                    object_id: entity_revision_id,
+                    user_id: payload.user_id,
+                    send_email: payload.subscribe_this_by_email,
+                },
+                &mut transaction,
+            )
+            .await?;
+        }
         // TODO: trigger event
 
         // It would be better to return an EntityRevision, instead of a Uuid
@@ -858,6 +870,7 @@ mod tests {
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
+    use crate::subscription::{fetch_subscription_by_user_and_object, Subscription};
     use crate::uuid::{ConcreteUuid, EntityAddRevisionError, Uuid, UuidFetcher};
 
     #[actix_rt::test]
@@ -1039,6 +1052,50 @@ mod tests {
         } else {
             panic!("Entity does not fulfill assertions: {:?}", entity)
         }
+    }
+
+    #[actix_rt::test]
+    async fn add_revision_subscribe() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Entity::add_revision(
+            EntityAddRevisionPayload {
+                changes: "test changes".to_string(),
+                content: "test content".to_string(),
+                needs_review: true,
+                subscribe_this_by_email: true,
+                subscribe_this: true,
+                entity_id: 1497,
+                meta_description: Some("test meta-description".to_string()),
+                meta_title: Some("test meta-title".to_string()),
+                title: "test title".to_string(),
+                user_id: 1,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision GROUP BY id desc limit 1"#)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap()
+            .id as i32;
+
+        let new_subscription =
+            fetch_subscription_by_user_and_object(1, revision_id, &mut transaction)
+                .await
+                .unwrap();
+
+        assert_eq!(
+            new_subscription,
+            Some(Subscription {
+                object_id: revision_id,
+                user_id: 1,
+                send_email: true
+            })
+        );
     }
 
     #[actix_rt::test]

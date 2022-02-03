@@ -18,6 +18,8 @@ pub enum UserMessage {
     UserActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
     UserPotentialSpamUsersQuery(potential_spam_users_query::Payload),
+    UserSetDescriptionMutation(user_set_description_mutation::Payload),
+    UserSetEmailMutation(user_set_email_mutation::Payload),
 }
 
 #[async_trait]
@@ -48,6 +50,14 @@ impl MessageResponder for UserMessage {
                 payload
                     .handle("UserPotentialSpamUsersQuery", connection)
                     .await
+            }
+            UserMessage::UserSetDescriptionMutation(payload) => {
+                payload
+                    .handle("UserSetDescriptionMutation", connection)
+                    .await
+            }
+            UserMessage::UserSetEmailMutation(payload) => {
+                payload.handle("UserSetEmailMutation", connection).await
             }
         }
     }
@@ -139,8 +149,10 @@ pub mod user_delete_bots_mutation {
     }
 
     #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
     pub struct Output {
         pub success: bool,
+        pub email_hashes: Vec<String>,
     }
 
     #[async_trait]
@@ -148,11 +160,14 @@ pub mod user_delete_bots_mutation {
         type Output = Output;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
+            let email_hashes = match connection {
                 Connection::Pool(pool) => User::delete_bot(self, pool).await?,
                 Connection::Transaction(transaction) => User::delete_bot(self, transaction).await?,
             };
-            Ok(Output { success: true })
+            Ok(Output {
+                success: true,
+                email_hashes,
+            })
         }
     }
 }
@@ -190,6 +205,72 @@ pub mod potential_spam_users_query {
                         User::potential_spam_users(self, transaction).await?
                     }
                 },
+            })
+        }
+    }
+}
+
+pub mod user_set_description_mutation {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: i32,
+        pub description: String,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub success: bool,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => User::set_description(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    User::set_description(self, transaction).await?
+                }
+            };
+            Ok(Output { success: true })
+        }
+    }
+}
+
+pub mod user_set_email_mutation {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: i32,
+        pub email: String,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub success: bool,
+        pub username: String,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let username = match connection {
+                Connection::Pool(pool) => User::set_email(self, pool).await?,
+                Connection::Transaction(transaction) => User::set_email(self, transaction).await?,
+            };
+            Ok(Output {
+                success: true,
+                username,
             })
         }
     }

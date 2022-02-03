@@ -1,31 +1,75 @@
 use actix_web::body::to_bytes;
 use actix_web::HttpResponse;
 use rand::{distributions::Alphanumeric, Rng};
-use serde_json::{from_slice, from_value, json, Value};
+use serde_json::{from_slice, from_value};
 use server::create_database_pool;
 use server::database::Connection;
-use server::message::{Message, MessageResponder};
+use server::message::{Message as ServerMessage, MessageResponder};
+
+pub use serde_json::{json, Value};
+
+pub struct Message<'a> {
+    message_type: &'a str,
+    payload: Value,
+}
+
+impl<'a> Message<'a> {
+    pub fn new(message_type: &'a str, payload: Value) -> Self {
+        Self {
+            message_type,
+            payload,
+        }
+    }
+
+    pub async fn execute_on(
+        &self,
+        transaction: &mut sqlx::Transaction<'_, sqlx::MySql>,
+    ) -> HttpResponse {
+        let message = json!({ "type": self.message_type, "payload": self.payload });
+        let message = from_value::<ServerMessage>(message).unwrap();
+        message.handle(Connection::Transaction(transaction)).await
+    }
+
+    pub async fn execute(&self) -> HttpResponse {
+        self.execute_on(&mut begin_transaction().await).await
+    }
+}
+
+pub async fn assert_ok_with<F>(response: HttpResponse, assert_func: F)
+where
+    F: Fn(Value),
+{
+    assert_eq!(response.status(), 200);
+    assert_func(get_json(response).await);
+}
+
+pub async fn assert_ok(response: HttpResponse, expected_result: Value) {
+    assert_response_is(response, 200, expected_result).await;
+}
+
+pub async fn assert_not_found(response: HttpResponse) {
+    assert_response_is(response, 404, Value::Null).await;
+}
+
+pub async fn assert_bad_request(response: HttpResponse, reason: &str) {
+    assert_response_is(response, 400, json!({ "success": false, "reason": reason })).await;
+}
+
+pub fn assert_has_length(value: &Value, length: usize) {
+    assert_eq!(value.as_array().unwrap().len(), length);
+}
 
 pub async fn begin_transaction<'a>() -> sqlx::Transaction<'a, sqlx::MySql> {
     create_database_pool().await.unwrap().begin().await.unwrap()
 }
 
-pub async fn handle_message(
-    transaction: &mut sqlx::Transaction<'_, sqlx::MySql>,
-    message_type: &str,
-    payload: Value,
-) -> HttpResponse {
-    let message = json!({ "type": message_type, "payload": payload });
-    let message = from_value::<Message>(message).unwrap();
-    message.handle(Connection::Transaction(transaction)).await
+async fn assert_response_is(response: HttpResponse, expected_status: u16, expected_result: Value) {
+    assert_eq!(response.status(), expected_status);
+    assert_eq!(get_json(response).await, expected_result);
 }
 
-pub async fn assert_ok_response(response: HttpResponse, expected_result: Value) {
-    assert!(response.status().is_success());
-
-    let body = to_bytes(response.into_body()).await.unwrap();
-    let result: Value = from_slice(&body).unwrap();
-    assert_eq!(result, expected_result);
+pub async fn get_json(response: HttpResponse) -> Value {
+    from_slice(&to_bytes(response.into_body()).await.unwrap()).unwrap()
 }
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>
@@ -82,6 +126,26 @@ where
     .execute(executor)
     .await?;
     Ok(())
+}
+
+pub async fn set_email<'a, E>(user_id: i32, email: &str, executor: E) -> Result<(), sqlx::Error>
+where
+    E: sqlx::mysql::MySqlExecutor<'a>,
+{
+    sqlx::query!("update user set email = ? where id = ?", email, user_id)
+        .execute(executor)
+        .await?;
+    Ok(())
+}
+
+pub async fn get_email<'a, E>(user_id: i32, executor: E) -> Result<String, sqlx::Error>
+where
+    E: sqlx::mysql::MySqlExecutor<'a>,
+{
+    Ok(sqlx::query!("SELECT email FROM user WHERE id = ?", user_id)
+        .fetch_one(executor)
+        .await?
+        .email as String)
 }
 
 pub async fn set_entity_revision_field<'a>(

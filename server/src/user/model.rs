@@ -2,6 +2,7 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::user::messages::{
     potential_spam_users_query, user_activity_by_type_query, user_delete_bots_mutation,
+    user_set_description_mutation, user_set_email_mutation,
 };
 use std::env;
 
@@ -96,13 +97,23 @@ impl User {
     pub async fn delete_bot<'a, E>(
         payload: &user_delete_bots_mutation::Payload,
         executor: E,
-    ) -> Result<(), sqlx::Error>
+    ) -> Result<Vec<String>, sqlx::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
+        let mut email_hashes: Vec<String> = Vec::new();
 
         for bot_id in &payload.bot_ids {
+            let result = sqlx::query!("select email from user where id = ?", bot_id)
+                .fetch_optional(&mut transaction)
+                .await?
+                .map(|user| user.email);
+
+            if let Some(email) = result {
+                email_hashes.push(format!("{:x}", md5::compute(email.as_bytes())).to_string());
+            }
+
             sqlx::query!(
                 r#"DELETE FROM uuid WHERE id = ? AND discriminator = 'user'"#,
                 bot_id,
@@ -113,7 +124,7 @@ impl User {
 
         transaction.commit().await?;
 
-        Ok(())
+        Ok(email_hashes)
     }
 
     pub async fn potential_spam_users<'a, E>(
@@ -154,5 +165,46 @@ impl User {
             "development" => DateTime::ymd(2014, 1, 1),
             _ => DateTime::now(),
         }
+    }
+
+    pub async fn set_description<'a, E>(
+        payload: &user_set_description_mutation::Payload,
+        executor: E,
+    ) -> Result<(), sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        sqlx::query!(
+            "update user set description = ? where id = ?",
+            payload.description,
+            payload.user_id
+        )
+        .execute(executor)
+        .await?;
+        Ok(())
+    }
+
+    pub async fn set_email<'a, E>(
+        payload: &user_set_email_mutation::Payload,
+        executor: E,
+    ) -> Result<String, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let username = sqlx::query!("select username from user where id = ?", payload.user_id)
+            .fetch_one(&mut transaction)
+            .await?
+            .username;
+        sqlx::query!(
+            "update user set email = ? where id = ?",
+            payload.email,
+            payload.user_id
+        )
+        .execute(&mut transaction)
+        .await?;
+        transaction.commit().await?;
+        Ok(username)
     }
 }

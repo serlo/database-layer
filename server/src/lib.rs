@@ -1,8 +1,6 @@
 use std::env;
 use std::time::Duration;
 
-use actix_service::ServiceFactory;
-use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
 use actix_web::web::Data;
 use actix_web::App;
 use dotenv::dotenv;
@@ -19,6 +17,7 @@ pub mod event;
 pub mod instance;
 pub mod license;
 pub mod message;
+pub mod metadata;
 pub mod navigation;
 pub mod notification;
 pub mod operation;
@@ -44,21 +43,11 @@ fn slugify(segment: &str) -> String {
         .replace_all(segment, "");
     let segment = Regex::new(r"[\[\]{}() ,;:/|\-]+")
         .unwrap()
-        .replace_all(&segment, "-");
+        .replace_all(segment.as_ref(), "-");
     segment.to_lowercase().trim_matches('-').to_string()
 }
 
-pub fn configure_app<T, B>(app: App<T, B>, pool: MySqlPool) -> App<T, B>
-where
-    B: MessageBody,
-    T: ServiceFactory<
-        ServiceRequest,
-        Config = (),
-        Response = ServiceResponse<B>,
-        Error = actix_web::Error,
-        InitError = (),
-    >,
-{
+pub fn configure_app<T>(app: App<T>, pool: MySqlPool) -> App<T> {
     app.app_data(Data::new(pool)).configure(routes::init)
 }
 

@@ -1,79 +1,57 @@
 #[cfg(test)]
-mod tests {
-    use actix_web::{test, App};
-    use serde_json::json;
-    use std::str::from_utf8;
-
-    use server::{configure_app, create_database_pool};
-    use test_utils::{
-        assert_ok_response, begin_transaction, create_new_test_user, handle_message,
-        set_description,
-    };
+mod user_activity_by_type_query {
+    use test_utils::*;
 
     #[actix_rt::test]
-    async fn user_activity_by_type() {
-        let pool = create_database_pool().await.unwrap();
-        let app = configure_app(App::new(), pool);
-        let app = test::init_service(app).await;
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&json!({
-                "type": "UserActivityByTypeQuery",
-                "payload": { "userId": 1 }
-            }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
+    async fn returns_user_activity() {
+        let response = Message::new("UserActivityByTypeQuery", json!({ "userId": 1 }))
+            .execute()
+            .await;
 
-        assert!(resp.status().is_success());
-
-        let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
-        assert_eq!(
-            result,
-            json::object! {
-                "edits": 209,
-                "reviews": 213,
-                "comments": 62,
-                "taxonomy": 836
-            }
-        );
+        assert_ok(
+            response,
+            json!({ "edits": 209, "reviews": 213, "comments": 62, "taxonomy": 836 }),
+        )
+        .await;
     }
+}
+
+#[cfg(test)]
+mod user_delete_bots_mutation {
+    use test_utils::*;
 
     #[actix_rt::test]
-    async fn user_delete_bots_mutation() {
-        let pool = create_database_pool().await.unwrap();
-        let user_id = create_new_test_user(&pool).await.unwrap();
+    async fn deletes_a_user_permanentely() {
+        let mut transaction = begin_transaction().await;
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
 
-        let app = configure_app(App::new(), pool);
-        let app = test::init_service(app).await;
+        set_email(user_id, "testuser@example.org", &mut transaction)
+            .await
+            .unwrap();
 
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&json!({
-                "type": "UserDeleteBotsMutation",
-                "payload": { "botIds": [user_id] }
-            }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
+        let response = Message::new("UserDeleteBotsMutation", json!({ "botIds": [user_id] }))
+            .execute_on(&mut transaction)
+            .await;
+        assert_ok(
+            response,
+            json!({ "success": true, "emailHashes": ["cd5610c5b6be1e5a62fb621031ae3856"] }),
+        )
+        .await;
 
-        assert!(resp.status().is_success());
+        let req = Message::new("UuidQuery", json!({ "id": user_id }))
+            .execute_on(&mut transaction)
+            .await;
 
-        let result = json::parse(from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
-        assert_eq!(result, json::object! { "success": true });
-
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&json!({
-                "type": "UuidQuery",
-                "payload": { "id": user_id }
-            }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
-
-        assert_eq!(resp.status(), 404);
+        assert_not_found(req).await;
     }
+}
+
+#[cfg(test)]
+mod user_potential_spam_users_query {
+    use test_utils::*;
 
     #[actix_rt::test]
-    async fn user_potential_spam_users_query() {
+    async fn returns_user_with_a_description() {
         let mut transaction = begin_transaction().await;
 
         let user_id = create_new_test_user(&mut transaction).await.unwrap();
@@ -81,18 +59,15 @@ mod tests {
             .await
             .unwrap();
 
-        let response = handle_message(
-            &mut transaction,
-            "UserPotentialSpamUsersQuery",
-            json!({ "first": 10 }),
-        )
-        .await;
+        let response = Message::new("UserPotentialSpamUsersQuery", json!({ "first": 10 }))
+            .execute_on(&mut transaction)
+            .await;
 
-        assert_ok_response(response, json!({ "userIds": [user_id] })).await;
+        assert_ok(response, json!({ "userIds": [user_id] })).await;
     }
 
     #[actix_rt::test]
-    async fn user_potential_spam_users_query_with_after_parameter() {
+    async fn with_after_parameter() {
         let mut transaction = begin_transaction().await;
 
         let user_id = create_new_test_user(&mut transaction).await.unwrap();
@@ -104,38 +79,85 @@ mod tests {
             .await
             .unwrap();
 
-        let response = handle_message(
-            &mut transaction,
+        let response = Message::new(
             "UserPotentialSpamUsersQuery",
             json!({ "first": 10, "after": user_id2 }),
         )
+        .execute_on(&mut transaction)
         .await;
 
-        assert_ok_response(response, json!({ "userIds": [user_id] })).await;
+        assert_ok(response, json!({ "userIds": [user_id] })).await;
     }
 
     #[actix_rt::test]
-    async fn potential_spam_users_query_fails_when_first_parameter_is_too_high() {
-        let pool = create_database_pool().await.unwrap();
-        let app = configure_app(App::new(), pool);
-        let app = test::init_service(app).await;
-        let req = test::TestRequest::post()
-            .uri("/")
-            .set_json(&serde_json::json!({
-                "type": "UserPotentialSpamUsersQuery",
-                "payload": { "first": 1_000_000 }
-            }))
-            .to_request();
-        let resp = test::call_service(&app, req).await;
+    async fn fails_when_first_parameter_is_too_high() {
+        let response = Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1_000_000 }))
+            .execute()
+            .await;
 
-        assert_eq!(resp.status(), 400);
+        assert_bad_request(response, "parameter `first` is too high").await;
+    }
+}
 
-        let result =
-            json::parse(std::str::from_utf8(&test::read_body(resp).await).unwrap()).unwrap();
+mod user_set_description_mutation {
+    use test_utils::*;
 
-        assert_eq!(
-            result,
-            json::object! { "success": false, "reason": "parameter `first` is too high" }
-        );
+    #[actix_rt::test]
+    async fn updates_user_description() {
+        let mut transaction = begin_transaction().await;
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+
+        let mutation_response = Message::new(
+            "UserSetDescriptionMutation",
+            json!({ "userId": user_id, "description": "new description".to_string() }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok(mutation_response, json!({ "success": true })).await;
+
+        let query_response = Message::new("UuidQuery", json!({ "id": user_id }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["description"], "new description".to_string())
+        })
+        .await;
+    }
+}
+
+mod user_set_email_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn updates_user_email() {
+        let mut transaction = begin_transaction().await;
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+        let new_email = "user@example.com".to_string();
+        let user = get_json(
+            Message::new("UuidQuery", json!({ "id": user_id }))
+                .execute_on(&mut transaction)
+                .await,
+        )
+        .await;
+        let username = user.get("username").unwrap().as_str().unwrap();
+
+        let mutation_response = Message::new(
+            "UserSetEmailMutation",
+            json!({ "userId": user_id, "email": &new_email }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok(
+            mutation_response,
+            json!({ "success": true, "username": username }),
+        )
+        .await;
+
+        let email = get_email(user_id, &mut transaction).await.unwrap();
+
+        assert_eq!(email, new_email)
     }
 }

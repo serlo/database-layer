@@ -91,6 +91,8 @@ docker-compose.override.yml
 
 # Editor files
 .vscode
+*.iml
+.idea/
 
 # OS files
 .DS_Store

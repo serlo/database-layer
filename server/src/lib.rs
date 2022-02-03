@@ -47,7 +47,15 @@ fn slugify(segment: &str) -> String {
     segment.to_lowercase().trim_matches('-').to_string()
 }
 
-pub fn configure_app<T>(app: App<T>, pool: MySqlPool) -> App<T> {
+pub fn configure_app<T>(app: App<T>, pool: MySqlPool) -> App<T>
+where
+    T: actix_service::ServiceFactory<
+        actix_web::dev::ServiceRequest,
+        Config = (),
+        Error = actix_web::Error,
+        InitError = (),
+    >,
+{
     app.app_data(Data::new(pool)).configure(routes::init)
 }
 

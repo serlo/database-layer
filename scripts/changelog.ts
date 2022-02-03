@@ -70,6 +70,15 @@ async function exec(): Promise<void> {
         ],
         fixed: ['Fix `inLanguage` and `publisher` in metadata api (#167)'],
       },
+      {
+        tagName: 'v0.3.32',
+        name: '0.3.32',
+        date: '2021-02-03',
+        internal: ['Upgrade to node16'],
+        fixed: [
+          'Fix for failing contract tests in LicenseQuery und UserSetEmailMutation',
+        ],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

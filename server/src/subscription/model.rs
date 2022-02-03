@@ -170,9 +170,25 @@ impl Subscription {
     }
 }
 
+pub async fn fetch_subscription_by_user_and_object<'a, E>(
+    user_id: i32,
+    object_id: i32,
+    executor: E,
+) -> Result<Option<Subscription>, sqlx::Error>
+where
+    E: Executor<'a>,
+{
+    let subscriptions = Subscriptions::fetch_by_object(object_id, executor).await?;
+    let subscription = subscriptions
+        .0
+        .into_iter()
+        .find(|subscription| subscription.user_id == user_id);
+    Ok(subscription)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{Subscription, Subscriptions};
+    use super::{fetch_subscription_by_user_and_object, Subscription, Subscriptions};
     use crate::create_database_pool;
     use crate::database::Executor;
 
@@ -322,21 +338,5 @@ mod tests {
             .await
             .unwrap();
         assert!(subscription.is_none());
-    }
-
-    async fn fetch_subscription_by_user_and_object<'a, E>(
-        user_id: i32,
-        object_id: i32,
-        executor: E,
-    ) -> Result<Option<Subscription>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let subscriptions = Subscriptions::fetch_by_object(object_id, executor).await?;
-        let subscription = subscriptions
-            .0
-            .into_iter()
-            .find(|subscription| subscription.user_id == user_id);
-        Ok(subscription)
     }
 }

@@ -15,7 +15,7 @@ exec()
   })
 
 async function exec(): Promise<void> {
-  const content = await generateChangelog({
+  const content = generateChangelog({
     repository: {
       firstCommit: 'a1d5d8261d84ae546914696c363e92ed83b6a17f',
       owner: 'serlo',
@@ -69,6 +69,15 @@ async function exec(): Promise<void> {
           'add endpoint `UserSetDescriptionMutation` (#166)',
         ],
         fixed: ['Fix `inLanguage` and `publisher` in metadata api (#167)'],
+      },
+      {
+        tagName: 'v0.3.32',
+        name: '0.3.32',
+        date: '2021-02-03',
+        internal: ['Upgrade to node16'],
+        fixed: [
+          'Fix for failing contract tests in LicenseQuery und UserSetEmailMutation',
+        ],
       },
     ],
   })

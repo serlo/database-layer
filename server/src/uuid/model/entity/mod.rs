@@ -520,15 +520,17 @@ impl Entity {
         }
 
         if payload.subscribe_this {
-            Subscription::save(
-                &Subscription {
-                    object_id: entity_revision_id,
-                    user_id: payload.user_id,
-                    send_email: payload.subscribe_this_by_email,
-                },
-                &mut transaction,
-            )
-            .await?;
+            for object_id in [payload.entity_id, entity_revision_id].iter() {
+                Subscription::save(
+                    &Subscription {
+                        object_id: *object_id,
+                        user_id: payload.user_id,
+                        send_email: payload.subscribe_this_by_email,
+                    },
+                    &mut transaction,
+                )
+                .await?;
+            }
         }
         // TODO: trigger event
 
@@ -1083,15 +1085,28 @@ mod tests {
             .unwrap()
             .id as i32;
 
-        let new_subscription =
+        let revision_subscription =
             fetch_subscription_by_user_and_object(1, revision_id, &mut transaction)
                 .await
                 .unwrap();
 
+        let entity_subscription = fetch_subscription_by_user_and_object(1, 1497, &mut transaction)
+            .await
+            .unwrap();
+
         assert_eq!(
-            new_subscription,
+            revision_subscription,
             Some(Subscription {
                 object_id: revision_id,
+                user_id: 1,
+                send_email: true
+            })
+        );
+
+        assert_eq!(
+            entity_subscription,
+            Some(Subscription {
+                object_id: 1497,
                 user_id: 1,
                 send_email: true
             })

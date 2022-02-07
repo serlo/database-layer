@@ -512,7 +512,7 @@ impl Entity {
                 EntityCheckoutRevisionPayload {
                     revision_id: entity_revision_id,
                     user_id: payload.user_id,
-                    reason: "Approved".to_string(), // TODO: is it the reason?
+                    reason: "".to_string(), // TODO: put some reason?
                 },
                 &mut transaction,
             )

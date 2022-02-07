@@ -520,17 +520,15 @@ impl Entity {
         }
 
         if payload.subscribe_this {
-            for object_id in [payload.entity_id, entity_revision_id].iter() {
-                Subscription::save(
-                    &Subscription {
-                        object_id: *object_id,
-                        user_id: payload.user_id,
-                        send_email: payload.subscribe_this_by_email,
-                    },
-                    &mut transaction,
-                )
-                .await?;
-            }
+            Subscription::save(
+                &Subscription {
+                    object_id: payload.entity_id,
+                    user_id: payload.user_id,
+                    send_email: payload.subscribe_this_by_email,
+                },
+                &mut transaction,
+            )
+            .await?;
         }
         // TODO: trigger event
 
@@ -1079,29 +1077,9 @@ mod tests {
         .await
         .unwrap();
 
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision GROUP BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let revision_subscription =
-            fetch_subscription_by_user_and_object(1, revision_id, &mut transaction)
-                .await
-                .unwrap();
-
         let entity_subscription = fetch_subscription_by_user_and_object(1, 1497, &mut transaction)
             .await
             .unwrap();
-
-        assert_eq!(
-            revision_subscription,
-            Some(Subscription {
-                object_id: revision_id,
-                user_id: 1,
-                send_email: true
-            })
-        );
 
         assert_eq!(
             entity_subscription,

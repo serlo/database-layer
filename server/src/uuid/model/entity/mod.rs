@@ -12,7 +12,7 @@ pub use entity_type::EntityType;
 use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
-use crate::event::{EventError, RevisionEventPayload};
+use crate::event::{CreateEntityRevisionEventPayload, EventError, RevisionEventPayload};
 use crate::format_alias;
 
 use crate::subscription::Subscription;
@@ -530,7 +530,27 @@ impl Entity {
             )
             .await?;
         }
-        // TODO: trigger event
+
+        let instance_id = sqlx::query!(
+            r#"
+                SELECT instance_id
+                    FROM entity
+                    WHERE id = ?
+            "#,
+            payload.entity_id
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .instance_id as i32;
+
+        CreateEntityRevisionEventPayload::new(
+            payload.entity_id,
+            entity_revision_id,
+            payload.user_id,
+            instance_id,
+        )
+        .save(&mut transaction)
+        .await?;
 
         // It would be better to return an EntityRevision, instead of a Uuid
         let uuid =
@@ -1126,6 +1146,8 @@ mod tests {
             .unwrap();
         assert!(duration < Duration::minutes(1));
     }
+
+    // TODO: test event creation
 
     #[actix_rt::test]
     async fn checkout_revision_sets_trashed_flag_to_false() {

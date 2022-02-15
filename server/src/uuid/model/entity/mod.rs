@@ -451,68 +451,32 @@ impl Entity {
         sqlx::query!(
             r#"
                 INSERT INTO entity_revision_field (field, value, entity_revision_id)
-                    VALUES ('changes', ?, ?)
+                    VALUES ('changes', ?, ?),
+                    ('title', ?, ?),
+                    ('content', ?, ?),
+                    ('meta_title', ?, ?),
+                    ('meta_description', ?, ?)
             "#,
             payload.changes,
-            entity_revision_id
-        )
-        .execute(&mut transaction)
-        .await?;
-
-        sqlx::query!(
-            r#"
-                INSERT INTO entity_revision_field (field, value, entity_revision_id)
-                    VALUES ('title', ?, ?)
-            "#,
+            entity_revision_id,
             payload.title,
-            entity_revision_id
-        )
-        .execute(&mut transaction)
-        .await?;
-
-        sqlx::query!(
-            r#"
-                INSERT INTO entity_revision_field (field, value, entity_revision_id)
-                    VALUES ('content', ?, ?)
-            "#,
+            entity_revision_id,
             payload.content,
+            entity_revision_id,
+            payload.meta_title.unwrap(),
+            entity_revision_id,
+            payload.meta_description.unwrap(),
             entity_revision_id
         )
         .execute(&mut transaction)
         .await?;
-
-        if payload.meta_title.is_some() {
-            sqlx::query!(
-                r#"
-                    INSERT INTO entity_revision_field (field, value, entity_revision_id)
-                        VALUES ('meta_title', ?, ?)
-                "#,
-                payload.meta_title.unwrap(),
-                entity_revision_id
-            )
-            .execute(&mut transaction)
-            .await?;
-        }
-
-        if payload.meta_description.is_some() {
-            sqlx::query!(
-                r#"
-                    INSERT INTO entity_revision_field (field, value, entity_revision_id)
-                        VALUES ('meta_description', ?, ?)
-                "#,
-                payload.meta_description.unwrap(),
-                entity_revision_id
-            )
-            .execute(&mut transaction)
-            .await?;
-        }
 
         if !payload.needs_review {
             let _ = Entity::checkout_revision(
                 EntityCheckoutRevisionPayload {
                     revision_id: entity_revision_id,
                     user_id: payload.user_id,
-                    reason: "".to_string(), // TODO: put some reason?
+                    reason: "".to_string(),
                 },
                 &mut transaction,
             )
@@ -878,7 +842,6 @@ impl Entity {
     }
 }
 
-// TODO? move tests to test folders
 #[cfg(test)]
 mod tests {
     use chrono::Duration;

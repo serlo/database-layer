@@ -507,14 +507,9 @@ impl Entity {
         .await?
         .instance_id as i32;
 
-        CreateEntityRevisionEventPayload::new(
-            payload.entity_id,
-            entity_revision_id,
-            payload.user_id,
-            instance_id,
-        )
-        .save(&mut transaction)
-        .await?;
+        CreateEntityRevisionEventPayload::new(payload.entity_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
 
         // It would be better to return an EntityRevision, instead of a Uuid
         let uuid =

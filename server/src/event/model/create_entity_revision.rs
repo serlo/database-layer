@@ -30,17 +30,15 @@ impl TryFrom<&AbstractEvent> for CreateEntityRevisionEvent {
 pub struct CreateEntityRevisionEventPayload {
     raw_typename: RawEventType,
     actor_id: i32,
-    revision_id: i32,
     instance_id: i32,
     entity_id: i32,
 }
 
 impl CreateEntityRevisionEventPayload {
-    pub fn new(entity_id: i32, revision_id: i32, actor_id: i32, instance_id: i32) -> Self {
+    pub fn new(entity_id: i32, actor_id: i32, instance_id: i32) -> Self {
         Self {
             raw_typename: RawEventType::CreateEntityRevision,
             actor_id,
-            revision_id, // TODO: use revision_id in save?
             instance_id,
             entity_id,
         }
@@ -57,7 +55,7 @@ impl CreateEntityRevisionEventPayload {
             self.actor_id,
             self.entity_id,
             self.instance_id,
-            HashMap::new(), // TODO?
+            HashMap::new(),
             [("repository".to_string(), self.entity_id)]
                 .iter()
                 .cloned()

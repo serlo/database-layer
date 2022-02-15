@@ -18,7 +18,7 @@ use super::entity::Entity;
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
 
-mod abstract_entity_revision;
+pub mod abstract_entity_revision;
 mod applet_revision;
 mod article_revision;
 mod course_page_revision;

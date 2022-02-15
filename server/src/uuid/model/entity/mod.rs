@@ -9,6 +9,7 @@ use thiserror::Error;
 use abstract_entity::AbstractEntity;
 pub use entity_type::EntityType;
 
+use super::entity_revision::abstract_entity_revision::EntityRevisionPayload;
 use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
@@ -420,61 +421,22 @@ impl Entity {
             return Err(EntityAddRevisionError::EntityNotFound);
         }
 
-        sqlx::query!(
-            r#"
-                INSERT INTO uuid (trashed, discriminator)
-                    VALUES (0, 'entityRevision')
-            "#,
-        )
-        .execute(&mut transaction)
-        .await?;
-
-        let entity_revision_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
-            .await?
-            .id as i32;
-
-        sqlx::query!(
-            r#"
-                INSERT INTO entity_revision (id, author_id, repository_id)
-                    VALUES (?, ?, ?)
-            "#,
-            entity_revision_id,
-            payload.user_id,
-            payload.entity_id,
-        )
-        .execute(&mut transaction)
-        .await?;
-
-        // TODO: put the fields insertions into EntityAddRevisionPayload?
-        // TODO: Only add fields that are supported by each type?
-        sqlx::query!(
-            r#"
-                INSERT INTO entity_revision_field (field, value, entity_revision_id)
-                    VALUES ('changes', ?, ?),
-                    ('title', ?, ?),
-                    ('content', ?, ?),
-                    ('meta_title', ?, ?),
-                    ('meta_description', ?, ?)
-            "#,
+        let entity_revision = EntityRevisionPayload::new(
             payload.changes,
-            entity_revision_id,
-            payload.title,
-            entity_revision_id,
             payload.content,
-            entity_revision_id,
-            payload.meta_title.unwrap(),
-            entity_revision_id,
-            payload.meta_description.unwrap(),
-            entity_revision_id
+            payload.entity_id,
+            payload.meta_description,
+            payload.meta_title,
+            payload.title,
+            payload.user_id,
         )
-        .execute(&mut transaction)
+        .save(&mut transaction)
         .await?;
 
         if !payload.needs_review {
             let _ = Entity::checkout_revision(
                 EntityCheckoutRevisionPayload {
-                    revision_id: entity_revision_id,
+                    revision_id: entity_revision.id,
                     user_id: payload.user_id,
                     reason: "".to_string(),
                 },
@@ -511,13 +473,10 @@ impl Entity {
             .save(&mut transaction)
             .await?;
 
-        // It would be better to return an EntityRevision, instead of a Uuid
-        let uuid =
-            EntityRevision::fetch_via_transaction(entity_revision_id, &mut transaction).await?;
-
         transaction.commit().await?;
 
-        Ok(uuid)
+        // It would be better to return an EntityRevision, instead of a Uuid
+        Ok(entity_revision)
     }
 }
 

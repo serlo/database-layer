@@ -21,7 +21,7 @@ pub struct AbstractEntityRevision {
     pub fields: EntityRevisionFields,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "kebab-case"))]
 pub enum EntityRevisionType {
     #[serde(rename = "AppletRevision")]

@@ -8,6 +8,8 @@ use super::{
 };
 use crate::database::Connection;
 use crate::message::MessageResponder;
+use crate::uuid::abstract_entity_revision::EntityRevisionType;
+use crate::uuid::EntityAddRevisionInput;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -38,15 +40,8 @@ impl MessageResponder for EntityMessage {
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntityAddRevisionMutation {
-    pub changes: String,
-    pub content: String,
-    pub needs_review: bool,
-    pub subscribe_this_by_email: bool,
-    pub subscribe_this: bool,
-    pub entity_id: i32,
-    pub meta_description: Option<String>,
-    pub meta_title: Option<String>,
-    pub title: String,
+    pub input: EntityAddRevisionInput,
+    pub revision_type: EntityRevisionType,
     pub user_id: i32,
 }
 
@@ -55,15 +50,21 @@ impl MessageResponder for EntityAddRevisionMutation {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         let payload = EntityAddRevisionPayload {
-            changes: self.changes.clone(),
-            content: self.content.clone(),
-            needs_review: self.needs_review,
-            subscribe_this_by_email: self.subscribe_this_by_email,
-            subscribe_this: self.subscribe_this,
-            entity_id: self.entity_id,
-            meta_description: self.meta_description.clone(),
-            meta_title: self.meta_title.clone(),
-            title: self.title.clone(),
+            input: EntityAddRevisionInput {
+                changes: self.input.changes.clone(),
+                entity_id: self.input.entity_id,
+                needs_review: self.input.needs_review,
+                subscribe_this: self.input.subscribe_this,
+                subscribe_this_by_email: self.input.subscribe_this_by_email,
+                cohesive: self.input.cohesive.clone(),
+                content: self.input.content.clone(),
+                description: self.input.description.clone(),
+                meta_description: self.input.meta_description.clone(),
+                meta_title: self.input.meta_title.clone(),
+                title: self.input.title.clone(),
+                url: self.input.url.clone(),
+            },
+            revision_type: self.revision_type.clone(),
             user_id: self.user_id,
         };
 

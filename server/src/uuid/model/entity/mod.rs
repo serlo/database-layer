@@ -17,6 +17,7 @@ use crate::event::{CreateEntityRevisionEventPayload, EventError, RevisionEventPa
 use crate::format_alias;
 
 use crate::subscription::Subscription;
+use crate::uuid::abstract_entity_revision::EntityRevisionType;
 pub use messages::*;
 
 mod abstract_entity;
@@ -407,93 +408,28 @@ impl Entity {
     }
 }
 
-impl Entity {
-    pub async fn add_revision<'a, E>(
-        payload: EntityAddRevisionPayload,
-        executor: E,
-    ) -> Result<Uuid, EntityAddRevisionError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
-
-        if let Err(UuidError::NotFound) | Err(UuidError::DatabaseError { .. }) =
-            Entity::fetch_via_transaction(payload.entity_id, &mut transaction).await
-        {
-            return Err(EntityAddRevisionError::EntityNotFound);
-        }
-
-        let entity_revision = EntityRevisionPayload::new(
-            payload.changes,
-            payload.content,
-            payload.entity_id,
-            payload.meta_description,
-            payload.meta_title,
-            payload.title,
-            payload.user_id,
-        )
-        .save(&mut transaction)
-        .await?;
-
-        if !payload.needs_review {
-            let _ = Entity::checkout_revision(
-                EntityCheckoutRevisionPayload {
-                    revision_id: entity_revision.id,
-                    user_id: payload.user_id,
-                    reason: "".to_string(),
-                },
-                &mut transaction,
-            )
-            .await;
-        }
-
-        if payload.subscribe_this {
-            Subscription::save(
-                &Subscription {
-                    object_id: payload.entity_id,
-                    user_id: payload.user_id,
-                    send_email: payload.subscribe_this_by_email,
-                },
-                &mut transaction,
-            )
-            .await?;
-        }
-
-        let instance_id = sqlx::query!(
-            r#"
-                SELECT instance_id
-                    FROM entity
-                    WHERE id = ?
-            "#,
-            payload.entity_id
-        )
-        .fetch_one(&mut transaction)
-        .await?
-        .instance_id as i32;
-
-        CreateEntityRevisionEventPayload::new(payload.entity_id, payload.user_id, instance_id)
-            .save(&mut transaction)
-            .await?;
-
-        transaction.commit().await?;
-
-        // It would be better to return an EntityRevision, instead of a Uuid
-        Ok(entity_revision)
-    }
-}
-
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct EntityAddRevisionPayload {
+pub struct EntityAddRevisionInput {
     pub changes: String,
-    pub content: String,
-    pub needs_review: bool,
-    pub subscribe_this_by_email: bool,
-    pub subscribe_this: bool,
     pub entity_id: i32,
+    pub needs_review: bool,
+    pub subscribe_this: bool,
+    pub subscribe_this_by_email: bool,
+    pub cohesive: Option<String>, // better would be something like Option<"true" | "false">
+    pub content: Option<String>,
+    pub description: Option<String>,
     pub meta_description: Option<String>,
     pub meta_title: Option<String>,
-    pub title: String,
+    pub title: Option<String>,
+    pub url: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EntityAddRevisionPayload {
+    pub input: EntityAddRevisionInput,
+    pub revision_type: EntityRevisionType,
     pub user_id: i32,
 }
 
@@ -531,6 +467,86 @@ impl From<EventError> for EntityAddRevisionError {
         }
     }
 }
+
+impl Entity {
+    pub async fn add_revision<'a, E>(
+        payload: EntityAddRevisionPayload,
+        executor: E,
+    ) -> Result<Uuid, EntityAddRevisionError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        if let Err(UuidError::NotFound) | Err(UuidError::DatabaseError { .. }) =
+            Entity::fetch_via_transaction(payload.input.entity_id, &mut transaction).await
+        {
+            return Err(EntityAddRevisionError::EntityNotFound);
+        }
+
+        let entity_revision = EntityRevisionPayload::new(
+            payload.input.changes,
+            payload.input.content.unwrap(),
+            payload.input.entity_id,
+            payload.input.meta_description,
+            payload.input.meta_title,
+            payload.input.title.unwrap(),
+            payload.user_id,
+        )
+        .save(&mut transaction)
+        .await?;
+
+        if !payload.input.needs_review {
+            let _ = Entity::checkout_revision(
+                EntityCheckoutRevisionPayload {
+                    revision_id: entity_revision.id,
+                    user_id: payload.user_id,
+                    reason: "".to_string(),
+                },
+                &mut transaction,
+            )
+            .await;
+        }
+
+        if payload.input.subscribe_this {
+            Subscription::save(
+                &Subscription {
+                    object_id: payload.input.entity_id,
+                    user_id: payload.user_id,
+                    send_email: payload.input.subscribe_this_by_email,
+                },
+                &mut transaction,
+            )
+            .await?;
+        }
+
+        let instance_id = sqlx::query!(
+            r#"
+                SELECT instance_id
+                    FROM entity
+                    WHERE id = ?
+            "#,
+            payload.input.entity_id
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .instance_id as i32;
+
+        CreateEntityRevisionEventPayload::new(
+            payload.input.entity_id,
+            payload.user_id,
+            instance_id,
+        )
+        .save(&mut transaction)
+        .await?;
+
+        transaction.commit().await?;
+
+        // It would be better to return an EntityRevision, instead of a Uuid
+        Ok(entity_revision)
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntityCheckoutRevisionPayload {
@@ -811,7 +827,10 @@ mod tests {
     use crate::event::test_helpers::fetch_age_of_newest_event;
     use crate::subscription::tests::fetch_subscription_by_user_and_object;
     use crate::subscription::Subscription;
-    use crate::uuid::{ConcreteUuid, EntityAddRevisionError, Uuid, UuidFetcher};
+    use crate::uuid::abstract_entity_revision::EntityRevisionType;
+    use crate::uuid::{
+        ConcreteUuid, EntityAddRevisionError, EntityAddRevisionInput, Uuid, UuidFetcher,
+    };
 
     #[actix_rt::test]
     async fn add_revision() {
@@ -820,15 +839,21 @@ mod tests {
 
         Entity::add_revision(
             EntityAddRevisionPayload {
-                changes: "test changes".to_string(),
-                content: "test content".to_string(),
-                needs_review: true,
-                subscribe_this_by_email: false,
-                subscribe_this: false,
-                entity_id: 1495,
-                meta_description: Some("test meta-description".to_string()),
-                meta_title: Some("test meta-title".to_string()),
-                title: "test title".to_string(),
+                input: EntityAddRevisionInput {
+                    changes: String::from("test changes"),
+                    entity_id: 1495,
+                    needs_review: true,
+                    subscribe_this: true,
+                    subscribe_this_by_email: true,
+                    content: Some("test content".to_string()),
+                    meta_description: Some("test meta-description".to_string()),
+                    meta_title: Some("test meta-title".to_string()),
+                    title: Some("test title".to_string()),
+                    cohesive: None,
+                    description: None,
+                    url: None,
+                },
+                revision_type: EntityRevisionType::Article,
                 user_id: 1,
             },
             &mut transaction,
@@ -884,15 +909,21 @@ mod tests {
 
         let result = Entity::add_revision(
             EntityAddRevisionPayload {
-                changes: "test changes".to_string(),
-                content: "test content".to_string(),
-                needs_review: true,
-                subscribe_this_by_email: false,
-                subscribe_this: false,
-                entity_id: 1,
-                meta_description: Some("test meta-description".to_string()),
-                meta_title: Some("test meta-title".to_string()),
-                title: "test title".to_string(),
+                input: EntityAddRevisionInput {
+                    changes: String::from("test changes"),
+                    entity_id: 1,
+                    needs_review: true,
+                    subscribe_this: true,
+                    subscribe_this_by_email: true,
+                    content: Some("test content".to_string()),
+                    meta_description: Some("test meta-description".to_string()),
+                    meta_title: Some("test meta-title".to_string()),
+                    title: Some("test title".to_string()),
+                    cohesive: None,
+                    description: None,
+                    url: None,
+                },
+                revision_type: EntityRevisionType::Article,
                 user_id: 1,
             },
             &mut transaction,
@@ -913,15 +944,21 @@ mod tests {
 
         Entity::add_revision(
             EntityAddRevisionPayload {
-                changes: "test changes needs review true".to_string(),
-                content: "test content needs review true".to_string(),
-                needs_review: true,
-                subscribe_this_by_email: false,
-                subscribe_this: false,
-                entity_id: 1495,
-                meta_description: Some("test meta-description needs review true".to_string()),
-                meta_title: Some("test meta-title needs review true".to_string()),
-                title: "test title needs review true".to_string(),
+                input: EntityAddRevisionInput {
+                    changes: String::from("test changes"),
+                    entity_id: 1495,
+                    needs_review: true,
+                    subscribe_this: true,
+                    subscribe_this_by_email: true,
+                    content: Some("test content".to_string()),
+                    meta_description: Some("test meta-description".to_string()),
+                    meta_title: Some("test meta-title".to_string()),
+                    title: Some("test title".to_string()),
+                    cohesive: None,
+                    description: None,
+                    url: None,
+                },
+                revision_type: EntityRevisionType::Article,
                 user_id: 1,
             },
             &mut transaction,
@@ -954,15 +991,21 @@ mod tests {
 
         Entity::add_revision(
             EntityAddRevisionPayload {
-                changes: "test changes needs review false".to_string(),
-                content: "test content needs review false".to_string(),
-                needs_review: false,
-                subscribe_this_by_email: false,
-                subscribe_this: false,
-                entity_id: 1495,
-                meta_description: Some("test meta-description needs review false".to_string()),
-                meta_title: Some("test meta-title needs review false".to_string()),
-                title: "test title needs review false".to_string(),
+                input: EntityAddRevisionInput {
+                    changes: String::from("test changes"),
+                    entity_id: 1495,
+                    needs_review: false,
+                    subscribe_this: true,
+                    subscribe_this_by_email: true,
+                    content: Some("test content".to_string()),
+                    meta_description: Some("test meta-description".to_string()),
+                    meta_title: Some("test meta-title".to_string()),
+                    title: Some("test title".to_string()),
+                    cohesive: None,
+                    description: None,
+                    url: None,
+                },
+                revision_type: EntityRevisionType::Article,
                 user_id: 1,
             },
             &mut transaction,
@@ -1001,15 +1044,21 @@ mod tests {
 
         Entity::add_revision(
             EntityAddRevisionPayload {
-                changes: "test changes".to_string(),
-                content: "test content".to_string(),
-                needs_review: true,
-                subscribe_this_by_email: true,
-                subscribe_this: true,
-                entity_id: 1497,
-                meta_description: Some("test meta-description".to_string()),
-                meta_title: Some("test meta-title".to_string()),
-                title: "test title".to_string(),
+                input: EntityAddRevisionInput {
+                    changes: String::from("test changes"),
+                    entity_id: 1495,
+                    needs_review: true,
+                    subscribe_this: true,
+                    subscribe_this_by_email: true,
+                    content: Some("test content".to_string()),
+                    meta_description: Some("test meta-description".to_string()),
+                    meta_title: Some("test meta-title".to_string()),
+                    title: Some("test title".to_string()),
+                    cohesive: None,
+                    description: None,
+                    url: None,
+                },
+                revision_type: EntityRevisionType::Article,
                 user_id: 1,
             },
             &mut transaction,
@@ -1017,14 +1066,14 @@ mod tests {
         .await
         .unwrap();
 
-        let entity_subscription = fetch_subscription_by_user_and_object(1, 1497, &mut transaction)
+        let entity_subscription = fetch_subscription_by_user_and_object(1, 1495, &mut transaction)
             .await
             .unwrap();
 
         assert_eq!(
             entity_subscription,
             Some(Subscription {
-                object_id: 1497,
+                object_id: 1495,
                 user_id: 1,
                 send_email: true
             })

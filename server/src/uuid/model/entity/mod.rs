@@ -417,7 +417,9 @@ impl Entity {
     {
         let mut transaction = executor.begin().await?;
 
-        if let Err(..) = Entity::fetch_via_transaction(payload.entity_id, &mut transaction).await {
+        if let Err(UuidError::NotFound) | Err(UuidError::DatabaseError { .. }) =
+            Entity::fetch_via_transaction(payload.entity_id, &mut transaction).await
+        {
             return Err(EntityAddRevisionError::EntityNotFound);
         }
 

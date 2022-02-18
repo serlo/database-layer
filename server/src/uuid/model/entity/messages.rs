@@ -64,7 +64,7 @@ impl MessageResponder for EntityAddRevisionMutation {
                 title: self.input.title.clone(),
                 url: self.input.url.clone(),
             },
-            revision_type: self.revision_type.clone(),
+            revision_type: self.revision_type,
             user_id: self.user_id,
         };
 

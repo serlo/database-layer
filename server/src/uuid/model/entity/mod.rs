@@ -835,7 +835,7 @@ mod tests {
         .unwrap();
 
         // to get the last revision. Better would be to get the revision back in the response
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision GROUP BY id desc limit 1"#)
+        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
             .fetch_one(&mut transaction)
             .await
             .unwrap()
@@ -929,7 +929,7 @@ mod tests {
 
         // to get the last revision. Better would be to get the revision back in the response
         let not_checked_out_revision_id =
-            sqlx::query!(r#"SELECT id FROM entity_revision GROUP BY id desc limit 1"#)
+            sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
                 .fetch_one(&mut transaction)
                 .await
                 .unwrap()
@@ -970,7 +970,7 @@ mod tests {
 
         // to get the last revision. Better would be to get the revision back in the response
         let checked_out_revision_id =
-            sqlx::query!(r#"SELECT id FROM entity_revision GROUP BY id desc limit 1"#)
+            sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
                 .fetch_one(&mut transaction)
                 .await
                 .unwrap()

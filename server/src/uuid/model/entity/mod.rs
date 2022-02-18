@@ -807,7 +807,8 @@ mod tests {
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-    use crate::subscription::{fetch_subscription_by_user_and_object, Subscription};
+    use crate::subscription::tests::fetch_subscription_by_user_and_object;
+    use crate::subscription::Subscription;
     use crate::uuid::{ConcreteUuid, EntityAddRevisionError, Uuid, UuidFetcher};
 
     #[actix_rt::test]

@@ -840,11 +840,11 @@ mod tests {
         Entity::add_revision(
             EntityAddRevisionPayload {
                 input: EntityAddRevisionInput {
-                    changes: String::from("test changes"),
+                    changes: "test changes".to_string(),
                     entity_id: 1495,
                     needs_review: true,
-                    subscribe_this: true,
-                    subscribe_this_by_email: true,
+                    subscribe_this: false,
+                    subscribe_this_by_email: false,
                     content: Some("test content".to_string()),
                     meta_description: Some("test meta-description".to_string()),
                     meta_title: Some("test meta-title".to_string()),
@@ -910,11 +910,11 @@ mod tests {
         let result = Entity::add_revision(
             EntityAddRevisionPayload {
                 input: EntityAddRevisionInput {
-                    changes: String::from("test changes"),
+                    changes: "test changes".to_string(),
                     entity_id: 1,
                     needs_review: true,
-                    subscribe_this: true,
-                    subscribe_this_by_email: true,
+                    subscribe_this: false,
+                    subscribe_this_by_email: false,
                     content: Some("test content".to_string()),
                     meta_description: Some("test meta-description".to_string()),
                     meta_title: Some("test meta-title".to_string()),
@@ -945,11 +945,11 @@ mod tests {
         Entity::add_revision(
             EntityAddRevisionPayload {
                 input: EntityAddRevisionInput {
-                    changes: String::from("test changes"),
+                    changes: "test changes".to_string(),
                     entity_id: 1495,
                     needs_review: true,
-                    subscribe_this: true,
-                    subscribe_this_by_email: true,
+                    subscribe_this: false,
+                    subscribe_this_by_email: false,
                     content: Some("test content".to_string()),
                     meta_description: Some("test meta-description".to_string()),
                     meta_title: Some("test meta-title".to_string()),
@@ -992,11 +992,11 @@ mod tests {
         Entity::add_revision(
             EntityAddRevisionPayload {
                 input: EntityAddRevisionInput {
-                    changes: String::from("test changes"),
+                    changes: "test changes".to_string(),
                     entity_id: 1495,
                     needs_review: false,
-                    subscribe_this: true,
-                    subscribe_this_by_email: true,
+                    subscribe_this: false,
+                    subscribe_this_by_email: false,
                     content: Some("test content".to_string()),
                     meta_description: Some("test meta-description".to_string()),
                     meta_title: Some("test meta-title".to_string()),
@@ -1045,7 +1045,7 @@ mod tests {
         Entity::add_revision(
             EntityAddRevisionPayload {
                 input: EntityAddRevisionInput {
-                    changes: String::from("test changes"),
+                    changes: "test changes".to_string(),
                     entity_id: 1495,
                     needs_review: true,
                     subscribe_this: true,
@@ -1079,6 +1079,9 @@ mod tests {
             })
         );
     }
+
+    // TODO: test event creation
+
 
     #[actix_rt::test]
     async fn checkout_revision() {
@@ -1115,9 +1118,7 @@ mod tests {
             .unwrap();
         assert!(duration < Duration::minutes(1));
     }
-
-    // TODO: test event creation
-
+    
     #[actix_rt::test]
     async fn checkout_revision_sets_trashed_flag_to_false() {
         let pool = create_database_pool().await.unwrap();

@@ -4,6 +4,7 @@ use futures::try_join;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use sqlx::Row;
+use std::collections::HashMap;
 use thiserror::Error;
 
 use abstract_entity::AbstractEntity;
@@ -484,18 +485,81 @@ impl Entity {
             return Err(EntityAddRevisionError::EntityNotFound);
         }
 
+        let fields = match payload.revision_type {
+            EntityRevisionType::Applet => HashMap::from([
+                ("content".to_string(), payload.input.content.unwrap()),
+                (
+                    "meta_description".to_string(),
+                    payload.input.meta_description.unwrap(),
+                ),
+                ("meta_title".to_string(), payload.input.meta_title.unwrap()),
+                ("title".to_string(), payload.input.title.unwrap()),
+                ("url".to_string(), payload.input.url.unwrap()),
+            ]),
+            EntityRevisionType::Article => HashMap::from([
+                ("content".to_string(), payload.input.content.unwrap()),
+                (
+                    "meta_description".to_string(),
+                    payload.input.meta_description.unwrap(),
+                ),
+                ("meta_title".to_string(), payload.input.meta_title.unwrap()),
+                ("title".to_string(), payload.input.title.unwrap()),
+            ]),
+            EntityRevisionType::Course => HashMap::from([
+                ("content".to_string(), payload.input.content.unwrap()),
+                (
+                    "meta_description".to_string(),
+                    payload.input.meta_description.unwrap(),
+                ),
+                ("title".to_string(), payload.input.title.unwrap()),
+            ]),
+            EntityRevisionType::CoursePage => HashMap::from([
+                ("content".to_string(), payload.input.content.unwrap()),
+                ("title".to_string(), payload.input.title.unwrap()),
+            ]),
+            EntityRevisionType::Event => HashMap::from([
+                ("content".to_string(), payload.input.content.unwrap()),
+                (
+                    "meta_description".to_string(),
+                    payload.input.meta_description.unwrap(),
+                ),
+                ("meta_title".to_string(), payload.input.meta_title.unwrap()),
+                ("title".to_string(), payload.input.title.unwrap()),
+            ]),
+            EntityRevisionType::Exercise => {
+                HashMap::from([("content".to_string(), payload.input.content.unwrap())])
+            }
+            EntityRevisionType::ExerciseGroup => HashMap::from([
+                ("content".to_string(), payload.input.content.unwrap()),
+                (
+                    "cohesive".to_string(),
+                    payload.input.meta_description.unwrap(),
+                ),
+            ]),
+            EntityRevisionType::GroupedExercise => {
+                HashMap::from([("content".to_string(), payload.input.content.unwrap())])
+            }
+            EntityRevisionType::Solution => {
+                HashMap::from([("content".to_string(), payload.input.content.unwrap())])
+            }
+            EntityRevisionType::Video => HashMap::from([
+                ("content".to_string(), payload.input.content.unwrap()),
+                (
+                    "description".to_string(),
+                    payload.input.description.unwrap(),
+                ),
+                ("title".to_string(), payload.input.title.unwrap()),
+            ]),
+        };
+
         let entity_revision = EntityRevisionPayload::new(
-            payload.input.changes,
-            payload.input.content.unwrap(),
-            payload.input.entity_id,
-            payload.input.meta_description,
-            payload.input.meta_title,
-            payload.input.title.unwrap(),
             payload.user_id,
+            payload.input.entity_id,
+            payload.input.changes,
+            fields,
         )
         .save(&mut transaction)
         .await?;
-
         if !payload.input.needs_review {
             let _ = Entity::checkout_revision(
                 EntityCheckoutRevisionPayload {
@@ -1046,7 +1110,7 @@ mod tests {
             EntityAddRevisionPayload {
                 input: EntityAddRevisionInput {
                     changes: "test changes".to_string(),
-                    entity_id: 1495,
+                    entity_id: 1497,
                     needs_review: true,
                     subscribe_this: true,
                     subscribe_this_by_email: true,
@@ -1066,22 +1130,22 @@ mod tests {
         .await
         .unwrap();
 
-        let entity_subscription = fetch_subscription_by_user_and_object(1, 1495, &mut transaction)
+        let entity_subscription = fetch_subscription_by_user_and_object(1, 1497, &mut transaction)
             .await
             .unwrap();
 
         assert_eq!(
             entity_subscription,
             Some(Subscription {
-                object_id: 1495,
+                object_id: 1497,
                 user_id: 1,
                 send_email: true
             })
         );
     }
 
+    // TODO: test filling of fields  for each EntityRevisionType
     // TODO: test event creation
-
 
     #[actix_rt::test]
     async fn checkout_revision() {
@@ -1118,7 +1182,7 @@ mod tests {
             .unwrap();
         assert!(duration < Duration::minutes(1));
     }
-    
+
     #[actix_rt::test]
     async fn checkout_revision_sets_trashed_flag_to_false() {
         let pool = create_database_pool().await.unwrap();

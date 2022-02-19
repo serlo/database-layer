@@ -515,6 +515,16 @@
       ]
     }
   },
+  "2b20b8721b218b0e08cfa2ba1f1a769e6e0ae366d6430b09202f56422df5a83b": {
+    "query": "\n                    INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                        VALUES (?, ?, ?)\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
   "2b40b2053d2083dbdc2ba4229260ef613c0b10e606099d083ffe75dc2117e4ac": {
     "query": "SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC",
     "describe": {
@@ -1285,16 +1295,6 @@
       "nullable": [
         false
       ]
-    }
-  },
-  "867ecebd1586af177deb486ecff2900654df35d65e1f79574e3243730b733f3b": {
-    "query": "\n                INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                    VALUES ('changes', ?, ?),\n                    ('title', ?, ?),\n                    ('content', ?, ?),\n                    ('meta_title', ?, ?),\n                    ('meta_description', ?, ?)\n            ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 10
-      },
-      "nullable": []
     }
   },
   "87b99c353a3ccda694aaef3e4bd9d122313e7293997b7903d333327296a1118f": {
@@ -2698,6 +2698,16 @@
         false,
         false
       ]
+    }
+  },
+  "f46abdd164878cc0099fb55982a6ba349c56788b23aade73b7b37e98073364fc": {
+    "query": "\n                INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                    VALUES (\"changes\", ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
     }
   },
   "fc0ca0f5bbca56646e9a9cbad7d897b684ca6301e1c63c108d1497592ef3f34b": {

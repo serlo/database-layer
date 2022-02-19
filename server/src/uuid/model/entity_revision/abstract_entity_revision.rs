@@ -85,33 +85,24 @@ impl EntityRevisionFields {
 }
 
 pub struct EntityRevisionPayload {
+    pub author_id: i32,
+    pub repository_id: i32,
     pub changes: String,
-    pub content: String,
-    pub entity_id: i32,
-    pub meta_description: Option<String>,
-    pub meta_title: Option<String>,
-    pub title: String,
-    pub user_id: i32,
+    pub fields: HashMap<String, String>,
 }
 
 impl EntityRevisionPayload {
     pub fn new(
+        author_id: i32,
+        repository_id: i32,
         changes: String,
-        content: String,
-        entity_id: i32,
-        meta_description: Option<String>,
-        meta_title: Option<String>,
-        title: String,
-        user_id: i32,
+        fields: HashMap<String, String>,
     ) -> Self {
         Self {
+            author_id,
+            repository_id,
             changes,
-            content,
-            entity_id,
-            meta_description,
-            meta_title,
-            title,
-            user_id,
+            fields,
         }
     }
 
@@ -141,35 +132,36 @@ impl EntityRevisionPayload {
                     VALUES (?, ?, ?)
             "#,
             entity_revision_id,
-            self.user_id,
-            self.entity_id,
+            self.author_id,
+            self.repository_id,
         )
         .execute(&mut transaction)
         .await?;
 
-        // TODO: Only add fields that are supported by each type?
         sqlx::query!(
             r#"
                 INSERT INTO entity_revision_field (field, value, entity_revision_id)
-                    VALUES ('changes', ?, ?),
-                    ('title', ?, ?),
-                    ('content', ?, ?),
-                    ('meta_title', ?, ?),
-                    ('meta_description', ?, ?)
+                    VALUES ("changes", ?, ?)
             "#,
             self.changes,
             entity_revision_id,
-            self.title,
-            entity_revision_id,
-            self.content,
-            entity_revision_id,
-            self.meta_title.as_ref().unwrap(),
-            entity_revision_id,
-            self.meta_description.as_ref().unwrap(),
-            entity_revision_id
         )
         .execute(&mut transaction)
         .await?;
+
+        for (field, value) in &self.fields {
+            sqlx::query!(
+                r#"
+                    INSERT INTO entity_revision_field (field, value, entity_revision_id)
+                        VALUES (?, ?, ?)
+                "#,
+                field,
+                value,
+                entity_revision_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
 
         let uuid =
             EntityRevision::fetch_via_transaction(entity_revision_id, &mut transaction).await?;

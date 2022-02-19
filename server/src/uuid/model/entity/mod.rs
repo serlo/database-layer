@@ -408,7 +408,7 @@ impl Entity {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntityAddRevisionInput {
     pub changes: String,
@@ -425,7 +425,7 @@ pub struct EntityAddRevisionInput {
     pub url: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntityAddRevisionPayload {
     pub input: EntityAddRevisionInput,

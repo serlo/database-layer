@@ -479,7 +479,7 @@ impl Entity {
     {
         let mut transaction = executor.begin().await?;
 
-        if let Err(UuidError::NotFound) | Err(UuidError::DatabaseError { .. }) =
+        if let Err(UuidError::NotFound) =
             Entity::fetch_via_transaction(payload.input.entity_id, &mut transaction).await
         {
             return Err(EntityAddRevisionError::EntityNotFound);
@@ -963,41 +963,6 @@ mod tests {
                 "Entity Revision does not fulfill assertions: {:?}",
                 revision
             )
-        }
-    }
-
-    #[actix_rt::test]
-    async fn add_revision_invalid_entity() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        let result = Entity::add_revision(
-            EntityAddRevisionPayload {
-                input: EntityAddRevisionInput {
-                    changes: "test changes".to_string(),
-                    entity_id: 1,
-                    needs_review: true,
-                    subscribe_this: false,
-                    subscribe_this_by_email: false,
-                    content: Some("test content".to_string()),
-                    meta_description: Some("test meta-description".to_string()),
-                    meta_title: Some("test meta-title".to_string()),
-                    title: Some("test title".to_string()),
-                    cohesive: None,
-                    description: None,
-                    url: None,
-                },
-                revision_type: EntityRevisionType::Article,
-                user_id: 1,
-            },
-            &mut transaction,
-        )
-        .await;
-
-        if let Err(EntityAddRevisionError::EntityNotFound) = result {
-            // This is the expected branch.
-        } else {
-            panic!("Expected `EntityNotFound` error, got: {:?}", result)
         }
     }
 

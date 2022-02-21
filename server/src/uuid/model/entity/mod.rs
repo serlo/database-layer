@@ -533,7 +533,6 @@ impl Entity {
 
         transaction.commit().await?;
 
-        // It would be better to return an EntityRevision, instead of a Uuid
         Ok(entity_revision)
     }
 }
@@ -820,9 +819,7 @@ mod tests {
     use crate::subscription::tests::fetch_subscription_by_user_and_object;
     use crate::subscription::Subscription;
     use crate::uuid::abstract_entity_revision::EntityRevisionType;
-    use crate::uuid::{
-        ConcreteUuid, EntityAddRevisionError, EntityAddRevisionInput, Uuid, UuidFetcher,
-    };
+    use crate::uuid::{ConcreteUuid, EntityAddRevisionInput, Uuid, UuidFetcher};
 
     #[actix_rt::test]
     async fn add_revision() {
@@ -855,7 +852,6 @@ mod tests {
         .await
         .unwrap();
 
-        // to get the last revision. Better would be to get the revision back in the response
         let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
             .fetch_one(&mut transaction)
             .await
@@ -927,7 +923,6 @@ mod tests {
         .await
         .unwrap();
 
-        // to get the last revision. Better would be to get the revision back in the response
         let not_checked_out_revision_id =
             sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
                 .fetch_one(&mut transaction)
@@ -976,7 +971,6 @@ mod tests {
         .await
         .unwrap();
 
-        // to get the last revision. Better would be to get the revision back in the response
         let checked_out_revision_id =
             sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
                 .fetch_one(&mut transaction)
@@ -1044,9 +1038,6 @@ mod tests {
             })
         );
     }
-
-    // TODO: test filling of fields  for each EntityRevisionType
-    // TODO: test event creation
 
     #[actix_rt::test]
     async fn checkout_revision() {

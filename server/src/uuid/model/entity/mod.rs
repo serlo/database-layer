@@ -417,13 +417,7 @@ pub struct EntityAddRevisionInput {
     pub needs_review: bool,
     pub subscribe_this: bool,
     pub subscribe_this_by_email: bool,
-    pub cohesive: Option<String>, // better would be something like Option<"true" | "false">
-    pub content: Option<String>,
-    pub description: Option<String>,
-    pub meta_description: Option<String>,
-    pub meta_title: Option<String>,
-    pub title: Option<String>,
-    pub url: Option<String>,
+    pub fields: HashMap<String, String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -485,78 +479,11 @@ impl Entity {
             return Err(EntityAddRevisionError::EntityNotFound);
         }
 
-        let fields = match payload.revision_type {
-            EntityRevisionType::Applet => HashMap::from([
-                ("content".to_string(), payload.input.content.unwrap()),
-                (
-                    "meta_description".to_string(),
-                    payload.input.meta_description.unwrap(),
-                ),
-                ("meta_title".to_string(), payload.input.meta_title.unwrap()),
-                ("title".to_string(), payload.input.title.unwrap()),
-                ("url".to_string(), payload.input.url.unwrap()),
-            ]),
-            EntityRevisionType::Article => HashMap::from([
-                ("content".to_string(), payload.input.content.unwrap()),
-                (
-                    "meta_description".to_string(),
-                    payload.input.meta_description.unwrap(),
-                ),
-                ("meta_title".to_string(), payload.input.meta_title.unwrap()),
-                ("title".to_string(), payload.input.title.unwrap()),
-            ]),
-            EntityRevisionType::Course => HashMap::from([
-                ("content".to_string(), payload.input.content.unwrap()),
-                (
-                    "meta_description".to_string(),
-                    payload.input.meta_description.unwrap(),
-                ),
-                ("title".to_string(), payload.input.title.unwrap()),
-            ]),
-            EntityRevisionType::CoursePage => HashMap::from([
-                ("content".to_string(), payload.input.content.unwrap()),
-                ("title".to_string(), payload.input.title.unwrap()),
-            ]),
-            EntityRevisionType::Event => HashMap::from([
-                ("content".to_string(), payload.input.content.unwrap()),
-                (
-                    "meta_description".to_string(),
-                    payload.input.meta_description.unwrap(),
-                ),
-                ("meta_title".to_string(), payload.input.meta_title.unwrap()),
-                ("title".to_string(), payload.input.title.unwrap()),
-            ]),
-            EntityRevisionType::Exercise => {
-                HashMap::from([("content".to_string(), payload.input.content.unwrap())])
-            }
-            EntityRevisionType::ExerciseGroup => HashMap::from([
-                ("content".to_string(), payload.input.content.unwrap()),
-                (
-                    "cohesive".to_string(),
-                    payload.input.meta_description.unwrap(),
-                ),
-            ]),
-            EntityRevisionType::GroupedExercise => {
-                HashMap::from([("content".to_string(), payload.input.content.unwrap())])
-            }
-            EntityRevisionType::Solution => {
-                HashMap::from([("content".to_string(), payload.input.content.unwrap())])
-            }
-            EntityRevisionType::Video => HashMap::from([
-                ("content".to_string(), payload.input.content.unwrap()),
-                (
-                    "description".to_string(),
-                    payload.input.description.unwrap(),
-                ),
-                ("title".to_string(), payload.input.title.unwrap()),
-            ]),
-        };
-
         let entity_revision = EntityRevisionPayload::new(
             payload.user_id,
             payload.input.entity_id,
             payload.input.changes,
-            fields,
+            payload.input.fields,
         )
         .save(&mut transaction)
         .await?;
@@ -881,6 +808,7 @@ impl Entity {
 #[cfg(test)]
 mod tests {
     use chrono::Duration;
+    use std::collections::HashMap;
 
     use super::{
         Entity, EntityAddRevisionPayload, EntityCheckoutRevisionError,
@@ -909,13 +837,15 @@ mod tests {
                     needs_review: true,
                     subscribe_this: false,
                     subscribe_this_by_email: false,
-                    content: Some("test content".to_string()),
-                    meta_description: Some("test meta-description".to_string()),
-                    meta_title: Some("test meta-title".to_string()),
-                    title: Some("test title".to_string()),
-                    cohesive: None,
-                    description: None,
-                    url: None,
+                    fields: HashMap::from([
+                        ("content".to_string(), "test content".to_string()),
+                        (
+                            "meta_description".to_string(),
+                            "test meta-description".to_string(),
+                        ),
+                        ("meta_title".to_string(), "test meta-title".to_string()),
+                        ("title".to_string(), "test title".to_string()),
+                    ]),
                 },
                 revision_type: EntityRevisionType::Article,
                 user_id: 1,
@@ -979,13 +909,15 @@ mod tests {
                     needs_review: true,
                     subscribe_this: false,
                     subscribe_this_by_email: false,
-                    content: Some("test content".to_string()),
-                    meta_description: Some("test meta-description".to_string()),
-                    meta_title: Some("test meta-title".to_string()),
-                    title: Some("test title".to_string()),
-                    cohesive: None,
-                    description: None,
-                    url: None,
+                    fields: HashMap::from([
+                        ("content".to_string(), "test content".to_string()),
+                        (
+                            "meta_description".to_string(),
+                            "test meta-description".to_string(),
+                        ),
+                        ("meta_title".to_string(), "test meta-title".to_string()),
+                        ("title".to_string(), "test title".to_string()),
+                    ]),
                 },
                 revision_type: EntityRevisionType::Article,
                 user_id: 1,
@@ -1026,13 +958,15 @@ mod tests {
                     needs_review: false,
                     subscribe_this: false,
                     subscribe_this_by_email: false,
-                    content: Some("test content".to_string()),
-                    meta_description: Some("test meta-description".to_string()),
-                    meta_title: Some("test meta-title".to_string()),
-                    title: Some("test title".to_string()),
-                    cohesive: None,
-                    description: None,
-                    url: None,
+                    fields: HashMap::from([
+                        ("content".to_string(), "test content".to_string()),
+                        (
+                            "meta_description".to_string(),
+                            "test meta-description".to_string(),
+                        ),
+                        ("meta_title".to_string(), "test meta-title".to_string()),
+                        ("title".to_string(), "test title".to_string()),
+                    ]),
                 },
                 revision_type: EntityRevisionType::Article,
                 user_id: 1,
@@ -1079,13 +1013,15 @@ mod tests {
                     needs_review: true,
                     subscribe_this: true,
                     subscribe_this_by_email: true,
-                    content: Some("test content".to_string()),
-                    meta_description: Some("test meta-description".to_string()),
-                    meta_title: Some("test meta-title".to_string()),
-                    title: Some("test title".to_string()),
-                    cohesive: None,
-                    description: None,
-                    url: None,
+                    fields: HashMap::from([
+                        ("content".to_string(), "test content".to_string()),
+                        (
+                            "meta_description".to_string(),
+                            "test meta-description".to_string(),
+                        ),
+                        ("meta_title".to_string(), "test meta-title".to_string()),
+                        ("title".to_string(), "test title".to_string()),
+                    ]),
                 },
                 revision_type: EntityRevisionType::Article,
                 user_id: 1,

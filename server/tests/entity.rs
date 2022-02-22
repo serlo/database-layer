@@ -65,9 +65,8 @@ mod add_revision_mutation {
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");
             assert_eq!(result["content"], "test content");
-            // FIXME: these are returning "", since metaTitle and metaDescription shouldn't be stored in camel case
-            // assert_eq!(result["metaTitle"], "test metaTitle");
-            // assert_eq!(result["metaDescription"], "test metaDescription");
+            assert_eq!(result["metaTitle"], "test metaTitle");
+            assert_eq!(result["metaDescription"], "test metaDescription");
             assert_eq!(result["title"], "test title");
             assert_eq!(result["url"], "test url");
         })

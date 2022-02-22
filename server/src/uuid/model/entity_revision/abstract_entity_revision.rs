@@ -150,12 +150,21 @@ impl EntityRevisionPayload {
         .await?;
 
         for (field, value) in &self.fields {
+            let field_snake_case: String;
+            if field == &"metaDescription".to_string() {
+                field_snake_case = "meta_description".to_string();
+            } else if field == &"metaTitle".to_string() {
+                field_snake_case = "meta_title".to_string();
+            } else {
+                field_snake_case = field.clone();
+            }
+
             sqlx::query!(
                 r#"
                     INSERT INTO entity_revision_field (field, value, entity_revision_id)
                         VALUES (?, ?, ?)
                 "#,
-                field,
+                field_snake_case,
                 value,
                 entity_revision_id,
             )

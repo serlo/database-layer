@@ -119,6 +119,91 @@ impl UuidFetcher for Page {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PageAddRevisionPayload {
+    pub content: String,
+    pub title: String,
+    pub page_id: i32,
+    pub user_id: i32,
+}
+
+#[derive(Error, Debug)]
+pub enum PageAddRevisionError {
+    #[error("Revision could not be added because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("Revision could not be added because of an UUID error: {inner:?}.")]
+    UuidError { inner: UuidError },
+    #[error("Revision could not be added because page was not found.")]
+    PageNotFound,
+}
+impl From<sqlx::Error> for PageAddRevisionError {
+    fn from(inner: sqlx::Error) -> Self {
+        Self::DatabaseError { inner }
+    }
+}
+
+impl From<UuidError> for PageAddRevisionError {
+    fn from(error: UuidError) -> Self {
+        match error {
+            UuidError::DatabaseError { inner } => inner.into(),
+            inner => Self::UuidError { inner },
+        }
+    }
+}
+
+impl Page {
+    pub async fn add_revision<'a, E>(
+        payload: PageAddRevisionPayload,
+        executor: E,
+    ) -> Result<Uuid, PageAddRevisionError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        if let Err(UuidError::NotFound) =
+            Page::fetch_via_transaction(payload.page_id, &mut transaction).await
+        {
+            return Err(PageAddRevisionError::PageNotFound);
+        }
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (trashed, discriminator)
+                    VALUES (0, 'pageRevision')
+            "#,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let page_revision_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO page_revision (id, author_id, page_repository_id, title, content)
+                    VALUES (?, ?, ?, ?, ?)
+            "#,
+            page_revision_id,
+            payload.user_id,
+            payload.page_id,
+            payload.title,
+            payload.content
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let uuid = PageRevision::fetch_via_transaction(page_revision_id, &mut transaction).await?;
+
+        transaction.commit().await?;
+
+        Ok(uuid)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PageCheckoutRevisionPayload {
     pub revision_id: i32,
     pub user_id: i32,
@@ -339,8 +424,58 @@ mod tests {
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-    use crate::uuid::{ConcreteUuid, Uuid, UuidFetcher};
-    //
+    use crate::uuid::{
+        ConcreteUuid, PageAddRevisionError, PageAddRevisionPayload, Uuid, UuidFetcher,
+    };
+
+    #[actix_rt::test]
+    async fn add_revision() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let uuid = Page::add_revision(
+            PageAddRevisionPayload {
+                content: "test content".to_string(),
+                title: "test title".to_string(),
+                user_id: 1,
+                page_id: 19860,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        if let ConcreteUuid::PageRevision(revision) = uuid.concrete_uuid {
+            assert_eq!(revision.title, "test title".to_string());
+            assert_eq!(revision.content, "test content".to_string());
+            assert_eq!(revision.author_id, 1);
+        } else {
+            panic!("Page Revision does not fulfill assertions: {:?}", uuid)
+        }
+    }
+
+    #[actix_rt::test]
+    async fn add_revision_page_not_found() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let result = Page::add_revision(
+            PageAddRevisionPayload {
+                content: "test content".to_string(),
+                title: "test title".to_string(),
+                user_id: 1,
+                page_id: 1,
+            },
+            &mut transaction,
+        )
+        .await;
+
+        if let Err(PageAddRevisionError::PageNotFound) = result {
+            // This is the expected branch.
+        } else {
+            panic!("Expected `EntityNotFound` error, got: {:?}", result)
+        }
+    }
 
     #[actix_rt::test]
     async fn checkout_revision() {

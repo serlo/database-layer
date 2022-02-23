@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::database::Connection;
 use crate::message::MessageResponder;
+use crate::uuid::{PageAddRevisionError, PageAddRevisionPayload};
 
 use super::{
     Page, PageCheckoutRevisionError, PageCheckoutRevisionPayload, PageRejectRevisionError,
@@ -13,6 +14,7 @@ use super::{
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum PageMessage {
+    PageAddRevisionMutation(PageAddRevisionMutation),
     PageCheckoutRevisionMutation(PageCheckoutRevisionMutation),
     PageRejectRevisionMutation(PageRejectRevisionMutation),
 }
@@ -22,8 +24,71 @@ impl MessageResponder for PageMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
+            PageMessage::PageAddRevisionMutation(message) => message.handle(connection).await,
             PageMessage::PageCheckoutRevisionMutation(message) => message.handle(connection).await,
             PageMessage::PageRejectRevisionMutation(message) => message.handle(connection).await,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageAddRevisionMutation {
+    pub content: String,
+    pub title: String,
+    pub page_id: i32,
+    pub user_id: i32,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageAddRevisionData {
+    pub success: bool,
+    pub reason: Option<String>,
+    pub page_revision_id: Option<i32>,
+}
+
+#[async_trait]
+impl MessageResponder for PageAddRevisionMutation {
+    #[allow(clippy::async_yields_async)]
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let payload = PageAddRevisionPayload {
+            content: self.content.clone(),
+            title: self.title.clone(),
+            page_id: self.page_id,
+            user_id: self.user_id,
+        };
+
+        let entity_revision = match connection {
+            Connection::Pool(pool) => Page::add_revision(payload, pool).await,
+            Connection::Transaction(transaction) => Page::add_revision(payload, transaction).await,
+        };
+
+        match entity_revision {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(PageAddRevisionData {
+                    success: true,
+                    reason: None,
+                    page_revision_id: Some(data.id),
+                }),
+            Err(error) => {
+                println!("/add-revision: {:?}", error);
+                match error {
+                    PageAddRevisionError::DatabaseError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    PageAddRevisionError::UuidError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    PageAddRevisionError::PageNotFound { .. } => {
+                        HttpResponse::BadRequest().json(PageRevisionData {
+                            success: false,
+                            reason: Some("no page found for provided pageId".to_string()),
+                        })
+                    }
+                }
+            }
         }
     }
 }

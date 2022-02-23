@@ -1862,6 +1862,16 @@
       ]
     }
   },
+  "b06a90ba7abee0f9ef7b237142448f14413a129a647debe16df0a03ba2066b82": {
+    "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, 'pageRevision')\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": []
+    }
+  },
   "b67a6cd1168e030043fc309da009c241d88b7543ce11598b7e183086dd2f5077": {
     "query": "\n                SELECT entity_id\n                    FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n                    ORDER BY position ASC\n            ",
     "describe": {
@@ -2706,6 +2716,16 @@
       "columns": [],
       "parameters": {
         "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "fb7a566e9ea371a8e210e88cec9d3e4cf0832ccc6706c7a164275bd43d86f596": {
+    "query": "\n                INSERT INTO page_revision (id, author_id, page_repository_id, title, content)\n                    VALUES (?, ?, ?, ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 5
       },
       "nullable": []
     }

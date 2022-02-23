@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
+use crate::database::Executor;
 use serde::{Deserialize, Serialize};
 
 use super::UuidError;
 use crate::datetime::DateTime;
-use crate::uuid::EntityType;
+use crate::uuid::{EntityAddRevisionError, EntityRevision, EntityType, Uuid, UuidFetcher};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -20,7 +21,7 @@ pub struct AbstractEntityRevision {
     pub fields: EntityRevisionFields,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all(deserialize = "kebab-case"))]
 pub enum EntityRevisionType {
     #[serde(rename = "AppletRevision")]
@@ -80,5 +81,102 @@ impl EntityRevisionFields {
             .get(name)
             .map(|value| value.to_string())
             .unwrap_or_else(|| default.to_string())
+    }
+}
+
+pub struct EntityRevisionPayload {
+    pub author_id: i32,
+    pub repository_id: i32,
+    pub changes: String,
+    pub fields: HashMap<String, String>,
+}
+
+impl EntityRevisionPayload {
+    pub fn new(
+        author_id: i32,
+        repository_id: i32,
+        changes: String,
+        fields: HashMap<String, String>,
+    ) -> Self {
+        Self {
+            author_id,
+            repository_id,
+            changes,
+            fields,
+        }
+    }
+
+    pub async fn save<'a, E>(&self, executor: E) -> Result<Uuid, EntityAddRevisionError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (trashed, discriminator)
+                    VALUES (0, 'entityRevision')
+            "#,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let entity_revision_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO entity_revision (id, author_id, repository_id)
+                    VALUES (?, ?, ?)
+            "#,
+            entity_revision_id,
+            self.author_id,
+            self.repository_id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO entity_revision_field (field, value, entity_revision_id)
+                    VALUES ("changes", ?, ?)
+            "#,
+            self.changes,
+            entity_revision_id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        for (field, value) in &self.fields {
+            let field_snake_case: String;
+            if field == &"metaDescription".to_string() {
+                field_snake_case = "meta_description".to_string();
+            } else if field == &"metaTitle".to_string() {
+                field_snake_case = "meta_title".to_string();
+            } else {
+                field_snake_case = field.clone();
+            }
+
+            sqlx::query!(
+                r#"
+                    INSERT INTO entity_revision_field (field, value, entity_revision_id)
+                        VALUES (?, ?, ?)
+                "#,
+                field_snake_case,
+                value,
+                entity_revision_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        let uuid =
+            EntityRevision::fetch_via_transaction(entity_revision_id, &mut transaction).await?;
+
+        transaction.commit().await?;
+
+        Ok(uuid)
     }
 }

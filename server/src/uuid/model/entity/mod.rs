@@ -4,17 +4,21 @@ use futures::try_join;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use sqlx::Row;
+use std::collections::HashMap;
 use thiserror::Error;
 
 use abstract_entity::AbstractEntity;
 pub use entity_type::EntityType;
 
+use super::entity_revision::abstract_entity_revision::EntityRevisionPayload;
 use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
-use crate::event::{EventError, RevisionEventPayload};
+use crate::event::{CreateEntityRevisionEventPayload, EventError, RevisionEventPayload};
 use crate::format_alias;
 
+use crate::subscription::Subscription;
+use crate::uuid::abstract_entity_revision::EntityRevisionType;
 pub use messages::*;
 
 mod abstract_entity;
@@ -405,6 +409,134 @@ impl Entity {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EntityAddRevisionInput {
+    pub changes: String,
+    pub entity_id: i32,
+    pub needs_review: bool,
+    pub subscribe_this: bool,
+    pub subscribe_this_by_email: bool,
+    pub fields: HashMap<String, String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EntityAddRevisionPayload {
+    pub input: EntityAddRevisionInput,
+    pub revision_type: EntityRevisionType,
+    pub user_id: i32,
+}
+
+#[derive(Error, Debug)]
+pub enum EntityAddRevisionError {
+    #[error("Revision could not be added because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("Revision could not be added because of an event error: {inner:?}.")]
+    EventError { inner: EventError },
+    #[error("Revision could not be added because of an UUID error: {inner:?}.")]
+    UuidError { inner: UuidError },
+    #[error("Revision could not be added because entity was not found.")]
+    EntityNotFound,
+}
+impl From<sqlx::Error> for EntityAddRevisionError {
+    fn from(inner: sqlx::Error) -> Self {
+        Self::DatabaseError { inner }
+    }
+}
+
+impl From<UuidError> for EntityAddRevisionError {
+    fn from(error: UuidError) -> Self {
+        match error {
+            UuidError::DatabaseError { inner } => inner.into(),
+            inner => Self::UuidError { inner },
+        }
+    }
+}
+
+impl From<EventError> for EntityAddRevisionError {
+    fn from(error: EventError) -> Self {
+        match error {
+            EventError::DatabaseError { inner } => inner.into(),
+            inner => Self::EventError { inner },
+        }
+    }
+}
+
+impl Entity {
+    pub async fn add_revision<'a, E>(
+        payload: EntityAddRevisionPayload,
+        executor: E,
+    ) -> Result<Uuid, EntityAddRevisionError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        if let Err(UuidError::NotFound) =
+            Entity::fetch_via_transaction(payload.input.entity_id, &mut transaction).await
+        {
+            return Err(EntityAddRevisionError::EntityNotFound);
+        }
+
+        let entity_revision = EntityRevisionPayload::new(
+            payload.user_id,
+            payload.input.entity_id,
+            payload.input.changes,
+            payload.input.fields,
+        )
+        .save(&mut transaction)
+        .await?;
+        if !payload.input.needs_review {
+            let _ = Entity::checkout_revision(
+                EntityCheckoutRevisionPayload {
+                    revision_id: entity_revision.id,
+                    user_id: payload.user_id,
+                    reason: "".to_string(),
+                },
+                &mut transaction,
+            )
+            .await;
+        }
+
+        if payload.input.subscribe_this {
+            Subscription::save(
+                &Subscription {
+                    object_id: payload.input.entity_id,
+                    user_id: payload.user_id,
+                    send_email: payload.input.subscribe_this_by_email,
+                },
+                &mut transaction,
+            )
+            .await?;
+        }
+
+        let instance_id = sqlx::query!(
+            r#"
+                SELECT instance_id
+                    FROM entity
+                    WHERE id = ?
+            "#,
+            payload.input.entity_id
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .instance_id as i32;
+
+        CreateEntityRevisionEventPayload::new(
+            payload.input.entity_id,
+            payload.user_id,
+            instance_id,
+        )
+        .save(&mut transaction)
+        .await?;
+
+        transaction.commit().await?;
+
+        Ok(entity_revision)
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntityCheckoutRevisionPayload {
@@ -675,14 +807,237 @@ impl Entity {
 #[cfg(test)]
 mod tests {
     use chrono::Duration;
+    use std::collections::HashMap;
 
     use super::{
-        Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload,
-        EntityRejectRevisionError, EntityRejectRevisionPayload, EntityRevision,
+        Entity, EntityAddRevisionPayload, EntityCheckoutRevisionError,
+        EntityCheckoutRevisionPayload, EntityRejectRevisionError, EntityRejectRevisionPayload,
+        EntityRevision,
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-    use crate::uuid::{ConcreteUuid, Uuid, UuidFetcher};
+    use crate::subscription::tests::fetch_subscription_by_user_and_object;
+    use crate::subscription::Subscription;
+    use crate::uuid::abstract_entity_revision::EntityRevisionType;
+    use crate::uuid::{ConcreteUuid, EntityAddRevisionInput, Uuid, UuidFetcher};
+
+    #[actix_rt::test]
+    async fn add_revision() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Entity::add_revision(
+            EntityAddRevisionPayload {
+                input: EntityAddRevisionInput {
+                    changes: "test changes".to_string(),
+                    entity_id: 1495,
+                    needs_review: true,
+                    subscribe_this: false,
+                    subscribe_this_by_email: false,
+                    fields: HashMap::from([
+                        ("content".to_string(), "test content".to_string()),
+                        (
+                            "meta_description".to_string(),
+                            "test meta-description".to_string(),
+                        ),
+                        ("meta_title".to_string(), "test meta-title".to_string()),
+                        ("title".to_string(), "test title".to_string()),
+                    ]),
+                },
+                revision_type: EntityRevisionType::Article,
+                user_id: 1,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap()
+            .id as i32;
+
+        let revision = EntityRevision::fetch_via_transaction(revision_id, &mut transaction)
+            .await
+            .unwrap();
+
+        if let ConcreteUuid::EntityRevision(EntityRevision {
+            abstract_entity_revision,
+            ..
+        }) = revision.concrete_uuid
+        {
+            assert_eq!(abstract_entity_revision.changes, "test changes".to_string());
+            assert_eq!(
+                abstract_entity_revision.fields.0["title"],
+                "test title".to_string()
+            );
+            assert_eq!(
+                abstract_entity_revision.fields.0["content"],
+                "test content".to_string()
+            );
+            assert_eq!(
+                abstract_entity_revision.fields.0["meta_description"],
+                "test meta-description".to_string()
+            );
+            assert_eq!(
+                abstract_entity_revision.fields.0["meta_title"],
+                "test meta-title".to_string()
+            );
+        } else {
+            panic!(
+                "Entity Revision does not fulfill assertions: {:?}",
+                revision
+            )
+        }
+    }
+
+    #[actix_rt::test]
+    async fn add_revision_needs_review_param() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Entity::add_revision(
+            EntityAddRevisionPayload {
+                input: EntityAddRevisionInput {
+                    changes: "test changes".to_string(),
+                    entity_id: 1495,
+                    needs_review: true,
+                    subscribe_this: false,
+                    subscribe_this_by_email: false,
+                    fields: HashMap::from([
+                        ("content".to_string(), "test content".to_string()),
+                        (
+                            "meta_description".to_string(),
+                            "test meta-description".to_string(),
+                        ),
+                        ("meta_title".to_string(), "test meta-title".to_string()),
+                        ("title".to_string(), "test title".to_string()),
+                    ]),
+                },
+                revision_type: EntityRevisionType::Article,
+                user_id: 1,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        let not_checked_out_revision_id =
+            sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
+                .fetch_one(&mut transaction)
+                .await
+                .unwrap()
+                .id as i32;
+
+        let entity = Entity::fetch_via_transaction(1495, &mut transaction)
+            .await
+            .unwrap();
+        if let ConcreteUuid::Entity(Entity {
+            abstract_entity, ..
+        }) = entity.concrete_uuid
+        {
+            assert_ne!(
+                abstract_entity.current_revision_id,
+                Some(not_checked_out_revision_id)
+            );
+        } else {
+            panic!("Entity does not fulfill assertions: {:?}", entity)
+        }
+
+        Entity::add_revision(
+            EntityAddRevisionPayload {
+                input: EntityAddRevisionInput {
+                    changes: "test changes".to_string(),
+                    entity_id: 1495,
+                    needs_review: false,
+                    subscribe_this: false,
+                    subscribe_this_by_email: false,
+                    fields: HashMap::from([
+                        ("content".to_string(), "test content".to_string()),
+                        (
+                            "meta_description".to_string(),
+                            "test meta-description".to_string(),
+                        ),
+                        ("meta_title".to_string(), "test meta-title".to_string()),
+                        ("title".to_string(), "test title".to_string()),
+                    ]),
+                },
+                revision_type: EntityRevisionType::Article,
+                user_id: 1,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        let checked_out_revision_id =
+            sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
+                .fetch_one(&mut transaction)
+                .await
+                .unwrap()
+                .id as i32;
+
+        let entity = Entity::fetch_via_transaction(1495, &mut transaction)
+            .await
+            .unwrap();
+        if let ConcreteUuid::Entity(Entity {
+            abstract_entity, ..
+        }) = entity.concrete_uuid
+        {
+            assert_eq!(
+                abstract_entity.current_revision_id,
+                Some(checked_out_revision_id)
+            );
+        } else {
+            panic!("Entity does not fulfill assertions: {:?}", entity)
+        }
+    }
+
+    #[actix_rt::test]
+    async fn add_revision_subscribe() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        Entity::add_revision(
+            EntityAddRevisionPayload {
+                input: EntityAddRevisionInput {
+                    changes: "test changes".to_string(),
+                    entity_id: 1497,
+                    needs_review: true,
+                    subscribe_this: true,
+                    subscribe_this_by_email: true,
+                    fields: HashMap::from([
+                        ("content".to_string(), "test content".to_string()),
+                        (
+                            "meta_description".to_string(),
+                            "test meta-description".to_string(),
+                        ),
+                        ("meta_title".to_string(), "test meta-title".to_string()),
+                        ("title".to_string(), "test title".to_string()),
+                    ]),
+                },
+                revision_type: EntityRevisionType::Article,
+                user_id: 1,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        let entity_subscription = fetch_subscription_by_user_and_object(1, 1497, &mut transaction)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            entity_subscription,
+            Some(Subscription {
+                object_id: 1497,
+                user_id: 1,
+                send_email: true
+            })
+        );
+    }
 
     #[actix_rt::test]
     async fn checkout_revision() {

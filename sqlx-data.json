@@ -88,6 +88,16 @@
       ]
     }
   },
+  "08d52f52a3f403c1226396383f9810f0e81653e16d2e88d18c9dcf492ef5d2ba": {
+    "query": "\n                INSERT INTO entity_revision (id, author_id, repository_id)\n                    VALUES (?, ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
   "09965570050adbd7f9f7b6e158a1b5e95d13eab605d25b207bc9898dd9a6fe47": {
     "query": "\n                SELECT id\n                    FROM comment\n                    WHERE parent_id = ?\n            ",
     "describe": {
@@ -503,6 +513,16 @@
         false,
         false
       ]
+    }
+  },
+  "2b20b8721b218b0e08cfa2ba1f1a769e6e0ae366d6430b09202f56422df5a83b": {
+    "query": "\n                    INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                        VALUES (?, ?, ?)\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
     }
   },
   "2b40b2053d2083dbdc2ba4229260ef613c0b10e606099d083ffe75dc2117e4ac": {
@@ -1242,6 +1262,16 @@
       "nullable": []
     }
   },
+  "7e34c538baab3f54b402322473b9d7f730122c6023ef4b55f73021d74410e362": {
+    "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, 'entityRevision')\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": []
+    }
+  },
   "82e05bbc646bebf37b97af3f23e8599937749cb7ecf4b03bfd079ec152651862": {
     "query": "\n                    SELECT archived FROM comment WHERE id = ?\n                ",
     "describe": {
@@ -1412,6 +1442,31 @@
       ],
       "parameters": {
         "Right": 3
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "8f0dd5d7b5aa39d811447034f9caa898d9298e339fb68774b8f22b0d798fd2d9": {
+    "query": "\n                SELECT instance_id\n                    FROM entity\n                    WHERE id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "instance_id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
       },
       "nullable": [
         false
@@ -2643,6 +2698,16 @@
         false,
         false
       ]
+    }
+  },
+  "f46abdd164878cc0099fb55982a6ba349c56788b23aade73b7b37e98073364fc": {
+    "query": "\n                INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                    VALUES (\"changes\", ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
     }
   },
   "fc0ca0f5bbca56646e9a9cbad7d897b684ca6301e1c63c108d1497592ef3f34b": {

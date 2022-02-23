@@ -171,7 +171,7 @@ impl Subscription {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::{Subscription, Subscriptions};
     use crate::create_database_pool;
     use crate::database::Executor;
@@ -267,7 +267,7 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn create_subscription_already_existing() {
+    pub async fn create_subscription_already_existing() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
@@ -324,7 +324,7 @@ mod tests {
         assert!(subscription.is_none());
     }
 
-    async fn fetch_subscription_by_user_and_object<'a, E>(
+    pub async fn fetch_subscription_by_user_and_object<'a, E>(
         user_id: i32,
         object_id: i32,
         executor: E,

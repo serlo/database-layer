@@ -3,15 +3,18 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload, EntityRejectRevisionError,
-    EntityRejectRevisionPayload,
+    Entity, EntityAddRevisionError, EntityAddRevisionPayload, EntityCheckoutRevisionError,
+    EntityCheckoutRevisionPayload, EntityRejectRevisionError, EntityRejectRevisionPayload,
 };
 use crate::database::Connection;
 use crate::message::MessageResponder;
+use crate::uuid::abstract_entity_revision::EntityRevisionType;
+use crate::uuid::EntityAddRevisionInput;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum EntityMessage {
+    EntityAddRevisionMutation(EntityAddRevisionMutation),
     EntityCheckoutRevisionMutation(EntityCheckoutRevisionMutation),
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
@@ -22,6 +25,7 @@ impl MessageResponder for EntityMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
+            EntityMessage::EntityAddRevisionMutation(message) => message.handle(connection).await,
             EntityMessage::EntityCheckoutRevisionMutation(message) => {
                 message.handle(connection).await
             }
@@ -29,6 +33,68 @@ impl MessageResponder for EntityMessage {
                 message.handle(connection).await
             }
             EntityMessage::UnrevisedEntitiesQuery(message) => message.handle(connection).await,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EntityAddRevisionMutation {
+    pub input: EntityAddRevisionInput,
+    pub revision_type: EntityRevisionType,
+    pub user_id: i32,
+}
+
+#[async_trait]
+impl MessageResponder for EntityAddRevisionMutation {
+    #[allow(clippy::async_yields_async)]
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let payload = EntityAddRevisionPayload {
+            input: EntityAddRevisionInput {
+                changes: self.input.changes.clone(),
+                entity_id: self.input.entity_id,
+                needs_review: self.input.needs_review,
+                subscribe_this: self.input.subscribe_this,
+                subscribe_this_by_email: self.input.subscribe_this_by_email,
+                fields: self.input.fields.clone(),
+            },
+            revision_type: self.revision_type,
+            user_id: self.user_id,
+        };
+
+        let entity_revision = match connection {
+            Connection::Pool(pool) => Entity::add_revision(payload, pool).await,
+            Connection::Transaction(transaction) => {
+                Entity::add_revision(payload, transaction).await
+            }
+        };
+
+        match entity_revision {
+            Ok(_) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(EntityRevisionData {
+                    success: true,
+                    reason: None,
+                }),
+            Err(error) => {
+                println!("/add-revision: {:?}", error);
+                match error {
+                    EntityAddRevisionError::DatabaseError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    EntityAddRevisionError::EventError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    EntityAddRevisionError::UuidError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    EntityAddRevisionError::EntityNotFound { .. } => HttpResponse::BadRequest()
+                        .json(EntityRevisionData {
+                            success: false,
+                            reason: Some("no entity found for provided entity_id".to_string()),
+                        }),
+                }
+            }
         }
     }
 }

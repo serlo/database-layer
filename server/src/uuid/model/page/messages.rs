@@ -59,12 +59,12 @@ impl MessageResponder for PageAddRevisionMutation {
             user_id: self.user_id,
         };
 
-        let entity_revision = match connection {
+        let page_revision = match connection {
             Connection::Pool(pool) => Page::add_revision(payload, pool).await,
             Connection::Transaction(transaction) => Page::add_revision(payload, transaction).await,
         };
 
-        match entity_revision {
+        match page_revision {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(PageAddRevisionData {

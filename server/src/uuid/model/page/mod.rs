@@ -131,7 +131,9 @@ pub enum PageAddRevisionError {
     #[error("Revision could not be added because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
     #[error("Revision could not be added out because of an event error: {inner:?}.")]
-    CheckoutRevisionError { inner: Box<PageCheckoutRevisionError> },
+    CheckoutRevisionError {
+        inner: Box<PageCheckoutRevisionError>,
+    },
     #[error("Revision could not be added because of an UUID error: {inner:?}.")]
     UuidError { inner: UuidError },
     #[error("Revision could not be added because page was not found.")]
@@ -145,7 +147,9 @@ impl From<sqlx::Error> for PageAddRevisionError {
 
 impl From<PageCheckoutRevisionError> for PageAddRevisionError {
     fn from(inner: PageCheckoutRevisionError) -> Self {
-        Self::CheckoutRevisionError { inner: Box::new(inner) }
+        Self::CheckoutRevisionError {
+            inner: Box::new(inner),
+        }
     }
 }
 

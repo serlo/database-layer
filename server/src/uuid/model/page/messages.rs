@@ -73,7 +73,7 @@ impl MessageResponder for PageAddRevisionMutation {
                     page_revision_id: Some(data.id),
                 }),
             Err(error) => {
-                println!("/add-revision: {:?}", error);
+                println!("/page-add-revision: {:?}", error);
                 match error {
                     PageAddRevisionError::DatabaseError { .. } => {
                         HttpResponse::InternalServerError().finish()
@@ -86,6 +86,9 @@ impl MessageResponder for PageAddRevisionMutation {
                             success: false,
                             reason: Some("no page found for provided pageId".to_string()),
                         })
+                    }
+                    PageAddRevisionError::CheckoutRevisionError { .. } => {
+                        HttpResponse::InternalServerError().finish()
                     }
                 }
             }

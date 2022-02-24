@@ -130,6 +130,8 @@ pub struct PageAddRevisionPayload {
 pub enum PageAddRevisionError {
     #[error("Revision could not be added because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
+    #[error("Revision could not be added out because of an event error: {inner:?}.")]
+    CheckoutRevisionError { inner: Box<PageCheckoutRevisionError> },
     #[error("Revision could not be added because of an UUID error: {inner:?}.")]
     UuidError { inner: UuidError },
     #[error("Revision could not be added because page was not found.")]
@@ -138,6 +140,12 @@ pub enum PageAddRevisionError {
 impl From<sqlx::Error> for PageAddRevisionError {
     fn from(inner: sqlx::Error) -> Self {
         Self::DatabaseError { inner }
+    }
+}
+
+impl From<PageCheckoutRevisionError> for PageAddRevisionError {
+    fn from(inner: PageCheckoutRevisionError) -> Self {
+        Self::CheckoutRevisionError { inner: Box::new(inner) }
     }
 }
 
@@ -192,6 +200,16 @@ impl Page {
             payload.content
         )
         .execute(&mut transaction)
+        .await?;
+
+        Page::checkout_revision(
+            PageCheckoutRevisionPayload {
+                revision_id: page_revision_id,
+                user_id: payload.user_id,
+                reason: "".to_string(),
+            },
+            &mut transaction,
+        )
         .await?;
 
         let uuid = PageRevision::fetch_via_transaction(page_revision_id, &mut transaction).await?;

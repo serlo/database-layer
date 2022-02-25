@@ -12,7 +12,7 @@ bench = false
 doc = false
 
 [dependencies]
-actix-web = "4.0.0-beta"
+actix-web = "4.0.0-rc"
 rand = "0.8.0"
 serde_json = "1.0.0"
 server = { path="../server" }

@@ -73,11 +73,11 @@ impl Vocabulary {
     where
         E: Executor<'a>,
     {
-        let types_allowlist: HashSet<TaxonomyType> = types_allowlist.iter().cloned().collect();
-        let mut terms_blocklist: BTreeSet<i64> = terms_blocklist.iter().cloned().collect();
-
         const DCT: &str = "http://purl.org/dc/terms/";
         const SKOS: &str = "http://www.w3.org/2004/02/skos/core#";
+
+        let types_allowlist: HashSet<TaxonomyType> = types_allowlist.iter().cloned().collect();
+        let mut terms_blocklist: BTreeSet<i64> = terms_blocklist.iter().cloned().collect();
 
         let a_token = Iri::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")?;
         let lang = format!("{}", instance);

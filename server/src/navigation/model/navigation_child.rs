@@ -149,7 +149,7 @@ impl TryFrom<(RawNavigationChild, Vec<NavigationChild>)> for NavigationChild {
                     if let Some(subject) = raw_navigation_child.parameters.get("params.subject") {
                         Ok(NavigationChild::Url(UrlNavigationChild {
                             label,
-                            url: format!("/{}/entity/trash-bin", subject.replace(" ", "%20")),
+                            url: format!("/{}/entity/trash-bin", subject.replace(' ', "%20")),
                             children,
                         }))
                     } else {

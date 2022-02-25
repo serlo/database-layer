@@ -10,7 +10,7 @@ use crate::datetime::DateTime;
 use crate::format_alias;
 use crate::instance::Instance;
 
-use crate::event::{EventError, RevisionEventPayload};
+use crate::event::{CreateEntityRevisionEventPayload, EventError, RevisionEventPayload};
 use crate::uuid::PageRevision;
 pub use messages::*;
 
@@ -130,10 +130,12 @@ pub struct PageAddRevisionPayload {
 pub enum PageAddRevisionError {
     #[error("Revision could not be added because of a database error: {inner:?}.")]
     DatabaseError { inner: sqlx::Error },
-    #[error("Revision could not be added out because of an event error: {inner:?}.")]
+    #[error("Revision could not be added out because of an checkout error: {inner:?}.")]
     CheckoutRevisionError {
         inner: Box<PageCheckoutRevisionError>,
     },
+    #[error("Revision could not be added out because of an event error: {inner:?}.")]
+    EventError { inner: EventError },
     #[error("Revision could not be added because of an UUID error: {inner:?}.")]
     UuidError { inner: UuidError },
     #[error("Revision could not be added because page was not found.")]
@@ -146,9 +148,21 @@ impl From<sqlx::Error> for PageAddRevisionError {
 }
 
 impl From<PageCheckoutRevisionError> for PageAddRevisionError {
-    fn from(inner: PageCheckoutRevisionError) -> Self {
-        Self::CheckoutRevisionError {
-            inner: Box::new(inner),
+    fn from(error: PageCheckoutRevisionError) -> Self {
+        match error {
+            PageCheckoutRevisionError::DatabaseError { inner } => inner.into(),
+            inner => Self::CheckoutRevisionError {
+                inner: Box::new(inner),
+            },
+        }
+    }
+}
+
+impl From<EventError> for PageAddRevisionError {
+    fn from(error: EventError) -> Self {
+        match error {
+            EventError::DatabaseError { inner } => inner.into(),
+            inner => Self::EventError { inner },
         }
     }
 }
@@ -205,6 +219,22 @@ impl Page {
         )
         .execute(&mut transaction)
         .await?;
+
+        let instance_id = sqlx::query!(
+            r#"
+                SELECT instance_id
+                    FROM page_repository
+                    WHERE id = ?
+            "#,
+            payload.page_id
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .instance_id as i32;
+
+        CreateEntityRevisionEventPayload::new(payload.page_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
 
         Page::checkout_revision(
             PageCheckoutRevisionPayload {

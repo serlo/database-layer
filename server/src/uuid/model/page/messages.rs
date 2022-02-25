@@ -81,6 +81,9 @@ impl MessageResponder for PageAddRevisionMutation {
                     PageAddRevisionError::UuidError { .. } => {
                         HttpResponse::InternalServerError().finish()
                     }
+                    PageAddRevisionError::EventError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
                     PageAddRevisionError::PageNotFound { .. } => {
                         HttpResponse::BadRequest().json(PageRevisionData {
                             success: false,

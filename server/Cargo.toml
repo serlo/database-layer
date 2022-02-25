@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 actix-rt = "2.0.0"
 actix-service = "2.0.0"
-actix-web = "4.0.0-rc"
+actix-web = "4.0.0"
 async-trait = "0.1.0"
 chrono = { version = "0.4.0", features = ["serde"] }
 chrono-tz = "0.6.0"

@@ -7,11 +7,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: docker-compose up -d
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
           node-version: 16.x
-          cache: yarn
-      - run: yarn --frozen-lockfile
+      - run: yarn --immutable --immutable-cache
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable

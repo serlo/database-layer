@@ -1,4 +1,4 @@
-FROM rust:1.57 as build
+FROM rust:1.59 as build
 WORKDIR /usr/src/app
 COPY server server
 COPY test-utils test-utils

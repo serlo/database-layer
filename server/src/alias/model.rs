@@ -113,41 +113,37 @@ where
 
     let mut transaction = executor.begin().await?;
 
-    let id: i32 = match re.captures(path) {
-        Some(captures) => {
-            let username = captures.name("username").unwrap().as_str();
-            sqlx::query!(
-                r#"
+    let id = if let Some(captures) = re.captures(path) {
+        let username = captures.name("username").unwrap().as_str();
+        sqlx::query!(
+            r#"
                         SELECT id
                             FROM user
                             WHERE username = ?
                     "#,
-                username
-            )
-            .fetch_one(&mut transaction)
-            .await?
-            .id as i32
-        }
-        _ => {
-            let re = Regex::new(r"^(?P<subject>[^/]+/)?(?P<id>\d+)/(?P<title>[^/]*)$").unwrap();
-            match re.captures(path) {
-                Some(captures) => captures.name("id").unwrap().as_str().parse().unwrap(),
-                _ => {
-                    sqlx::query!(
-                        r#"
+            username
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .id as i32
+    } else {
+        let re = Regex::new(r"^(?P<subject>[^/]+/)?(?P<id>\d+)/(?P<title>[^/]*)$").unwrap();
+        if let Some(captures) = re.captures(path) {
+            captures.name("id").unwrap().as_str().parse().unwrap()
+        } else {
+            sqlx::query!(
+                r#"
                             SELECT a.uuid_id FROM url_alias a
                                 JOIN instance i on i.id = a.instance_id
                                 WHERE i.subdomain = ? AND a.alias = ?
                                 ORDER BY a.timestamp DESC
                         "#,
-                        instance,
-                        path
-                    )
-                    .fetch_one(&mut transaction)
-                    .await?
-                    .uuid_id as i32
-                }
-            }
+                instance,
+                path
+            )
+            .fetch_one(&mut transaction)
+            .await?
+            .uuid_id as i32
         }
     };
 

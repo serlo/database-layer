@@ -83,7 +83,7 @@ impl MessageResponder for EntityAddRevisionMutation {
                 .json(AddRevisionData {
                     success: true,
                     reason: None,
-                    revision_id: Some(data.id)
+                    revision_id: Some(data.id),
                 }),
             Err(error) => {
                 println!("/add-revision: {:?}", error);

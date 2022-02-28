@@ -368,6 +368,119 @@ impl Page {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PageCreatePayload {
+    pub content: String,
+    pub title: String,
+    pub license_id: i32,
+    pub discussions_enabled: bool,
+    pub forum_id: Option<i32>,
+    pub user_id: i32,
+    pub instance_id: i32,
+}
+
+#[derive(Error, Debug)]
+pub enum PageCreateError {
+    #[error("Page could not be created because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("Page could not be created because of a UUID error: {inner:?}.")]
+    UuidError { inner: UuidError },
+    #[error("Page could not be created because of a revision error: {inner:?}.")]
+    RevisionError { inner: PageAddRevisionError },
+}
+
+impl From<sqlx::Error> for PageCreateError {
+    fn from(inner: sqlx::Error) -> Self {
+        Self::DatabaseError { inner }
+    }
+}
+
+impl From<UuidError> for PageCreateError {
+    fn from(error: UuidError) -> Self {
+        match error {
+            UuidError::DatabaseError { inner } => inner.into(),
+            inner => Self::UuidError { inner },
+        }
+    }
+}
+
+impl From<PageAddRevisionError> for PageCreateError {
+    fn from(inner: PageAddRevisionError) -> Self {
+        Self::RevisionError { inner }
+    }
+}
+
+impl Page {
+    pub async fn create<'a, E>(
+        payload: PageCreatePayload,
+        executor: E,
+    ) -> Result<Uuid, PageCreateError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (trashed, discriminator)
+                    VALUES (0, 'page')
+            "#
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let page_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO page_repository (id, instance_id, license_id, discussions_enabled)
+                    VALUES (?, ?, ?, ?)
+            "#,
+            page_id,
+            payload.instance_id,
+            payload.license_id,
+            payload.discussions_enabled
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        if let Some(forum_id) = payload.forum_id {
+            sqlx::query!(
+                r#"
+                UPDATE page_repository
+                    SET forum_id = ?
+                    WHERE id = ?
+            "#,
+                forum_id,
+                page_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        };
+
+        Page::add_revision(
+            PageAddRevisionPayload {
+                content: payload.content.clone(),
+                title: payload.title.clone(),
+                page_id,
+                user_id: payload.user_id,
+            },
+            &mut transaction,
+        )
+        .await?;
+
+        let page = Page::fetch_via_transaction(page_id, &mut transaction).await?;
+
+        transaction.commit().await?;
+
+        Ok(page)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PageRejectRevisionPayload {
     pub revision_id: i32,
     pub user_id: i32,
@@ -480,8 +593,10 @@ mod tests {
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
+    use crate::instance::Instance;
     use crate::uuid::{
-        ConcreteUuid, PageAddRevisionError, PageAddRevisionPayload, Uuid, UuidFetcher,
+        ConcreteUuid, PageAddRevisionError, PageAddRevisionPayload, PageCreatePayload, Uuid,
+        UuidFetcher,
     };
 
     #[actix_rt::test]
@@ -529,7 +644,35 @@ mod tests {
         if let Err(PageAddRevisionError::PageNotFound) = result {
             // This is the expected branch.
         } else {
-            panic!("Expected `EntityNotFound` error, got: {:?}", result)
+            panic!("Expected `PageNotFound` error, got: {:?}", result)
+        }
+    }
+
+    #[actix_rt::test]
+    async fn create_page() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let uuid = Page::create(
+            PageCreatePayload {
+                content: "test content".to_string(),
+                discussions_enabled: false,
+                forum_id: None,
+                instance_id: 1,
+                license_id: 1,
+                title: "test title".to_string(),
+                user_id: 1,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        if let ConcreteUuid::Page(page) = uuid.concrete_uuid {
+            assert_eq!(page.instance, Instance::De);
+            assert_eq!(page.license_id, 1);
+        } else {
+            panic!("Page does not fulfill assertions: {:?}", uuid)
         }
     }
 

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::database::Connection;
 use crate::message::MessageResponder;
-use crate::uuid::{PageAddRevisionError, PageAddRevisionPayload};
+use crate::uuid::{AddRevisionData, PageAddRevisionError, PageAddRevisionPayload};
 
 use super::{
     Page, PageCheckoutRevisionError, PageCheckoutRevisionPayload, PageRejectRevisionError,
@@ -40,14 +40,6 @@ pub struct PageAddRevisionMutation {
     pub user_id: i32,
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageAddRevisionData {
-    pub success: bool,
-    pub reason: Option<String>,
-    pub page_revision_id: Option<i32>,
-}
-
 #[async_trait]
 impl MessageResponder for PageAddRevisionMutation {
     #[allow(clippy::async_yields_async)]
@@ -67,10 +59,10 @@ impl MessageResponder for PageAddRevisionMutation {
         match page_revision {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(PageAddRevisionData {
+                .json(AddRevisionData {
                     success: true,
                     reason: None,
-                    page_revision_id: Some(data.id),
+                    revision_id: Some(data.id),
                 }),
             Err(error) => {
                 println!("/page-add-revision: {:?}", error);

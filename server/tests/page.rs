@@ -20,7 +20,7 @@ mod add_revision_mutation {
 
         let query_response = Message::new(
             "UuidQuery",
-            json!({ "id": get_json(mutation_response).await["pageRevisionId"] }),
+            json!({ "id": get_json(mutation_response).await["revisionId"] }),
         )
         .execute_on(&mut transaction)
         .await;

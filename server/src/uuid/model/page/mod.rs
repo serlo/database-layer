@@ -186,8 +186,12 @@ impl Page {
     {
         let mut transaction = executor.begin().await?;
 
-        if let Err(UuidError::NotFound) =
-            Page::fetch_via_transaction(payload.page_id, &mut transaction).await
+        if let Err(sqlx::Error::RowNotFound) = sqlx::query!(
+            r#"SELECT id FROM page_repository WHERE id = ?"#,
+            payload.page_id
+        )
+        .fetch_one(&mut transaction)
+        .await
         {
             return Err(PageAddRevisionError::PageNotFound);
         }

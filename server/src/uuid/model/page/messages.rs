@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::database::Connection;
 use crate::message::MessageResponder;
-use crate::uuid::{PageAddRevisionError, PageAddRevisionPayload};
+use crate::uuid::{
+    AddRevisionData, PageAddRevisionError, PageAddRevisionPayload, PageCreateError,
+    PageCreatePayload,
+};
 
 use super::{
     Page, PageCheckoutRevisionError, PageCheckoutRevisionPayload, PageRejectRevisionError,
@@ -16,6 +19,7 @@ use super::{
 pub enum PageMessage {
     PageAddRevisionMutation(PageAddRevisionMutation),
     PageCheckoutRevisionMutation(PageCheckoutRevisionMutation),
+    PageCreateMutation(PageCreateMutation),
     PageRejectRevisionMutation(PageRejectRevisionMutation),
 }
 
@@ -26,6 +30,7 @@ impl MessageResponder for PageMessage {
         match self {
             PageMessage::PageAddRevisionMutation(message) => message.handle(connection).await,
             PageMessage::PageCheckoutRevisionMutation(message) => message.handle(connection).await,
+            PageMessage::PageCreateMutation(message) => message.handle(connection).await,
             PageMessage::PageRejectRevisionMutation(message) => message.handle(connection).await,
         }
     }
@@ -38,14 +43,6 @@ pub struct PageAddRevisionMutation {
     pub title: String,
     pub page_id: i32,
     pub user_id: i32,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageAddRevisionData {
-    pub success: bool,
-    pub reason: Option<String>,
-    pub page_revision_id: Option<i32>,
 }
 
 #[async_trait]
@@ -67,10 +64,10 @@ impl MessageResponder for PageAddRevisionMutation {
         match page_revision {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(PageAddRevisionData {
+                .json(AddRevisionData {
                     success: true,
                     reason: None,
-                    page_revision_id: Some(data.id),
+                    revision_id: Some(data.id),
                 }),
             Err(error) => {
                 println!("/page-add-revision: {:?}", error);
@@ -164,6 +161,57 @@ impl MessageResponder for PageCheckoutRevisionMutation {
                             success: false,
                             reason: Some("repository invalid".to_string()),
                         })
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageCreateMutation {
+    pub content: String,
+    pub discussions_enabled: bool,
+    pub forum_id: Option<i32>,
+    pub instance_id: i32,
+    pub license_id: i32,
+    pub title: String,
+    pub user_id: i32,
+}
+
+#[async_trait]
+impl MessageResponder for PageCreateMutation {
+    #[allow(clippy::async_yields_async)]
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let payload = PageCreatePayload {
+            content: self.content.clone(),
+            discussions_enabled: self.discussions_enabled,
+            forum_id: self.forum_id,
+            instance_id: self.instance_id,
+            license_id: self.license_id,
+            title: self.title.clone(),
+            user_id: self.user_id,
+        };
+        let response = match connection {
+            Connection::Pool(pool) => Page::create(payload, pool).await,
+            Connection::Transaction(transaction) => Page::create(payload, transaction).await,
+        };
+        match response {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(&data),
+            Err(e) => {
+                println!("/create-page: {:?}", e);
+                match e {
+                    PageCreateError::DatabaseError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    PageCreateError::RevisionError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    PageCreateError::UuidError { .. } => {
+                        HttpResponse::InternalServerError().finish()
                     }
                 }
             }

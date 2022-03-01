@@ -20,7 +20,7 @@ mod add_revision_mutation {
 
         let query_response = Message::new(
             "UuidQuery",
-            json!({ "id": get_json(mutation_response).await["pageRevisionId"] }),
+            json!({ "id": get_json(mutation_response).await["revisionId"] }),
         )
         .execute_on(&mut transaction)
         .await;
@@ -31,5 +31,36 @@ mod add_revision_mutation {
             assert_eq!(result["authorId"], 1 as i32);
         })
         .await;
+    }
+}
+
+mod create_mutation {
+    use serde_json::Value::Null;
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn creates_page() {
+        let mut transaction = begin_transaction().await;
+
+        let response = Message::new(
+            "PageCreateMutation",
+            json!({
+                "content": "test content",
+                "discussionsEnabled": false,
+                "forumId": Null,
+                "instanceId": 1 as i32,
+                "licenseId": 1 as i32,
+                "title": "test title",
+                "userId": 1 as i32,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(response, |result| {
+            assert_eq!(result["instance"], "de");
+            assert_eq!(result["licenseId"], 1 as i32);
+        })
+        .await
     }
 }

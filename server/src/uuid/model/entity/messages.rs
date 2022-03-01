@@ -45,6 +45,14 @@ pub struct EntityAddRevisionMutation {
     pub user_id: i32,
 }
 
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddRevisionData {
+    pub success: bool,
+    pub reason: Option<String>,
+    pub revision_id: Option<i32>,
+}
+
 #[async_trait]
 impl MessageResponder for EntityAddRevisionMutation {
     #[allow(clippy::async_yields_async)]
@@ -70,11 +78,12 @@ impl MessageResponder for EntityAddRevisionMutation {
         };
 
         match entity_revision {
-            Ok(_) => HttpResponse::Ok()
+            Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(EntityRevisionData {
+                .json(AddRevisionData {
                     success: true,
                     reason: None,
+                    revision_id: Some(data.id),
                 }),
             Err(error) => {
                 println!("/add-revision: {:?}", error);
@@ -91,7 +100,7 @@ impl MessageResponder for EntityAddRevisionMutation {
                     EntityAddRevisionError::EntityNotFound { .. } => HttpResponse::BadRequest()
                         .json(EntityRevisionData {
                             success: false,
-                            reason: Some("no entity found for provided entity_id".to_string()),
+                            reason: Some("no entity found for provided entityId".to_string()),
                         }),
                 }
             }

@@ -1448,6 +1448,16 @@
       ]
     }
   },
+  "8e3b780df56a34b1f850956fb746d508f89bf9124d64e4b7bbdb8bd7809a404c": {
+    "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, 'page')\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": []
+    }
+  },
   "8f0dd5d7b5aa39d811447034f9caa898d9298e339fb68774b8f22b0d798fd2d9": {
     "query": "\n                SELECT instance_id\n                    FROM entity\n                    WHERE id = ?\n            ",
     "describe": {
@@ -1860,6 +1870,16 @@
         false,
         false
       ]
+    }
+  },
+  "aaa83d051b9208a545b713b94a6171f8acfe8c3a82711016853f3eb6b1f2a43a": {
+    "query": "\n                UPDATE page_repository\n                    SET forum_id = ?\n                    WHERE id = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
     }
   },
   "b06a90ba7abee0f9ef7b237142448f14413a129a647debe16df0a03ba2066b82": {
@@ -2293,6 +2313,31 @@
       "nullable": []
     }
   },
+  "da1862ca5742d2c9c8a614d6cd3b1f6e05edde91bf12c542913bd56039ae7579": {
+    "query": "SELECT id FROM page_repository WHERE id = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 4107
+            },
+            "char_set": 63,
+            "max_size": 20
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "dd536141b3d5119e5f0bffcfc4d2b8e6abbdbbe06c903605451cc0ed98ab95fa": {
     "query": "\n                SELECT instance_id\n                    FROM page_repository\n                    WHERE id = ?\n            ",
     "describe": {
@@ -2487,6 +2532,16 @@
       "columns": [],
       "parameters": {
         "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "e9a80b5531000c8562bd2e7e3646216aa5ceb68730510d69dd17bce84ff8ea3f": {
+    "query": "\n                INSERT INTO page_repository (id, instance_id, license_id, discussions_enabled)\n                    VALUES (?, ?, ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 4
       },
       "nullable": []
     }

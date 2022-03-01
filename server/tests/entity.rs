@@ -18,7 +18,6 @@ mod unrevised_entities_query {
 
 #[cfg(test)]
 mod add_revision_mutation {
-    use serde_json::Value::Null;
     use server::uuid::abstract_entity_revision::EntityRevisionType;
     use test_utils::*;
 
@@ -26,7 +25,7 @@ mod add_revision_mutation {
     async fn adds_applet_revision() {
         let mut transaction = begin_transaction().await;
 
-        let response = Message::new(
+        let mutation_response = Message::new(
             "EntityAddRevisionMutation",
             json!({
                 "revisionType": EntityRevisionType::Applet,
@@ -50,17 +49,12 @@ mod add_revision_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true, "reason": Null })).await;
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
-            .execute_on(&mut transaction)
-            .await;
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["revisionId"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");
@@ -77,7 +71,7 @@ mod add_revision_mutation {
     async fn adds_article_revision() {
         let mut transaction = begin_transaction().await;
 
-        let response = Message::new(
+        let mutation_response = Message::new(
             "EntityAddRevisionMutation",
             json!({
                 "revisionType": EntityRevisionType::Article,
@@ -100,17 +94,12 @@ mod add_revision_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true, "reason": Null })).await;
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
-            .execute_on(&mut transaction)
-            .await;
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["revisionId"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");
@@ -125,7 +114,7 @@ mod add_revision_mutation {
     async fn adds_course_revision() {
         let mut transaction = begin_transaction().await;
 
-        let response = Message::new(
+        let mutation_response = Message::new(
             "EntityAddRevisionMutation",
             json!({
                 "revisionType": EntityRevisionType::Course,
@@ -147,17 +136,12 @@ mod add_revision_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true, "reason": Null })).await;
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
-            .execute_on(&mut transaction)
-            .await;
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["revisionId"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");
@@ -171,7 +155,7 @@ mod add_revision_mutation {
     async fn adds_course_page_revision() {
         let mut transaction = begin_transaction().await;
 
-        let response = Message::new(
+        let mutation_response = Message::new(
             "EntityAddRevisionMutation",
             json!({
                 "revisionType": EntityRevisionType::CoursePage,
@@ -192,17 +176,12 @@ mod add_revision_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true, "reason": Null })).await;
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
-            .execute_on(&mut transaction)
-            .await;
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["revisionId"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");
@@ -215,7 +194,7 @@ mod add_revision_mutation {
     async fn adds_event_revision() {
         let mut transaction = begin_transaction().await;
 
-        let response = Message::new(
+        let mutation_response = Message::new(
             "EntityAddRevisionMutation",
             json!({
                 "revisionType": EntityRevisionType::Event,
@@ -238,17 +217,12 @@ mod add_revision_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true, "reason": Null })).await;
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
-            .execute_on(&mut transaction)
-            .await;
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["revisionId"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");
@@ -263,7 +237,7 @@ mod add_revision_mutation {
     async fn adds_exercise_revision() {
         let mut transaction = begin_transaction().await;
 
-        let response = Message::new(
+        let mutation_response = Message::new(
             "EntityAddRevisionMutation",
             json!({
                 "revisionType": EntityRevisionType::Exercise,
@@ -283,17 +257,12 @@ mod add_revision_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true, "reason": Null })).await;
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
-            .execute_on(&mut transaction)
-            .await;
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["revisionId"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");
@@ -305,7 +274,7 @@ mod add_revision_mutation {
     async fn adds_exercise_group_revision() {
         let mut transaction = begin_transaction().await;
 
-        let response = Message::new(
+        let mutation_response = Message::new(
             "EntityAddRevisionMutation",
             json!({
                 "revisionType": EntityRevisionType::ExerciseGroup,
@@ -326,17 +295,12 @@ mod add_revision_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true, "reason": Null })).await;
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
-            .execute_on(&mut transaction)
-            .await;
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["revisionId"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");
@@ -349,7 +313,7 @@ mod add_revision_mutation {
     async fn adds_grouped_exercise_revision() {
         let mut transaction = begin_transaction().await;
 
-        let response = Message::new(
+        let mutation_response = Message::new(
             "EntityAddRevisionMutation",
             json!({
                 "revisionType": EntityRevisionType::GroupedExercise,
@@ -369,17 +333,12 @@ mod add_revision_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true, "reason": Null })).await;
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
-            .execute_on(&mut transaction)
-            .await;
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["revisionId"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");
@@ -391,7 +350,7 @@ mod add_revision_mutation {
     async fn adds_solution_revision() {
         let mut transaction = begin_transaction().await;
 
-        let response = Message::new(
+        let mutation_response = Message::new(
             "EntityAddRevisionMutation",
             json!({
                 "revisionType": EntityRevisionType::Solution,
@@ -411,17 +370,12 @@ mod add_revision_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true, "reason": Null })).await;
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
-            .execute_on(&mut transaction)
-            .await;
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["revisionId"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");
@@ -433,7 +387,7 @@ mod add_revision_mutation {
     async fn adds_video_revision() {
         let mut transaction = begin_transaction().await;
 
-        let response = Message::new(
+        let mutation_response = Message::new(
             "EntityAddRevisionMutation",
             json!({
                 "revisionType": EntityRevisionType::Video,
@@ -455,17 +409,12 @@ mod add_revision_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true, "reason": Null })).await;
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
-            .execute_on(&mut transaction)
-            .await;
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["revisionId"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");

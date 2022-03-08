@@ -324,6 +324,16 @@
       ]
     }
   },
+  "1f97648096e571eb7285984b0c35d6e108a059dc483463142c7fbd1984e886f0": {
+    "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, \"entity\")\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": []
+    }
+  },
   "21217736c5678117cb512824386f3368c1a0920e88b41b78655039038c2cdb6c": {
     "query": "\n                SELECT p.id\n                    FROM navigation_page p\n                    WHERE p.parent_id = ?\n                    ORDER BY p.position, p.id\n            ",
     "describe": {
@@ -513,6 +523,16 @@
         false,
         false
       ]
+    }
+  },
+  "27a53b0550f91678e7f1ebe7852e21642bba76f773bdb1ff46f6ae0294939e01": {
+    "query": "\n                UPDATE entity\n                    SET current_revision_id = ?\n                    WHERE id = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
     }
   },
   "2b20b8721b218b0e08cfa2ba1f1a769e6e0ae366d6430b09202f56422df5a83b": {
@@ -723,6 +743,31 @@
       ]
     }
   },
+  "3e4fa9b47ad5337aaf2fba3c28ccd1f98ed6c3e499994aaab7f0fd5aa2c59361": {
+    "query": "SELECT id FROM type WHERE name = ?",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "3fc71f9de3677a7918e018e0138d2f3a453c7b58a2b10341e7dc42f8a1063467": {
     "query": "SELECT email FROM user WHERE id = ?",
     "describe": {
@@ -856,6 +901,16 @@
       "columns": [],
       "parameters": {
         "Right": 6
+      },
+      "nullable": []
+    }
+  },
+  "4aed23d92cfcab453705526d67533d1539b797e73193a0a524ae2ef011745998": {
+    "query": "\n                INSERT INTO entity (id, type_id, instance_id, license_id)\n                    VALUES (?, ?, ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 4
       },
       "nullable": []
     }
@@ -1481,6 +1536,16 @@
       "nullable": [
         false
       ]
+    }
+  },
+  "8f390573c726b36086f40b8f2589b236464e4a8e0da5e96035aab841e34f3697": {
+    "query": "\n                        INSERT INTO entity_link (parent_id, child_id, type_id)\n                        VALUES (?, ?, 9)\n                    ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
     }
   },
   "90fe2d478f34ef1f204e73a838cf0bc91ff02af35cfd45544ce119cbb68c0edd": {

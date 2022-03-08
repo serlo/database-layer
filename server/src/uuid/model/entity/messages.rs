@@ -1,6 +1,7 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use super::{
     Entity, EntityAddRevisionError, EntityAddRevisionPayload, EntityCheckoutRevisionError,
@@ -9,13 +10,16 @@ use super::{
 use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
-use crate::uuid::EntityAddRevisionInput;
+use crate::uuid::{
+    EntityAddRevisionInput, EntityCreateError, EntityCreateInput, EntityCreatePayload, EntityType,
+};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum EntityMessage {
     EntityAddRevisionMutation(EntityAddRevisionMutation),
     EntityCheckoutRevisionMutation(EntityCheckoutRevisionMutation),
+    EntityCreateMutation(EntityCreateMutation),
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
 }
@@ -29,6 +33,7 @@ impl MessageResponder for EntityMessage {
             EntityMessage::EntityCheckoutRevisionMutation(message) => {
                 message.handle(connection).await
             }
+            EntityMessage::EntityCreateMutation(message) => message.handle(connection).await,
             EntityMessage::EntityRejectRevisionMutation(message) => {
                 message.handle(connection).await
             }
@@ -175,6 +180,66 @@ impl MessageResponder for EntityCheckoutRevisionMutation {
                             reason: Some("repository invalid".to_string()),
                         })
                     }
+                }
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EntityCreateMutation {
+    pub input: EntityCreateInput,
+    pub entity_type: EntityType,
+    pub user_id: i32,
+}
+
+#[async_trait]
+impl MessageResponder for EntityCreateMutation {
+    #[allow(clippy::async_yields_async)]
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let payload = EntityCreatePayload {
+            input: EntityCreateInput {
+                changes: self.input.changes.clone(),
+                instance: self.input.instance.clone(),
+                license_id: self.input.license_id,
+                subscribe_this: self.input.subscribe_this,
+                subscribe_this_by_email: self.input.subscribe_this_by_email,
+                fields: self.input.fields.clone(),
+                parent_id: self.input.parent_id,
+            },
+            entity_type: self.entity_type.clone(),
+            user_id: self.user_id,
+        };
+        let response = match connection {
+            Connection::Pool(pool) => Entity::create(payload, pool).await,
+            Connection::Transaction(transaction) => Entity::create(payload, transaction).await,
+        };
+        match response {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(&data),
+            Err(e) => {
+                println!("/create-entity: {:?}", e);
+                match e {
+                    EntityCreateError::AddRevisionError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    EntityCreateError::DatabaseError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    EntityCreateError::EventError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    EntityCreateError::UuidError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    EntityCreateError::ParentIdError { .. } => HttpResponse::BadRequest()
+                        .content_type("application/json; charset=utf-8")
+                        .json(json!({
+                            "success": false,
+                            "reason": "parentId has to be provided"
+                        })),
                 }
             }
         }

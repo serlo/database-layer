@@ -425,3 +425,417 @@ mod add_revision_mutation {
         .await;
     }
 }
+
+#[cfg(test)]
+mod create_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn creates_applet() {
+        let mut transaction = begin_transaction().await;
+
+        let mutation_response = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "Applet",
+                "input": {
+                    "changes": "test changes",
+                    "instance": "de",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "fields": {
+                        "content": "test content",
+                        "metaDescription": "test metaDescription",
+                        "metaTitle": "test metaTitle",
+                        "title": "test title",
+                        "url": "test url"
+                    }
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["id"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["__typename"], "Applet");
+            assert_eq!(result["licenseId"], 1 as i32);
+            assert_eq!(result["instance"], "de");
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn creates_article() {
+        let mut transaction = begin_transaction().await;
+
+        let mutation_response = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "Article",
+                "input": {
+                    "changes": "test changes",
+                    "instance": "de",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "fields": {
+                        "content": "test content",
+                        "metaDescription": "test metaDescription",
+                        "metaTitle": "test metaTitle",
+                        "title": "test title",
+                    },
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["id"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["__typename"], "Article");
+            assert_eq!(result["licenseId"], 1 as i32);
+            assert_eq!(result["instance"], "de");
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn creates_course() {
+        let mut transaction = begin_transaction().await;
+
+        let mutation_response = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "Course",
+                "input": {
+                    "changes": "test changes",
+                    "instance": "de",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "fields": {
+                        "description": "test description",
+                        "metaDescription": "test metaDescription",
+                        "title": "test title",
+                    },
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["id"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["__typename"], "Course");
+            assert_eq!(result["licenseId"], 1 as i32);
+            assert_eq!(result["instance"], "de");
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn creates_course_page() {
+        let mut transaction = begin_transaction().await;
+
+        let mutation_response = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "CoursePage",
+                "input": {
+                    "changes": "test changes",
+                    "instance": "de",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "parentId": 18514,
+                    "fields": {
+                        "content": "test content",
+                        "title": "test title",
+                    },
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["id"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["__typename"], "CoursePage");
+            assert_eq!(result["licenseId"], 1 as i32);
+            assert_eq!(result["instance"], "de");
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn creates_event() {
+        let mut transaction = begin_transaction().await;
+
+        let mutation_response = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "Event",
+                "input": {
+                    "changes": "test changes",
+                    "instance": "de",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "fields": {
+                        "content": "test content",
+                        "metaDescription": "test metaDescription",
+                        "metaTitle": "test metaTitle",
+                        "title": "test title",
+                    },
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["id"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["__typename"], "Event");
+            assert_eq!(result["licenseId"], 1 as i32);
+            assert_eq!(result["instance"], "de");
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn creates_exercise() {
+        let mut transaction = begin_transaction().await;
+
+        let mutation_response = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "Exercise",
+                "input": {
+                    "changes": "test changes",
+                    "instance": "de",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "fields": {
+                        "content": "test content",
+                    },
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["id"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["__typename"], "Exercise");
+            assert_eq!(result["licenseId"], 1 as i32);
+            assert_eq!(result["instance"], "de");
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn creates_exercise_group() {
+        let mut transaction = begin_transaction().await;
+
+        let mutation_response = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "ExerciseGroup",
+                "input": {
+                    "changes": "test changes",
+                    "instance": "de",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "fields": {
+                        "content": "test content",
+                        "cohesive": "true",
+                    },
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["id"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["__typename"], "ExerciseGroup");
+            assert_eq!(result["licenseId"], 1 as i32);
+            assert_eq!(result["instance"], "de");
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn creates_grouped_exercise() {
+        let mut transaction = begin_transaction().await;
+
+        let mutation_response = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "GroupedExercise",
+                "input": {
+                    "changes": "test changes",
+                    "instance": "de",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "parentId": 2217,
+                    "fields": {
+                        "content": "test content",
+                    },
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["id"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["__typename"], "GroupedExercise");
+            assert_eq!(result["licenseId"], 1 as i32);
+            assert_eq!(result["instance"], "de");
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn creates_solution() {
+        let mut transaction = begin_transaction().await;
+
+        let mutation_response = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "Solution",
+                "input": {
+                    "changes": "test changes",
+                    "instance": "de",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "parentId": 2219,
+                    "fields": {
+                        "content": "test content",
+                    },
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["id"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["__typename"], "Solution");
+            assert_eq!(result["licenseId"], 1 as i32);
+            assert_eq!(result["instance"], "de");
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn creates_video() {
+        let mut transaction = begin_transaction().await;
+
+        let mutation_response = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "Video",
+                "input": {
+                    "changes": "test changes",
+                    "instance": "de",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "fields": {
+                        "content": "test content",
+                        "description": "test description",
+                        "title": "test title",
+                    },
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let query_response = Message::new(
+            "UuidQuery",
+            json!({"id": get_json(mutation_response).await["id"]}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(query_response, |result| {
+            assert_eq!(result["__typename"], "Video");
+            assert_eq!(result["licenseId"], 1 as i32);
+            assert_eq!(result["instance"], "de");
+        })
+        .await;
+    }
+}

@@ -1,4 +1,7 @@
+use crate::database::Executor;
+use crate::event::{Event, EventError, EventPayload, RawEventType};
 use serde::Serialize;
+use std::collections::HashMap;
 
 use super::abstract_event::AbstractEvent;
 
@@ -13,5 +16,45 @@ impl From<&AbstractEvent> for CreateEntityEvent {
         let entity_id = abstract_event.object_id;
 
         CreateEntityEvent { entity_id }
+    }
+}
+
+pub struct CreateEntityEventPayload {
+    raw_typename: RawEventType,
+    actor_id: i32,
+    instance_id: i32,
+    entity_id: i32,
+}
+
+impl CreateEntityEventPayload {
+    pub fn new(entity_id: i32, actor_id: i32, instance_id: i32) -> Self {
+        Self {
+            raw_typename: RawEventType::CreateEntity,
+            actor_id,
+            instance_id,
+            entity_id,
+        }
+    }
+
+    pub async fn save<'a, E>(&self, executor: E) -> Result<Event, EventError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let event = EventPayload::new(
+            self.raw_typename.clone(),
+            self.actor_id,
+            self.entity_id,
+            self.instance_id,
+            HashMap::new(),
+            HashMap::new(),
+        )
+        .save(&mut transaction)
+        .await?;
+
+        transaction.commit().await?;
+
+        Ok(event)
     }
 }

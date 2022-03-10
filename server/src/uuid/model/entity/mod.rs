@@ -548,6 +548,7 @@ pub struct EntityCreateInput {
     pub instance: Instance,
     pub license_id: i32,
     pub subscribe_this: bool,
+    pub needs_review: bool,
     pub subscribe_this_by_email: bool,
     pub fields: HashMap<String, String>,
     pub parent_id: Option<i32>,
@@ -652,34 +653,31 @@ impl Entity {
         .execute(&mut transaction)
         .await?;
 
-        match payload.entity_type {
-            EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution => {
-                let parent_id = payload
-                    .input
-                    .parent_id
-                    .ok_or(EntityCreateError::ParentIdError)?;
+        if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution = payload.entity_type {
+            let parent_id = payload
+                .input
+                .parent_id
+                .ok_or(EntityCreateError::ParentIdError)?;
 
-                sqlx::query!(
-                    r#"
-                        INSERT INTO entity_link (parent_id, child_id, type_id)
-                        VALUES (?, ?, 9)
-                    "#,
-                    parent_id,
-                    entity_id
-                )
-                .execute(&mut transaction)
-                .await?;
+            sqlx::query!(
+                r#"
+                    INSERT INTO entity_link (parent_id, child_id, type_id)
+                    VALUES (?, ?, 9)
+                "#,
+                parent_id,
+                entity_id
+            )
+            .execute(&mut transaction)
+            .await?;
 
-                EntityLinkEventPayload::new(
-                    entity_id,
-                    parent_id,
-                    payload.user_id,
-                    payload.input.instance.clone(),
-                )
-                .save(&mut transaction)
-                .await?;
-            }
-            _ => {}
+            EntityLinkEventPayload::new(
+                entity_id,
+                parent_id,
+                payload.user_id,
+                payload.input.instance.clone(),
+            )
+            .save(&mut transaction)
+            .await?;
         }
 
         let entity_revision = Entity::add_revision(
@@ -1241,6 +1239,7 @@ mod tests {
                     changes: "test changes".to_string(),
                     instance: Instance::De,
                     subscribe_this: true,
+                    needs_review: true,
                     subscribe_this_by_email: true,
                     license_id: 1,
                     fields: HashMap::from([

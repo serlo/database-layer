@@ -203,6 +203,7 @@ impl MessageResponder for EntityCreateMutation {
                 changes: self.input.changes.clone(),
                 instance: self.input.instance.clone(),
                 license_id: self.input.license_id,
+                needs_review: self.input.needs_review,
                 subscribe_this: self.input.subscribe_this,
                 subscribe_this_by_email: self.input.subscribe_this_by_email,
                 fields: self.input.fields.clone(),

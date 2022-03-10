@@ -444,6 +444,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "needsReview": true,
                     "fields": {
                         "content": "test content",
                         "metaDescription": "test metaDescription",
@@ -487,6 +488,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "needsReview": true,
                     "fields": {
                         "content": "test content",
                         "metaDescription": "test metaDescription",
@@ -529,6 +531,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "needsReview": true,
                     "fields": {
                         "description": "test description",
                         "metaDescription": "test metaDescription",
@@ -570,6 +573,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "needsReview": true,
                     "parentId": 18514,
                     "fields": {
                         "content": "test content",
@@ -611,6 +615,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "needsReview": true,
                     "fields": {
                         "content": "test content",
                         "metaDescription": "test metaDescription",
@@ -653,6 +658,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "needsReview": true,
                     "fields": {
                         "content": "test content",
                     },
@@ -692,6 +698,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "needsReview": true,
                     "fields": {
                         "content": "test content",
                         "cohesive": "true",
@@ -732,6 +739,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "needsReview": true,
                     "parentId": 2217,
                     "fields": {
                         "content": "test content",
@@ -772,6 +780,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "needsReview": true,
                     "parentId": 2219,
                     "fields": {
                         "content": "test content",
@@ -812,6 +821,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "needsReview": true,
                     "fields": {
                         "content": "test content",
                         "description": "test description",

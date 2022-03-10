@@ -653,7 +653,9 @@ impl Entity {
         .execute(&mut transaction)
         .await?;
 
-        if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution = payload.entity_type {
+        if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
+            payload.entity_type
+        {
             let parent_id = payload
                 .input
                 .parent_id

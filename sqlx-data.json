@@ -793,6 +793,16 @@
       ]
     }
   },
+  "435cd609b22b9554a89d6ba720c2a007a24cdb2b362600f0212f83f786b9e8cf": {
+    "query": "\n                    INSERT INTO entity_link (parent_id, child_id, type_id)\n                    VALUES (?, ?, 9)\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
   "436603084c0bc754c6d6baa29d1eb0d64f1ee26047a4b905585949e5ea544b15": {
     "query": "\n                SELECT trashed, username, date, last_login, description\n                    FROM user\n                    JOIN uuid ON user.id = uuid.id\n                    WHERE user.id = ?\n            ",
     "describe": {
@@ -1536,16 +1546,6 @@
       "nullable": [
         false
       ]
-    }
-  },
-  "8f390573c726b36086f40b8f2589b236464e4a8e0da5e96035aab841e34f3697": {
-    "query": "\n                        INSERT INTO entity_link (parent_id, child_id, type_id)\n                        VALUES (?, ?, 9)\n                    ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 2
-      },
-      "nullable": []
     }
   },
   "90fe2d478f34ef1f204e73a838cf0bc91ff02af35cfd45544ce119cbb68c0edd": {

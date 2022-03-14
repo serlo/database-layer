@@ -1,25 +1,25 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 use super::{
     Entity, EntityAddRevisionError, EntityAddRevisionPayload, EntityCheckoutRevisionError,
     EntityCheckoutRevisionPayload, EntityRejectRevisionError, EntityRejectRevisionPayload,
 };
 use crate::database::Connection;
+use crate::instance::Instance;
 use crate::message::MessageResponder;
+use crate::operation::{self, Operation};
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
-use crate::uuid::{
-    EntityAddRevisionInput, EntityCreateError, EntityCreateInput, EntityCreatePayload, EntityType,
-};
+use crate::uuid::{EntityAddRevisionInput, EntityType, Uuid};
+use std::collections::HashMap;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum EntityMessage {
     EntityAddRevisionMutation(EntityAddRevisionMutation),
     EntityCheckoutRevisionMutation(EntityCheckoutRevisionMutation),
-    EntityCreateMutation(EntityCreateMutation),
+    EntityCreateMutation(entity_create_mutation::Payload),
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
 }
@@ -33,7 +33,9 @@ impl MessageResponder for EntityMessage {
             EntityMessage::EntityCheckoutRevisionMutation(message) => {
                 message.handle(connection).await
             }
-            EntityMessage::EntityCreateMutation(message) => message.handle(connection).await,
+            EntityMessage::EntityCreateMutation(message) => {
+                message.handle("EntityCreateMutation", connection).await
+            }
             EntityMessage::EntityRejectRevisionMutation(message) => {
                 message.handle(connection).await
             }
@@ -186,63 +188,41 @@ impl MessageResponder for EntityCheckoutRevisionMutation {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityCreateMutation {
-    pub input: EntityCreateInput,
-    pub entity_type: EntityType,
-    pub user_id: i32,
-}
+pub mod entity_create_mutation {
+    use super::*;
 
-#[async_trait]
-impl MessageResponder for EntityCreateMutation {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let payload = EntityCreatePayload {
-            input: EntityCreateInput {
-                changes: self.input.changes.clone(),
-                instance: self.input.instance.clone(),
-                license_id: self.input.license_id,
-                needs_review: self.input.needs_review,
-                subscribe_this: self.input.subscribe_this,
-                subscribe_this_by_email: self.input.subscribe_this_by_email,
-                fields: self.input.fields.clone(),
-                parent_id: self.input.parent_id,
-            },
-            entity_type: self.entity_type.clone(),
-            user_id: self.user_id,
-        };
-        let response = match connection {
-            Connection::Pool(pool) => Entity::create(payload, pool).await,
-            Connection::Transaction(transaction) => Entity::create(payload, transaction).await,
-        };
-        match response {
-            Ok(data) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(&data),
-            Err(e) => {
-                println!("/create-entity: {:?}", e);
-                match e {
-                    EntityCreateError::AddRevisionError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    EntityCreateError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    EntityCreateError::EventError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    EntityCreateError::UuidError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    EntityCreateError::ParentIdError { .. } => HttpResponse::BadRequest()
-                        .content_type("application/json; charset=utf-8")
-                        .json(json!({
-                            "success": false,
-                            "reason": "parentId has to be provided"
-                        })),
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Input {
+        pub changes: String,
+        pub instance: Instance,
+        pub license_id: i32,
+        pub subscribe_this: bool,
+        pub needs_review: bool,
+        pub subscribe_this_by_email: bool,
+        pub fields: HashMap<String, String>,
+        pub parent_id: Option<i32>,
+    }
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub input: Input,
+        pub entity_type: EntityType,
+        pub user_id: i32,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Uuid;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(match connection {
+                Connection::Pool(pool) => Entity::create(self, pool).await.unwrap(),
+                Connection::Transaction(transaction) => {
+                    Entity::create(self, transaction).await.unwrap()
                 }
-            }
+            })
         }
     }
 }

@@ -541,27 +541,6 @@ impl Entity {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityCreateInput {
-    pub changes: String,
-    pub instance: Instance,
-    pub license_id: i32,
-    pub subscribe_this: bool,
-    pub needs_review: bool,
-    pub subscribe_this_by_email: bool,
-    pub fields: HashMap<String, String>,
-    pub parent_id: Option<i32>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityCreatePayload {
-    pub input: EntityCreateInput,
-    pub entity_type: EntityType,
-    pub user_id: i32,
-}
-
 #[derive(Error, Debug)]
 pub enum EntityCreateError {
     #[error("Entity could not be created because of a database error: {inner:?}.")]
@@ -611,7 +590,7 @@ impl From<EntityAddRevisionError> for EntityCreateError {
 
 impl Entity {
     pub async fn create<'a, E>(
-        payload: EntityCreatePayload,
+        payload: &entity_create_mutation::Payload,
         executor: E,
     ) -> Result<Uuid, EntityCreateError>
     where
@@ -685,14 +664,14 @@ impl Entity {
         let entity_revision = Entity::add_revision(
             EntityAddRevisionPayload {
                 input: EntityAddRevisionInput {
-                    changes: payload.input.changes,
+                    changes: payload.input.changes.clone(),
                     entity_id,
                     needs_review: false,
                     subscribe_this: payload.input.subscribe_this,
                     subscribe_this_by_email: payload.input.subscribe_this_by_email,
                     fields: payload.input.fields.clone(),
                 },
-                revision_type: EntityRevisionType::from(payload.entity_type),
+                revision_type: EntityRevisionType::from(payload.entity_type.clone()),
                 user_id: payload.user_id,
             },
             &mut transaction,
@@ -1008,8 +987,7 @@ mod tests {
     use crate::subscription::Subscription;
     use crate::uuid::abstract_entity_revision::EntityRevisionType;
     use crate::uuid::{
-        ConcreteUuid, EntityAddRevisionInput, EntityCreateInput, EntityCreatePayload, EntityType,
-        Uuid, UuidFetcher,
+        entity_create_mutation, ConcreteUuid, EntityAddRevisionInput, EntityType, Uuid, UuidFetcher,
     };
 
     #[actix_rt::test]
@@ -1236,8 +1214,8 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let entity = Entity::create(
-            EntityCreatePayload {
-                input: EntityCreateInput {
+            &entity_create_mutation::Payload {
+                input: entity_create_mutation::Input {
                     changes: "test changes".to_string(),
                     instance: Instance::De,
                     subscribe_this: true,

@@ -1209,51 +1209,6 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn create() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        let entity = Entity::create(
-            &entity_create_mutation::Payload {
-                input: entity_create_mutation::Input {
-                    changes: "test changes".to_string(),
-                    instance: Instance::De,
-                    subscribe_this: true,
-                    needs_review: true,
-                    subscribe_this_by_email: true,
-                    license_id: 1,
-                    fields: HashMap::from([
-                        ("content".to_string(), "test content".to_string()),
-                        (
-                            "meta_description".to_string(),
-                            "test meta-description".to_string(),
-                        ),
-                        ("meta_title".to_string(), "test meta-title".to_string()),
-                        ("title".to_string(), "test title".to_string()),
-                    ]),
-                    parent_id: None,
-                },
-                user_id: 1,
-                entity_type: EntityType::Article,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
-
-        if let ConcreteUuid::Entity(Entity {
-            abstract_entity, ..
-        }) = entity.concrete_uuid
-        {
-            assert_eq!(abstract_entity.__typename, EntityType::Article);
-            assert_eq!(abstract_entity.instance, Instance::De);
-            assert_eq!(abstract_entity.license_id, 1);
-        } else {
-            panic!("Entity does not fulfill assertions: {:?}", entity)
-        }
-    }
-
-    #[actix_rt::test]
     async fn checkout_revision() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();

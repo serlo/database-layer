@@ -4,7 +4,6 @@ use futures::try_join;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use sqlx::Row;
-use std::collections::HashMap;
 use thiserror::Error;
 
 use abstract_entity::AbstractEntity;
@@ -413,25 +412,6 @@ impl Entity {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityAddRevisionInput {
-    pub changes: String,
-    pub entity_id: i32,
-    pub needs_review: bool,
-    pub subscribe_this: bool,
-    pub subscribe_this_by_email: bool,
-    pub fields: HashMap<String, String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityAddRevisionPayload {
-    pub input: EntityAddRevisionInput,
-    pub revision_type: EntityRevisionType,
-    pub user_id: i32,
-}
-
 #[derive(Error, Debug)]
 pub enum EntityAddRevisionError {
     #[error("Revision could not be added because of a database error: {inner:?}.")]
@@ -469,7 +449,7 @@ impl From<EventError> for EntityAddRevisionError {
 
 impl Entity {
     pub async fn add_revision<'a, E>(
-        payload: EntityAddRevisionPayload,
+        payload: &entity_add_revision_mutation::Payload,
         executor: E,
     ) -> Result<Uuid, EntityAddRevisionError>
     where
@@ -486,8 +466,8 @@ impl Entity {
         let entity_revision = EntityRevisionPayload::new(
             payload.user_id,
             payload.input.entity_id,
-            payload.input.changes,
-            payload.input.fields,
+            payload.input.changes.clone(),
+            payload.input.fields.clone(),
         )
         .save(&mut transaction)
         .await?;
@@ -662,8 +642,8 @@ impl Entity {
         }
 
         let entity_revision = Entity::add_revision(
-            EntityAddRevisionPayload {
-                input: EntityAddRevisionInput {
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
                     changes: payload.input.changes.clone(),
                     entity_id,
                     needs_review: false,
@@ -976,19 +956,15 @@ mod tests {
     use std::collections::HashMap;
 
     use super::{
-        Entity, EntityAddRevisionPayload, EntityCheckoutRevisionError,
-        EntityCheckoutRevisionPayload, EntityRejectRevisionError, EntityRejectRevisionPayload,
-        EntityRevision,
+        Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload,
+        EntityRejectRevisionError, EntityRejectRevisionPayload, EntityRevision,
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-    use crate::instance::Instance;
     use crate::subscription::tests::fetch_subscription_by_user_and_object;
     use crate::subscription::Subscription;
     use crate::uuid::abstract_entity_revision::EntityRevisionType;
-    use crate::uuid::{
-        entity_create_mutation, ConcreteUuid, EntityAddRevisionInput, EntityType, Uuid, UuidFetcher,
-    };
+    use crate::uuid::{entity_add_revision_mutation, ConcreteUuid, Uuid, UuidFetcher};
 
     #[actix_rt::test]
     async fn add_revision() {
@@ -996,8 +972,8 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Entity::add_revision(
-            EntityAddRevisionPayload {
-                input: EntityAddRevisionInput {
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
                     changes: "test changes".to_string(),
                     entity_id: 1495,
                     needs_review: true,
@@ -1067,8 +1043,8 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Entity::add_revision(
-            EntityAddRevisionPayload {
-                input: EntityAddRevisionInput {
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
                     changes: "test changes".to_string(),
                     entity_id: 1495,
                     needs_review: true,
@@ -1115,8 +1091,8 @@ mod tests {
         }
 
         Entity::add_revision(
-            EntityAddRevisionPayload {
-                input: EntityAddRevisionInput {
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
                     changes: "test changes".to_string(),
                     entity_id: 1495,
                     needs_review: false,
@@ -1169,8 +1145,8 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Entity::add_revision(
-            EntityAddRevisionPayload {
-                input: EntityAddRevisionInput {
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
                     changes: "test changes".to_string(),
                     entity_id: 1497,
                     needs_review: true,

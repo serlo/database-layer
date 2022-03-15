@@ -4,7 +4,6 @@ use futures::try_join;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use sqlx::Row;
-use std::collections::HashMap;
 use thiserror::Error;
 
 use abstract_entity::AbstractEntity;
@@ -14,9 +13,13 @@ use super::entity_revision::abstract_entity_revision::EntityRevisionPayload;
 use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
-use crate::event::{CreateEntityRevisionEventPayload, EventError, RevisionEventPayload};
+use crate::event::{
+    CreateEntityEventPayload, CreateEntityRevisionEventPayload, EntityLinkEventPayload, EventError,
+    RevisionEventPayload,
+};
 use crate::format_alias;
 
+use crate::instance::Instance;
 use crate::subscription::Subscription;
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
 pub use messages::*;
@@ -409,25 +412,6 @@ impl Entity {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityAddRevisionInput {
-    pub changes: String,
-    pub entity_id: i32,
-    pub needs_review: bool,
-    pub subscribe_this: bool,
-    pub subscribe_this_by_email: bool,
-    pub fields: HashMap<String, String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityAddRevisionPayload {
-    pub input: EntityAddRevisionInput,
-    pub revision_type: EntityRevisionType,
-    pub user_id: i32,
-}
-
 #[derive(Error, Debug)]
 pub enum EntityAddRevisionError {
     #[error("Revision could not be added because of a database error: {inner:?}.")]
@@ -465,7 +449,7 @@ impl From<EventError> for EntityAddRevisionError {
 
 impl Entity {
     pub async fn add_revision<'a, E>(
-        payload: EntityAddRevisionPayload,
+        payload: &entity_add_revision_mutation::Payload,
         executor: E,
     ) -> Result<Uuid, EntityAddRevisionError>
     where
@@ -482,8 +466,8 @@ impl Entity {
         let entity_revision = EntityRevisionPayload::new(
             payload.user_id,
             payload.input.entity_id,
-            payload.input.changes,
-            payload.input.fields,
+            payload.input.changes.clone(),
+            payload.input.fields.clone(),
         )
         .save(&mut transaction)
         .await?;
@@ -534,6 +518,168 @@ impl Entity {
         transaction.commit().await?;
 
         Ok(entity_revision)
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum EntityCreateError {
+    #[error("Entity could not be created because of a database error: {inner:?}.")]
+    DatabaseError { inner: sqlx::Error },
+    #[error("Entity could not be created because of an event error: {inner:?}.")]
+    EventError { inner: EventError },
+    #[error("Entity could not be created because of an event error: {inner:?}.")]
+    AddRevisionError { inner: EntityAddRevisionError },
+    #[error("Entity could not be created out because of an UUID error: {inner:?}.")]
+    UuidError { inner: UuidError },
+    #[error("Entity could not be created because parentId has to be provided.")]
+    ParentIdError,
+}
+
+impl From<sqlx::Error> for EntityCreateError {
+    fn from(inner: sqlx::Error) -> Self {
+        Self::DatabaseError { inner }
+    }
+}
+
+impl From<UuidError> for EntityCreateError {
+    fn from(error: UuidError) -> Self {
+        match error {
+            UuidError::DatabaseError { inner } => inner.into(),
+            inner => Self::UuidError { inner },
+        }
+    }
+}
+
+impl From<EventError> for EntityCreateError {
+    fn from(error: EventError) -> Self {
+        match error {
+            EventError::DatabaseError { inner } => inner.into(),
+            inner => Self::EventError { inner },
+        }
+    }
+}
+
+impl From<EntityAddRevisionError> for EntityCreateError {
+    fn from(error: EntityAddRevisionError) -> Self {
+        match error {
+            EntityAddRevisionError::DatabaseError { inner } => inner.into(),
+            inner => Self::AddRevisionError { inner },
+        }
+    }
+}
+
+impl Entity {
+    pub async fn create<'a, E>(
+        payload: &entity_create_mutation::Payload,
+        executor: E,
+    ) -> Result<Uuid, EntityCreateError>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (trashed, discriminator)
+                    VALUES (0, "entity")
+            "#,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let entity_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        let type_id = sqlx::query!(r#"SELECT id FROM type WHERE name = ?"#, payload.entity_type)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        let instance_id = Instance::fetch_id(&payload.input.instance, &mut transaction).await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO entity (id, type_id, instance_id, license_id)
+                    VALUES (?, ?, ?, ?)
+            "#,
+            entity_id,
+            type_id,
+            instance_id,
+            payload.input.license_id
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
+            payload.entity_type
+        {
+            let parent_id = payload
+                .input
+                .parent_id
+                .ok_or(EntityCreateError::ParentIdError)?;
+
+            sqlx::query!(
+                r#"
+                    INSERT INTO entity_link (parent_id, child_id, type_id)
+                    VALUES (?, ?, 9)
+                "#,
+                parent_id,
+                entity_id
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            EntityLinkEventPayload::new(
+                entity_id,
+                parent_id,
+                payload.user_id,
+                payload.input.instance.clone(),
+            )
+            .save(&mut transaction)
+            .await?;
+        }
+
+        let entity_revision = Entity::add_revision(
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
+                    changes: payload.input.changes.clone(),
+                    entity_id,
+                    needs_review: false,
+                    subscribe_this: payload.input.subscribe_this,
+                    subscribe_this_by_email: payload.input.subscribe_this_by_email,
+                    fields: payload.input.fields.clone(),
+                },
+                revision_type: EntityRevisionType::from(payload.entity_type.clone()),
+                user_id: payload.user_id,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        sqlx::query!(
+            r#"
+                UPDATE entity
+                    SET current_revision_id = ?
+                    WHERE id = ?
+            "#,
+            entity_revision.id,
+            entity_id
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
+
+        let entity = Entity::fetch_via_transaction(entity_id, &mut transaction).await?;
+
+        transaction.commit().await?;
+
+        Ok(entity)
     }
 }
 
@@ -810,16 +956,15 @@ mod tests {
     use std::collections::HashMap;
 
     use super::{
-        Entity, EntityAddRevisionPayload, EntityCheckoutRevisionError,
-        EntityCheckoutRevisionPayload, EntityRejectRevisionError, EntityRejectRevisionPayload,
-        EntityRevision,
+        Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload,
+        EntityRejectRevisionError, EntityRejectRevisionPayload, EntityRevision,
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
     use crate::subscription::tests::fetch_subscription_by_user_and_object;
     use crate::subscription::Subscription;
     use crate::uuid::abstract_entity_revision::EntityRevisionType;
-    use crate::uuid::{ConcreteUuid, EntityAddRevisionInput, Uuid, UuidFetcher};
+    use crate::uuid::{entity_add_revision_mutation, ConcreteUuid, Uuid, UuidFetcher};
 
     #[actix_rt::test]
     async fn add_revision() {
@@ -827,8 +972,8 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Entity::add_revision(
-            EntityAddRevisionPayload {
-                input: EntityAddRevisionInput {
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
                     changes: "test changes".to_string(),
                     entity_id: 1495,
                     needs_review: true,
@@ -898,8 +1043,8 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Entity::add_revision(
-            EntityAddRevisionPayload {
-                input: EntityAddRevisionInput {
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
                     changes: "test changes".to_string(),
                     entity_id: 1495,
                     needs_review: true,
@@ -946,8 +1091,8 @@ mod tests {
         }
 
         Entity::add_revision(
-            EntityAddRevisionPayload {
-                input: EntityAddRevisionInput {
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
                     changes: "test changes".to_string(),
                     entity_id: 1495,
                     needs_review: false,
@@ -1000,8 +1145,8 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Entity::add_revision(
-            EntityAddRevisionPayload {
-                input: EntityAddRevisionInput {
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
                     changes: "test changes".to_string(),
                     entity_id: 1497,
                     needs_review: true,

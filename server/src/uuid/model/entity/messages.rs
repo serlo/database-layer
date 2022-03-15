@@ -3,19 +3,23 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    Entity, EntityAddRevisionError, EntityAddRevisionPayload, EntityCheckoutRevisionError,
-    EntityCheckoutRevisionPayload, EntityRejectRevisionError, EntityRejectRevisionPayload,
+    Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload, EntityRejectRevisionError,
+    EntityRejectRevisionPayload,
 };
 use crate::database::Connection;
+use crate::instance::Instance;
 use crate::message::MessageResponder;
+use crate::operation::{self, Operation};
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
-use crate::uuid::EntityAddRevisionInput;
+use crate::uuid::{EntityType, Uuid};
+use std::collections::HashMap;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum EntityMessage {
-    EntityAddRevisionMutation(EntityAddRevisionMutation),
+    EntityAddRevisionMutation(entity_add_revision_mutation::Payload),
     EntityCheckoutRevisionMutation(EntityCheckoutRevisionMutation),
+    EntityCreateMutation(entity_create_mutation::Payload),
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
 }
@@ -25,9 +29,16 @@ impl MessageResponder for EntityMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            EntityMessage::EntityAddRevisionMutation(message) => message.handle(connection).await,
+            EntityMessage::EntityAddRevisionMutation(message) => {
+                message
+                    .handle("EntityAddRevisionMutation", connection)
+                    .await
+            }
             EntityMessage::EntityCheckoutRevisionMutation(message) => {
                 message.handle(connection).await
+            }
+            EntityMessage::EntityCreateMutation(message) => {
+                message.handle("EntityCreateMutation", connection).await
             }
             EntityMessage::EntityRejectRevisionMutation(message) => {
                 message.handle(connection).await
@@ -37,73 +48,53 @@ impl MessageResponder for EntityMessage {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityAddRevisionMutation {
-    pub input: EntityAddRevisionInput,
-    pub revision_type: EntityRevisionType,
-    pub user_id: i32,
-}
+pub mod entity_add_revision_mutation {
+    use super::*;
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AddRevisionData {
-    pub success: bool,
-    pub reason: Option<String>,
-    pub revision_id: Option<i32>,
-}
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Input {
+        pub changes: String,
+        pub entity_id: i32,
+        pub needs_review: bool,
+        pub subscribe_this: bool,
+        pub subscribe_this_by_email: bool,
+        pub fields: HashMap<String, String>,
+    }
 
-#[async_trait]
-impl MessageResponder for EntityAddRevisionMutation {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let payload = EntityAddRevisionPayload {
-            input: EntityAddRevisionInput {
-                changes: self.input.changes.clone(),
-                entity_id: self.input.entity_id,
-                needs_review: self.input.needs_review,
-                subscribe_this: self.input.subscribe_this,
-                subscribe_this_by_email: self.input.subscribe_this_by_email,
-                fields: self.input.fields.clone(),
-            },
-            revision_type: self.revision_type,
-            user_id: self.user_id,
-        };
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub input: Input,
+        pub revision_type: EntityRevisionType,
+        pub user_id: i32,
+    }
 
-        let entity_revision = match connection {
-            Connection::Pool(pool) => Entity::add_revision(payload, pool).await,
-            Connection::Transaction(transaction) => {
-                Entity::add_revision(payload, transaction).await
-            }
-        };
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub success: bool,
+        pub reason: Option<String>,
+        pub revision_id: Option<i32>,
+    }
 
-        match entity_revision {
-            Ok(data) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(AddRevisionData {
-                    success: true,
-                    reason: None,
-                    revision_id: Some(data.id),
-                }),
-            Err(error) => {
-                println!("/add-revision: {:?}", error);
-                match error {
-                    EntityAddRevisionError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    EntityAddRevisionError::EventError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    EntityAddRevisionError::UuidError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    EntityAddRevisionError::EntityNotFound { .. } => HttpResponse::BadRequest()
-                        .json(EntityRevisionData {
-                            success: false,
-                            reason: Some("no entity found for provided entityId".to_string()),
-                        }),
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let entity_revision = match connection {
+                Connection::Pool(pool) => Entity::add_revision(self, pool).await.unwrap(),
+                Connection::Transaction(transaction) => {
+                    Entity::add_revision(self, transaction).await.unwrap()
                 }
-            }
+            };
+
+            Ok(Output {
+                success: true,
+                reason: None,
+                revision_id: Some(entity_revision.id),
+            })
         }
     }
 }
@@ -177,6 +168,45 @@ impl MessageResponder for EntityCheckoutRevisionMutation {
                     }
                 }
             }
+        }
+    }
+}
+
+pub mod entity_create_mutation {
+    use super::*;
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Input {
+        pub changes: String,
+        pub instance: Instance,
+        pub license_id: i32,
+        pub subscribe_this: bool,
+        pub needs_review: bool,
+        pub subscribe_this_by_email: bool,
+        pub fields: HashMap<String, String>,
+        pub parent_id: Option<i32>,
+    }
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub input: Input,
+        pub entity_type: EntityType,
+        pub user_id: i32,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Uuid;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(match connection {
+                Connection::Pool(pool) => Entity::create(self, pool).await.unwrap(),
+                Connection::Transaction(transaction) => {
+                    Entity::create(self, transaction).await.unwrap()
+                }
+            })
         }
     }
 }

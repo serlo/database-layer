@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::uuid::{
-    AddRevisionData, PageAddRevisionError, PageAddRevisionPayload, PageCreateError,
+    entity_add_revision_mutation, PageAddRevisionError, PageAddRevisionPayload, PageCreateError,
     PageCreatePayload,
 };
 
@@ -64,7 +64,7 @@ impl MessageResponder for PageAddRevisionMutation {
         match page_revision {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
-                .json(AddRevisionData {
+                .json(entity_add_revision_mutation::Output {
                     success: true,
                     reason: None,
                     revision_id: Some(data.id),

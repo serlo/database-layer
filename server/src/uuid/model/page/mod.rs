@@ -375,7 +375,7 @@ pub struct PageCreatePayload {
     pub discussions_enabled: bool,
     pub forum_id: Option<i32>,
     pub user_id: i32,
-    pub instance_id: i32,
+    pub instance: Instance,
 }
 
 #[derive(Error, Debug)]
@@ -433,13 +433,15 @@ impl Page {
             .await?
             .id as i32;
 
+        let instance_id = Instance::fetch_id(&payload.instance, &mut transaction).await?;
+
         sqlx::query!(
             r#"
                 INSERT INTO page_repository (id, instance_id, license_id, discussions_enabled)
                     VALUES (?, ?, ?, ?)
             "#,
             page_id,
-            payload.instance_id,
+            instance_id,
             payload.license_id,
             payload.discussions_enabled
         )
@@ -593,10 +595,8 @@ mod tests {
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-    use crate::instance::Instance;
     use crate::uuid::{
-        ConcreteUuid, PageAddRevisionError, PageAddRevisionPayload, PageCreatePayload, Uuid,
-        UuidFetcher,
+        ConcreteUuid, PageAddRevisionError, PageAddRevisionPayload, Uuid, UuidFetcher,
     };
 
     #[actix_rt::test]
@@ -645,34 +645,6 @@ mod tests {
             // This is the expected branch.
         } else {
             panic!("Expected `PageNotFound` error, got: {:?}", result)
-        }
-    }
-
-    #[actix_rt::test]
-    async fn create_page() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        let uuid = Page::create(
-            PageCreatePayload {
-                content: "test content".to_string(),
-                discussions_enabled: false,
-                forum_id: None,
-                instance_id: 1,
-                license_id: 1,
-                title: "test title".to_string(),
-                user_id: 1,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
-
-        if let ConcreteUuid::Page(page) = uuid.concrete_uuid {
-            assert_eq!(page.instance, Instance::De);
-            assert_eq!(page.license_id, 1);
-        } else {
-            panic!("Page does not fulfill assertions: {:?}", uuid)
         }
     }
 

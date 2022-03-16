@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.33](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.32..v0.3.33) - March 16, 2022
+
+### Added
+
+- add `EntityCreateMutation`
+
+- add `EntityAddRevisionMutation`
+
+- add `PageCreateMutation`
+
+- add `PageAddRevisionMutation`
+
 ## [0.3.32](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.31..v0.3.32) - February 3, 2021
 
 ### Fixed

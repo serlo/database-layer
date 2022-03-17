@@ -48,7 +48,7 @@ mod create_mutation {
                 "content": "test content",
                 "discussionsEnabled": false,
                 "forumId": Null,
-                "instanceId": 1 as i32,
+                "instance": "de",
                 "licenseId": 1 as i32,
                 "title": "test title",
                 "userId": 1 as i32,

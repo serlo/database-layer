@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::database::Connection;
+use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::uuid::{
     entity_add_revision_mutation, PageAddRevisionError, PageAddRevisionPayload, PageCreateError,
@@ -174,7 +175,7 @@ pub struct PageCreateMutation {
     pub content: String,
     pub discussions_enabled: bool,
     pub forum_id: Option<i32>,
-    pub instance_id: i32,
+    pub instance: Instance,
     pub license_id: i32,
     pub title: String,
     pub user_id: i32,
@@ -188,7 +189,7 @@ impl MessageResponder for PageCreateMutation {
             content: self.content.clone(),
             discussions_enabled: self.discussions_enabled,
             forum_id: self.forum_id,
-            instance_id: self.instance_id,
+            instance: self.instance.clone(),
             license_id: self.license_id,
             title: self.title.clone(),
             user_id: self.user_id,

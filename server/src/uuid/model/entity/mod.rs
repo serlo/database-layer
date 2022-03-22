@@ -533,6 +533,8 @@ pub enum EntityCreateError {
     UuidError { inner: UuidError },
     #[error("Entity could not be created because parentId has to be provided.")]
     ParentIdError,
+    #[error("Entity could not be created because taxonomyTermId has to be provided.")]
+    TaxonomyTermIdError,
 }
 
 impl From<sqlx::Error> for EntityCreateError {
@@ -639,6 +641,38 @@ impl Entity {
             )
             .save(&mut transaction)
             .await?;
+        } else {
+            let taxonomy_term_id = payload
+                .input
+                .taxonomy_term_id
+                .ok_or(EntityCreateError::TaxonomyTermIdError)?;
+
+            let current_last_position = sqlx::query!(
+                r#"
+                    SELECT position FROM term_taxonomy_entity
+                    WHERE term_taxonomy_id = ?
+                    ORDER BY position DESC
+                    LIMIT 1
+                "#,
+                taxonomy_term_id
+            )
+            .fetch_one(&mut transaction)
+            .await?
+            .position as i32;
+
+            sqlx::query!(
+                r#"
+                    INSERT INTO term_taxonomy_entity (entity_id, term_taxonomy_id, position)
+                    VALUES (?, ?, ?)
+                "#,
+                entity_id,
+                taxonomy_term_id,
+                current_last_position + 1
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            // TODO: trigger event
         }
 
         let entity_revision = Entity::add_revision(

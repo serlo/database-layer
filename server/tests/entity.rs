@@ -444,6 +444,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "taxonomyTermId": 7,
                     "needsReview": true,
                     "fields": {
                         "content": "test content",
@@ -488,6 +489,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "taxonomyTermId": 7,
                     "needsReview": true,
                     "fields": {
                         "content": "test content",
@@ -531,6 +533,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "taxonomyTermId": 7,
                     "needsReview": true,
                     "fields": {
                         "description": "test description",
@@ -615,6 +618,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "taxonomyTermId": 7,
                     "needsReview": true,
                     "fields": {
                         "content": "test content",
@@ -658,6 +662,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "taxonomyTermId": 7,
                     "needsReview": true,
                     "fields": {
                         "content": "test content",
@@ -698,6 +703,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "taxonomyTermId": 7,
                     "needsReview": true,
                     "fields": {
                         "content": "test content",
@@ -821,6 +827,7 @@ mod create_mutation {
                     "subscribeThis": false,
                     "subscribeThisByEmail": false,
                     "licenseId": 1,
+                    "taxonomyTermId": 7,
                     "needsReview": true,
                     "fields": {
                         "content": "test content",

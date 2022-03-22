@@ -1982,6 +1982,16 @@
       ]
     }
   },
+  "ba2dfff3f9b8b5d4257285ce62af0b05f5067d1920becbba7697875c7cd74785": {
+    "query": "\n                    INSERT INTO term_taxonomy_entity (entity_id, term_taxonomy_id, position)\n                    VALUES (?, ?, ?)\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
   "befb2d78ae7737e9d6e6a667301a984576cd5c451682394635e9e6c61b1b9669": {
     "query": "\n                SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id, c.uuid_id, p.title as parent_title\n                    FROM comment c\n                    LEFT JOIN comment p ON p.id = c.parent_id\n                    JOIN uuid u ON u.id = c.id\n                    WHERE c.id = ?\n            ",
     "describe": {
@@ -2366,6 +2376,31 @@
         "Right": 0
       },
       "nullable": []
+    }
+  },
+  "d728303e5ae1458ea219fddf93bf75a33e305d6218b401e7850e2690116aac74": {
+    "query": "\n                    SELECT position FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n                    ORDER BY position DESC\n                    LIMIT 1\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "position",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
     }
   },
   "d96a45d0d014aece234428d2b3deeb6740e956e7c1d0f380d2bdbc258180d5aa": {

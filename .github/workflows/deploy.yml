@@ -23,14 +23,13 @@ jobs:
     if: ${{ needs.update-version.outputs.tag }}
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
           node-version: 16.x
-          cache: yarn
       - uses: google-github-actions/setup-gcloud@master
         with:
           version: 274.0.0
           service_account_key: ${{ secrets.GCP_KEY_CONTAINER_REGISTRY }}
       - run: gcloud auth configure-docker
-      - run: yarn --frozen-lockfile
+      - run: yarn --immutable --immutable-cache
       - run: yarn deploy

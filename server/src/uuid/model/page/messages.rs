@@ -3,7 +3,12 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::database::Connection;
+use crate::instance::Instance;
 use crate::message::MessageResponder;
+use crate::uuid::{
+    entity_add_revision_mutation, PageAddRevisionError, PageAddRevisionPayload, PageCreateError,
+    PageCreatePayload,
+};
 
 use super::{
     Page, PageCheckoutRevisionError, PageCheckoutRevisionPayload, PageRejectRevisionError,
@@ -13,7 +18,9 @@ use super::{
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum PageMessage {
+    PageAddRevisionMutation(PageAddRevisionMutation),
     PageCheckoutRevisionMutation(PageCheckoutRevisionMutation),
+    PageCreateMutation(PageCreateMutation),
     PageRejectRevisionMutation(PageRejectRevisionMutation),
 }
 
@@ -22,8 +29,70 @@ impl MessageResponder for PageMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
+            PageMessage::PageAddRevisionMutation(message) => message.handle(connection).await,
             PageMessage::PageCheckoutRevisionMutation(message) => message.handle(connection).await,
+            PageMessage::PageCreateMutation(message) => message.handle(connection).await,
             PageMessage::PageRejectRevisionMutation(message) => message.handle(connection).await,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageAddRevisionMutation {
+    pub content: String,
+    pub title: String,
+    pub page_id: i32,
+    pub user_id: i32,
+}
+
+#[async_trait]
+impl MessageResponder for PageAddRevisionMutation {
+    #[allow(clippy::async_yields_async)]
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let payload = PageAddRevisionPayload {
+            content: self.content.clone(),
+            title: self.title.clone(),
+            page_id: self.page_id,
+            user_id: self.user_id,
+        };
+
+        let page_revision = match connection {
+            Connection::Pool(pool) => Page::add_revision(payload, pool).await,
+            Connection::Transaction(transaction) => Page::add_revision(payload, transaction).await,
+        };
+
+        match page_revision {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(entity_add_revision_mutation::Output {
+                    success: true,
+                    reason: None,
+                    revision_id: Some(data.id),
+                }),
+            Err(error) => {
+                println!("/page-add-revision: {:?}", error);
+                match error {
+                    PageAddRevisionError::DatabaseError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    PageAddRevisionError::UuidError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    PageAddRevisionError::EventError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    PageAddRevisionError::PageNotFound { .. } => {
+                        HttpResponse::BadRequest().json(PageRevisionData {
+                            success: false,
+                            reason: Some("no page found for provided pageId".to_string()),
+                        })
+                    }
+                    PageAddRevisionError::CheckoutRevisionError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                }
+            }
         }
     }
 }
@@ -93,6 +162,57 @@ impl MessageResponder for PageCheckoutRevisionMutation {
                             success: false,
                             reason: Some("repository invalid".to_string()),
                         })
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageCreateMutation {
+    pub content: String,
+    pub discussions_enabled: bool,
+    pub forum_id: Option<i32>,
+    pub instance: Instance,
+    pub license_id: i32,
+    pub title: String,
+    pub user_id: i32,
+}
+
+#[async_trait]
+impl MessageResponder for PageCreateMutation {
+    #[allow(clippy::async_yields_async)]
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        let payload = PageCreatePayload {
+            content: self.content.clone(),
+            discussions_enabled: self.discussions_enabled,
+            forum_id: self.forum_id,
+            instance: self.instance.clone(),
+            license_id: self.license_id,
+            title: self.title.clone(),
+            user_id: self.user_id,
+        };
+        let response = match connection {
+            Connection::Pool(pool) => Page::create(payload, pool).await,
+            Connection::Transaction(transaction) => Page::create(payload, transaction).await,
+        };
+        match response {
+            Ok(data) => HttpResponse::Ok()
+                .content_type("application/json; charset=utf-8")
+                .json(&data),
+            Err(e) => {
+                println!("/create-page: {:?}", e);
+                match e {
+                    PageCreateError::DatabaseError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    PageCreateError::RevisionError { .. } => {
+                        HttpResponse::InternalServerError().finish()
+                    }
+                    PageCreateError::UuidError { .. } => {
+                        HttpResponse::InternalServerError().finish()
                     }
                 }
             }

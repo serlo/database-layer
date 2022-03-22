@@ -1,4 +1,4 @@
-//! Provides a custom DateTime `newtype` that deals with timestamp inconsistencies in our database.
+//! Provides a custom `DateTime` `newtype` that deals with timestamp inconsistencies in our database.
 //!
 //! The timestamps in our database are persisted as UTC but are actually Europe/Berlin. So we need
 //! to manipulate the timestamps accordingly. See [`DateTime`].

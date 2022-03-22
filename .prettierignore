@@ -1,2 +1,5 @@
 target/
 sqlx-data.json
+
+# Yarn
+.yarn/

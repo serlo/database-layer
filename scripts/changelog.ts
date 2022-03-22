@@ -79,6 +79,17 @@ async function exec(): Promise<void> {
           'Fix for failing contract tests in LicenseQuery und UserSetEmailMutation',
         ],
       },
+      {
+        tagName: 'v0.3.33',
+        name: '0.3.33',
+        date: '2022-03-16',
+        added: [
+          'add `EntityCreateMutation`',
+          'add `EntityAddRevisionMutation`',
+          'add `PageCreateMutation`',
+          'add `PageAddRevisionMutation`',
+        ],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

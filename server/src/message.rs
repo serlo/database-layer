@@ -13,7 +13,7 @@ use crate::subject::SubjectsMessage;
 use crate::subscription::SubscriptionMessage;
 use crate::thread::ThreadMessage;
 use crate::user::UserMessage;
-use crate::uuid::{EntityMessage, PageMessage, UuidMessage};
+use crate::uuid::{EntityMessage, PageMessage, TaxonomyTermMessage, UuidMessage};
 use crate::vocabulary::VocabularyMessage;
 
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]

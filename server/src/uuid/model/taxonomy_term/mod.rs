@@ -1,11 +1,12 @@
+use crate::database::Executor;
 use async_trait::async_trait;
 use convert_case::{Case, Casing};
 use futures::join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
+use super::messages::taxonomy_term_set_name_and_description_mutation;
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::database::Executor;
 use crate::format_alias;
 use crate::instance::Instance;
 

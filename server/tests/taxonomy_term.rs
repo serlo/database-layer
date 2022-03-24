@@ -18,12 +18,9 @@ mod set_name_and_description_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        let query_response = Message::new(
-            "UuidQuery",
-            json!({"id": 7}),
-        )
-        .execute_on(&mut transaction)
-        .await;
+        let query_response = Message::new("UuidQuery", json!({"id": 7}))
+            .execute_on(&mut transaction)
+            .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["name"], "a name");

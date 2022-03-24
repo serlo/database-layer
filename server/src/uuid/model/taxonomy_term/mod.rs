@@ -296,6 +296,18 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
+        let term_id = sqlx::query!(
+            r#"
+                SELECT term_id
+                    FROM term_taxonomy
+                    WHERE id = ?
+            "#,
+            payload.id
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .term_id as i32;
+
         sqlx::query!(
             r#"
                 UPDATE term
@@ -303,7 +315,7 @@ impl TaxonomyTerm {
                 WHERE id = ?
             "#,
             payload.name,
-            payload.id,
+            term_id,
         )
         .execute(&mut transaction)
         .await?;
@@ -318,7 +330,7 @@ impl TaxonomyTerm {
             r#"
                 UPDATE term_taxonomy
                 SET description = ?
-                WHERE term_id = ?
+                WHERE id = ?
             "#,
             description,
             payload.id,

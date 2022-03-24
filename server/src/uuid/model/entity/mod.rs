@@ -632,19 +632,6 @@ impl Entity {
         .await
         .unwrap();
 
-        // TODO: why not Entity::checkout?
-        sqlx::query!(
-            r#"
-                UPDATE entity
-                    SET current_revision_id = ?
-                    WHERE id = ?
-            "#,
-            entity_revision.id,
-            entity_id
-        )
-        .execute(&mut transaction)
-        .await?;
-
         CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
             .save(&mut transaction)
             .await?;

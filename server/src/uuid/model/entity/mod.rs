@@ -471,6 +471,7 @@ impl Entity {
         )
         .save(&mut transaction)
         .await?;
+
         if !payload.input.needs_review {
             let _ = Entity::checkout_revision(
                 EntityCheckoutRevisionPayload {

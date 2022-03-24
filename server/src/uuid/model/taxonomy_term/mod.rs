@@ -4,11 +4,13 @@ use convert_case::{Case, Casing};
 use futures::join;
 use serde::Serialize;
 use sqlx::MySqlPool;
+use thiserror::Error;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::format_alias;
+use crate::event::{EventError, SetTaxonomyTermEventPayload};
 use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
+use crate::{format_alias, operation};
 pub use messages::*;
 
 mod messages;
@@ -241,11 +243,54 @@ impl TaxonomyTerm {
     }
 }
 
+#[derive(Error, Debug)]
+pub enum TaxonomyTermSetNameAndDescriptionError {
+    #[error(
+        "Taxonomy Term name and description cannot be set because of a database error: {inner:?}."
+    )]
+    DatabaseError { inner: sqlx::Error },
+    #[error(
+        "Taxonomy Term name and description cannot be set because of an event error: {inner:?}."
+    )]
+    EventError { inner: EventError },
+}
+
+impl From<sqlx::Error> for TaxonomyTermSetNameAndDescriptionError {
+    fn from(inner: sqlx::Error) -> Self {
+        Self::DatabaseError { inner }
+    }
+}
+
+impl From<EventError> for TaxonomyTermSetNameAndDescriptionError {
+    fn from(error: EventError) -> Self {
+        match error {
+            EventError::DatabaseError { inner } => inner.into(),
+            inner => Self::EventError { inner },
+        }
+    }
+}
+
+impl From<TaxonomyTermSetNameAndDescriptionError> for operation::Error {
+    fn from(error: TaxonomyTermSetNameAndDescriptionError) -> Self {
+        match error {
+            TaxonomyTermSetNameAndDescriptionError::DatabaseError {
+                inner: sqlx::Error::RowNotFound,
+            } => operation::Error::NotFoundError,
+            TaxonomyTermSetNameAndDescriptionError::DatabaseError { .. }
+            | TaxonomyTermSetNameAndDescriptionError::EventError { .. } => {
+                operation::Error::InternalServerError {
+                    error: Box::new(error),
+                }
+            }
+        }
+    }
+}
+
 impl TaxonomyTerm {
     pub async fn set_name_and_description<'a, E>(
         payload: &taxonomy_term_set_name_and_description_mutation::Payload,
         executor: E,
-    ) -> Result<bool, sqlx::Error>
+    ) -> Result<bool, TaxonomyTermSetNameAndDescriptionError>
     where
         E: Executor<'a>,
     {
@@ -271,16 +316,31 @@ impl TaxonomyTerm {
 
         sqlx::query!(
             r#"
-                    UPDATE term_taxonomy
-                    SET description = ?
-                    WHERE term_id = ?
-                "#,
+                UPDATE term_taxonomy
+                SET description = ?
+                WHERE term_id = ?
+            "#,
             description,
             payload.id,
         )
         .execute(&mut transaction)
         .await?;
-        // TODO trigger event
+
+        let instance_id = sqlx::query!(
+            r#"
+                SELECT instance_id
+                    FROM term
+                    WHERE id = ?
+            "#,
+            payload.id
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .instance_id as i32;
+
+        SetTaxonomyTermEventPayload::new(payload.id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
 
         transaction.commit().await?;
 

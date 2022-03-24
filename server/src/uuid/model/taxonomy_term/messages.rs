@@ -10,7 +10,7 @@ use crate::operation::{self, Operation};
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum TaxonomyTermMessage {
-    TaxonomyTermSetTitleAndDescriptionMutation(
+    TaxonomyTermSetNameAndDescriptionMutation(
         taxonomy_term_set_name_and_description_mutation::Payload,
     ),
 }
@@ -20,9 +20,9 @@ impl MessageResponder for TaxonomyTermMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            TaxonomyTermMessage::TaxonomyTermSetTitleAndDescriptionMutation(payload) => {
+            TaxonomyTermMessage::TaxonomyTermSetNameAndDescriptionMutation(payload) => {
                 payload
-                    .handle("TaxonomySetNameAndDescriptionMutation", connection)
+                    .handle("TaxonomyTermSetNameAndDescriptionMutation", connection)
                     .await
             }
         }

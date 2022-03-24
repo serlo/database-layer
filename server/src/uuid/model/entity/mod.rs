@@ -14,8 +14,8 @@ use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
 use crate::event::{
-    CreateEntityEventPayload, CreateEntityRevisionEventPayload, EntityLinkEventPayload, EventError,
-    RevisionEventPayload,
+    CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateTaxonomyLinkEventPayload,
+    EntityLinkEventPayload, EventError, RevisionEventPayload,
 };
 use crate::format_alias;
 
@@ -614,6 +614,41 @@ impl Entity {
         .execute(&mut transaction)
         .await?;
 
+        let entity_revision = Entity::add_revision(
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
+                    changes: payload.input.changes.clone(),
+                    entity_id,
+                    needs_review: false,
+                    subscribe_this: payload.input.subscribe_this,
+                    subscribe_this_by_email: payload.input.subscribe_this_by_email,
+                    fields: payload.input.fields.clone(),
+                },
+                revision_type: EntityRevisionType::from(payload.entity_type.clone()),
+                user_id: payload.user_id,
+            },
+            &mut transaction,
+        )
+        .await
+        .unwrap();
+
+        // TODO: why not Entity::checkout?
+        sqlx::query!(
+            r#"
+                UPDATE entity
+                    SET current_revision_id = ?
+                    WHERE id = ?
+            "#,
+            entity_revision.id,
+            entity_id
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
+
         if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
             payload.entity_type
         {
@@ -672,42 +707,15 @@ impl Entity {
             .execute(&mut transaction)
             .await?;
 
-            // TODO: trigger event
-        }
-
-        let entity_revision = Entity::add_revision(
-            &entity_add_revision_mutation::Payload {
-                input: entity_add_revision_mutation::Input {
-                    changes: payload.input.changes.clone(),
-                    entity_id,
-                    needs_review: false,
-                    subscribe_this: payload.input.subscribe_this,
-                    subscribe_this_by_email: payload.input.subscribe_this_by_email,
-                    fields: payload.input.fields.clone(),
-                },
-                revision_type: EntityRevisionType::from(payload.entity_type.clone()),
-                user_id: payload.user_id,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
-
-        sqlx::query!(
-            r#"
-                UPDATE entity
-                    SET current_revision_id = ?
-                    WHERE id = ?
-            "#,
-            entity_revision.id,
-            entity_id
-        )
-        .execute(&mut transaction)
-        .await?;
-
-        CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
+            CreateTaxonomyLinkEventPayload::new(
+                entity_id,
+                payload.input.taxonomy_term_id.unwrap(),
+                payload.user_id,
+                instance_id,
+            )
             .save(&mut transaction)
             .await?;
+        }
 
         let entity = Entity::fetch_via_transaction(entity_id, &mut transaction).await?;
 

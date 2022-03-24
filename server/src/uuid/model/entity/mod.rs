@@ -614,7 +614,7 @@ impl Entity {
         .execute(&mut transaction)
         .await?;
 
-        let entity_revision = Entity::add_revision(
+        Entity::add_revision(
             &entity_add_revision_mutation::Payload {
                 input: entity_add_revision_mutation::Input {
                     changes: payload.input.changes.clone(),
@@ -629,8 +629,7 @@ impl Entity {
             },
             &mut transaction,
         )
-        .await
-        .unwrap();
+        .await?;
 
         CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
             .save(&mut transaction)

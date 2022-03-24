@@ -5,10 +5,13 @@ use futures::join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
-use super::messages::taxonomy_term_set_name_and_description_mutation;
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 use crate::format_alias;
 use crate::instance::Instance;
+use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
+pub use messages::*;
+
+mod messages;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -235,5 +238,52 @@ impl TaxonomyTerm {
 
     fn normalize_type(typename: &str) -> String {
         typename.to_case(Case::Camel)
+    }
+}
+
+impl TaxonomyTerm {
+    pub async fn set_name_and_description<'a, E>(
+        payload: &taxonomy_term_set_name_and_description_mutation::Payload,
+        executor: E,
+    ) -> Result<bool, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                UPDATE term
+                SET name = ?
+                WHERE id = ?
+            "#,
+            payload.name,
+            payload.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let mut description = "".to_string();
+
+        if payload.description.is_some() {
+            description = payload.description.clone().unwrap();
+        }
+
+        sqlx::query!(
+            r#"
+                    UPDATE term_taxonomy
+                    SET description = ?
+                    WHERE term_id = ?
+                "#,
+            description,
+            payload.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+        // TODO trigger event
+
+        transaction.commit().await?;
+
+        Ok(true)
     }
 }

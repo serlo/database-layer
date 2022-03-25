@@ -614,6 +614,10 @@ impl Entity {
         .execute(&mut transaction)
         .await?;
 
+        CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
+
         Entity::add_revision(
             &entity_add_revision_mutation::Payload {
                 input: entity_add_revision_mutation::Input {
@@ -630,10 +634,6 @@ impl Entity {
             &mut transaction,
         )
         .await?;
-
-        CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
-            .save(&mut transaction)
-            .await?;
 
         if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
             payload.entity_type

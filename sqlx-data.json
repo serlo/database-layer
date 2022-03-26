@@ -525,16 +525,6 @@
       ]
     }
   },
-  "27a53b0550f91678e7f1ebe7852e21642bba76f773bdb1ff46f6ae0294939e01": {
-    "query": "\n                UPDATE entity\n                    SET current_revision_id = ?\n                    WHERE id = ?\n            ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 2
-      },
-      "nullable": []
-    }
-  },
   "2b20b8721b218b0e08cfa2ba1f1a769e6e0ae366d6430b09202f56422df5a83b": {
     "query": "\n                    INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                        VALUES (?, ?, ?)\n                ",
     "describe": {

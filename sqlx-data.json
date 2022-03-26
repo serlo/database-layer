@@ -525,16 +525,6 @@
     },
     "query": "\n                SELECT t.name, u.trashed, r.date, r.author_id, r.repository_id\n                    FROM entity_revision r\n                    JOIN uuid u ON u.id = r.id\n                    JOIN entity e ON e.id = r.repository_id\n                    JOIN type t ON t.id = e.type_id\n                    WHERE r.id = ?\n            "
   },
-  "27a53b0550f91678e7f1ebe7852e21642bba76f773bdb1ff46f6ae0294939e01": {
-    "query": "\n                UPDATE entity\n                    SET current_revision_id = ?\n                    WHERE id = ?\n            ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 2
-      },
-      "nullable": []
-    }
-  },
   "2b20b8721b218b0e08cfa2ba1f1a769e6e0ae366d6430b09202f56422df5a83b": {
     "describe": {
       "columns": [],

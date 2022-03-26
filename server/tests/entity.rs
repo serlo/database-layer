@@ -428,6 +428,7 @@ mod add_revision_mutation {
 
 #[cfg(test)]
 mod create_mutation {
+    use assert_json_diff::assert_json_include;
     use test_utils::*;
 
     #[actix_rt::test]
@@ -852,6 +853,66 @@ mod create_mutation {
             assert_eq!(result["__typename"], "Video");
             assert_eq!(result["licenseId"], 1 as i32);
             assert_eq!(result["instance"], "de");
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn triggers_events() {
+        let mut transaction = begin_transaction().await;
+
+        let mutation_response = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "Article",
+                "input": {
+                    "changes": "test changes",
+                    "instance": "de",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "taxonomyTermId": 7,
+                    "needsReview": true,
+                    "fields": {
+                        "content": "test content",
+                        "metaDescription": "test metaDescription",
+                        "metaTitle": "test metaTitle",
+                        "title": "test title",
+                    },
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let events_response = Message::new(
+            "EventsQuery",
+            json!({ "first": 5, "objectId": get_json(mutation_response).await["id"] }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(events_response, |result| {
+            assert_json_include!(
+                actual: &result["events"][0],
+                expected: json!({
+                    "__typename": "CreateTaxonomyLinkNotificationEvent",
+                    "instance": "de",
+                    "actorId": 1,
+                    "instance": "de",
+                    "objectId": 7,
+                    "parentId": 7,
+                })
+            );
+            assert_json_include!(
+                actual: &result["events"][3],
+                expected: json!({
+                    "__typename": "CreateEntityNotificationEvent",
+                    "instance": "de",
+                    "actorId": 1,
+                })
+            );
         })
         .await;
     }

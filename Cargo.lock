@@ -233,6 +233,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "assert-json-diff"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50f1c3703dd33532d7f0ca049168930e9099ecac238e23cf932f3a69c42f06da"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.52"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1859,6 +1869,7 @@ dependencies = [
  "actix-rt",
  "actix-service",
  "actix-web",
+ "assert-json-diff",
  "async-trait",
  "chrono",
  "chrono-tz",

@@ -49,4 +49,21 @@ mod set_name_and_description_mutation {
         })
         .await;
     }
+
+    #[actix_rt::test]
+    async fn fails_when_taxonomy_term_does_not_exist() {
+        let response = Message::new(
+            "TaxonomyTermSetNameAndDescriptionMutation",
+            json!({
+                "id": 1,
+                "userId": 1,
+                "name": "a name",
+                "description": "a description"
+            }),
+        )
+        .execute()
+        .await;
+
+        assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
+    }
 }

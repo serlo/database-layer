@@ -252,17 +252,18 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
-        let term_id = sqlx::query!(
+        let term = sqlx::query!(
             r#"
-                SELECT term_id
+                SELECT term_id AS id, instance_id
                     FROM term_taxonomy
-                    WHERE id = ?
+                    JOIN term
+                    ON term.id = term_taxonomy.term_id
+                    WHERE term_taxonomy.id = ?
             "#,
             payload.id
         )
         .fetch_one(&mut transaction)
-        .await?
-        .term_id as i32;
+        .await?;
 
         sqlx::query!(
             r#"
@@ -271,16 +272,15 @@ impl TaxonomyTerm {
                 WHERE id = ?
             "#,
             payload.name,
-            term_id,
+            term.id,
         )
         .execute(&mut transaction)
         .await?;
 
-        let mut description = "".to_string();
-
-        if payload.description.is_some() {
-            description = payload.description.clone().unwrap();
-        }
+        let description = payload
+            .description
+            .clone()
+            .unwrap_or_else(|| "".to_string());
 
         sqlx::query!(
             r#"
@@ -294,19 +294,7 @@ impl TaxonomyTerm {
         .execute(&mut transaction)
         .await?;
 
-        let instance_id = sqlx::query!(
-            r#"
-                SELECT instance_id
-                    FROM term
-                    WHERE id = ?
-            "#,
-            payload.id
-        )
-        .fetch_one(&mut transaction)
-        .await?
-        .instance_id as i32;
-
-        SetTaxonomyTermEventPayload::new(payload.id, payload.user_id, instance_id)
+        SetTaxonomyTermEventPayload::new(payload.id, payload.user_id, term.instance_id)
             .save(&mut transaction)
             .await?;
 

@@ -280,18 +280,13 @@ impl TaxonomyTerm {
         .execute(&mut transaction)
         .await?;
 
-        let description = payload
-            .description
-            .clone()
-            .unwrap_or_else(|| "".to_string());
-
         sqlx::query!(
             r#"
                 UPDATE term_taxonomy
                 SET description = ?
                 WHERE id = ?
             "#,
-            description,
+            payload.description,
             payload.id,
         )
         .execute(&mut transaction)

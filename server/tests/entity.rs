@@ -900,7 +900,6 @@ mod create_mutation {
                     "__typename": "CreateTaxonomyLinkNotificationEvent",
                     "instance": "de",
                     "actorId": 1,
-                    "instance": "de",
                     "objectId": 7,
                     "parentId": 7,
                 })

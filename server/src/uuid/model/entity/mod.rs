@@ -696,7 +696,7 @@ impl Entity {
 
             CreateTaxonomyLinkEventPayload::new(
                 entity_id,
-                payload.input.taxonomy_term_id.unwrap(),
+                taxonomy_term_id,
                 payload.user_id,
                 instance_id,
             )

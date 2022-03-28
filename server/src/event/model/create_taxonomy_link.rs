@@ -10,37 +10,37 @@ use super::{AbstractEvent, Event, EventError, EventPayload, RawEventType};
 #[serde(rename_all = "camelCase")]
 pub struct CreateTaxonomyLinkEvent {
     entity_id: i32,
-    entity_revision_id: i32,
+    taxonomy_term_id: i32,
 }
 
 impl TryFrom<&AbstractEvent> for CreateTaxonomyLinkEvent {
     type Error = EventError;
 
     fn try_from(abstract_event: &AbstractEvent) -> Result<Self, Self::Error> {
-        let entity_id = abstract_event.uuid_parameters.try_get("repository")?;
-        let entity_revision_id = abstract_event.object_id;
+        let entity_id = abstract_event.uuid_parameters.try_get("object")?;
+        let taxonomy_term_id = abstract_event.object_id;
 
         Ok(CreateTaxonomyLinkEvent {
             entity_id,
-            entity_revision_id,
+            taxonomy_term_id,
         })
     }
 }
 
 pub struct CreateTaxonomyLinkEventPayload {
     raw_typename: RawEventType,
-    child_id: i32,
-    parent_id: i32,
+    entity_id: i32,
+    taxonomy_term_id: i32,
     actor_id: i32,
     instance_id: i32,
 }
 
 impl CreateTaxonomyLinkEventPayload {
-    pub fn new(child_id: i32, parent_id: i32, actor_id: i32, instance_id: i32) -> Self {
+    pub fn new(entity_id: i32, taxonomy_term_id: i32, actor_id: i32, instance_id: i32) -> Self {
         Self {
             raw_typename: RawEventType::CreateTaxonomyLink,
-            child_id,
-            parent_id,
+            entity_id,
+            taxonomy_term_id,
             actor_id,
             instance_id,
         }
@@ -55,10 +55,10 @@ impl CreateTaxonomyLinkEventPayload {
         let event = EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
-            self.parent_id,
+            self.taxonomy_term_id,
             self.instance_id,
             HashMap::new(),
-            [("object".to_string(), self.child_id)] //
+            [("object".to_string(), self.entity_id)]
                 .iter()
                 .cloned()
                 .collect(),

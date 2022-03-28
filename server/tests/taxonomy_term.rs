@@ -7,7 +7,7 @@ mod set_name_and_description_mutation {
     async fn sets_name_and_description() {
         let mut transaction = begin_transaction().await;
 
-        Message::new(
+        let response = Message::new(
             "TaxonomyTermSetNameAndDescriptionMutation",
             json!({
                 "id": 7,
@@ -18,6 +18,8 @@ mod set_name_and_description_mutation {
         )
         .execute_on(&mut transaction)
         .await;
+
+        assert_ok(response, json!({ "success": true })).await;
 
         let query_response = Message::new("UuidQuery", json!({"id": 7}))
             .execute_on(&mut transaction)

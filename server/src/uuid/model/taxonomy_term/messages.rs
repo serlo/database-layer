@@ -52,7 +52,7 @@ pub mod taxonomy_term_set_name_and_description_mutation {
         type Output = Output;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            let is_success = match connection {
+            match connection {
                 Connection::Pool(pool) => {
                     TaxonomyTerm::set_name_and_description(self, pool).await?
                 }
@@ -61,9 +61,7 @@ pub mod taxonomy_term_set_name_and_description_mutation {
                 }
             };
 
-            Ok(Output {
-                success: is_success,
-            })
+            Ok(Output { success: true })
         }
     }
 }

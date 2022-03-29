@@ -262,8 +262,11 @@ impl TaxonomyTerm {
             "#,
             payload.id
         )
-        .fetch_one(&mut transaction)
-        .await?;
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: format!("Taxonomy term with id {} does not exist", payload.id),
+        })?;
 
         sqlx::query!(
             r#"
@@ -277,18 +280,13 @@ impl TaxonomyTerm {
         .execute(&mut transaction)
         .await?;
 
-        let description = payload
-            .description
-            .clone()
-            .unwrap_or_else(|| "".to_string());
-
         sqlx::query!(
             r#"
                 UPDATE term_taxonomy
                 SET description = ?
                 WHERE id = ?
             "#,
-            description,
+            payload.description,
             payload.id,
         )
         .execute(&mut transaction)

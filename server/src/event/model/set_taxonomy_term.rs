@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
 
 use crate::database::Executor;
 use crate::event::{Event, EventPayload, RawEventType};
@@ -14,12 +13,11 @@ pub struct SetTaxonomyTermEvent {
     id: i32,
 }
 
-impl TryFrom<&AbstractEvent> for SetTaxonomyTermEvent {
-    type Error = EventError;
-    fn try_from(abstract_event: &AbstractEvent) -> Result<Self, Self::Error> {
-        let id = abstract_event.id;
-
-        Ok(SetTaxonomyTermEvent { id })
+impl From<&AbstractEvent> for SetTaxonomyTermEvent {
+    fn from(abstract_event: &AbstractEvent) -> Self {
+        SetTaxonomyTermEvent {
+            id: abstract_event.id,
+        }
     }
 }
 

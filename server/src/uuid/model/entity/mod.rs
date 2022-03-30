@@ -14,8 +14,8 @@ use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
 use crate::event::{
-    CreateEntityEventPayload, CreateEntityRevisionEventPayload, EntityLinkEventPayload, EventError,
-    RevisionEventPayload,
+    CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateTaxonomyLinkEventPayload,
+    EntityLinkEventPayload, EventError, RevisionEventPayload,
 };
 use crate::format_alias;
 
@@ -471,6 +471,7 @@ impl Entity {
         )
         .save(&mut transaction)
         .await?;
+
         if !payload.input.needs_review {
             let _ = Entity::checkout_revision(
                 EntityCheckoutRevisionPayload {
@@ -533,6 +534,8 @@ pub enum EntityCreateError {
     UuidError { inner: UuidError },
     #[error("Entity could not be created because parentId has to be provided.")]
     ParentIdError,
+    #[error("Entity could not be created because taxonomyTermId has to be provided.")]
+    TaxonomyTermIdError,
 }
 
 impl From<sqlx::Error> for EntityCreateError {
@@ -612,6 +615,27 @@ impl Entity {
         .execute(&mut transaction)
         .await?;
 
+        CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
+
+        Entity::add_revision(
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
+                    changes: payload.input.changes.clone(),
+                    entity_id,
+                    needs_review: false,
+                    subscribe_this: payload.input.subscribe_this,
+                    subscribe_this_by_email: payload.input.subscribe_this_by_email,
+                    fields: payload.input.fields.clone(),
+                },
+                revision_type: EntityRevisionType::from(payload.entity_type.clone()),
+                user_id: payload.user_id,
+            },
+            &mut transaction,
+        )
+        .await?;
+
         if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
             payload.entity_type
         {
@@ -639,41 +663,46 @@ impl Entity {
             )
             .save(&mut transaction)
             .await?;
-        }
+        } else {
+            let taxonomy_term_id = payload
+                .input
+                .taxonomy_term_id
+                .ok_or(EntityCreateError::TaxonomyTermIdError)?;
 
-        let entity_revision = Entity::add_revision(
-            &entity_add_revision_mutation::Payload {
-                input: entity_add_revision_mutation::Input {
-                    changes: payload.input.changes.clone(),
-                    entity_id,
-                    needs_review: false,
-                    subscribe_this: payload.input.subscribe_this,
-                    subscribe_this_by_email: payload.input.subscribe_this_by_email,
-                    fields: payload.input.fields.clone(),
-                },
-                revision_type: EntityRevisionType::from(payload.entity_type.clone()),
-                user_id: payload.user_id,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
+            let current_last_position = sqlx::query!(
+                r#"
+                    SELECT position FROM term_taxonomy_entity
+                    WHERE term_taxonomy_id = ?
+                    ORDER BY position DESC
+                    LIMIT 1
+                "#,
+                taxonomy_term_id
+            )
+            .fetch_one(&mut transaction)
+            .await?
+            .position as i32;
 
-        sqlx::query!(
-            r#"
-                UPDATE entity
-                    SET current_revision_id = ?
-                    WHERE id = ?
-            "#,
-            entity_revision.id,
-            entity_id
-        )
-        .execute(&mut transaction)
-        .await?;
+            sqlx::query!(
+                r#"
+                    INSERT INTO term_taxonomy_entity (entity_id, term_taxonomy_id, position)
+                    VALUES (?, ?, ?)
+                "#,
+                entity_id,
+                taxonomy_term_id,
+                current_last_position + 1
+            )
+            .execute(&mut transaction)
+            .await?;
 
-        CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
+            CreateTaxonomyLinkEventPayload::new(
+                entity_id,
+                taxonomy_term_id,
+                payload.user_id,
+                instance_id,
+            )
             .save(&mut transaction)
             .await?;
+        }
 
         let entity = Entity::fetch_via_transaction(entity_id, &mut transaction).await?;
 

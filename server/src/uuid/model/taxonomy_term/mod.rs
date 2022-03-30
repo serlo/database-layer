@@ -1,3 +1,4 @@
+use crate::database::Executor;
 use async_trait::async_trait;
 use convert_case::{Case, Casing};
 use futures::join;
@@ -5,9 +6,13 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::database::Executor;
-use crate::format_alias;
+use crate::event::SetTaxonomyTermEventPayload;
 use crate::instance::Instance;
+use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
+use crate::{format_alias, operation};
+pub use messages::*;
+
+mod messages;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -234,5 +239,65 @@ impl TaxonomyTerm {
 
     fn normalize_type(typename: &str) -> String {
         typename.to_case(Case::Camel)
+    }
+}
+
+impl TaxonomyTerm {
+    pub async fn set_name_and_description<'a, E>(
+        payload: &taxonomy_term_set_name_and_description_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let term = sqlx::query!(
+            r#"
+                SELECT term_id AS id, instance_id
+                    FROM term_taxonomy
+                    JOIN term
+                    ON term.id = term_taxonomy.term_id
+                    WHERE term_taxonomy.id = ?
+            "#,
+            payload.id
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: format!("Taxonomy term with id {} does not exist", payload.id),
+        })?;
+
+        sqlx::query!(
+            r#"
+                UPDATE term
+                SET name = ?
+                WHERE id = ?
+            "#,
+            payload.name,
+            term.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(
+            r#"
+                UPDATE term_taxonomy
+                SET description = ?
+                WHERE id = ?
+            "#,
+            payload.description,
+            payload.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        SetTaxonomyTermEventPayload::new(payload.id, payload.user_id, term.instance_id)
+            .save(&mut transaction)
+            .await?;
+
+        transaction.commit().await?;
+
+        Ok(())
     }
 }

@@ -186,6 +186,7 @@ pub mod entity_create_mutation {
         pub subscribe_this_by_email: bool,
         pub fields: HashMap<String, String>,
         pub parent_id: Option<i32>,
+        pub taxonomy_term_id: Option<i32>,
     }
 
     #[derive(Deserialize, Serialize)]

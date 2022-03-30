@@ -9,4 +9,5 @@ nvim scripts/changelog.ts
 print_header "Generating CHANGELOG"
 yarn ts-node scripts/changelog.ts
 
+yarn format
 git add -p

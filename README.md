@@ -28,6 +28,10 @@ cargo install sqlx-cli
 
 Run `yarn` to install all necessary node dependencies (needed for development and running the contract tests).
 
+### Install `jq` for `yarn fetch`
+
+For the command `yarn fetch` the tool [`jq`](https://stedolan.github.io/jq/) need to be installed.
+
 ### Database
 
 To get a local database for development, there are two approaches.

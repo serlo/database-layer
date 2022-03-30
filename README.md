@@ -30,7 +30,7 @@ Run `yarn` to install all necessary node dependencies (needed for development an
 
 ### Install `jq` for `yarn fetch`
 
-For the command `yarn fetch` the tool [`jq`](https://stedolan.github.io/jq/) need to be installed.
+For the command `yarn fetch` the tool [`jq`](https://stedolan.github.io/jq/) needs to be installed.
 
 ### Database
 

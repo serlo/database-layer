@@ -2,6 +2,7 @@ const { Verifier } = require('@pact-foundation/pact')
 const { spawnSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
+const process = require('process')
 const toml = require('toml')
 const util = require('util')
 
@@ -45,6 +46,9 @@ test('Pacts', async () => {
     pactBrokerUrl: 'https://pact.serlo.org',
     pactBrokerUsername: process.env.PACT_BROKER_USERNAME,
     pactBrokerPassword: process.env.PACT_BROKER_PASSWORD,
+    pactUrls: process.env.PACT_FILE
+      ? [path.resolve(process.env.PACT_FILE)]
+      : [],
     publishVerificationResult:
       process.env.PUBLISH_VERIFICATION_RESULT === 'true',
     validateSSL: false,

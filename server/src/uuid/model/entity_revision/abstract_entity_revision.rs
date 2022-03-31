@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use super::UuidError;
 use crate::datetime::DateTime;
-use crate::uuid::{EntityAddRevisionError, EntityRevision, EntityType, Uuid, UuidFetcher};
+use crate::operation;
+use crate::uuid::{EntityRevision, EntityType, Uuid, UuidFetcher};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -106,7 +107,7 @@ impl EntityRevisionPayload {
         }
     }
 
-    pub async fn save<'a, E>(&self, executor: E) -> Result<Uuid, EntityAddRevisionError>
+    pub async fn save<'a, E>(&self, executor: E) -> Result<Uuid, operation::Error>
     where
         E: Executor<'a>,
     {

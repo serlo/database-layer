@@ -21,7 +21,9 @@
     "mysql:rollback": "ts-node scripts/mysql-rollback",
     "pacts": "jest --config jest.config-pacts.js",
     "sqlx:prepare": "cargo sqlx prepare --merged",
-    "start": "docker-compose up --detach"
+    "start": "docker-compose up --detach",
+    "version": "yarn version:update",
+    "version:update": "./scripts/update_server_version.sh"
   },
   "devDependencies": {
     "@inyono/changelog": "^0.4.0",

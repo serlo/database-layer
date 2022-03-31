@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 source scripts/utils.sh
 
-nvim scripts/changelog.ts
+$EDITOR scripts/changelog.ts
 
 print_header "Generating CHANGELOG"
-yarn ts-node scripts/changelog.ts
+yarn changelog
 
 print_header "Updating version in Cargo.toml"
 VERSION=$(cat scripts/changelog.ts \
@@ -20,5 +20,6 @@ cargo update -p server
 print_header "Formatting"
 yarn format
 
-print_header "Time to commit"
+print_header "Time to commit 🚀️"
 git add -p
+git commit

@@ -2,7 +2,7 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::user::messages::{
     potential_spam_users_query, user_activity_by_type_query, user_delete_bots_mutation,
-    user_set_description_mutation, user_set_email_mutation,
+    user_delete_regular_users_mutation, user_set_description_mutation, user_set_email_mutation,
 };
 use std::env;
 
@@ -125,6 +125,54 @@ impl User {
         transaction.commit().await?;
 
         Ok(email_hashes)
+    }
+
+    pub async fn delete_regular_user<'a, E>(
+        payload: &user_delete_regular_users_mutation::Payload,
+        executor: E,
+    ) -> Result<i32, sqlx::Error>
+        where
+            E: Executor<'a>,
+    {
+        let deleted_user_id = 4;
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+                r#"update ad set author_id = ? where author_id = ?"#,
+                deleted_user_id,
+                payload.id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        /*
+        sqlx::query!(
+                r#"update blog_post set author_id = ? where author_id = ?"#,
+                deleted_user_id,
+                payload.id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        */
+
+        sqlx::query!(
+                r#"update comment set author_id = ? where author_id = ?"#,
+                deleted_user_id,
+                payload.id,
+            )
+            .execute(&mut transaction)
+            .await?;
+
+
+
+        let result = sqlx::query!("select email from user where id = ?", payload.id)
+            .fetch_optional(&mut transaction)
+            .await?;
+
+
+
+        //transaction.commit().await?;
+
+        Ok(payload.id)
     }
 
     pub async fn potential_spam_users<'a, E>(

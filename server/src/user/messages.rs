@@ -196,10 +196,11 @@ pub mod user_delete_regular_users_mutation {
         type Output = Output;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            /*let test = */match connection {
+            let _ = match connection {
                 Connection::Pool(pool) => User::delete_regular_user(self, pool).await?,
                 Connection::Transaction(transaction) => User::delete_regular_user(self, transaction).await?,
             };
+
             Ok(Output {
                 success: true,
             })

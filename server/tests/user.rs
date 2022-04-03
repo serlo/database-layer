@@ -47,6 +47,43 @@ mod user_delete_bots_mutation {
 }
 
 #[cfg(test)]
+mod user_delete_regular_users_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn deletes_a_user_permanently() {
+        let mut transaction = begin_transaction().await;
+        let user_id:i32 = 10;
+        let deleted_user_id:i32 = 4;
+
+        let response = Message::new("UserDeleteRegularUsersMutation", json!({ "id": user_id }))
+            .execute_on(&mut transaction)
+            .await;
+        assert_ok(
+            response,
+            json!({ "success": true, }),
+        )
+            .await;
+
+        let req = Message::new("UuidQuery", json!({ "id": user_id }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_not_found(req).await;
+
+        let deleted_got_activity = Message::new("UserActivityByTypeQuery", json!({ "userId": deleted_user_id }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_ok(
+            deleted_got_activity,
+            json!({ "edits": 893, "reviews": 923, "comments": 154, "taxonomy": 944 }),
+        )
+            .await;
+    }
+}
+
+#[cfg(test)]
 mod user_potential_spam_users_query {
     use test_utils::*;
 

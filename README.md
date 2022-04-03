@@ -104,12 +104,22 @@ You can also omit the second argument if the endpoint does not need a payload:
 yarn fetch SubjectsQuery
 ```
 
+### Run contract tests
+
+In order to run contract tests you need to start the server of the database layer via `cargo run` in a shell. Afterwards you can execute the contract tests with `yarn pacts`. There is also the script [`./scripts/pacts.sh`](./scripts/pacts.sh`) which automatically compiles and runs the server if necessary before running the contract tests.
+
+You can also provide the path to a local pact file in case you want to test new API changes against the database layer. Example:
+
+```sh
+PACT_FILE=../api.serlo.org/pacts/api.serlo.org-serlo.org-database-layer.json ./scripts/pacts.sh
+```
+
 ### Other helpful commands
 
 - `cargo test` – Run all tests (see https://doc.rust-lang.org/book/ch11-01-writing-tests.html )
 - `cargo clippy` – Lint the whole codebase (see https://github.com/rust-lang/rust-clippy )
 - `yarn mysql` – Start a MySQL shell for the local mysql server.
 - `yarn format` – Format all local source files.
-- `yarn pacts` – Run contract tests
+- `yarn version` – Start process for adding new server version
 
-See also [`package.json`](./package.json) for the list of all yarn scripts.
+- See also [`package.json`](./package.json) for the list of all yarn scripts.

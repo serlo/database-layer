@@ -81,6 +81,30 @@ mod user_delete_regular_users_mutation {
         )
             .await;
     }
+
+    #[actix_rt::test]
+    async fn fails_when_user_does_not_exist() {
+        let mut transaction = begin_transaction().await;
+        let user_id:i32 = -1;
+
+        let response = Message::new("UserDeleteRegularUsersMutation", json!({ "id": user_id }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_bad_request(response, "The requested User does not exist.").await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_trying_to_delete_deleted() {
+        let mut transaction = begin_transaction().await;
+        let deleted_user_id:i32 = 4;
+
+        let response = Message::new("UserDeleteRegularUsersMutation", json!({ "id":  deleted_user_id}))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_bad_request(response, "You cannot delete the Deleted-user.").await;
+    }
 }
 
 #[cfg(test)]

@@ -34,7 +34,7 @@ For the command `yarn fetch` the tool [`jq`](https://stedolan.github.io/jq/) nee
 
 ### Install gcc and gcc-multilib
 
-On Ubuntu you might also need [`gcc`](https://gcc.gnu.org/) and gcc-multilib.
+On Ubuntu you also need [`gcc`](https://gcc.gnu.org/) to run cargo.
 
 ### Database
 

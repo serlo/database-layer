@@ -45,7 +45,9 @@ impl MessageResponder for UserMessage {
                 payload.handle("ActivityByTypeQuery", connection).await
             }
             UserMessage::UserDeleteBotsMutation(payload) => {
-                payload.handle("UserDeleteBotsMutation", connection).await
+                payload
+                    .handle("UserDeleteBotsMutation", connection)
+                    .await
             }
             UserMessage::UserDeleteRegularUsersMutation(payload) => {
                 payload.handle("UserDeleteRegularUsersMutation", connection).await
@@ -198,7 +200,9 @@ pub mod user_delete_regular_users_mutation {
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             let _ = match connection {
                 Connection::Pool(pool) => User::delete_regular_user(self, pool).await?,
-                Connection::Transaction(transaction) => User::delete_regular_user(self, transaction).await?,
+                Connection::Transaction(transaction) => {
+                    User::delete_regular_user(self, transaction).await?
+                },
             };
 
             Ok(Output {

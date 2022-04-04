@@ -593,7 +593,7 @@ impl Entity {
                         reason: "taxonomy_term_id needs to be provided".to_string(),
                     })?;
 
-            let current_last_position = sqlx::query!(
+            let new_position = sqlx::query!(
                 r#"
                     SELECT position FROM term_taxonomy_entity
                     WHERE term_taxonomy_id = ?
@@ -602,9 +602,10 @@ impl Entity {
                 "#,
                 taxonomy_term_id
             )
-            .fetch_one(&mut transaction)
+            .fetch_optional(&mut transaction)
             .await?
-            .position as i32;
+            .map(|result| result.position as i32 + 1)
+            .unwrap_or(0);
 
             sqlx::query!(
                 r#"
@@ -613,7 +614,7 @@ impl Entity {
                 "#,
                 entity_id,
                 taxonomy_term_id,
-                current_last_position + 1
+                new_position
             )
             .execute(&mut transaction)
             .await?;

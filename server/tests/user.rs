@@ -125,10 +125,7 @@ mod user_delete_regular_users_mutation {
             .fetch_optional(&mut transaction)
             .await;
 
-        match comment_vote_does_not_exist.unwrap() {
-            None => assert!(true),
-            _ => assert!(false),
-        }
+        assert!(comment_vote_does_not_exist.unwrap().is_none());
 
         let check_entity_revision = sqlx::query!(
             r#"select author_id from entity_revision where id = 16114"#
@@ -159,10 +156,7 @@ mod user_delete_regular_users_mutation {
             .fetch_optional(&mut transaction)
             .await;
 
-        match notification_does_not_exist.unwrap() {
-            None => assert!(true),
-            _ => assert!(false),
-        }
+        assert!(notification_does_not_exist.unwrap().is_none());
 
         let check_page_revision = sqlx::query!(
             r#"select author_id from page_revision where id = 16283"#
@@ -181,10 +175,7 @@ mod user_delete_regular_users_mutation {
             .fetch_optional(&mut transaction)
             .await;
 
-        match role_user_does_not_exist.unwrap() {
-            None => assert!(true),
-            _ => assert!(false),
-        }
+        assert!(role_user_does_not_exist.unwrap().is_none());
 
         let subscription_does_not_exist = sqlx::query!(
             r#"select * from subscription where user_id = 10"#
@@ -192,10 +183,7 @@ mod user_delete_regular_users_mutation {
             .fetch_optional(&mut transaction)
             .await;
 
-        match subscription_does_not_exist.unwrap() {
-            None => assert!(true),
-            _ => assert!(false),
-        }
+        assert!(subscription_does_not_exist.unwrap().is_none());
 
         let subscription_does_not_exist2 = sqlx::query!(
             r#"select * from subscription where uuid_id = 10"#
@@ -203,10 +191,7 @@ mod user_delete_regular_users_mutation {
             .fetch_optional(&mut transaction)
             .await;
 
-        match subscription_does_not_exist2.unwrap() {
-            None => assert!(true),
-            _ => assert!(false),
-        }
+        assert!(subscription_does_not_exist2.unwrap().is_none());
 
         let uuid_does_not_exist = sqlx::query!(
             r#"select * from uuid where id = 10"#
@@ -214,10 +199,7 @@ mod user_delete_regular_users_mutation {
             .fetch_optional(&mut transaction)
             .await;
 
-        match uuid_does_not_exist.unwrap() {
-            None => assert!(true),
-            _ => assert!(false),
-        }
+        assert!(uuid_does_not_exist.unwrap().is_none());
     }
 
     #[actix_rt::test]
@@ -235,10 +217,7 @@ mod user_delete_regular_users_mutation {
             .fetch_optional(&mut transaction)
             .await;
 
-        match flag_does_not_exist.unwrap() {
-            None => assert!(true),
-            _ => assert!(false),
-        }
+        assert!(flag_does_not_exist.unwrap().is_none());
     }
 
     #[actix_rt::test]

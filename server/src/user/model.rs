@@ -151,8 +151,7 @@ impl User {
             .fetch_optional(&mut transaction)
             .await?;
 
-        if let Some(_) = result {}
-        else {
+        if !result.is_some() {
             return Err(operation::Error::BadRequest{
                 reason: "The requested User does not exist.".to_string()
             })

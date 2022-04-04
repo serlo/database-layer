@@ -131,7 +131,7 @@ impl User {
     pub async fn delete_regular_user<'a, E>(
         payload: &user_delete_regular_users_mutation::Payload,
         executor: E,
-    ) -> Result<Result<(), sqlx::Error>, operation::Error>
+    ) -> Result<(), operation::Error>
     where
         E: Executor<'a>,
     {
@@ -139,7 +139,7 @@ impl User {
 
         if payload.id == deleted_user_id {
             return Err(operation::Error::BadRequest {
-                reason: "You cannot delete the Deleted-user.".to_string(),
+                reason: "You cannot delete the user Deleted.".to_string(),
             });
         }
         let mut transaction = executor.begin().await?;
@@ -235,7 +235,7 @@ impl User {
 
         transaction.commit().await?;
 
-        Ok(Ok(()))
+        Ok(())
     }
 
     pub async fn potential_spam_users<'a, E>(

@@ -215,7 +215,7 @@ mod user_delete_regular_users_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_bad_request(response, "You cannot delete the Deleted-user.").await;
+        assert_bad_request(response, "You cannot delete the user Deleted.").await;
     }
 }
 

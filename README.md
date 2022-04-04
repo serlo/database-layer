@@ -32,6 +32,10 @@ Run `yarn` to install all necessary node dependencies (needed for development an
 
 For the command `yarn fetch` the tool [`jq`](https://stedolan.github.io/jq/) needs to be installed.
 
+### Install gcc
+
+On Ubuntu you also need [`gcc`](https://gcc.gnu.org/) to run cargo.
+
 ### Database
 
 To get a local database for development, there are two approaches.

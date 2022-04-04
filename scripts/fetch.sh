@@ -19,10 +19,23 @@ function main() {
 
   log "INFO: Fetch with data $(echo "$DATA" | jq)"
 
-  time curl --header "Content-Type: application/json" \
+  RESULT=$(mktemp -t database-layer-fetch.XXXXXXXXXX)
+
+  # See https://stackoverflow.com/a/22508743
+  STATUS=$(curl --header "Content-Type: application/json" \
     --data "$DATA" \
     --verbose \
-    http://localhost:8080/ | jq
+    -o "$RESULT" -w "%{http_code}" \
+    http://localhost:8080/)
+
+  if [ $STATUS -eq 200 ]; then
+    jq < "$RESULT"
+  else
+    cat "$RESULT"
+    echo
+  fi
+
+  rm "$RESULT"
 }
 
 function tear_down() {

@@ -121,10 +121,7 @@ mod user_delete_regular_users_mutation {
                 .await
                 .unwrap();
 
-        assert_eq!(
-            check_entity_revision.author_id as i32,
-            deleted_user_id
-        );
+        assert_eq!(check_entity_revision.author_id as i32, deleted_user_id);
 
         let check_event_log = sqlx::query!(r#"select actor_id from event_log where id = 38383"#)
             .fetch_one(&mut transaction)
@@ -147,10 +144,7 @@ mod user_delete_regular_users_mutation {
                 .await
                 .unwrap();
 
-        assert_eq!(
-            check_page_revision.author_id as i32,
-            deleted_user_id
-        );
+        assert_eq!(check_page_revision.author_id as i32, deleted_user_id);
 
         let role_user_does_not_exist =
             sqlx::query!(r#"select * from role_user where user_id = 10"#)

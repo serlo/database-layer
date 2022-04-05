@@ -47,6 +47,181 @@ mod user_delete_bots_mutation {
 }
 
 #[cfg(test)]
+mod user_delete_regular_users_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn deletes_a_user_permanently() {
+        let mut transaction = begin_transaction().await;
+        let user_id: i32 = 10;
+        let deleted_user_id: i32 = 4;
+
+        let response = Message::new("UserDeleteRegularUsersMutation", json!({ "id": user_id }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_ok(response, json!({ "success": true, })).await;
+
+        let req = Message::new("UuidQuery", json!({ "id": user_id }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_not_found(req).await;
+
+        let deleted_got_activity = Message::new(
+            "UserActivityByTypeQuery",
+            json!({ "userId": deleted_user_id }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok(
+            deleted_got_activity,
+            json!({ "edits": 893, "reviews": 923, "comments": 154, "taxonomy": 944 }),
+        )
+        .await;
+
+        let check_ad = sqlx::query!(r#"select author_id from ad where id = 1"#)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap();
+
+        assert_eq!(check_ad.author_id as i32, deleted_user_id);
+
+        let check_blog_post = sqlx::query!(r#"select author_id from blog_post where id = 1199"#)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap();
+
+        assert_eq!(check_blog_post.author_id as i32, deleted_user_id);
+
+        let check_comment = sqlx::query!(r#"select author_id from comment where id = 16740"#)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap();
+
+        assert_eq!(check_comment.author_id as i32, deleted_user_id);
+
+        let comment_vote_does_not_exist =
+            sqlx::query!(r#"select * from comment_vote where user_id = 10"#)
+                .fetch_optional(&mut transaction)
+                .await
+                .unwrap();
+
+        assert!(comment_vote_does_not_exist.is_none());
+
+        let check_entity_revision =
+            sqlx::query!(r#"select author_id from entity_revision where id = 16114"#)
+                .fetch_one(&mut transaction)
+                .await
+                .unwrap();
+
+        assert_eq!(check_entity_revision.author_id as i32, deleted_user_id);
+
+        let check_event_log = sqlx::query!(r#"select actor_id from event_log where id = 38383"#)
+            .fetch_one(&mut transaction)
+            .await
+            .unwrap();
+
+        assert_eq!(check_event_log.actor_id as i32, deleted_user_id);
+
+        let notification_does_not_exist =
+            sqlx::query!(r#"select * from notification where user_id = 10"#)
+                .fetch_optional(&mut transaction)
+                .await
+                .unwrap();
+
+        assert!(notification_does_not_exist.is_none());
+
+        let check_page_revision =
+            sqlx::query!(r#"select author_id from page_revision where id = 16283"#)
+                .fetch_one(&mut transaction)
+                .await
+                .unwrap();
+
+        assert_eq!(check_page_revision.author_id as i32, deleted_user_id);
+
+        let role_user_does_not_exist =
+            sqlx::query!(r#"select * from role_user where user_id = 10"#)
+                .fetch_optional(&mut transaction)
+                .await
+                .unwrap();
+
+        assert!(role_user_does_not_exist.is_none());
+
+        let subscription_does_not_exist =
+            sqlx::query!(r#"select * from subscription where user_id = 10"#)
+                .fetch_optional(&mut transaction)
+                .await
+                .unwrap();
+
+        assert!(subscription_does_not_exist.is_none());
+
+        let subscription_does_not_exist2 =
+            sqlx::query!(r#"select * from subscription where uuid_id = 10"#)
+                .fetch_optional(&mut transaction)
+                .await
+                .unwrap();
+
+        assert!(subscription_does_not_exist2.is_none());
+
+        let uuid_does_not_exist = sqlx::query!(r#"select * from uuid where id = 10"#)
+            .fetch_optional(&mut transaction)
+            .await
+            .unwrap();
+
+        assert!(uuid_does_not_exist.is_none());
+    }
+
+    #[actix_rt::test]
+    async fn flag_is_deleted() {
+        let mut transaction = begin_transaction().await;
+        let reporter_id: i32 = 15474;
+
+        Message::new(
+            "UserDeleteRegularUsersMutation",
+            json!({ "id": reporter_id }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let flag_does_not_exist = sqlx::query!(r#"select * from flag where reporter_id = 10"#)
+            .fetch_optional(&mut transaction)
+            .await
+            .unwrap();
+
+        assert!(flag_does_not_exist.is_none());
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_user_does_not_exist() {
+        let mut transaction = begin_transaction().await;
+        let user_id: i32 = -1;
+
+        let response = Message::new("UserDeleteRegularUsersMutation", json!({ "id": user_id }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_bad_request(response, "The requested user does not exist.").await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_trying_to_delete_deleted() {
+        let mut transaction = begin_transaction().await;
+        let deleted_user_id: i32 = 4;
+
+        let response = Message::new(
+            "UserDeleteRegularUsersMutation",
+            json!({ "id": deleted_user_id }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(response, "You cannot delete the user Deleted.").await;
+    }
+}
+
+#[cfg(test)]
 mod user_potential_spam_users_query {
     use test_utils::*;
 

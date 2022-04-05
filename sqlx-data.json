@@ -123,6 +123,16 @@
     },
     "query": "\n                SELECT id\n                    FROM comment\n                    WHERE parent_id = ?\n            "
   },
+  "0a2a6e879255cafcdf12a622ef1eee2529c70b55d325ac864078dd2e7b2cc354": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "delete from subscription where uuid_id = ?"
+  },
   "0f7ddd3073657eb646caeed7f49e8ff4592d21b27f46fc8921f60ff0d6107930": {
     "describe": {
       "columns": [
@@ -525,6 +535,16 @@
     },
     "query": "\n                SELECT t.name, u.trashed, r.date, r.author_id, r.repository_id\n                    FROM entity_revision r\n                    JOIN uuid u ON u.id = r.id\n                    JOIN entity e ON e.id = r.repository_id\n                    JOIN type t ON t.id = e.type_id\n                    WHERE r.id = ?\n            "
   },
+  "281acbea5bb6f6c8db1f93b28161ac9526e53a9f1d7c419c27980e7900ef6d40": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "update comment set author_id = ? where author_id = ?"
+  },
   "2b20b8721b218b0e08cfa2ba1f1a769e6e0ae366d6430b09202f56422df5a83b": {
     "describe": {
       "columns": [],
@@ -534,6 +554,16 @@
       }
     },
     "query": "\n                    INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                        VALUES (?, ?, ?)\n                "
+  },
+  "2b34c5a1d2b6d04cb9bbbf5777daf02acc00c15dacb0f26ce3edf473b6759aa1": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "delete from notification where user_id = ?"
   },
   "2b40b2053d2083dbdc2ba4229260ef613c0b10e606099d083ffe75dc2117e4ac": {
     "describe": {
@@ -642,6 +672,26 @@
       }
     },
     "query": "\n                    INSERT INTO event_parameter_uuid (uuid_id, event_parameter_id)\n                        VALUES (?, ?)\n                "
+  },
+  "3083f1101b5bd891439a4b8ad37e718857c7742c2e53f86c6183b7a7d0eec1b2": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "delete from comment_vote where user_id = ?"
+  },
+  "3475791793b58ee5c67fe97f0aab6eb28b1d0882f95d830463ab9a4bef1acf12": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "update event_log set actor_id = ? where actor_id = ?"
   },
   "3c53faa4669ab4e83898639d4c51a92a6be3c24b57914864aa0509f75cb61506": {
     "describe": {
@@ -1116,6 +1166,26 @@
     },
     "query": "\n                UPDATE term\n                SET name = ?\n                WHERE id = ?\n            "
   },
+  "5f0cc01572218475401132aa14ebfaabb4cd5f4643f34eec5bcd0a24afca5e12": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "delete from flag where reporter_id = ?"
+  },
+  "5f43811379622c6ec3f94e58058c395c441a6b82002cc243f47b0d127a8b54b6": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "update blog_post set author_id = ? where author_id = ?"
+  },
   "65c764b58fbe6ce246e2d35773b7af5ae8222e831f50b5791cfb8ed318d203d8": {
     "describe": {
       "columns": [],
@@ -1145,6 +1215,16 @@
       }
     },
     "query": "insert into entity_revision_field (entity_revision_id, field, value) values (?, ?, ?)"
+  },
+  "6a2b23f82cae92c92627c27b8e1ab145c4d99e689ab9d1be6434fdf84db552e6": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "update page_revision set author_id = ? where author_id = ?"
   },
   "6b8b0b59e5d78d874c22c2cba9a59d3c780dcb3717de0d20347e859a93d0ed4b": {
     "describe": {
@@ -1245,6 +1325,16 @@
       }
     },
     "query": "\n                SELECT r.name\n                    FROM role r\n                    JOIN role_user ru on r.id = ru.role_id\n                    WHERE ru.user_id = ?\n            "
+  },
+  "71013abb1e9f9e103e9caf7a124be66936bf583dfaa850651422595f43776918": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "delete from subscription where user_id = ?"
   },
   "719654ca360621d4b33c2fd42bfec51fc21059a00d5b9f23eb56e3992c4a25d4": {
     "describe": {
@@ -1361,6 +1451,135 @@
       }
     },
     "query": "\n                    SELECT archived FROM comment WHERE id = ?\n                "
+  },
+  "86d9154ff359e925b1f73ba4be620d309230f7d3f37c4d710f25f5acffd2527b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 508,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "username",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 5
+            },
+            "max_size": 128,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "password",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 200,
+            "type": "String"
+          }
+        },
+        {
+          "name": "logins",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 10,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "date",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1153
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        },
+        {
+          "name": "token",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 128,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "last_login",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        },
+        {
+          "name": "description",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 16
+            },
+            "max_size": 262140,
+            "type": "Blob"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "select * from user where id = ?"
   },
   "87b99c353a3ccda694aaef3e4bd9d122313e7293997b7903d333327296a1118f": {
     "describe": {
@@ -1967,6 +2186,16 @@
     },
     "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, 'pageRevision')\n            "
   },
+  "b07f1f26a1f167b06d6fe226e902cd8465939f4113ba2e8a0479b780893b9370": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "update entity_revision set author_id = ? where author_id = ?"
+  },
   "b67a6cd1168e030043fc309da009c241d88b7543ce11598b7e183086dd2f5077": {
     "describe": {
       "columns": [
@@ -2214,6 +2443,16 @@
     },
     "query": "\n                SELECT u.trashed, f.name\n                    FROM attachment_file f\n                    JOIN attachment_container c ON c.id = f.attachment_id\n                    JOIN uuid u ON u.id = c.id\n                    WHERE c.id = ?\n            "
   },
+  "c5e4a7152731fefedfdf6a46d147e374ebb33f1bb60ce0fa592972023b2ffd0a": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "update ad set author_id = ? where author_id = ?"
+  },
   "c8b4c137c46ca9c5a5df78a2f3aa679f9d7b528e086e16ac6d92a1fc4fd091da": {
     "describe": {
       "columns": [
@@ -2412,6 +2651,16 @@
       }
     },
     "query": "\n                    SELECT position FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n                    ORDER BY position DESC\n                    LIMIT 1\n                "
+  },
+  "d80956764ebb75bdbecd9d93357a1104dc70e1672f9a65a5851a9139cf5b8db6": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "delete from role_user where user_id = ?"
   },
   "d96a45d0d014aece234428d2b3deeb6740e956e7c1d0f380d2bdbc258180d5aa": {
     "describe": {
@@ -2909,6 +3158,16 @@
       }
     },
     "query": "\n                INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                    VALUES (\"changes\", ?, ?)\n            "
+  },
+  "f6232703fd9b172776710f63c3b6b834d80b2d8d88e56e4c6a8a95e9b6ab0086": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "delete from uuid where id = ? and discriminator = 'user'"
   },
   "fb7a566e9ea371a8e210e88cec9d3e4cf0832ccc6706c7a164275bd43d86f596": {
     "describe": {

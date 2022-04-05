@@ -75,16 +75,11 @@ mod user_delete_regular_users_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        let edits: i32 = 893;
-        let reviews: i32 = 923;
-        let comments: i32 = 154;
-        let taxonomy: i32 = 944;
-
         assert_ok(
             deleted_got_activity,
-            json!({ "edits": edits, "reviews": reviews, "comments": comments, "taxonomy": taxonomy,}),
+            json!({ "edits": 893, "reviews": 923, "comments": 154, "taxonomy": 944 }),
         )
-            .await;
+        .await;
 
         let check_ad = sqlx::query!(r#"select author_id from ad where id = 1"#)
             .fetch_one(&mut transaction)

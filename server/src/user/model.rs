@@ -144,11 +144,11 @@ impl User {
         }
         let mut transaction = executor.begin().await?;
 
-        let result = sqlx::query!(r#"select * from user where id = ?"#, payload.id,)
+        let requested_user = sqlx::query!(r#"select * from user where id = ?"#, payload.id,)
             .fetch_optional(&mut transaction)
             .await?;
 
-        if result.is_none() {
+        if requested_user.is_none() {
             return Err(operation::Error::BadRequest {
                 reason: "The requested User does not exist.".to_string(),
             });

@@ -142,17 +142,15 @@ impl User {
                 reason: "You cannot delete the user Deleted.".to_string(),
             });
         }
+
         let mut transaction = executor.begin().await?;
 
-        let requested_user = sqlx::query!(r#"select * from user where id = ?"#, payload.id,)
+        sqlx::query!(r#"select * from user where id = ?"#, payload.id,)
             .fetch_optional(&mut transaction)
-            .await?;
-
-        if requested_user.is_none() {
-            return Err(operation::Error::BadRequest {
-                reason: "The requested User does not exist.".to_string(),
-            });
-        }
+            .await?
+            .ok_or(operation::Error::BadRequest {
+                reason: "The requested user does not exist.".to_string(),
+            })?;
 
         sqlx::query!(
             r#"update ad set author_id = ? where author_id = ?"#,

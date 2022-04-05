@@ -207,7 +207,7 @@ mod user_delete_regular_users_mutation {
             .execute_on(&mut transaction)
             .await;
 
-        assert_bad_request(response, "The requested User does not exist.").await;
+        assert_bad_request(response, "The requested user does not exist.").await;
     }
 
     #[actix_rt::test]

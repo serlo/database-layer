@@ -299,56 +299,20 @@ impl<'q> sqlx::Encode<'q, MySql> for TaxonomyType {
 
 #[derive(Error, Debug)]
 pub enum VocabularyError {
-    #[error("Database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("From UTF-8 error: {inner:?}.")]
-    FromUtf8Error { inner: std::string::FromUtf8Error },
-    #[error("Infallible error: {inner:?}.")]
-    Infallible { inner: std::convert::Infallible },
-    #[error("Invalid IRI error: {inner:?}.")]
-    InvalidIri {
-        inner: sophia::iri::error::InvalidIri,
-    },
+    #[error("Database error: {0:?}.")]
+    DatabaseError(#[from] sqlx::Error),
+    #[error("From UTF-8 error: {0:?}.")]
+    FromUtf8Error(#[from] std::string::FromUtf8Error),
+    #[error("Infallible error: {0:?}.")]
+    Infallible(#[from] std::convert::Infallible),
+    #[error("Invalid IRI error: {0:?}.")]
+    InvalidIri(#[from] sophia::iri::error::InvalidIri),
     #[error("Invalid taxonomy type.")]
     InvalidTaxonomyType,
     #[error("Invalid tree.")]
     InvalidTree,
-    #[error("Stream error: {inner:?}.")]
-    StreamError {
-        inner: sophia::quad::stream::StreamError<std::convert::Infallible, std::io::Error>,
-    },
-}
-
-impl From<sqlx::Error> for VocabularyError {
-    fn from(inner: sqlx::Error) -> Self {
-        Self::DatabaseError { inner }
-    }
-}
-
-impl From<std::string::FromUtf8Error> for VocabularyError {
-    fn from(inner: std::string::FromUtf8Error) -> Self {
-        Self::FromUtf8Error { inner }
-    }
-}
-
-impl From<std::convert::Infallible> for VocabularyError {
-    fn from(inner: std::convert::Infallible) -> Self {
-        Self::Infallible { inner }
-    }
-}
-
-impl From<sophia::iri::error::InvalidIri> for VocabularyError {
-    fn from(inner: sophia::iri::error::InvalidIri) -> Self {
-        Self::InvalidIri { inner }
-    }
-}
-
-impl From<sophia::quad::stream::StreamError<std::convert::Infallible, std::io::Error>>
-    for VocabularyError
-{
-    fn from(
-        inner: sophia::quad::stream::StreamError<std::convert::Infallible, std::io::Error>,
-    ) -> Self {
-        Self::StreamError { inner }
-    }
+    #[error("Stream error: {0:?}.")]
+    StreamError(
+        #[from] sophia::quad::stream::StreamError<std::convert::Infallible, std::io::Error>,
+    ),
 }

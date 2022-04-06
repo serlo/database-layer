@@ -1,4 +1,5 @@
 use crate::operation::{self, Operation};
+use crate::uuid::Uuid;
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -14,7 +15,7 @@ use crate::message::MessageResponder;
 #[serde(tag = "type", content = "payload")]
 pub enum ThreadMessage {
     ThreadsQuery(threads_query::Payload),
-    ThreadCreateThreadMutation(ThreadCreateThreadMutation),
+    ThreadCreateThreadMutation(create_thread_mutation::Payload),
     ThreadCreateCommentMutation(ThreadCreateCommentMutation),
     ThreadSetThreadArchivedMutation(ThreadSetThreadArchivedMutation),
 }
@@ -27,7 +28,11 @@ impl MessageResponder for ThreadMessage {
             ThreadMessage::ThreadsQuery(message) => {
                 message.handle("ThreadsQuery", connection).await
             }
-            ThreadMessage::ThreadCreateThreadMutation(message) => message.handle(connection).await,
+            ThreadMessage::ThreadCreateThreadMutation(message) => {
+                message
+                    .handle("ThreadCreateCommentMutation", connection)
+                    .await
+            }
             ThreadMessage::ThreadCreateCommentMutation(message) => message.handle(connection).await,
             ThreadMessage::ThreadSetThreadArchivedMutation(message) => {
                 message.handle(connection).await
@@ -59,64 +64,63 @@ pub mod threads_query {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ThreadCreateThreadMutation {
-    pub title: String,
-    pub content: String,
-    pub object_id: i32,
-    pub user_id: i32,
-    pub subscribe: bool,
-    pub send_email: bool,
-}
+pub mod create_thread_mutation {
+    use super::*;
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ThreadCreateThreadMutationResponse {
-    pub success: bool,
-    pub reason: Option<String>,
-}
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub title: String,
+        pub content: String,
+        pub object_id: i32,
+        pub user_id: i32,
+        pub subscribe: bool,
+        pub send_email: bool,
+    }
 
-#[async_trait]
-impl MessageResponder for ThreadCreateThreadMutation {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let payload = ThreadStartThreadPayload {
-            title: self.title.clone(),
-            content: self.content.clone(),
-            object_id: self.object_id,
-            user_id: self.user_id,
-            subscribe: self.subscribe,
-            send_email: self.send_email,
-        };
-        let response = match connection {
-            Connection::Pool(pool) => Threads::start_thread(payload, pool).await,
-            Connection::Transaction(transaction) => {
-                Threads::start_thread(payload, transaction).await
-            }
-        };
-        match response {
-            Ok(data) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(&data),
-            Err(e) => {
-                println!("/thread/start-thread: {:?}", e);
-                match e {
-                    ThreadStartThreadError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().json(&None::<String>)
-                    }
-                    ThreadStartThreadError::EventError { .. } => {
-                        HttpResponse::InternalServerError().json(&None::<String>)
-                    }
-                    ThreadStartThreadError::UuidError { .. } => {
-                        HttpResponse::InternalServerError().json(&None::<String>)
-                    }
-                    ThreadStartThreadError::BadUserInput { reason } => HttpResponse::BadRequest()
-                        .json(ThreadCreateCommentMutationResponse {
-                            success: false,
-                            reason: Some(format!("Cannot create thread: {}", reason)),
-                        }),
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Uuid;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let payload = ThreadStartThreadPayload {
+                title: self.title.clone(),
+                content: self.content.clone(),
+                object_id: self.object_id,
+                user_id: self.user_id,
+                subscribe: self.subscribe,
+                send_email: self.send_email,
+            };
+            Ok(match connection {
+                Connection::Pool(pool) => Threads::start_thread(payload, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Threads::start_thread(payload, transaction).await?
                 }
+            })
+        }
+    }
+
+    impl From<ThreadStartThreadError> for operation::Error {
+        fn from(e: ThreadStartThreadError) -> Self {
+            match e {
+                ThreadStartThreadError::DatabaseError { inner } => {
+                    operation::Error::InternalServerError {
+                        error: Box::new(inner),
+                    }
+                }
+                ThreadStartThreadError::EventError { inner } => {
+                    operation::Error::InternalServerError {
+                        error: Box::new(inner),
+                    }
+                }
+                ThreadStartThreadError::UuidError { inner } => {
+                    operation::Error::InternalServerError {
+                        error: Box::new(inner),
+                    }
+                }
+                ThreadStartThreadError::BadUserInput { reason } => operation::Error::BadRequest {
+                    reason: format!("Cannot create thread: {}", reason).to_string(),
+                },
             }
         }
     }

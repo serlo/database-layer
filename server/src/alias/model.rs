@@ -92,9 +92,10 @@ where
                     "#,
             username
         )
-        .fetch_one(&mut transaction)
+        .fetch_optional(&mut transaction)
         .await?
-        .id as i32
+        .map(|x| x.id as i32)
+        .ok_or(operation::Error::NotFoundError)?
     } else {
         let re = Regex::new(r"^(?P<subject>[^/]+/)?(?P<id>\d+)/(?P<title>[^/]*)$").unwrap();
         if let Some(captures) = re.captures(path) {
@@ -110,9 +111,10 @@ where
                 instance,
                 path
             )
-            .fetch_one(&mut transaction)
+            .fetch_optional(&mut transaction)
             .await?
-            .uuid_id as i32
+            .map(|result| result.uuid_id as i32)
+            .ok_or(operation::Error::NotFoundError)?
         }
     };
 

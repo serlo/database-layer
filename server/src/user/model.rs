@@ -1,8 +1,9 @@
 use crate::database::Executor;
 use crate::datetime::DateTime;
+use crate::operation;
 use crate::user::messages::{
     potential_spam_users_query, user_activity_by_type_query, user_delete_bots_mutation,
-    user_set_description_mutation, user_set_email_mutation,
+    user_delete_regular_users_mutation, user_set_description_mutation, user_set_email_mutation,
 };
 use std::env;
 
@@ -125,6 +126,114 @@ impl User {
         transaction.commit().await?;
 
         Ok(email_hashes)
+    }
+
+    pub async fn delete_regular_user<'a, E>(
+        payload: &user_delete_regular_users_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let deleted_user_id: i32 = 4;
+
+        if payload.id == deleted_user_id {
+            return Err(operation::Error::BadRequest {
+                reason: "You cannot delete the user Deleted.".to_string(),
+            });
+        }
+
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(r#"select * from user where id = ?"#, payload.id,)
+            .fetch_optional(&mut transaction)
+            .await?
+            .ok_or(operation::Error::BadRequest {
+                reason: "The requested user does not exist.".to_string(),
+            })?;
+
+        sqlx::query!(
+            r#"update ad set author_id = ? where author_id = ?"#,
+            deleted_user_id,
+            payload.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(
+            r#"update blog_post set author_id = ? where author_id = ?"#,
+            deleted_user_id,
+            payload.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(
+            r#"update comment set author_id = ? where author_id = ?"#,
+            deleted_user_id,
+            payload.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(r#"delete from comment_vote where user_id = ?"#, payload.id,)
+            .execute(&mut transaction)
+            .await?;
+
+        sqlx::query!(
+            r#"update entity_revision set author_id = ? where author_id = ?"#,
+            deleted_user_id,
+            payload.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(
+            r#"update event_log set actor_id = ? where actor_id = ?"#,
+            deleted_user_id,
+            payload.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(r#"delete from flag where reporter_id = ?"#, payload.id,)
+            .execute(&mut transaction)
+            .await?;
+
+        sqlx::query!(r#"delete from notification where user_id = ?"#, payload.id,)
+            .execute(&mut transaction)
+            .await?;
+
+        sqlx::query!(
+            r#"update page_revision set author_id = ? where author_id = ?"#,
+            deleted_user_id,
+            payload.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(r#"delete from role_user where user_id = ?"#, payload.id,)
+            .execute(&mut transaction)
+            .await?;
+
+        sqlx::query!(r#"delete from subscription where user_id = ?"#, payload.id,)
+            .execute(&mut transaction)
+            .await?;
+
+        sqlx::query!(r#"delete from subscription where uuid_id = ?"#, payload.id,)
+            .execute(&mut transaction)
+            .await?;
+
+        sqlx::query!(
+            r#"delete from uuid where id = ? and discriminator = 'user'"#,
+            payload.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        transaction.commit().await?;
+
+        Ok(())
     }
 
     pub async fn potential_spam_users<'a, E>(

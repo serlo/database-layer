@@ -84,9 +84,9 @@ pub mod entity_add_revision_mutation {
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             let entity_revision = match connection {
-                Connection::Pool(pool) => Entity::add_revision(self, pool).await.unwrap(),
+                Connection::Pool(pool) => Entity::add_revision(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    Entity::add_revision(self, transaction).await.unwrap()
+                    Entity::add_revision(self, transaction).await?
                 }
             };
 
@@ -186,6 +186,7 @@ pub mod entity_create_mutation {
         pub subscribe_this_by_email: bool,
         pub fields: HashMap<String, String>,
         pub parent_id: Option<i32>,
+        pub taxonomy_term_id: Option<i32>,
     }
 
     #[derive(Deserialize, Serialize)]
@@ -202,10 +203,8 @@ pub mod entity_create_mutation {
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             Ok(match connection {
-                Connection::Pool(pool) => Entity::create(self, pool).await.unwrap(),
-                Connection::Transaction(transaction) => {
-                    Entity::create(self, transaction).await.unwrap()
-                }
+                Connection::Pool(pool) => Entity::create(self, pool).await?,
+                Connection::Transaction(transaction) => Entity::create(self, transaction).await?,
             })
         }
     }

@@ -14,12 +14,13 @@ use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
 use crate::event::{
-    CreateEntityEventPayload, CreateEntityRevisionEventPayload, EntityLinkEventPayload, EventError,
-    RevisionEventPayload,
+    CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateTaxonomyLinkEventPayload,
+    EntityLinkEventPayload, EventError, RevisionEventPayload,
 };
 use crate::format_alias;
 
 use crate::instance::Instance;
+use crate::operation;
 use crate::subscription::Subscription;
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
 pub use messages::*;
@@ -412,46 +413,11 @@ impl Entity {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum EntityAddRevisionError {
-    #[error("Revision could not be added because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Revision could not be added because of an event error: {inner:?}.")]
-    EventError { inner: EventError },
-    #[error("Revision could not be added because of an UUID error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Revision could not be added because entity was not found.")]
-    EntityNotFound,
-}
-impl From<sqlx::Error> for EntityAddRevisionError {
-    fn from(inner: sqlx::Error) -> Self {
-        Self::DatabaseError { inner }
-    }
-}
-
-impl From<UuidError> for EntityAddRevisionError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => Self::UuidError { inner },
-        }
-    }
-}
-
-impl From<EventError> for EntityAddRevisionError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => Self::EventError { inner },
-        }
-    }
-}
-
 impl Entity {
     pub async fn add_revision<'a, E>(
         payload: &entity_add_revision_mutation::Payload,
         executor: E,
-    ) -> Result<Uuid, EntityAddRevisionError>
+    ) -> Result<Uuid, operation::Error>
     where
         E: Executor<'a>,
     {
@@ -460,7 +426,9 @@ impl Entity {
         if let Err(UuidError::NotFound) =
             Entity::fetch_via_transaction(payload.input.entity_id, &mut transaction).await
         {
-            return Err(EntityAddRevisionError::EntityNotFound);
+            return Err(operation::Error::BadRequest {
+                reason: "entity with entity_id does not exist".to_string(),
+            });
         }
 
         let entity_revision = EntityRevisionPayload::new(
@@ -471,6 +439,7 @@ impl Entity {
         )
         .save(&mut transaction)
         .await?;
+
         if !payload.input.needs_review {
             let _ = Entity::checkout_revision(
                 EntityCheckoutRevisionPayload {
@@ -521,58 +490,11 @@ impl Entity {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum EntityCreateError {
-    #[error("Entity could not be created because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Entity could not be created because of an event error: {inner:?}.")]
-    EventError { inner: EventError },
-    #[error("Entity could not be created because of an event error: {inner:?}.")]
-    AddRevisionError { inner: EntityAddRevisionError },
-    #[error("Entity could not be created out because of an UUID error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Entity could not be created because parentId has to be provided.")]
-    ParentIdError,
-}
-
-impl From<sqlx::Error> for EntityCreateError {
-    fn from(inner: sqlx::Error) -> Self {
-        Self::DatabaseError { inner }
-    }
-}
-
-impl From<UuidError> for EntityCreateError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => Self::UuidError { inner },
-        }
-    }
-}
-
-impl From<EventError> for EntityCreateError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => Self::EventError { inner },
-        }
-    }
-}
-
-impl From<EntityAddRevisionError> for EntityCreateError {
-    fn from(error: EntityAddRevisionError) -> Self {
-        match error {
-            EntityAddRevisionError::DatabaseError { inner } => inner.into(),
-            inner => Self::AddRevisionError { inner },
-        }
-    }
-}
-
 impl Entity {
     pub async fn create<'a, E>(
         payload: &entity_create_mutation::Payload,
         executor: E,
-    ) -> Result<Uuid, EntityCreateError>
+    ) -> Result<Uuid, operation::Error>
     where
         E: Executor<'a>,
     {
@@ -612,13 +534,36 @@ impl Entity {
         .execute(&mut transaction)
         .await?;
 
+        CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
+
+        Entity::add_revision(
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
+                    changes: payload.input.changes.clone(),
+                    entity_id,
+                    needs_review: false,
+                    subscribe_this: payload.input.subscribe_this,
+                    subscribe_this_by_email: payload.input.subscribe_this_by_email,
+                    fields: payload.input.fields.clone(),
+                },
+                revision_type: EntityRevisionType::from(payload.entity_type.clone()),
+                user_id: payload.user_id,
+            },
+            &mut transaction,
+        )
+        .await?;
+
         if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
             payload.entity_type
         {
             let parent_id = payload
                 .input
                 .parent_id
-                .ok_or(EntityCreateError::ParentIdError)?;
+                .ok_or(operation::Error::BadRequest {
+                    reason: "parent_id needs to be provided".to_string(),
+                })?;
 
             sqlx::query!(
                 r#"
@@ -639,41 +584,50 @@ impl Entity {
             )
             .save(&mut transaction)
             .await?;
-        }
+        } else {
+            let taxonomy_term_id =
+                payload
+                    .input
+                    .taxonomy_term_id
+                    .ok_or(operation::Error::BadRequest {
+                        reason: "taxonomy_term_id needs to be provided".to_string(),
+                    })?;
 
-        let entity_revision = Entity::add_revision(
-            &entity_add_revision_mutation::Payload {
-                input: entity_add_revision_mutation::Input {
-                    changes: payload.input.changes.clone(),
-                    entity_id,
-                    needs_review: false,
-                    subscribe_this: payload.input.subscribe_this,
-                    subscribe_this_by_email: payload.input.subscribe_this_by_email,
-                    fields: payload.input.fields.clone(),
-                },
-                revision_type: EntityRevisionType::from(payload.entity_type.clone()),
-                user_id: payload.user_id,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
+            let new_position = sqlx::query!(
+                r#"
+                    SELECT position FROM term_taxonomy_entity
+                    WHERE term_taxonomy_id = ?
+                    ORDER BY position DESC
+                    LIMIT 1
+                "#,
+                taxonomy_term_id
+            )
+            .fetch_optional(&mut transaction)
+            .await?
+            .map(|result| result.position as i32 + 1)
+            .unwrap_or(0);
 
-        sqlx::query!(
-            r#"
-                UPDATE entity
-                    SET current_revision_id = ?
-                    WHERE id = ?
-            "#,
-            entity_revision.id,
-            entity_id
-        )
-        .execute(&mut transaction)
-        .await?;
+            sqlx::query!(
+                r#"
+                    INSERT INTO term_taxonomy_entity (entity_id, term_taxonomy_id, position)
+                    VALUES (?, ?, ?)
+                "#,
+                entity_id,
+                taxonomy_term_id,
+                new_position
+            )
+            .execute(&mut transaction)
+            .await?;
 
-        CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
+            CreateTaxonomyLinkEventPayload::new(
+                entity_id,
+                taxonomy_term_id,
+                payload.user_id,
+                instance_id,
+            )
             .save(&mut transaction)
             .await?;
+        }
 
         let entity = Entity::fetch_via_transaction(entity_id, &mut transaction).await?;
 

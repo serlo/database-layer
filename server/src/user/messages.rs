@@ -17,6 +17,7 @@ pub enum UserMessage {
     ActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
+    UserDeleteRegularUsersMutation(user_delete_regular_users_mutation::Payload),
     UserPotentialSpamUsersQuery(potential_spam_users_query::Payload),
     UserSetDescriptionMutation(user_set_description_mutation::Payload),
     UserSetEmailMutation(user_set_email_mutation::Payload),
@@ -45,6 +46,11 @@ impl MessageResponder for UserMessage {
             }
             UserMessage::UserDeleteBotsMutation(payload) => {
                 payload.handle("UserDeleteBotsMutation", connection).await
+            }
+            UserMessage::UserDeleteRegularUsersMutation(payload) => {
+                payload
+                    .handle("UserDeleteRegularUsersMutation", connection)
+                    .await
             }
             UserMessage::UserPotentialSpamUsersQuery(payload) => {
                 payload
@@ -168,6 +174,38 @@ pub mod user_delete_bots_mutation {
                 success: true,
                 email_hashes,
             })
+        }
+    }
+}
+
+pub mod user_delete_regular_users_mutation {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub id: i32,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub success: bool,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => User::delete_regular_user(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    User::delete_regular_user(self, transaction).await?
+                }
+            };
+
+            Ok(Output { success: true })
         }
     }
 }

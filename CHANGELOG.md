@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.34](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.33..v0.3.34) - March 31, 2022
+
+### Added
+
+- add `TaxonomyTermSetNameAndDescriptionMutation`
+
+- `EntityCreateMutation` accepts taxonomyTermId in payload
+
 ## [0.3.33](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.32..v0.3.33) - March 16, 2022
 
 ### Added

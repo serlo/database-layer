@@ -90,6 +90,15 @@ async function exec(): Promise<void> {
           'add `PageAddRevisionMutation`',
         ],
       },
+      {
+        tagName: 'v0.3.34',
+        name: '0.3.34',
+        date: '2022-03-31',
+        added: [
+          'add `TaxonomyTermSetNameAndDescriptionMutation`',
+          '`EntityCreateMutation` accepts taxonomyTermId in payload',
+        ],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

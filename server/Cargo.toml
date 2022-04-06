@@ -1,6 +1,6 @@
 [package]
 name = "server"
-version = "0.3.33"
+version = "0.3.34"
 authors = ["Serlo Education e.V."]
 license = "Apache-2.0"
 edition = "2021"
@@ -27,3 +27,4 @@ thiserror = "1.0.0"
 
 [dev-dependencies]
 test-utils = { path="../test-utils" }
+assert-json-diff = "2.0.1"

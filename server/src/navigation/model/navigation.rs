@@ -3,7 +3,6 @@ use std::convert::TryInto;
 
 use serde::Serialize;
 use sqlx::MySqlPool;
-use thiserror::Error;
 
 use super::navigation_child::{
     NavigationChild, NavigationChildError, RawNavigationChild, RawNavigationChildError,
@@ -15,18 +14,6 @@ use crate::instance::Instance;
 pub struct Navigation {
     pub data: Vec<NavigationChild>,
     pub instance: Instance,
-}
-
-#[derive(Error, Debug)]
-pub enum NavigationError {
-    #[error("Navigation cannot be fetched because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
-
-impl From<sqlx::Error> for NavigationError {
-    fn from(inner: sqlx::Error) -> Self {
-        NavigationError::DatabaseError { inner }
-    }
 }
 
 macro_rules! fetch_all_pages {
@@ -106,10 +93,7 @@ macro_rules! to_navigation {
 }
 
 impl Navigation {
-    pub async fn fetch(
-        instance: Instance,
-        pool: &MySqlPool,
-    ) -> Result<Navigation, NavigationError> {
+    pub async fn fetch(instance: Instance, pool: &MySqlPool) -> Result<Navigation, sqlx::Error> {
         let pages = fetch_all_pages!(instance, pool).await?;
 
         let mut raw_navigation_children: HashMap<i32, RawNavigationChild> = HashMap::new();
@@ -133,7 +117,7 @@ impl Navigation {
     pub async fn fetch_via_transaction<'a, E>(
         instance: Instance,
         executor: E,
-    ) -> Result<Navigation, NavigationError>
+    ) -> Result<Navigation, sqlx::Error>
     where
         E: Executor<'a>,
     {

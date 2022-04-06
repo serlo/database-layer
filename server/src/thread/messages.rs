@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use super::model::{
     ThreadCommentThreadError, ThreadCommentThreadPayload, ThreadSetArchiveError,
-    ThreadSetArchivedPayload, ThreadStartThreadError, ThreadStartThreadPayload, Threads,
+    ThreadSetArchivedPayload, ThreadStartThreadError, Threads,
 };
 use crate::database::Connection;
 use crate::message::MessageResponder;
@@ -83,18 +83,10 @@ pub mod create_thread_mutation {
         type Output = Uuid;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            let payload = ThreadStartThreadPayload {
-                title: self.title.clone(),
-                content: self.content.clone(),
-                object_id: self.object_id,
-                user_id: self.user_id,
-                subscribe: self.subscribe,
-                send_email: self.send_email,
-            };
             Ok(match connection {
-                Connection::Pool(pool) => Threads::start_thread(payload, pool).await?,
+                Connection::Pool(pool) => Threads::start_thread(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    Threads::start_thread(payload, transaction).await?
+                    Threads::start_thread(self, transaction).await?
                 }
             })
         }

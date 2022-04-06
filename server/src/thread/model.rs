@@ -1,3 +1,4 @@
+use super::messages::create_thread_mutation;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use thiserror::Error;
@@ -263,17 +264,6 @@ impl Threads {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ThreadStartThreadPayload {
-    pub title: String,
-    pub content: String,
-    pub object_id: i32,
-    pub user_id: i32,
-    pub subscribe: bool,
-    pub send_email: bool,
-}
-
 #[derive(Error, Debug)]
 pub enum ThreadStartThreadError {
     #[error("Thread could not be created because of a database error: {inner:?}.")]
@@ -312,7 +302,7 @@ impl From<UuidError> for ThreadStartThreadError {
 
 impl Threads {
     pub async fn start_thread<'a, E>(
-        payload: ThreadStartThreadPayload,
+        payload: &create_thread_mutation::Payload,
         executor: E,
     ) -> Result<Uuid, ThreadStartThreadError>
     where
@@ -410,9 +400,8 @@ impl Threads {
 mod tests {
     use chrono::Duration;
 
-    use super::{
-        ThreadCommentThreadPayload, ThreadSetArchivedPayload, ThreadStartThreadPayload, Threads,
-    };
+    use super::super::messages::create_thread_mutation;
+    use super::{ThreadCommentThreadPayload, ThreadSetArchivedPayload, Threads};
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
 
@@ -431,7 +420,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::start_thread(
-            ThreadStartThreadPayload {
+            &create_thread_mutation::Payload {
                 title: "title".to_string(),
                 content: "content-test".to_string(),
                 object_id,
@@ -476,7 +465,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Threads::start_thread(
-            ThreadStartThreadPayload {
+            &create_thread_mutation::Payload {
                 title: "title-test".to_string(),
                 content: "content-test".to_string(),
                 object_id: 999999,

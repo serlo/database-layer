@@ -1,3 +1,4 @@
+use crate::operation::{self, Operation};
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -13,7 +14,7 @@ use crate::message::MessageResponder;
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum ThreadMessage {
-    ThreadsQuery(ThreadsQuery),
+    ThreadsQuery(threads_query::Payload),
     ThreadCreateThreadMutation(ThreadCreateThreadMutation),
     ThreadCreateCommentMutation(ThreadCreateCommentMutation),
     ThreadSetThreadArchivedMutation(ThreadSetThreadArchivedMutation),
@@ -24,7 +25,9 @@ impl MessageResponder for ThreadMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            ThreadMessage::ThreadsQuery(message) => message.handle(connection).await,
+            ThreadMessage::ThreadsQuery(message) => {
+                message.handle("ThreadsQuery", connection).await
+            }
             ThreadMessage::ThreadCreateThreadMutation(message) => message.handle(connection).await,
             ThreadMessage::ThreadCreateCommentMutation(message) => message.handle(connection).await,
             ThreadMessage::ThreadSetThreadArchivedMutation(message) => {
@@ -34,33 +37,32 @@ impl MessageResponder for ThreadMessage {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ThreadsQuery {
-    pub id: i32,
-}
+pub mod threads_query {
+    use super::*;
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub id: i32,
+    }
 
-#[async_trait]
-impl MessageResponder for ThreadsQuery {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let threads = match connection {
-            Connection::Pool(pool) => Threads::fetch(self.id, pool).await,
-            Connection::Transaction(transaction) => {
-                Threads::fetch_via_transaction(self.id, transaction).await
-            }
-        };
-        match threads {
-            Ok(data) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(&data),
-            Err(e) => {
-                println!("/threads/{}: {:?}", self.id, e);
-                match e {
-                    ThreadsError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Threads;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(match connection {
+                Connection::Pool(pool) => Threads::fetch(self.id, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Threads::fetch_via_transaction(self.id, transaction).await?
                 }
+            })
+        }
+    }
+
+    impl From<ThreadsError> for operation::Error {
+        fn from(inner: ThreadsError) -> Self {
+            operation::Error::InternalServerError {
+                error: Box::new(inner),
             }
         }
     }

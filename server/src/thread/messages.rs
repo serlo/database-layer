@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use super::model::{
     ThreadCommentThreadError, ThreadCommentThreadPayload, ThreadSetArchiveError,
     ThreadSetArchivedPayload, ThreadStartThreadError, ThreadStartThreadPayload, Threads,
-    ThreadsError,
 };
 use crate::database::Connection;
 use crate::message::MessageResponder;
@@ -56,14 +55,6 @@ pub mod threads_query {
                     Threads::fetch_via_transaction(self.id, transaction).await?
                 }
             })
-        }
-    }
-
-    impl From<ThreadsError> for operation::Error {
-        fn from(inner: ThreadsError) -> Self {
-            operation::Error::InternalServerError {
-                error: Box::new(inner),
-            }
         }
     }
 }

@@ -16,24 +16,12 @@ pub struct Threads {
     pub first_comment_ids: Vec<i32>,
 }
 
-#[derive(Error, Debug)]
-pub enum ThreadsError {
-    #[error("Threads cannot be fetched because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
-
-impl From<sqlx::Error> for ThreadsError {
-    fn from(inner: sqlx::Error) -> Self {
-        ThreadsError::DatabaseError { inner }
-    }
-}
-
 impl Threads {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, ThreadsError> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, sqlx::Error> {
         Self::fetch_via_transaction(id, pool).await
     }
 
-    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, ThreadsError>
+    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, sqlx::Error>
     where
         E: Executor<'a>,
     {

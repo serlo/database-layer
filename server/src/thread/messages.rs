@@ -4,9 +4,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{
-    ThreadCommentThreadError, ThreadSetArchiveError, ThreadSetArchivedPayload, Threads,
-};
+use super::model::{ThreadSetArchiveError, ThreadSetArchivedPayload, Threads};
 use crate::database::Connection;
 use crate::message::MessageResponder;
 
@@ -119,17 +117,6 @@ pub mod create_comment_mutation {
                     Threads::comment_thread(self, transaction).await?
                 }
             })
-        }
-    }
-
-    impl From<ThreadCommentThreadError> for operation::Error {
-        fn from(e: ThreadCommentThreadError) -> Self {
-            match e {
-                ThreadCommentThreadError::BadUserInput { reason } => {
-                    operation::Error::BadRequest { reason }
-                }
-                _ => operation::Error::InternalServerError { error: Box::new(e) },
-            }
         }
     }
 }

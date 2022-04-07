@@ -10,7 +10,7 @@ use crate::event::{
 };
 use crate::operation;
 use crate::subscription::Subscription;
-use crate::uuid::{Uuid, UuidError, UuidFetcher};
+use crate::uuid::{Uuid, UuidFetcher};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -130,54 +130,16 @@ impl Threads {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ThreadCommentThreadError {
-    #[error("Comment cannot be created because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Comment cannot be created because thread is archived.")]
-    ThreadArchivedError,
-    #[error("Comment cannot be created because of an event error: {inner:?}.")]
-    EventError { inner: EventError },
-    #[error("Comment cannot be created because of an uuid error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Bad user input: {reason:?}")]
-    BadUserInput { reason: String },
-}
-
-impl From<sqlx::Error> for ThreadCommentThreadError {
-    fn from(inner: sqlx::Error) -> Self {
-        ThreadCommentThreadError::DatabaseError { inner }
-    }
-}
-
-impl From<EventError> for ThreadCommentThreadError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => ThreadCommentThreadError::EventError { inner },
-        }
-    }
-}
-
-impl From<UuidError> for ThreadCommentThreadError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => ThreadCommentThreadError::UuidError { inner },
-        }
-    }
-}
-
 impl Threads {
     pub async fn comment_thread<'a, E>(
         payload: &create_comment_mutation::Payload,
         executor: E,
-    ) -> Result<Uuid, ThreadCommentThreadError>
+    ) -> Result<Uuid, operation::Error>
     where
         E: Executor<'a>,
     {
         if payload.content.is_empty() {
-            return Err(ThreadCommentThreadError::BadUserInput {
+            return Err(operation::Error::BadRequest {
                 reason: "content is empty".to_string(),
             });
         };
@@ -196,7 +158,10 @@ impl Threads {
         .await?;
 
         if thread.archived != 0 {
-            return Err(ThreadCommentThreadError::ThreadArchivedError);
+            // TODO: test is missing
+            return Err(operation::Error::BadRequest {
+                reason: "thread is already archived".to_string(),
+            });
         }
 
         sqlx::query!(
@@ -234,7 +199,10 @@ impl Threads {
             thread.instance_id,
         )
         .save(&mut transaction)
-        .await?;
+        .await
+        .map_err(|error| operation::Error::InternalServerError {
+            error: Box::new(error),
+        })?;
 
         if payload.subscribe {
             for object_id in [payload.thread_id, comment_id].iter() {
@@ -247,7 +215,11 @@ impl Threads {
             }
         }
 
-        let comment = Uuid::fetch_via_transaction(comment_id, &mut transaction).await?;
+        let comment = Uuid::fetch_via_transaction(comment_id, &mut transaction)
+            .await
+            .map_err(|error| operation::Error::InternalServerError {
+                error: Box::new(error),
+            })?;
 
         transaction.commit().await?;
 

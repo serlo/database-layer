@@ -8,6 +8,7 @@ use crate::datetime::DateTime;
 use crate::event::{
     CreateCommentEventPayload, CreateThreadEventPayload, EventError, SetThreadStateEventPayload,
 };
+use crate::operation;
 use crate::subscription::Subscription;
 use crate::uuid::{Uuid, UuidError, UuidFetcher};
 
@@ -264,52 +265,16 @@ impl Threads {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ThreadStartThreadError {
-    #[error("Thread could not be created because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Thread could not be created because of an event error: {inner:?}.")]
-    EventError { inner: EventError },
-    #[error("Thread could not be created because of an uuid error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Cannot create thread: {reason:?}")]
-    BadUserInput { reason: String },
-}
-
-impl From<sqlx::Error> for ThreadStartThreadError {
-    fn from(inner: sqlx::Error) -> Self {
-        ThreadStartThreadError::DatabaseError { inner }
-    }
-}
-
-impl From<EventError> for ThreadStartThreadError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => ThreadStartThreadError::EventError { inner },
-        }
-    }
-}
-
-impl From<UuidError> for ThreadStartThreadError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => ThreadStartThreadError::UuidError { inner },
-        }
-    }
-}
-
 impl Threads {
     pub async fn start_thread<'a, E>(
         payload: &create_thread_mutation::Payload,
         executor: E,
-    ) -> Result<Uuid, ThreadStartThreadError>
+    ) -> Result<Uuid, operation::Error>
     where
         E: Executor<'a>,
     {
         if payload.content.is_empty() {
-            return Err(ThreadStartThreadError::BadUserInput {
+            return Err(operation::Error::BadRequest {
                 reason: "content is empty".to_string(),
             });
         }
@@ -377,7 +342,10 @@ impl Threads {
 
         CreateThreadEventPayload::new(thread_id, payload.object_id, payload.user_id, instance_id)
             .save(&mut transaction)
-            .await?;
+            .await
+            .map_err(|error| operation::Error::InternalServerError {
+                error: Box::new(error),
+            })?;
 
         if payload.subscribe {
             let subscription = Subscription {
@@ -388,7 +356,11 @@ impl Threads {
             subscription.save(&mut transaction).await?;
         }
 
-        let comment = Uuid::fetch_via_transaction(thread_id, &mut transaction).await?;
+        let comment = Uuid::fetch_via_transaction(thread_id, &mut transaction)
+            .await
+            .map_err(|error| operation::Error::InternalServerError {
+                error: Box::new(error),
+            })?;
 
         transaction.commit().await?;
 

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use super::model::{
     ThreadCommentThreadError, ThreadCommentThreadPayload, ThreadSetArchiveError,
-    ThreadSetArchivedPayload, ThreadStartThreadError, Threads,
+    ThreadSetArchivedPayload, Threads,
 };
 use crate::database::Connection;
 use crate::message::MessageResponder;
@@ -89,31 +89,6 @@ pub mod create_thread_mutation {
                     Threads::start_thread(self, transaction).await?
                 }
             })
-        }
-    }
-
-    impl From<ThreadStartThreadError> for operation::Error {
-        fn from(e: ThreadStartThreadError) -> Self {
-            match e {
-                ThreadStartThreadError::DatabaseError { inner } => {
-                    operation::Error::InternalServerError {
-                        error: Box::new(inner),
-                    }
-                }
-                ThreadStartThreadError::EventError { inner } => {
-                    operation::Error::InternalServerError {
-                        error: Box::new(inner),
-                    }
-                }
-                ThreadStartThreadError::UuidError { inner } => {
-                    operation::Error::InternalServerError {
-                        error: Box::new(inner),
-                    }
-                }
-                ThreadStartThreadError::BadUserInput { reason } => operation::Error::BadRequest {
-                    reason: format!("Cannot create thread: {}", reason).to_string(),
-                },
-            }
         }
     }
 }

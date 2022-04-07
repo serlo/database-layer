@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{fetch, fetch_via_transaction, AliasError};
+use super::model::{fetch, fetch_via_transaction};
 use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
@@ -56,20 +56,6 @@ pub mod alias_query {
                     fetch_via_transaction(path, instance, transaction).await?
                 }
             })
-        }
-    }
-
-    impl From<AliasError> for operation::Error {
-        fn from(error: AliasError) -> Self {
-            match error {
-                AliasError::DatabaseError { inner } => operation::Error::InternalServerError {
-                    error: Box::new(inner),
-                },
-                AliasError::InvalidInstance => operation::Error::InternalServerError {
-                    error: Box::new(error),
-                },
-                AliasError::LegacyRoute | AliasError::NotFound => operation::Error::NotFoundError,
-            }
         }
     }
 }

@@ -1,14 +1,17 @@
-use serde::{Deserialize, Serialize};
+use super::messages::{
+    create_comment_mutation, create_thread_mutation, set_thread_archived_mutation,
+};
+use serde::Serialize;
 use sqlx::MySqlPool;
-use thiserror::Error;
 
 use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::event::{
-    CreateCommentEventPayload, CreateThreadEventPayload, EventError, SetThreadStateEventPayload,
+    CreateCommentEventPayload, CreateThreadEventPayload, SetThreadStateEventPayload,
 };
+use crate::operation;
 use crate::subscription::Subscription;
-use crate::uuid::{Uuid, UuidError, UuidFetcher};
+use crate::uuid::{Uuid, UuidFetcher};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -16,24 +19,12 @@ pub struct Threads {
     pub first_comment_ids: Vec<i32>,
 }
 
-#[derive(Error, Debug)]
-pub enum ThreadsError {
-    #[error("Threads cannot be fetched because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
-
-impl From<sqlx::Error> for ThreadsError {
-    fn from(inner: sqlx::Error) -> Self {
-        ThreadsError::DatabaseError { inner }
-    }
-}
-
 impl Threads {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, ThreadsError> {
+    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, sqlx::Error> {
         Self::fetch_via_transaction(id, pool).await
     }
 
-    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, ThreadsError>
+    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -48,50 +39,17 @@ impl Threads {
 
         Ok(Self { first_comment_ids })
     }
-}
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ThreadSetArchivedPayload {
-    pub ids: Vec<i32>,
-    pub user_id: i32,
-    pub archived: bool,
-}
-
-#[derive(Error, Debug)]
-pub enum ThreadSetArchiveError {
-    #[error("Thread archived state cannot be set because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Thread archived state cannot be set because of an internal error: {inner:?}.")]
-    EventError { inner: EventError },
-}
-
-impl From<sqlx::Error> for ThreadSetArchiveError {
-    fn from(inner: sqlx::Error) -> Self {
-        ThreadSetArchiveError::DatabaseError { inner }
-    }
-}
-
-impl From<EventError> for ThreadSetArchiveError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => ThreadSetArchiveError::EventError { inner },
-        }
-    }
-}
-
-impl Threads {
     pub async fn set_archive<'a, E>(
-        payload: ThreadSetArchivedPayload,
+        payload: &set_thread_archived_mutation::Payload,
         executor: E,
-    ) -> Result<(), ThreadSetArchiveError>
+    ) -> Result<(), operation::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
 
-        for id in payload.ids.into_iter() {
+        for id in payload.ids.clone().into_iter() {
             let result = sqlx::query!(
                 r#"
                     SELECT archived FROM comment WHERE id = ?
@@ -131,73 +89,26 @@ impl Threads {
 
             SetThreadStateEventPayload::new(payload.archived, payload.user_id, id)
                 .save(&mut transaction)
-                .await?;
+                .await
+                .map_err(|error| operation::Error::InternalServerError {
+                    error: Box::new(error),
+                })?;
         }
 
         transaction.commit().await?;
 
         Ok(())
     }
-}
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ThreadCommentThreadPayload {
-    pub thread_id: i32,
-    pub content: String,
-    pub user_id: i32,
-    pub subscribe: bool,
-    pub send_email: bool,
-}
-
-#[derive(Error, Debug)]
-pub enum ThreadCommentThreadError {
-    #[error("Comment cannot be created because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Comment cannot be created because thread is archived.")]
-    ThreadArchivedError,
-    #[error("Comment cannot be created because of an event error: {inner:?}.")]
-    EventError { inner: EventError },
-    #[error("Comment cannot be created because of an uuid error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Bad user input: {reason:?}")]
-    BadUserInput { reason: String },
-}
-
-impl From<sqlx::Error> for ThreadCommentThreadError {
-    fn from(inner: sqlx::Error) -> Self {
-        ThreadCommentThreadError::DatabaseError { inner }
-    }
-}
-
-impl From<EventError> for ThreadCommentThreadError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => ThreadCommentThreadError::EventError { inner },
-        }
-    }
-}
-
-impl From<UuidError> for ThreadCommentThreadError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => ThreadCommentThreadError::UuidError { inner },
-        }
-    }
-}
-
-impl Threads {
     pub async fn comment_thread<'a, E>(
-        payload: ThreadCommentThreadPayload,
+        payload: &create_comment_mutation::Payload,
         executor: E,
-    ) -> Result<Uuid, ThreadCommentThreadError>
+    ) -> Result<Uuid, operation::Error>
     where
         E: Executor<'a>,
     {
         if payload.content.is_empty() {
-            return Err(ThreadCommentThreadError::BadUserInput {
+            return Err(operation::Error::BadRequest {
                 reason: "content is empty".to_string(),
             });
         };
@@ -216,7 +127,10 @@ impl Threads {
         .await?;
 
         if thread.archived != 0 {
-            return Err(ThreadCommentThreadError::ThreadArchivedError);
+            // TODO: test is missing
+            return Err(operation::Error::BadRequest {
+                reason: "thread is already archived".to_string(),
+            });
         }
 
         sqlx::query!(
@@ -254,7 +168,10 @@ impl Threads {
             thread.instance_id,
         )
         .save(&mut transaction)
-        .await?;
+        .await
+        .map_err(|error| operation::Error::InternalServerError {
+            error: Box::new(error),
+        })?;
 
         if payload.subscribe {
             for object_id in [payload.thread_id, comment_id].iter() {
@@ -267,71 +184,26 @@ impl Threads {
             }
         }
 
-        let comment = Uuid::fetch_via_transaction(comment_id, &mut transaction).await?;
+        let comment = Uuid::fetch_via_transaction(comment_id, &mut transaction)
+            .await
+            .map_err(|error| operation::Error::InternalServerError {
+                error: Box::new(error),
+            })?;
 
         transaction.commit().await?;
 
         Ok(comment)
     }
-}
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ThreadStartThreadPayload {
-    pub title: String,
-    pub content: String,
-    pub object_id: i32,
-    pub user_id: i32,
-    pub subscribe: bool,
-    pub send_email: bool,
-}
-
-#[derive(Error, Debug)]
-pub enum ThreadStartThreadError {
-    #[error("Thread could not be created because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Thread could not be created because of an event error: {inner:?}.")]
-    EventError { inner: EventError },
-    #[error("Thread could not be created because of an uuid error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Cannot create thread: {reason:?}")]
-    BadUserInput { reason: String },
-}
-
-impl From<sqlx::Error> for ThreadStartThreadError {
-    fn from(inner: sqlx::Error) -> Self {
-        ThreadStartThreadError::DatabaseError { inner }
-    }
-}
-
-impl From<EventError> for ThreadStartThreadError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => ThreadStartThreadError::EventError { inner },
-        }
-    }
-}
-
-impl From<UuidError> for ThreadStartThreadError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => ThreadStartThreadError::UuidError { inner },
-        }
-    }
-}
-
-impl Threads {
     pub async fn start_thread<'a, E>(
-        payload: ThreadStartThreadPayload,
+        payload: &create_thread_mutation::Payload,
         executor: E,
-    ) -> Result<Uuid, ThreadStartThreadError>
+    ) -> Result<Uuid, operation::Error>
     where
         E: Executor<'a>,
     {
         if payload.content.is_empty() {
-            return Err(ThreadStartThreadError::BadUserInput {
+            return Err(operation::Error::BadRequest {
                 reason: "content is empty".to_string(),
             });
         }
@@ -399,7 +271,10 @@ impl Threads {
 
         CreateThreadEventPayload::new(thread_id, payload.object_id, payload.user_id, instance_id)
             .save(&mut transaction)
-            .await?;
+            .await
+            .map_err(|error| operation::Error::InternalServerError {
+                error: Box::new(error),
+            })?;
 
         if payload.subscribe {
             let subscription = Subscription {
@@ -410,7 +285,11 @@ impl Threads {
             subscription.save(&mut transaction).await?;
         }
 
-        let comment = Uuid::fetch_via_transaction(thread_id, &mut transaction).await?;
+        let comment = Uuid::fetch_via_transaction(thread_id, &mut transaction)
+            .await
+            .map_err(|error| operation::Error::InternalServerError {
+                error: Box::new(error),
+            })?;
 
         transaction.commit().await?;
 
@@ -422,9 +301,10 @@ impl Threads {
 mod tests {
     use chrono::Duration;
 
-    use super::{
-        ThreadCommentThreadPayload, ThreadSetArchivedPayload, ThreadStartThreadPayload, Threads,
+    use super::super::messages::{
+        create_comment_mutation, create_thread_mutation, set_thread_archived_mutation,
     };
+    use super::Threads;
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
 
@@ -443,7 +323,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::start_thread(
-            ThreadStartThreadPayload {
+            &create_thread_mutation::Payload {
                 title: "title".to_string(),
                 content: "content-test".to_string(),
                 object_id,
@@ -488,7 +368,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Threads::start_thread(
-            ThreadStartThreadPayload {
+            &create_thread_mutation::Payload {
                 title: "title-test".to_string(),
                 content: "content-test".to_string(),
                 object_id: 999999,
@@ -509,7 +389,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::comment_thread(
-            ThreadCommentThreadPayload {
+            &create_comment_mutation::Payload {
                 thread_id: 17774,
                 user_id: 1,
                 content: "content-test".to_string(),
@@ -541,7 +421,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Threads::comment_thread(
-            ThreadCommentThreadPayload {
+            &create_comment_mutation::Payload {
                 thread_id: 3, //does not exist
                 user_id: 1,
                 content: "content-test".to_string(),
@@ -561,7 +441,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::set_archive(
-            ThreadSetArchivedPayload {
+            &set_thread_archived_mutation::Payload {
                 ids: vec![],
                 user_id: 1,
                 archived: true,
@@ -578,7 +458,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::set_archive(
-            ThreadSetArchivedPayload {
+            &set_thread_archived_mutation::Payload {
                 ids: vec![17666],
                 user_id: 1,
                 archived: true,
@@ -608,7 +488,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::set_archive(
-            ThreadSetArchivedPayload {
+            &set_thread_archived_mutation::Payload {
                 ids: vec![17666],
                 user_id: 1,
                 archived: false,

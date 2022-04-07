@@ -18,7 +18,7 @@ mod start_thread_mutation {
         .execute()
         .await;
 
-        assert_bad_request(response, "Cannot create thread: content is empty").await;
+        assert_bad_request(response, "content is empty").await;
     }
 }
 
@@ -41,6 +41,6 @@ mod create_comment_mutation {
         .execute()
         .await;
 
-        assert_bad_request(response, "Cannot create comment: content is empty").await;
+        assert_bad_request(response, "content is empty").await;
     }
 }

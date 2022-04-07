@@ -109,13 +109,6 @@ pub mod create_comment_mutation {
         pub send_email: bool,
     }
 
-    #[derive(Deserialize, Serialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct ThreadCreateCommentMutationResponse {
-        pub success: bool,
-        pub reason: Option<String>,
-    }
-
     #[async_trait]
     impl Operation for Payload {
         type Output = Uuid;

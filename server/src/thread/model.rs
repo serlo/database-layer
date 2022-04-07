@@ -3,12 +3,11 @@ use super::messages::{
 };
 use serde::Serialize;
 use sqlx::MySqlPool;
-use thiserror::Error;
 
 use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::event::{
-    CreateCommentEventPayload, CreateThreadEventPayload, EventError, SetThreadStateEventPayload,
+    CreateCommentEventPayload, CreateThreadEventPayload, SetThreadStateEventPayload,
 };
 use crate::operation;
 use crate::subscription::Subscription;
@@ -42,34 +41,11 @@ impl Threads {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ThreadSetArchiveError {
-    #[error("Thread archived state cannot be set because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Thread archived state cannot be set because of an internal error: {inner:?}.")]
-    EventError { inner: EventError },
-}
-
-impl From<sqlx::Error> for ThreadSetArchiveError {
-    fn from(inner: sqlx::Error) -> Self {
-        ThreadSetArchiveError::DatabaseError { inner }
-    }
-}
-
-impl From<EventError> for ThreadSetArchiveError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => ThreadSetArchiveError::EventError { inner },
-        }
-    }
-}
-
 impl Threads {
     pub async fn set_archive<'a, E>(
         payload: &set_thread_archived_mutation::Payload,
         executor: E,
-    ) -> Result<(), ThreadSetArchiveError>
+    ) -> Result<(), operation::Error>
     where
         E: Executor<'a>,
     {
@@ -115,7 +91,10 @@ impl Threads {
 
             SetThreadStateEventPayload::new(payload.archived, payload.user_id, id)
                 .save(&mut transaction)
-                .await?;
+                .await
+                .map_err(|error| operation::Error::InternalServerError {
+                    error: Box::new(error),
+                })?;
         }
 
         transaction.commit().await?;

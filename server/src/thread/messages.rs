@@ -4,7 +4,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{ThreadSetArchiveError, Threads};
+use super::model::Threads;
 use crate::database::Connection;
 use crate::message::MessageResponder;
 
@@ -145,12 +145,6 @@ pub mod set_thread_archived_mutation {
                     Threads::set_archive(self, transaction).await?
                 }
             })
-        }
-    }
-
-    impl From<ThreadSetArchiveError> for operation::Error {
-        fn from(e: ThreadSetArchiveError) -> Self {
-            operation::Error::InternalServerError { error: Box::new(e) }
         }
     }
 }

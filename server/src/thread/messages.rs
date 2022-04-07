@@ -5,8 +5,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::model::{
-    ThreadCommentThreadError, ThreadCommentThreadPayload, ThreadSetArchiveError,
-    ThreadSetArchivedPayload, Threads,
+    ThreadCommentThreadError, ThreadSetArchiveError, ThreadSetArchivedPayload, Threads,
 };
 use crate::database::Connection;
 use crate::message::MessageResponder;
@@ -114,17 +113,10 @@ pub mod create_comment_mutation {
         type Output = Uuid;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            let payload = ThreadCommentThreadPayload {
-                thread_id: self.thread_id,
-                content: self.content.clone(),
-                user_id: self.user_id,
-                subscribe: self.subscribe,
-                send_email: self.send_email,
-            };
             Ok(match connection {
-                Connection::Pool(pool) => Threads::comment_thread(payload, pool).await?,
+                Connection::Pool(pool) => Threads::comment_thread(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    Threads::comment_thread(payload, transaction).await?
+                    Threads::comment_thread(self, transaction).await?
                 }
             })
         }

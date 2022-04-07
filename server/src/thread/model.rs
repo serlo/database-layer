@@ -1,4 +1,4 @@
-use super::messages::create_thread_mutation;
+use super::messages::{create_comment_mutation, create_thread_mutation};
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use thiserror::Error;
@@ -130,16 +130,6 @@ impl Threads {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ThreadCommentThreadPayload {
-    pub thread_id: i32,
-    pub content: String,
-    pub user_id: i32,
-    pub subscribe: bool,
-    pub send_email: bool,
-}
-
 #[derive(Error, Debug)]
 pub enum ThreadCommentThreadError {
     #[error("Comment cannot be created because of a database error: {inner:?}.")]
@@ -180,7 +170,7 @@ impl From<UuidError> for ThreadCommentThreadError {
 
 impl Threads {
     pub async fn comment_thread<'a, E>(
-        payload: ThreadCommentThreadPayload,
+        payload: &create_comment_mutation::Payload,
         executor: E,
     ) -> Result<Uuid, ThreadCommentThreadError>
     where
@@ -372,8 +362,8 @@ impl Threads {
 mod tests {
     use chrono::Duration;
 
-    use super::super::messages::create_thread_mutation;
-    use super::{ThreadCommentThreadPayload, ThreadSetArchivedPayload, Threads};
+    use super::super::messages::{create_comment_mutation, create_thread_mutation};
+    use super::{ThreadSetArchivedPayload, Threads};
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
 
@@ -458,7 +448,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::comment_thread(
-            ThreadCommentThreadPayload {
+            &create_comment_mutation::Payload {
                 thread_id: 17774,
                 user_id: 1,
                 content: "content-test".to_string(),
@@ -490,7 +480,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Threads::comment_thread(
-            ThreadCommentThreadPayload {
+            &create_comment_mutation::Payload {
                 thread_id: 3, //does not exist
                 user_id: 1,
                 content: "content-test".to_string(),

@@ -240,9 +240,7 @@ impl TaxonomyTerm {
     fn normalize_type(typename: &str) -> String {
         typename.to_case(Case::Camel)
     }
-}
 
-impl TaxonomyTerm {
     pub async fn set_name_and_description<'a, E>(
         payload: &taxonomy_term_set_name_and_description_mutation::Payload,
         executor: E,
@@ -300,4 +298,7 @@ impl TaxonomyTerm {
 
         Ok(())
     }
+
+    
 }
+

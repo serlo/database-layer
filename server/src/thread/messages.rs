@@ -4,7 +4,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{ThreadSetArchiveError, ThreadSetArchivedPayload, Threads};
+use super::model::{ThreadSetArchiveError, Threads};
 use crate::database::Connection;
 use crate::message::MessageResponder;
 
@@ -139,15 +139,10 @@ pub mod set_thread_archived_mutation {
         type Output = ();
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            let payload = ThreadSetArchivedPayload {
-                ids: self.ids.clone(),
-                user_id: self.user_id,
-                archived: self.archived,
-            };
             Ok(match connection {
-                Connection::Pool(pool) => Threads::set_archive(payload, pool).await?,
+                Connection::Pool(pool) => Threads::set_archive(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    Threads::set_archive(payload, transaction).await?
+                    Threads::set_archive(self, transaction).await?
                 }
             })
         }

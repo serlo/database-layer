@@ -1,5 +1,7 @@
-use super::messages::{create_comment_mutation, create_thread_mutation};
-use serde::{Deserialize, Serialize};
+use super::messages::{
+    create_comment_mutation, create_thread_mutation, set_thread_archived_mutation,
+};
+use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
@@ -40,14 +42,6 @@ impl Threads {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ThreadSetArchivedPayload {
-    pub ids: Vec<i32>,
-    pub user_id: i32,
-    pub archived: bool,
-}
-
 #[derive(Error, Debug)]
 pub enum ThreadSetArchiveError {
     #[error("Thread archived state cannot be set because of a database error: {inner:?}.")]
@@ -73,7 +67,7 @@ impl From<EventError> for ThreadSetArchiveError {
 
 impl Threads {
     pub async fn set_archive<'a, E>(
-        payload: ThreadSetArchivedPayload,
+        payload: &set_thread_archived_mutation::Payload,
         executor: E,
     ) -> Result<(), ThreadSetArchiveError>
     where
@@ -81,7 +75,7 @@ impl Threads {
     {
         let mut transaction = executor.begin().await?;
 
-        for id in payload.ids.into_iter() {
+        for id in payload.ids.clone().into_iter() {
             let result = sqlx::query!(
                 r#"
                     SELECT archived FROM comment WHERE id = ?
@@ -334,8 +328,10 @@ impl Threads {
 mod tests {
     use chrono::Duration;
 
-    use super::super::messages::{create_comment_mutation, create_thread_mutation};
-    use super::{ThreadSetArchivedPayload, Threads};
+    use super::super::messages::{
+        create_comment_mutation, create_thread_mutation, set_thread_archived_mutation,
+    };
+    use super::Threads;
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
 
@@ -472,7 +468,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::set_archive(
-            ThreadSetArchivedPayload {
+            &set_thread_archived_mutation::Payload {
                 ids: vec![],
                 user_id: 1,
                 archived: true,
@@ -489,7 +485,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::set_archive(
-            ThreadSetArchivedPayload {
+            &set_thread_archived_mutation::Payload {
                 ids: vec![17666],
                 user_id: 1,
                 archived: true,
@@ -519,7 +515,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Threads::set_archive(
-            ThreadSetArchivedPayload {
+            &set_thread_archived_mutation::Payload {
                 ids: vec![17666],
                 user_id: 1,
                 archived: false,

@@ -783,6 +783,96 @@
     },
     "query": "\n                SELECT l.id, l.actor_id, l.uuid_id, l.date, i.subdomain, e.name\n                    FROM event_log l\n                    LEFT JOIN event_parameter p ON l.id = p.log_id\n                    JOIN instance i ON l.instance_id = i.id\n                    JOIN event e ON l.event_id = e.id\n                    WHERE l.id = ?\n            "
   },
+  "3c5a58bc90f021a7bc0fda41c5d105330b6c9dfd48a3ebc5fa1b38dae30f52f6": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "taxonomy_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "term_id",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "parent_id",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 8
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "description",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 16
+            },
+            "max_size": 262140,
+            "type": "Blob"
+          }
+        },
+        {
+          "name": "weight",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT * FROM term_taxonomy WHERE term_taxonomy.id = ?"
+  },
   "3e4fa9b47ad5337aaf2fba3c28ccd1f98ed6c3e499994aaab7f0fd5aa2c59361": {
     "describe": {
       "columns": [
@@ -1867,6 +1957,44 @@
     },
     "query": "UPDATE uuid SET trashed = ? WHERE id = ?"
   },
+  "9a05318102450198e7ae1e967cae625d351ae72145c72a14739110d3d23559a4": {
+    "describe": {
+      "columns": [
+        {
+          "name": "instance_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "previous_parent_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 8
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                    SELECT instance_id, parent_id AS previous_parent_id\n                    FROM term_taxonomy\n                    JOIN term\n                    ON term.id = term_taxonomy.term_id\n                    WHERE term_taxonomy.id = ?\n                "
+  },
   "9bd4c7f005e7e5f56c58e3efe7fbe64ba6a51ca405228bca0af0df42f2ebef71": {
     "describe": {
       "columns": [
@@ -2578,6 +2706,16 @@
       }
     },
     "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            "
+  },
+  "d386b7d0d26c679ecd46fc109df9bb5838de3247ecb8981258f8dacbd1ab2aee": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                    UPDATE term_taxonomy\n                    SET parent_id = ?\n                    WHERE id = ?\n                "
   },
   "d4c1b33938809466906554f5bc60faadae4d6e5781bb9acc02f47c7385960e3a": {
     "describe": {

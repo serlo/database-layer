@@ -6,7 +6,7 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::event::SetTaxonomyTermEventPayload;
+use crate::event::{SetTaxonomyParentEventPayload, SetTaxonomyTermEventPayload};
 use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
 use crate::{format_alias, operation};
@@ -299,6 +299,71 @@ impl TaxonomyTerm {
         Ok(())
     }
 
-    
-}
+    pub async fn move_to_new_parent<'a, E>(
+        payload: &taxonomy_term_move_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
 
+        if payload.destination.is_some() {
+            sqlx::query!(
+                r#"SELECT * FROM term_taxonomy WHERE term_taxonomy.id = ?"#,
+                payload.destination
+            )
+            .fetch_optional(&mut transaction)
+            .await?
+            .ok_or(operation::Error::BadRequest {
+                reason: format!(
+                    "Taxonomy term with id {} does not exist",
+                    payload.destination.unwrap()
+                ),
+            })?;
+        }
+        for child_id in &payload.child_ids {
+            let child = sqlx::query!(
+                r#"
+                    SELECT instance_id, parent_id AS previous_parent_id
+                    FROM term_taxonomy
+                    JOIN term
+                    ON term.id = term_taxonomy.term_id
+                    WHERE term_taxonomy.id = ?
+                "#,
+                child_id
+            )
+            .fetch_optional(&mut transaction)
+            .await?
+            .ok_or(operation::Error::BadRequest {
+                reason: format!("Taxonomy term with id {} does not exist", child_id),
+            })?;
+
+            sqlx::query!(
+                r#"
+                    UPDATE term_taxonomy
+                    SET parent_id = ?
+                    WHERE id = ?
+                "#,
+                payload.destination,
+                child_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            SetTaxonomyParentEventPayload::new(
+                *child_id,
+                child.previous_parent_id,
+                payload.destination,
+                payload.user_id,
+                child.instance_id,
+            )
+            .save(&mut transaction)
+            .await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
+}

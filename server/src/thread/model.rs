@@ -39,9 +39,7 @@ impl Threads {
 
         Ok(Self { first_comment_ids })
     }
-}
 
-impl Threads {
     pub async fn set_archive<'a, E>(
         payload: &set_thread_archived_mutation::Payload,
         executor: E,
@@ -101,9 +99,7 @@ impl Threads {
 
         Ok(())
     }
-}
 
-impl Threads {
     pub async fn comment_thread<'a, E>(
         payload: &create_comment_mutation::Payload,
         executor: E,
@@ -198,9 +194,7 @@ impl Threads {
 
         Ok(comment)
     }
-}
 
-impl Threads {
     pub async fn start_thread<'a, E>(
         payload: &create_thread_mutation::Payload,
         executor: E,

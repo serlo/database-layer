@@ -14,7 +14,7 @@ pub enum ThreadMessage {
     ThreadsQuery(threads_query::Payload),
     ThreadCreateThreadMutation(create_thread_mutation::Payload),
     ThreadCreateCommentMutation(create_comment_mutation::Payload),
-    ThreadSetThreadArchivedMutation(ThreadSetThreadArchivedMutation),
+    ThreadSetThreadArchivedMutation(set_thread_archived_mutation::Payload),
 }
 
 #[async_trait]
@@ -36,7 +36,9 @@ impl MessageResponder for ThreadMessage {
                     .await
             }
             ThreadMessage::ThreadSetThreadArchivedMutation(message) => {
-                message.handle(connection).await
+                message
+                    .handle("ThreadSetThreadArchivedMutation", connection)
+                    .await
             }
         }
     }
@@ -121,42 +123,39 @@ pub mod create_comment_mutation {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ThreadSetThreadArchivedMutation {
-    pub ids: Vec<i32>,
-    pub user_id: i32,
-    pub archived: bool,
-}
+pub mod set_thread_archived_mutation {
+    use super::*;
 
-#[async_trait]
-impl MessageResponder for ThreadSetThreadArchivedMutation {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let payload = ThreadSetArchivedPayload {
-            ids: self.ids.clone(),
-            user_id: self.user_id,
-            archived: self.archived,
-        };
-        let response = match connection {
-            Connection::Pool(pool) => Threads::set_archive(payload, pool).await,
-            Connection::Transaction(transaction) => {
-                Threads::set_archive(payload, transaction).await
-            }
-        };
-        match response {
-            Ok(_) => HttpResponse::Ok().finish(),
-            Err(e) => {
-                println!("/thread/set-archive: {:?}", e);
-                match e {
-                    ThreadSetArchiveError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    ThreadSetArchiveError::EventError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub ids: Vec<i32>,
+        pub user_id: i32,
+        pub archived: bool,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = ();
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let payload = ThreadSetArchivedPayload {
+                ids: self.ids.clone(),
+                user_id: self.user_id,
+                archived: self.archived,
+            };
+            Ok(match connection {
+                Connection::Pool(pool) => Threads::set_archive(payload, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Threads::set_archive(payload, transaction).await?
                 }
-            }
+            })
+        }
+    }
+
+    impl From<ThreadSetArchiveError> for operation::Error {
+        fn from(e: ThreadSetArchiveError) -> Self {
+            operation::Error::InternalServerError { error: Box::new(e) }
         }
     }
 }

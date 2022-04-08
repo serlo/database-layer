@@ -20,6 +20,38 @@ pub struct Threads {
 }
 
 impl Threads {
+    pub async fn fetch_all_threads<'a, E>(
+        first: i32,
+        after: Option<i32>,
+        executor: E,
+    ) -> Result<Self, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        let result = sqlx::query!(
+            r#"
+                select comment.id
+                from comment
+                join uuid on uuid.id = comment.id
+                where
+                    comment.uuid_id is not null
+                    and comment.id < ?
+                    and uuid.trashed = 0
+                    and comment.archived = 0
+                order by comment.id desc
+                limit ?
+            "#,
+            after.unwrap_or(1_000_000_000),
+            first
+        )
+        .fetch_all(executor)
+        .await?;
+
+        let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();
+
+        Ok(Self { first_comment_ids })
+    }
+
     pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, sqlx::Error> {
         Self::fetch_via_transaction(id, pool).await
     }

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.35](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.34..v0.3.35) - April 8, 2022
+
+### Added
+
+- Add `AllThreadsQuery`
+
+- Add `UserDeleteRegularUserMutation`
+
 ## [0.3.34](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.33..v0.3.34) - March 31, 2022
 
 ### Added

@@ -25,7 +25,7 @@
     "version": "./scripts/update_server_version.sh"
   },
   "devDependencies": {
-    "@inyono/changelog": "^0.5.2",
+    "@inyono/changelog": "0.4",
     "@pact-foundation/pact": "^9.17.3",
     "@types/node": "^17.0.23",
     "@types/ramda": "^0.28.7",

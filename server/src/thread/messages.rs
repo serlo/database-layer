@@ -11,6 +11,7 @@ use crate::message::MessageResponder;
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum ThreadMessage {
+    AllThreadsQuery(all_threads_query::Payload),
     ThreadsQuery(threads_query::Payload),
     ThreadCreateThreadMutation(create_thread_mutation::Payload),
     ThreadCreateCommentMutation(create_comment_mutation::Payload),
@@ -22,6 +23,9 @@ impl MessageResponder for ThreadMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
+            ThreadMessage::AllThreadsQuery(message) => {
+                message.handle("AllThreadsQuery", connection).await
+            }
             ThreadMessage::ThreadsQuery(message) => {
                 message.handle("ThreadsQuery", connection).await
             }
@@ -44,8 +48,36 @@ impl MessageResponder for ThreadMessage {
     }
 }
 
+pub mod all_threads_query {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub first: i32,
+        pub after: Option<i32>,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Threads;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(match connection {
+                Connection::Pool(pool) => {
+                    Threads::fetch_all_threads(self.first, self.after, pool).await?
+                }
+                Connection::Transaction(transaction) => {
+                    Threads::fetch_all_threads(self.first, self.after, transaction).await?
+                }
+            })
+        }
+    }
+}
+
 pub mod threads_query {
     use super::*;
+
     #[derive(Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {

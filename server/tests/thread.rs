@@ -1,4 +1,35 @@
 #[cfg(test)]
+mod all_threads_query {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn returns_list_of_thread_ids() {
+        let response = Message::new("AllThreadsQuery", json!({ "first": 5 }))
+            .execute()
+            .await;
+
+        assert_ok(
+            response,
+            json!({ "firstCommentIds": [35435, 35361, 35183, 35163, 35090] }),
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn with_parameter_after() {
+        let response = Message::new("AllThreadsQuery", json!({ "first": 3, "after": 35361 }))
+            .execute()
+            .await;
+
+        assert_ok(
+            response,
+            json!({ "firstCommentIds": [35183, 35163, 35090] }),
+        )
+        .await;
+    }
+}
+
+#[cfg(test)]
 mod start_thread_mutation {
     use test_utils::*;
 

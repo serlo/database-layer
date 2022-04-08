@@ -1206,6 +1206,31 @@
     },
     "query": "\n                INSERT INTO notification_event (notification_id, event_log_id)\n                    SELECT LAST_INSERT_ID(), ?\n            "
   },
+  "688982be9c0d560fea44960649ca9b917e8aaf63d6daf180dbf7901a0aea7b43": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                select comment.id\n                from comment\n                join uuid on uuid.id = comment.id\n                where\n                    comment.uuid_id is not null\n                    and comment.id < ?\n                    and uuid.trashed = 0\n                    and comment.archived = 0\n                order by comment.id desc\n                limit ?\n            "
+  },
   "6a17979932c1f7bed8da7136ced51cec3e92cf766b5850d690e46c8c11cb9184": {
     "describe": {
       "columns": [],

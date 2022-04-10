@@ -36,7 +36,7 @@ pub struct SetTaxonomyParentEventPayload {
     raw_typename: RawEventType,
     child_id: i32,
     previous_parent_id: Option<i64>,
-    parent_id: Option<i32>,
+    parent_id: i32,
     actor_id: i32,
     instance_id: i32,
 }
@@ -45,7 +45,7 @@ impl SetTaxonomyParentEventPayload {
     pub fn new(
         child_id: i32,
         previous_parent_id: Option<i64>,
-        parent_id: Option<i32>,
+        parent_id: i32,
         actor_id: i32,
         instance_id: i32,
     ) -> Self {
@@ -71,9 +71,7 @@ impl SetTaxonomyParentEventPayload {
             uuid_parameters.insert("from".to_string(), previous_parent_id as i32);
         }
 
-        if let Some(current_parent_id) = self.parent_id {
-            uuid_parameters.insert("to".to_string(), current_parent_id);
-        };
+        uuid_parameters.insert("to".to_string(), self.parent_id);
 
         let event = EventPayload::new(
             self.raw_typename.clone(),

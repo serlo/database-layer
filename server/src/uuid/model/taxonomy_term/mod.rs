@@ -308,21 +308,29 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
-        if payload.destination.is_some() {
-            sqlx::query!(
-                r#"SELECT * FROM term_taxonomy WHERE term_taxonomy.id = ?"#,
+        sqlx::query!(
+            r#"SELECT * FROM term_taxonomy WHERE term_taxonomy.id = ?"#,
+            payload.destination
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: format!(
+                "Taxonomy term with id {} does not exist",
                 payload.destination
-            )
-            .fetch_optional(&mut transaction)
-            .await?
-            .ok_or(operation::Error::BadRequest {
-                reason: format!(
-                    "Taxonomy term with id {} does not exist",
-                    payload.destination.unwrap()
-                ),
-            })?;
-        }
+            ),
+        })?;
+
         for child_id in &payload.child_ids {
+            if *child_id == payload.destination {
+                return Err(operation::Error::BadRequest {
+                    reason: format!(
+                        "Child cannot have same id {} as destination",
+                        payload.destination
+                    ),
+                });
+            };
+
             let child = sqlx::query!(
                 r#"
                     SELECT instance_id, parent_id AS previous_parent_id

@@ -77,7 +77,7 @@ pub mod taxonomy_term_move_mutation {
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub user_id: i32,
-        pub child_ids: Vec<i32>,
+        pub children_ids: Vec<i32>,
         pub destination: i32,
     }
 

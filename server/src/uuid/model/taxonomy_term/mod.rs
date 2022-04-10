@@ -321,7 +321,7 @@ impl TaxonomyTerm {
             ),
         })?;
 
-        for child_id in &payload.child_ids {
+        for child_id in &payload.children_ids {
             if *child_id == payload.destination {
                 return Err(operation::Error::BadRequest {
                     reason: format!(

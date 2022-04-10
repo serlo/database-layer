@@ -69,3 +69,112 @@ mod set_name_and_description_mutation {
         assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
     }
 }
+
+#[cfg(test)]
+mod move_mutation {
+    use assert_json_diff::assert_json_include;
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn moves_to_new_parent() {
+        let mut transaction = begin_transaction().await;
+
+        let response = Message::new(
+            "TaxonomyTermMoveMutation",
+            json!({ "childrenIds": [1394, 1454], "destination": 5, "userId": 1 }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok(response, json!({ "success": true })).await;
+
+        let first_query_response = Message::new("UuidQuery", json!({ "id": 1394 }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_ok_with(first_query_response, |result| {
+            assert_eq!(result["parentId"], 5);
+        })
+        .await;
+
+        let second_query_response = Message::new("UuidQuery", json!({ "id": 1454 }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_ok_with(second_query_response, |result| {
+            assert_eq!(result["parentId"], 5);
+        })
+        .await;
+
+        let events_response = Message::new("EventsQuery", json!({ "first": 1, "objectId": 1394 }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_ok_with(events_response, |result| {
+            assert_json_include!(
+                actual: &result["events"][0],
+                expected: json!({
+                    "__typename": "SetTaxonomyParentNotificationEvent",
+                    "instance": "de",
+                    "actorId": 1,
+                    "objectId": 1394,
+                    "childId": 1394,
+                    "previousParentId": 1288,
+                    "parentId": 5
+                })
+            );
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_parent_and_child_have_same_id() {
+        let mut transaction = begin_transaction().await;
+
+        let response = Message::new(
+            "TaxonomyTermMoveMutation",
+            json!({ "childrenIds": [1288], "destination": 1288, "userId": 1 }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(response, "Child cannot have same id 1288 as destination").await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_parent_or_child_does_not_exist() {
+        let mut transaction = begin_transaction().await;
+
+        let child_response = Message::new(
+            "TaxonomyTermMoveMutation",
+            json!({ "childrenIds": [1], "destination": 1288, "userId": 1 }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(child_response, "Taxonomy term with id 1 does not exist").await;
+
+        let parent_response = Message::new(
+            "TaxonomyTermMoveMutation",
+            json!({ "childrenIds": [1288], "destination": 1, "userId": 1 }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(parent_response, "Taxonomy term with id 1 does not exist").await;
+    }
+
+    #[actix_rt::test]
+    async fn moves_also_root() {
+        let mut transaction = begin_transaction().await;
+
+        let response = Message::new(
+            "TaxonomyTermMoveMutation",
+            json!({ "childrenIds": [3], "destination": 5, "userId": 1 }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok(response, json!({ "success": true })).await;
+    }
+}

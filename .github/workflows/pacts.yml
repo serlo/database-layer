@@ -2,7 +2,7 @@ name: Pacts
 on:
   pull_request:
 jobs:
-  test:
+  pacts_test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

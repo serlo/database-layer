@@ -99,6 +99,12 @@ async function exec(): Promise<void> {
           '`EntityCreateMutation` accepts taxonomyTermId in payload',
         ],
       },
+      {
+        tagName: 'v0.3.35',
+        name: '0.3.35',
+        date: '2022-04-08',
+        added: ['Add `AllThreadsQuery`', 'Add `UserDeleteRegularUserMutation`'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

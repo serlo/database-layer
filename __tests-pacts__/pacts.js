@@ -42,7 +42,6 @@ test('Pacts', async () => {
     provider: 'serlo.org-database-layer',
     providerVersion,
     providerBaseUrl: 'http://localhost:8080',
-    consumerVersionTag: '0.29.1-b68d211',
     pactBrokerUrl: 'https://pact.serlo.org',
     pactBrokerUsername: process.env.PACT_BROKER_USERNAME,
     pactBrokerPassword: process.env.PACT_BROKER_PASSWORD,

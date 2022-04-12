@@ -6,7 +6,9 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::event::{SetTaxonomyParentEventPayload, SetTaxonomyTermEventPayload};
+use crate::event::{
+    CreateTaxonomyTermEventPayload, SetTaxonomyParentEventPayload, SetTaxonomyTermEventPayload,
+};
 use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
 use crate::{format_alias, operation};
@@ -455,7 +457,9 @@ impl TaxonomyTerm {
         .execute(&mut transaction)
         .await?;
 
-        // TODO: trigger Event
+        CreateTaxonomyTermEventPayload::new(taxonomy_term_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
         // should we use other methods to get the events as bonus?
 
         let taxonomy_term = Self::fetch_via_transaction(taxonomy_term_id, &mut transaction).await?;

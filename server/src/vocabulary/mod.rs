@@ -1,4 +1,4 @@
 pub use messages::VocabularyMessage;
 
 mod messages;
-mod model;
+pub mod model;

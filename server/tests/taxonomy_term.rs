@@ -186,7 +186,6 @@ mod create_mutation {
 
     #[actix_rt::test]
     async fn creates_new_taxonomy_term() {
-
         // TODO: maybe iterate over taxonomy types to test all?
         let mut transaction = begin_transaction().await;
 

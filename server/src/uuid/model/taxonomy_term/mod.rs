@@ -374,4 +374,94 @@ impl TaxonomyTerm {
 
         Ok(())
     }
+
+    pub async fn create<'a, E>(
+        payload: &taxonomy_term_create_mutation::Payload,
+        executor: E,
+    ) -> Result<Uuid, operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (trashed, discriminator)
+                    VALUES (0, "taxonomyTerm")
+            "#,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let taxonomy_term_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        let type_id = sqlx::query!(
+            r#"SELECT id FROM type WHERE name = ?"#,
+            payload.taxonomy_type
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .id as i32;
+
+        let instance_id = Instance::fetch_id(&payload.instance, &mut transaction).await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO taxonomy (type_id, instance_id)
+                    VALUES (?, ?)
+            "#,
+            type_id,
+            instance_id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let taxonomy_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO term (name, instance_id)
+                    VALUES (?, ?)
+            "#,
+            payload.name,
+            instance_id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let term_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO term_taxonomy (id, term_id, taxonomy_id, parent_id, description)
+                    VALUES (?, ?, ?, ?, ?)
+            "#,
+            taxonomy_term_id,
+            term_id,
+            taxonomy_id,
+            payload.parent_id,
+            payload.description,
+            // TODO: missing weight
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        // TODO: trigger Event
+        // should we use other methods to get the events as bonus?
+
+        let taxonomy_term = Self::fetch_via_transaction(taxonomy_term_id, &mut transaction).await?;
+
+        transaction.commit().await?;
+
+        Ok(taxonomy_term)
+    }
 }

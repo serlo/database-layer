@@ -170,7 +170,7 @@ mod move_mutation {
     }
 
     #[actix_rt::test]
-    async fn cannot_move_root() {
+    async fn fails_when_trying_to_move_root() {
         let mut transaction = begin_transaction().await;
 
         let response = Message::new(
@@ -181,5 +181,23 @@ mod move_mutation {
         .await;
 
         assert_bad_request(response, "root taxonomy term 3 cannot be moved").await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_previous_and_new_parent_are_same() {
+        let mut transaction = begin_transaction().await;
+
+        let response = Message::new(
+            "TaxonomyTermMoveMutation",
+            json!({ "childrenIds": [1300], "destination": 1288, "userId": 1 }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(
+            response,
+            "Taxonomy term with id 1300 already child of parent 1288",
+        )
+        .await;
     }
 }

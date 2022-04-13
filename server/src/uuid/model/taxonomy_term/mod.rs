@@ -353,6 +353,17 @@ impl TaxonomyTerm {
                 });
             };
 
+            let previous_parent_id = child.previous_parent_id.unwrap() as i32;
+
+            if previous_parent_id == payload.destination {
+                return Err(operation::Error::BadRequest {
+                    reason: format!(
+                        "Taxonomy term with id {} already child of parent {}",
+                        child_id, payload.destination
+                    ),
+                });
+            };
+
             sqlx::query!(
                 r#"
                     UPDATE term_taxonomy
@@ -367,7 +378,7 @@ impl TaxonomyTerm {
 
             SetTaxonomyParentEventPayload::new(
                 *child_id,
-                child.previous_parent_id.unwrap() as i32,
+                previous_parent_id,
                 payload.destination,
                 payload.user_id,
                 child.instance_id,

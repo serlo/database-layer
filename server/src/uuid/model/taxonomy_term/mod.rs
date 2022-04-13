@@ -308,8 +308,14 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
-        sqlx::query!(
-            r#"SELECT * FROM term_taxonomy WHERE term_taxonomy.id = ?"#,
+        let new_parent_instance_id = sqlx::query!(
+            r#"
+                SELECT term.instance_id
+                    FROM term_taxonomy
+                    JOIN term
+                        ON term.id = term_taxonomy.term_id
+                    WHERE term_taxonomy.id = ?
+            "#,
             payload.destination
         )
         .fetch_optional(&mut transaction)
@@ -319,7 +325,8 @@ impl TaxonomyTerm {
                 "Taxonomy term with id {} does not exist",
                 payload.destination
             ),
-        })?;
+        })?
+        .instance_id as i32;
 
         for child_id in &payload.children_ids {
             if *child_id == payload.destination {
@@ -346,6 +353,15 @@ impl TaxonomyTerm {
             .ok_or(operation::Error::BadRequest {
                 reason: format!("Taxonomy term with id {} does not exist", child_id),
             })?;
+
+            if child.instance_id != new_parent_instance_id {
+                return Err(operation::Error::BadRequest {
+                    reason: format!(
+                        "Taxonomy term with id {} cannot be moved to another instance",
+                        child_id
+                    ),
+                });
+            };
 
             if child.previous_parent_id.is_none() {
                 return Err(operation::Error::BadRequest {

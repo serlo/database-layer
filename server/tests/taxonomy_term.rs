@@ -200,4 +200,22 @@ mod move_mutation {
         )
         .await;
     }
+
+    #[actix_rt::test]
+    async fn fails_when_child_and_new_parent_are_in_different_instances() {
+        let mut transaction = begin_transaction().await;
+
+        let response = Message::new(
+            "TaxonomyTermMoveMutation",
+            json!({ "childrenIds": [1300], "destination": 23594, "userId": 1 }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(
+            response,
+            "Taxonomy term with id 1300 cannot be moved to another instance",
+        )
+        .await;
+    }
 }

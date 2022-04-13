@@ -333,10 +333,10 @@ impl TaxonomyTerm {
 
             let child = sqlx::query!(
                 r#"
-                    SELECT instance_id, parent_id AS previous_parent_id
+                    SELECT term.instance_id, term_taxonomy.parent_id AS previous_parent_id
                     FROM term_taxonomy
                     JOIN term
-                    ON term.id = term_taxonomy.term_id
+                        ON term.id = term_taxonomy.term_id
                     WHERE term_taxonomy.id = ?
                 "#,
                 child_id
@@ -346,6 +346,12 @@ impl TaxonomyTerm {
             .ok_or(operation::Error::BadRequest {
                 reason: format!("Taxonomy term with id {} does not exist", child_id),
             })?;
+
+            if child.previous_parent_id.is_none() {
+                return Err(operation::Error::BadRequest {
+                    reason: format!("root taxonomy term {} cannot be moved", child_id),
+                });
+            };
 
             sqlx::query!(
                 r#"
@@ -361,7 +367,7 @@ impl TaxonomyTerm {
 
             SetTaxonomyParentEventPayload::new(
                 *child_id,
-                child.previous_parent_id,
+                child.previous_parent_id.unwrap() as i32,
                 payload.destination,
                 payload.user_id,
                 child.instance_id,

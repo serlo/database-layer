@@ -142,30 +142,35 @@ mod move_mutation {
     }
 
     #[actix_rt::test]
-    async fn fails_when_parent_or_child_does_not_exist() {
+    async fn fails_when_parent_does_not_exist() {
         let mut transaction = begin_transaction().await;
 
-        let child_response = Message::new(
-            "TaxonomyTermMoveMutation",
-            json!({ "childrenIds": [1], "destination": 1288, "userId": 1 }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        assert_bad_request(child_response, "Taxonomy term with id 1 does not exist").await;
-
-        let parent_response = Message::new(
+        let response = Message::new(
             "TaxonomyTermMoveMutation",
             json!({ "childrenIds": [1288], "destination": 1, "userId": 1 }),
         )
         .execute_on(&mut transaction)
         .await;
 
-        assert_bad_request(parent_response, "Taxonomy term with id 1 does not exist").await;
+        assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
     }
 
     #[actix_rt::test]
-    async fn moves_also_root() {
+    async fn fails_when_child_does_not_exist() {
+        let mut transaction = begin_transaction().await;
+
+        let response = Message::new(
+            "TaxonomyTermMoveMutation",
+            json!({ "childrenIds": [1], "destination": 1288, "userId": 1 }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_trying_to_move_root() {
         let mut transaction = begin_transaction().await;
 
         let response = Message::new(
@@ -175,7 +180,43 @@ mod move_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_ok(response, json!({ "success": true })).await;
+        assert_bad_request(response, "root taxonomy term 3 cannot be moved").await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_previous_and_new_parent_are_same() {
+        let mut transaction = begin_transaction().await;
+
+        let response = Message::new(
+            "TaxonomyTermMoveMutation",
+            json!({ "childrenIds": [1300], "destination": 1288, "userId": 1 }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(
+            response,
+            "Taxonomy term with id 1300 already child of parent 1288",
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_child_and_new_parent_are_in_different_instances() {
+        let mut transaction = begin_transaction().await;
+
+        let response = Message::new(
+            "TaxonomyTermMoveMutation",
+            json!({ "childrenIds": [1300], "destination": 23594, "userId": 1 }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(
+            response,
+            "Taxonomy term with id 1300 cannot be moved to another instance",
+        )
+        .await;
     }
 }
 

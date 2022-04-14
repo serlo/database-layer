@@ -35,7 +35,7 @@ impl TryFrom<&AbstractEvent> for SetTaxonomyParentEvent {
 pub struct SetTaxonomyParentEventPayload {
     raw_typename: RawEventType,
     child_id: i32,
-    previous_parent_id: Option<i64>,
+    previous_parent_id: i32,
     parent_id: i32,
     actor_id: i32,
     instance_id: i32,
@@ -44,7 +44,7 @@ pub struct SetTaxonomyParentEventPayload {
 impl SetTaxonomyParentEventPayload {
     pub fn new(
         child_id: i32,
-        previous_parent_id: Option<i64>,
+        previous_parent_id: i32,
         parent_id: i32,
         actor_id: i32,
         instance_id: i32,
@@ -63,28 +63,22 @@ impl SetTaxonomyParentEventPayload {
     where
         E: Executor<'a>,
     {
-        let mut transaction = executor.begin().await?;
-
-        let mut uuid_parameters: HashMap<String, i32> = HashMap::new();
-
-        if let Some(previous_parent_id) = self.previous_parent_id {
-            uuid_parameters.insert("from".to_string(), previous_parent_id as i32);
-        }
-
-        uuid_parameters.insert("to".to_string(), self.parent_id);
-
         let event = EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.child_id,
             self.instance_id,
             HashMap::new(),
-            uuid_parameters,
+            [
+                ("from".to_string(), self.previous_parent_id),
+                ("to".to_string(), self.parent_id),
+            ]
+            .iter()
+            .cloned()
+            .collect(),
         )
-        .save(&mut transaction)
+        .save(executor)
         .await?;
-
-        transaction.commit().await?;
 
         Ok(event)
     }

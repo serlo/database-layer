@@ -363,44 +363,42 @@ impl TaxonomyTerm {
                 });
             };
 
-            if child.previous_parent_id.is_none() {
-                return Err(operation::Error::BadRequest {
-                    reason: format!("root taxonomy term {} cannot be moved", child_id),
-                });
-            };
+            if let Some(previous_parent_id) = child.previous_parent_id.map(|x| x as i32) {
+                if previous_parent_id == payload.destination {
+                    return Err(operation::Error::BadRequest {
+                        reason: format!(
+                            "Taxonomy term with id {} already child of parent {}",
+                            child_id, payload.destination
+                        ),
+                    });
+                };
 
-            let previous_parent_id = child.previous_parent_id.unwrap() as i32;
-
-            if previous_parent_id == payload.destination {
-                return Err(operation::Error::BadRequest {
-                    reason: format!(
-                        "Taxonomy term with id {} already child of parent {}",
-                        child_id, payload.destination
-                    ),
-                });
-            };
-
-            sqlx::query!(
-                r#"
+                sqlx::query!(
+                    r#"
                     UPDATE term_taxonomy
                     SET parent_id = ?
                     WHERE id = ?
                 "#,
-                payload.destination,
-                child_id,
-            )
-            .execute(&mut transaction)
-            .await?;
+                    payload.destination,
+                    child_id,
+                )
+                .execute(&mut transaction)
+                .await?;
 
-            SetTaxonomyParentEventPayload::new(
-                *child_id,
-                previous_parent_id,
-                payload.destination,
-                payload.user_id,
-                child.instance_id,
-            )
-            .save(&mut transaction)
-            .await?;
+                SetTaxonomyParentEventPayload::new(
+                    *child_id,
+                    previous_parent_id,
+                    payload.destination,
+                    payload.user_id,
+                    child.instance_id,
+                )
+                .save(&mut transaction)
+                .await?;
+            } else {
+                return Err(operation::Error::BadRequest {
+                    reason: format!("root taxonomy term {} cannot be moved", child_id),
+                });
+            };
         }
 
         transaction.commit().await?;

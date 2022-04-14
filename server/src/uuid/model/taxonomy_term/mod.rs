@@ -485,7 +485,6 @@ impl TaxonomyTerm {
             taxonomy_id,
             payload.parent_id,
             payload.description,
-            // TODO: missing weight
         )
         .execute(&mut transaction)
         .await?;
@@ -493,7 +492,6 @@ impl TaxonomyTerm {
         CreateTaxonomyTermEventPayload::new(taxonomy_term_id, payload.user_id, instance_id)
             .save(&mut transaction)
             .await?;
-        // should we use other methods to get the events as bonus?
 
         let taxonomy_term = Self::fetch_via_transaction(taxonomy_term_id, &mut transaction).await?;
 

@@ -129,12 +129,13 @@ impl EntityRevisionPayload {
 
         sqlx::query!(
             r#"
-                INSERT INTO entity_revision (id, author_id, repository_id)
-                    VALUES (?, ?, ?)
+                INSERT INTO entity_revision (id, author_id, repository_id, date)
+                    VALUES (?, ?, ?, ?)
             "#,
             entity_revision_id,
             self.author_id,
             self.repository_id,
+            DateTime::now(),
         )
         .execute(&mut transaction)
         .await?;

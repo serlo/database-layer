@@ -6,7 +6,7 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::event::SetTaxonomyTermEventPayload;
+use crate::event::{SetTaxonomyParentEventPayload, SetTaxonomyTermEventPayload};
 use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
 use crate::{format_alias, operation};
@@ -240,9 +240,7 @@ impl TaxonomyTerm {
     fn normalize_type(typename: &str) -> String {
         typename.to_case(Case::Camel)
     }
-}
 
-impl TaxonomyTerm {
     pub async fn set_name_and_description<'a, E>(
         payload: &taxonomy_term_set_name_and_description_mutation::Payload,
         executor: E,
@@ -295,6 +293,115 @@ impl TaxonomyTerm {
         SetTaxonomyTermEventPayload::new(payload.id, payload.user_id, term.instance_id)
             .save(&mut transaction)
             .await?;
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
+
+    pub async fn move_to_new_parent<'a, E>(
+        payload: &taxonomy_term_move_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let new_parent_instance_id = sqlx::query!(
+            r#"
+                SELECT term.instance_id
+                    FROM term_taxonomy
+                    JOIN term
+                        ON term.id = term_taxonomy.term_id
+                    WHERE term_taxonomy.id = ?
+            "#,
+            payload.destination
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: format!(
+                "Taxonomy term with id {} does not exist",
+                payload.destination
+            ),
+        })?
+        .instance_id as i32;
+
+        for child_id in &payload.children_ids {
+            if *child_id == payload.destination {
+                return Err(operation::Error::BadRequest {
+                    reason: format!(
+                        "Child cannot have same id {} as destination",
+                        payload.destination
+                    ),
+                });
+            };
+
+            let child = sqlx::query!(
+                r#"
+                    SELECT term.instance_id, term_taxonomy.parent_id AS previous_parent_id
+                    FROM term_taxonomy
+                    JOIN term
+                        ON term.id = term_taxonomy.term_id
+                    WHERE term_taxonomy.id = ?
+                "#,
+                child_id
+            )
+            .fetch_optional(&mut transaction)
+            .await?
+            .ok_or(operation::Error::BadRequest {
+                reason: format!("Taxonomy term with id {} does not exist", child_id),
+            })?;
+
+            if child.instance_id != new_parent_instance_id {
+                return Err(operation::Error::BadRequest {
+                    reason: format!(
+                        "Taxonomy term with id {} cannot be moved to another instance",
+                        child_id
+                    ),
+                });
+            };
+
+            if child.previous_parent_id.is_none() {
+                return Err(operation::Error::BadRequest {
+                    reason: format!("root taxonomy term {} cannot be moved", child_id),
+                });
+            };
+
+            let previous_parent_id = child.previous_parent_id.unwrap() as i32;
+
+            if previous_parent_id == payload.destination {
+                return Err(operation::Error::BadRequest {
+                    reason: format!(
+                        "Taxonomy term with id {} already child of parent {}",
+                        child_id, payload.destination
+                    ),
+                });
+            };
+
+            sqlx::query!(
+                r#"
+                    UPDATE term_taxonomy
+                    SET parent_id = ?
+                    WHERE id = ?
+                "#,
+                payload.destination,
+                child_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            SetTaxonomyParentEventPayload::new(
+                *child_id,
+                previous_parent_id,
+                payload.destination,
+                payload.user_id,
+                child.instance_id,
+            )
+            .save(&mut transaction)
+            .await?;
+        }
 
         transaction.commit().await?;
 

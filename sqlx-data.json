@@ -88,16 +88,6 @@
     },
     "query": "\n                SELECT name, value FROM\n                    (\n                    # Level 1\n                    SELECT k.name, p.value, p.page_id\n                        FROM navigation_parameter p\n                        JOIN navigation_parameter_key k ON k.id = p.key_id\n                        WHERE p.parent_id IS NULL AND value != ''\n                    UNION ALL\n                    # Level 2\n                    SELECT CONCAT(k1.name, '.', k2.name) as name, p2.value, p2.page_id\n                        FROM navigation_parameter p1\n                        JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                        JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                        JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                        WHERE p1.parent_id IS NULL AND p2.value != ''\n                    UNION ALL\n                    # Level 3\n                    SELECT CONCAT(k1.name, '.', k2.name, '.', k3.name) as name, p3.value, p3.page_id\n                        FROM navigation_parameter p1\n                        JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                        JOIN navigation_parameter p3 ON p3.parent_id = p2.id\n                        JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                        JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                        JOIN navigation_parameter_key k3 ON k3.id = p3.key_id\n                        WHERE p1.parent_id IS NULL AND p3.value != ''\n                    ) u\n                    WHERE page_id = ?\n            "
   },
-  "08d52f52a3f403c1226396383f9810f0e81653e16d2e88d18c9dcf492ef5d2ba": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 3
-      }
-    },
-    "query": "\n                INSERT INTO entity_revision (id, author_id, repository_id)\n                    VALUES (?, ?, ?)\n            "
-  },
   "09965570050adbd7f9f7b6e158a1b5e95d13eab605d25b207bc9898dd9a6fe47": {
     "describe": {
       "columns": [
@@ -663,6 +653,31 @@
     },
     "query": "\n                        UPDATE entity\n                            SET current_revision_id = ?\n                            WHERE id = ?\n                    "
   },
+  "2d56e98815019139bf468a2af929eccd4cbaa88d6a1bf8fb4786391526c85736": {
+    "describe": {
+      "columns": [
+        {
+          "name": "instance_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT term.instance_id\n                    FROM term_taxonomy\n                    JOIN term\n                        ON term.id = term_taxonomy.term_id\n                    WHERE term_taxonomy.id = ?\n            "
+  },
   "2fef385b65bd79666bcb5adaed3193779347d03ad0d088ff8412626355c7d528": {
     "describe": {
       "columns": [],
@@ -954,16 +969,6 @@
       }
     },
     "query": "\n                INSERT INTO comment ( id , date , archived , title , content , uuid_id , parent_id , author_id , instance_id )\n                    VALUES (LAST_INSERT_ID(), ?, 0, ?, ?, ?, NULL, ?, ?)\n            "
-  },
-  "4aed23d92cfcab453705526d67533d1539b797e73193a0a524ae2ef011745998": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 4
-      }
-    },
-    "query": "\n                INSERT INTO entity (id, type_id, instance_id, license_id)\n                    VALUES (?, ?, ?, ?)\n            "
   },
   "4bd4cb77bc482eddecb3feb2065aab19c8e282612f2b01d46fbdaa36939337fa": {
     "describe": {
@@ -2201,6 +2206,16 @@
     },
     "query": "\n                UPDATE page_repository\n                    SET forum_id = ?\n                    WHERE id = ?\n            "
   },
+  "af0db2da7d2e46f2291c6edbe0870004af83d90d464346759ddde2067736a294": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 4
+      }
+    },
+    "query": "\n                INSERT INTO entity_revision (id, author_id, repository_id, date)\n                    VALUES (?, ?, ?, ?)\n            "
+  },
   "b06a90ba7abee0f9ef7b237142448f14413a129a647debe16df0a03ba2066b82": {
     "describe": {
       "columns": [],
@@ -2603,6 +2618,16 @@
       }
     },
     "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            "
+  },
+  "d386b7d0d26c679ecd46fc109df9bb5838de3247ecb8981258f8dacbd1ab2aee": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                    UPDATE term_taxonomy\n                    SET parent_id = ?\n                    WHERE id = ?\n                "
   },
   "d4c1b33938809466906554f5bc60faadae4d6e5781bb9acc02f47c7385960e3a": {
     "describe": {
@@ -3184,6 +3209,44 @@
     },
     "query": "\n                INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                    VALUES (\"changes\", ?, ?)\n            "
   },
+  "f54a64f3deb41e1dcc06f219f2804cc4a4c18c2d430c3f7c971779342a768f75": {
+    "describe": {
+      "columns": [
+        {
+          "name": "instance_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "previous_parent_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 8
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                    SELECT term.instance_id, term_taxonomy.parent_id AS previous_parent_id\n                    FROM term_taxonomy\n                    JOIN term\n                        ON term.id = term_taxonomy.term_id\n                    WHERE term_taxonomy.id = ?\n                "
+  },
   "f6232703fd9b172776710f63c3b6b834d80b2d8d88e56e4c6a8a95e9b6ab0086": {
     "describe": {
       "columns": [],
@@ -3193,6 +3256,16 @@
       }
     },
     "query": "delete from uuid where id = ? and discriminator = 'user'"
+  },
+  "f9b32d82021db44d67a81ec71d4c782fcac35ca37498f2911c5d20fa8e86853e": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "\n                INSERT INTO entity (id, type_id, instance_id, license_id, date)\n                    VALUES (?, ?, ?, ?, ?)\n            "
   },
   "fb7a566e9ea371a8e210e88cec9d3e4cf0832ccc6706c7a164275bd43d86f596": {
     "describe": {

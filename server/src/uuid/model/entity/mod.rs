@@ -19,6 +19,7 @@ use crate::event::{
 };
 use crate::format_alias;
 
+use crate::datetime::DateTime;
 use crate::instance::Instance;
 use crate::operation;
 use crate::subscription::Subscription;
@@ -523,13 +524,14 @@ impl Entity {
 
         sqlx::query!(
             r#"
-                INSERT INTO entity (id, type_id, instance_id, license_id)
-                    VALUES (?, ?, ?, ?)
+                INSERT INTO entity (id, type_id, instance_id, license_id, date)
+                    VALUES (?, ?, ?, ?, ?)
             "#,
             entity_id,
             type_id,
             instance_id,
-            payload.input.license_id
+            payload.input.license_id,
+            DateTime::now(),
         )
         .execute(&mut transaction)
         .await?;

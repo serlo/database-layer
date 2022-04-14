@@ -51,7 +51,7 @@ impl CreateCommentEventPayload {
     where
         E: Executor<'a>,
     {
-        Ok(EventPayload::new(
+        EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.comment_id,
@@ -63,7 +63,7 @@ impl CreateCommentEventPayload {
                 .collect(),
         )
         .save(executor)
-        .await?)
+        .await
     }
 }
 

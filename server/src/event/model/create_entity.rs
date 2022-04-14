@@ -40,7 +40,7 @@ impl CreateEntityEventPayload {
     where
         E: Executor<'a>,
     {
-        Ok(EventPayload::new(
+        EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.entity_id,
@@ -49,6 +49,6 @@ impl CreateEntityEventPayload {
             HashMap::new(),
         )
         .save(executor)
-        .await?)
+        .await
     }
 }

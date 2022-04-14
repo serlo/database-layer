@@ -50,7 +50,7 @@ impl CreateTaxonomyLinkEventPayload {
     where
         E: Executor<'a>,
     {
-        Ok(EventPayload::new(
+        EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.taxonomy_term_id,
@@ -62,6 +62,6 @@ impl CreateTaxonomyLinkEventPayload {
                 .collect(),
         )
         .save(executor)
-        .await?)
+        .await
     }
 }

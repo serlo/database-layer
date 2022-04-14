@@ -48,7 +48,7 @@ impl CreateEntityRevisionEventPayload {
     where
         E: Executor<'a>,
     {
-        Ok(EventPayload::new(
+        EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.entity_id,
@@ -60,6 +60,6 @@ impl CreateEntityRevisionEventPayload {
                 .collect(),
         )
         .save(executor)
-        .await?)
+        .await
     }
 }

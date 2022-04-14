@@ -55,7 +55,7 @@ impl CreateThreadEventPayload {
     where
         E: Executor<'a>,
     {
-        Ok(EventPayload::new(
+        EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.thread_id,
@@ -67,7 +67,7 @@ impl CreateThreadEventPayload {
                 .collect(),
         )
         .save(executor)
-        .await?)
+        .await
     }
 }
 

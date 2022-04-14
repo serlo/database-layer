@@ -48,9 +48,7 @@ impl CreateEntityRevisionEventPayload {
     where
         E: Executor<'a>,
     {
-        let mut transaction = executor.begin().await?;
-
-        let event = EventPayload::new(
+        Ok(EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.entity_id,
@@ -61,11 +59,7 @@ impl CreateEntityRevisionEventPayload {
                 .cloned()
                 .collect(),
         )
-        .save(&mut transaction)
-        .await?;
-
-        transaction.commit().await?;
-
-        Ok(event)
+        .save(executor)
+        .await?)
     }
 }

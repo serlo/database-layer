@@ -63,7 +63,7 @@ impl SetTaxonomyParentEventPayload {
     where
         E: Executor<'a>,
     {
-        let event = EventPayload::new(
+        Ok(EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.child_id,
@@ -78,8 +78,6 @@ impl SetTaxonomyParentEventPayload {
             .collect(),
         )
         .save(executor)
-        .await?;
-
-        Ok(event)
+        .await?)
     }
 }

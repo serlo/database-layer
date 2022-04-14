@@ -55,9 +55,7 @@ impl CreateThreadEventPayload {
     where
         E: Executor<'a>,
     {
-        let mut transaction = executor.begin().await?;
-
-        let event = EventPayload::new(
+        Ok(EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.thread_id,
@@ -68,12 +66,8 @@ impl CreateThreadEventPayload {
                 .cloned()
                 .collect(),
         )
-        .save(&mut transaction)
-        .await?;
-
-        transaction.commit().await?;
-
-        Ok(event)
+        .save(executor)
+        .await?)
     }
 }
 

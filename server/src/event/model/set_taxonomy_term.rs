@@ -42,9 +42,7 @@ impl SetTaxonomyTermEventPayload {
     where
         E: Executor<'a>,
     {
-        let mut transaction = executor.begin().await?;
-
-        let event = EventPayload::new(
+        EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.taxonomy_term_id,
@@ -52,11 +50,7 @@ impl SetTaxonomyTermEventPayload {
             HashMap::new(),
             HashMap::new(),
         )
-        .save(&mut transaction)
-        .await?;
-
-        transaction.commit().await?;
-
-        Ok(event)
+        .save(executor)
+        .await
     }
 }

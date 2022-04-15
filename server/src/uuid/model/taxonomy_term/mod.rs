@@ -439,7 +439,20 @@ impl TaxonomyTerm {
         .await?
         .id as i32;
 
-        let instance_id = Instance::fetch_id(&payload.instance, &mut transaction).await?;
+        // TODO: query used twice, encapsulate in a method
+        let instance_id = sqlx::query!(
+            r#"
+                SELECT term.instance_id
+                    FROM term_taxonomy
+                    JOIN term
+                        ON term.id = term_taxonomy.term_id
+                    WHERE term_taxonomy.id = ?
+            "#,
+            payload.parent_id
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .instance_id as i32;
 
         sqlx::query!(
             r#"

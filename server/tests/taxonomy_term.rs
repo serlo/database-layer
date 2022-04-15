@@ -237,7 +237,6 @@ mod create_mutation {
                 "name": "a name",
                 "description": "a description",
                 "userId": 1,
-                "instance": "de",
                 "taxonomyType": "topic"
             }),
         )

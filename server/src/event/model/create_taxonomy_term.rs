@@ -40,7 +40,7 @@ impl CreateTaxonomyTermEventPayload {
     where
         E: Executor<'a>,
     {
-         EventPayload::new(
+        EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.taxonomy_term_id,

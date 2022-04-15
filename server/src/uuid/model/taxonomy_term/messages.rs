@@ -3,12 +3,11 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::TaxonomyTerm;
-use crate::instance::Instance;
-use crate::uuid::Uuid;
-use crate::vocabulary::model::TaxonomyType;
 use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
+use crate::uuid::Uuid;
+use crate::vocabulary::model::TaxonomyType;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -121,8 +120,7 @@ pub mod taxonomy_term_create_mutation {
     pub struct Payload {
         pub user_id: i32,
         pub taxonomy_type: TaxonomyType,
-        pub parent_id: Option<i32>,
-        pub instance: Instance,
+        pub parent_id: i32,
         pub name: String,
         pub description: Option<String>,
     }

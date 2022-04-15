@@ -3,6 +3,9 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::TaxonomyTerm;
+use crate::instance::Instance;
+use crate::uuid::Uuid;
+use crate::vocabulary::model::TaxonomyType;
 use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
@@ -112,9 +115,6 @@ pub mod taxonomy_term_move_mutation {
 
 pub mod taxonomy_term_create_mutation {
     use super::*;
-    use crate::instance::Instance;
-    use crate::uuid::Uuid;
-    use crate::vocabulary::model::TaxonomyType;
 
     #[derive(Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]

@@ -40,7 +40,7 @@ impl CreateTaxonomyTermEventPayload {
     where
         E: Executor<'a>,
     {
-        let event = EventPayload::new(
+         EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.taxonomy_term_id,
@@ -49,8 +49,6 @@ impl CreateTaxonomyTermEventPayload {
             HashMap::new(),
         )
         .save(executor)
-        .await?;
-
-        Ok(event)
+        .await
     }
 }

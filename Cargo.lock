@@ -2247,6 +2247,7 @@ name = "test-utils"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "convert_case 0.5.0",
  "rand",
  "serde_json",
  "server",

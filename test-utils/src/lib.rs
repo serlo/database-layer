@@ -1,5 +1,6 @@
 use actix_web::body::to_bytes;
 use actix_web::HttpResponse;
+use convert_case::{Case, Casing};
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::{from_slice, from_value};
 use server::create_database_pool;
@@ -7,6 +8,8 @@ use server::database::Connection;
 use server::message::{Message as ServerMessage, MessageResponder};
 
 pub use serde_json::{json, Value};
+use server::vocabulary::model::TaxonomyType;
+use std::str::FromStr;
 
 pub struct Message<'a> {
     message_type: &'a str,
@@ -179,6 +182,25 @@ pub async fn set_entity_revision_field<'a>(
     transaction.commit().await?;
     Ok(())
 }
+
+pub fn from_value_to_taxonomy_type(value: Value) -> TaxonomyType {
+    let type_camel_case = value.as_str().unwrap();
+    let type_kebab_case = type_camel_case.to_case(Case::Kebab);
+    TaxonomyType::from_str(type_kebab_case.as_str()).unwrap()
+}
+
+pub const TAXONOMY_TYPES_WITHOUT_ROOT: [TaxonomyType; 10] = [
+    TaxonomyType::Subject,
+    TaxonomyType::Topic,
+    TaxonomyType::TopicFolder,
+    TaxonomyType::Blog,
+    TaxonomyType::Curriculum,
+    TaxonomyType::CurriculumTopic,
+    TaxonomyType::CurriculumTopicFolder,
+    TaxonomyType::Forum,
+    TaxonomyType::ForumCategory,
+    TaxonomyType::Locale,
+];
 
 fn random_string(nr: usize) -> String {
     rand::thread_rng()

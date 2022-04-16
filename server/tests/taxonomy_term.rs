@@ -223,21 +223,7 @@ mod move_mutation {
 #[cfg(test)]
 mod create_mutation {
     use assert_json_diff::assert_json_include;
-    use server::vocabulary::model::TaxonomyType;
     use test_utils::*;
-
-    const TAXONOMY_TYPES_WITHOUT_ROOT: [TaxonomyType; 10] = [
-        TaxonomyType::Subject,
-        TaxonomyType::Topic,
-        TaxonomyType::TopicFolder,
-        TaxonomyType::Blog,
-        TaxonomyType::Curriculum,
-        TaxonomyType::CurriculumTopic,
-        TaxonomyType::CurriculumTopicFolder,
-        TaxonomyType::Forum,
-        TaxonomyType::ForumCategory,
-        TaxonomyType::Locale,
-    ];
 
     #[actix_rt::test]
     async fn creates_new_taxonomy_term() {
@@ -268,6 +254,10 @@ mod create_mutation {
                     assert_eq!(result["name"], "a name");
                     assert_eq!(result["description"].as_str(), description);
                     assert_eq!(result["parentId"], 1394);
+                    assert_eq!(
+                        from_value_to_taxonomy_type(result["type"].clone()),
+                        *taxonomy_type
+                    );
                 })
                 .await;
 
@@ -280,14 +270,14 @@ mod create_mutation {
 
                 assert_ok_with(events_response, |result| {
                     assert_json_include ! (
-                    actual: & result["events"][0],
-                    expected: json ! ({
-                    "__typename": "CreateTaxonomyTermNotificationEvent",
-                    "instance": "de",
-                    "actorId": 1,
-                    "objectId": new_taxonomy_id,
-                    "taxonomyTermId": new_taxonomy_id,
-                    })
+                        actual: &result["events"][0],
+                        expected: json ! ({
+                            "__typename": "CreateTaxonomyTermNotificationEvent",
+                            "instance": "de",
+                            "actorId": 1,
+                            "objectId": new_taxonomy_id,
+                            "taxonomyTermId": new_taxonomy_id,
+                        })
                     );
                 })
                 .await;

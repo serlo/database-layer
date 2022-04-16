@@ -1869,7 +1869,6 @@ dependencies = [
  "actix-rt",
  "actix-service",
  "actix-web",
- "assert-json-diff",
  "async-trait",
  "chrono",
  "chrono-tz",
@@ -2247,6 +2246,7 @@ name = "test-utils"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "assert-json-diff",
  "convert_case 0.5.0",
  "rand",
  "serde_json",

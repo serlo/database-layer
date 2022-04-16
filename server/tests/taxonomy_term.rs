@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod set_name_and_description_mutation {
-    use assert_json_diff::assert_json_include;
     use test_utils::*;
 
     #[actix_rt::test]
@@ -72,7 +71,6 @@ mod set_name_and_description_mutation {
 
 #[cfg(test)]
 mod move_mutation {
-    use assert_json_diff::assert_json_include;
     use test_utils::*;
 
     #[actix_rt::test]
@@ -222,7 +220,6 @@ mod move_mutation {
 
 #[cfg(test)]
 mod create_mutation {
-    use assert_json_diff::assert_json_include;
     use test_utils::*;
 
     #[actix_rt::test]

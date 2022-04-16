@@ -243,6 +243,31 @@ impl TaxonomyTerm {
         typename.to_case(Case::Camel)
     }
 
+    async fn get_instance_id_of_parent<'a, E>(
+        parent_id: i32,
+        executor: E,
+    ) -> Result<i32, operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        Ok(sqlx::query!(
+            r#"
+                SELECT term.instance_id
+                    FROM term_taxonomy
+                    JOIN term
+                        ON term.id = term_taxonomy.term_id
+                    WHERE term_taxonomy.id = ?
+            "#,
+            parent_id
+        )
+        .fetch_optional(executor)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: format!("Taxonomy term with id {} does not exist", parent_id),
+        })?
+        .instance_id as i32)
+    }
+
     pub async fn set_name_and_description<'a, E>(
         payload: &taxonomy_term_set_name_and_description_mutation::Payload,
         executor: E,
@@ -310,25 +335,8 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
-        let new_parent_instance_id = sqlx::query!(
-            r#"
-                SELECT term.instance_id
-                    FROM term_taxonomy
-                    JOIN term
-                        ON term.id = term_taxonomy.term_id
-                    WHERE term_taxonomy.id = ?
-            "#,
-            payload.destination
-        )
-        .fetch_optional(&mut transaction)
-        .await?
-        .ok_or(operation::Error::BadRequest {
-            reason: format!(
-                "Taxonomy term with id {} does not exist",
-                payload.destination
-            ),
-        })?
-        .instance_id as i32;
+        let new_parent_instance_id =
+            Self::get_instance_id_of_parent(payload.destination, &mut transaction).await?;
 
         for child_id in &payload.children_ids {
             if *child_id == payload.destination {
@@ -439,20 +447,8 @@ impl TaxonomyTerm {
         .await?
         .id as i32;
 
-        // TODO: query used twice, encapsulate in a method
-        let instance_id = sqlx::query!(
-            r#"
-                SELECT term.instance_id
-                    FROM term_taxonomy
-                    JOIN term
-                        ON term.id = term_taxonomy.term_id
-                    WHERE term_taxonomy.id = ?
-            "#,
-            payload.parent_id
-        )
-        .fetch_one(&mut transaction)
-        .await?
-        .instance_id as i32;
+        let instance_id =
+            Self::get_instance_id_of_parent(payload.parent_id, &mut transaction).await?;
 
         sqlx::query!(
             r#"

@@ -9,8 +9,8 @@ pub use serde_json::{json, Value};
 use server::create_database_pool;
 use server::database::Connection;
 use server::message::{Message as ServerMessage, MessageResponder};
-use server::vocabulary::model::TaxonomyType;
 use std::str::FromStr;
+use server::uuid::TaxonomyType;
 
 pub struct Message<'a> {
     message_type: &'a str,

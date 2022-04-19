@@ -1,6 +1,5 @@
 use std::collections::{BTreeSet, HashSet};
 
-use serde::{Deserialize, Serialize};
 use sophia::graph::{inmem::FastGraph, *};
 use sophia::iri::Iri;
 use sophia::ns::Namespace;
@@ -8,14 +7,11 @@ use sophia::prefix::Prefix;
 use sophia::serializer::turtle::TurtleConfig;
 use sophia::serializer::*;
 use sophia::term::literal::Literal;
-use sqlx::database::HasArguments;
-use sqlx::encode::IsNull;
-use sqlx::mysql::MySqlTypeInfo;
-use sqlx::MySql;
 use thiserror::Error;
 
 use crate::database::Executor;
 use crate::instance::Instance;
+use crate::uuid::TaxonomyType;
 
 pub struct Vocabulary;
 
@@ -253,48 +249,6 @@ struct TaxonomyTerm {
     parent_id: Option<i64>,
     trashed: i8,
     typename: String,
-}
-
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum TaxonomyType {
-    Root, // Level 0
-
-    Blog, // below Root
-
-    ForumCategory, // below Root or ForumCategory
-    Forum,         // below ForumCategory
-
-    Subject, // below Root
-
-    Locale,                // below Subject or Locale
-    Curriculum,            // below Locale
-    CurriculumTopic,       // below Curriculum or CurriculumTopic
-    CurriculumTopicFolder, // below CurriculumTopic
-
-    Topic,       // below Subject or Topic
-    TopicFolder, // below Topic
-}
-
-impl std::str::FromStr for TaxonomyType {
-    type Err = serde_json::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_value(serde_json::value::Value::String(s.to_string()))
-    }
-}
-
-impl sqlx::Type<MySql> for TaxonomyType {
-    fn type_info() -> MySqlTypeInfo {
-        str::type_info()
-    }
-}
-impl<'q> sqlx::Encode<'q, MySql> for TaxonomyType {
-    fn encode_by_ref(&self, buf: &mut <MySql as HasArguments<'q>>::ArgumentBuffer) -> IsNull {
-        let decoded = serde_json::to_value(self).unwrap();
-        let decoded = decoded.as_str().unwrap();
-        decoded.encode_by_ref(buf)
-    }
 }
 
 #[derive(Error, Debug)]

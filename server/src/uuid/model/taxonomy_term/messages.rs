@@ -6,7 +6,7 @@ use super::TaxonomyTerm;
 use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
-use crate::uuid::{Uuid, TaxonomyType};
+use crate::uuid::{TaxonomyType, Uuid};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]

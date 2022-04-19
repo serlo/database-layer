@@ -9,8 +9,8 @@ pub use serde_json::{json, Value};
 use server::create_database_pool;
 use server::database::Connection;
 use server::message::{Message as ServerMessage, MessageResponder};
-use std::str::FromStr;
 use server::uuid::TaxonomyType;
+use std::str::FromStr;
 
 pub struct Message<'a> {
     message_type: &'a str,
@@ -190,18 +190,8 @@ pub fn from_value_to_taxonomy_type(value: Value) -> TaxonomyType {
     TaxonomyType::from_str(type_kebab_case.as_str()).unwrap()
 }
 
-pub const TAXONOMY_TYPES_WITHOUT_ROOT: [TaxonomyType; 10] = [
-    TaxonomyType::Subject,
-    TaxonomyType::Topic,
-    TaxonomyType::TopicFolder,
-    TaxonomyType::Blog,
-    TaxonomyType::Curriculum,
-    TaxonomyType::CurriculumTopic,
-    TaxonomyType::CurriculumTopicFolder,
-    TaxonomyType::Forum,
-    TaxonomyType::ForumCategory,
-    TaxonomyType::Locale,
-];
+pub const ALLOWED_TAXONOMY_TYPES_CREATE: [TaxonomyType; 2] =
+    [TaxonomyType::Topic, TaxonomyType::TopicFolder];
 
 fn random_string(nr: usize) -> String {
     rand::thread_rng()

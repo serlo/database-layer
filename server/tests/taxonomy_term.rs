@@ -224,7 +224,7 @@ mod create_mutation {
 
     #[actix_rt::test]
     async fn creates_new_taxonomy_term() {
-        for taxonomy_type in TAXONOMY_TYPES_WITHOUT_ROOT.iter() {
+        for taxonomy_type in ALLOWED_TAXONOMY_TYPES_CREATE.iter() {
             for description in [Some("a description"), None] {
                 let mut transaction = begin_transaction().await;
 

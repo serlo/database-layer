@@ -17,3 +17,5 @@ rand = "0.8.0"
 serde_json = "1.0.0"
 server = { path="../server" }
 sqlx = { version = "0.5.0", features = ["chrono", "offline", "json", "mysql", "runtime-actix-native-tls"] }
+convert_case = "0.5.0"
+assert-json-diff = "2.0.1"

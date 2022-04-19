@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod set_name_and_description_mutation {
-    use assert_json_diff::assert_json_include;
     use test_utils::*;
 
     #[actix_rt::test]
@@ -72,7 +71,6 @@ mod set_name_and_description_mutation {
 
 #[cfg(test)]
 mod move_mutation {
-    use assert_json_diff::assert_json_include;
     use test_utils::*;
 
     #[actix_rt::test]
@@ -217,5 +215,70 @@ mod move_mutation {
             "Taxonomy term with id 1300 cannot be moved to another instance",
         )
         .await;
+    }
+}
+
+#[cfg(test)]
+mod create_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn creates_new_taxonomy_term() {
+        for taxonomy_type in ALLOWED_TAXONOMY_TYPES_CREATE.iter() {
+            for description in [Some("a description"), None] {
+                let mut transaction = begin_transaction().await;
+
+                let mutation_response = Message::new(
+                    "TaxonomyTermCreateMutation",
+                    json! ({
+                    "parentId": 1394,
+                    "name": "a name",
+                    "description": description,
+                    "userId": 1,
+                    "taxonomyType": taxonomy_type
+                    }),
+                )
+                .execute_on(&mut transaction)
+                .await;
+
+                let new_taxonomy_id = get_json(mutation_response).await["id"].clone();
+
+                let query_response = Message::new("UuidQuery", json!({ "id": new_taxonomy_id }))
+                    .execute_on(&mut transaction)
+                    .await;
+
+                assert_ok_with(query_response, |result| {
+                    assert_eq!(result["name"], "a name");
+                    assert_eq!(result["description"].as_str(), description);
+                    assert_eq!(result["parentId"], 1394);
+                    assert_eq!(
+                        from_value_to_taxonomy_type(result["type"].clone()),
+                        *taxonomy_type
+                    );
+                })
+                .await;
+
+                let events_response = Message::new(
+                    "EventsQuery",
+                    json ! ({ "first": 1, "objectId": new_taxonomy_id }),
+                )
+                .execute_on(&mut transaction)
+                .await;
+
+                assert_ok_with(events_response, |result| {
+                    assert_json_include ! (
+                        actual: &result["events"][0],
+                        expected: json ! ({
+                            "__typename": "CreateTaxonomyTermNotificationEvent",
+                            "instance": "de",
+                            "actorId": 1,
+                            "objectId": new_taxonomy_id,
+                            "taxonomyTermId": new_taxonomy_id,
+                        })
+                    );
+                })
+                .await;
+            }
+        }
     }
 }

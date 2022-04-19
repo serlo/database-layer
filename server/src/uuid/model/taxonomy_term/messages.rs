@@ -6,6 +6,7 @@ use super::TaxonomyTerm;
 use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
+use crate::uuid::{TaxonomyType, Uuid};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -14,6 +15,7 @@ pub enum TaxonomyTermMessage {
         taxonomy_term_set_name_and_description_mutation::Payload,
     ),
     TaxonomyTermMoveMutation(taxonomy_term_move_mutation::Payload),
+    TaxonomyTermCreateMutation(taxonomy_term_create_mutation::Payload),
 }
 
 #[async_trait]
@@ -28,6 +30,11 @@ impl MessageResponder for TaxonomyTermMessage {
             }
             TaxonomyTermMessage::TaxonomyTermMoveMutation(payload) => {
                 payload.handle("TaxonomyTermMoveMutation", connection).await
+            }
+            TaxonomyTermMessage::TaxonomyTermCreateMutation(payload) => {
+                payload
+                    .handle("TaxonomyTermCreateMutation", connection)
+                    .await
             }
         }
     }
@@ -100,6 +107,34 @@ pub mod taxonomy_term_move_mutation {
             };
 
             Ok(Output { success: true })
+        }
+    }
+}
+
+pub mod taxonomy_term_create_mutation {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: i32,
+        pub taxonomy_type: TaxonomyType,
+        pub parent_id: i32,
+        pub name: String,
+        pub description: Option<String>,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Uuid;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(match connection {
+                Connection::Pool(pool) => TaxonomyTerm::create(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    TaxonomyTerm::create(self, transaction).await?
+                }
+            })
         }
     }
 }

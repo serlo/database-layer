@@ -1,18 +1,67 @@
-use crate::database::Executor;
 use async_trait::async_trait;
 use convert_case::{Case, Casing};
 use futures::join;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use sqlx::database::HasArguments;
+use sqlx::encode::IsNull;
+use sqlx::mysql::MySqlTypeInfo;
+use sqlx::MySql;
 use sqlx::MySqlPool;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::event::{SetTaxonomyParentEventPayload, SetTaxonomyTermEventPayload};
+
+use crate::database::Executor;
+use crate::event::{
+    CreateTaxonomyTermEventPayload, SetTaxonomyParentEventPayload, SetTaxonomyTermEventPayload,
+};
 use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
 use crate::{format_alias, operation};
 pub use messages::*;
 
 mod messages;
+
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum TaxonomyType {
+    Root, // Level 0
+
+    Blog, // below Root
+
+    ForumCategory, // below Root or ForumCategory
+    Forum,         // below ForumCategory
+
+    Subject, // below Root
+
+    Locale,                // below Subject or Locale
+    Curriculum,            // below Locale
+    CurriculumTopic,       // below Curriculum or CurriculumTopic
+    CurriculumTopicFolder, // below CurriculumTopic
+
+    Topic,       // below Subject or Topic
+    TopicFolder, // below Topic
+}
+
+impl std::str::FromStr for TaxonomyType {
+    type Err = serde_json::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_value(serde_json::value::Value::String(s.to_string()))
+    }
+}
+
+impl sqlx::Type<MySql> for TaxonomyType {
+    fn type_info() -> MySqlTypeInfo {
+        str::type_info()
+    }
+}
+impl<'q> sqlx::Encode<'q, MySql> for TaxonomyType {
+    fn encode_by_ref(&self, buf: &mut <MySql as HasArguments<'q>>::ArgumentBuffer) -> IsNull {
+        let decoded = serde_json::to_value(self).unwrap();
+        let decoded = decoded.as_str().unwrap();
+        decoded.encode_by_ref(buf)
+    }
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -241,6 +290,31 @@ impl TaxonomyTerm {
         typename.to_case(Case::Camel)
     }
 
+    async fn get_instance_id_of_parent<'a, E>(
+        parent_id: i32,
+        executor: E,
+    ) -> Result<i32, operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        Ok(sqlx::query!(
+            r#"
+                SELECT term.instance_id
+                    FROM term_taxonomy
+                    JOIN term
+                        ON term.id = term_taxonomy.term_id
+                    WHERE term_taxonomy.id = ?
+            "#,
+            parent_id
+        )
+        .fetch_optional(executor)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: format!("Taxonomy term with id {} does not exist", parent_id),
+        })?
+        .instance_id as i32)
+    }
+
     pub async fn set_name_and_description<'a, E>(
         payload: &taxonomy_term_set_name_and_description_mutation::Payload,
         executor: E,
@@ -308,25 +382,8 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
-        let new_parent_instance_id = sqlx::query!(
-            r#"
-                SELECT term.instance_id
-                    FROM term_taxonomy
-                    JOIN term
-                        ON term.id = term_taxonomy.term_id
-                    WHERE term_taxonomy.id = ?
-            "#,
-            payload.destination
-        )
-        .fetch_optional(&mut transaction)
-        .await?
-        .ok_or(operation::Error::BadRequest {
-            reason: format!(
-                "Taxonomy term with id {} does not exist",
-                payload.destination
-            ),
-        })?
-        .instance_id as i32;
+        let new_parent_instance_id =
+            Self::get_instance_id_of_parent(payload.destination, &mut transaction).await?;
 
         for child_id in &payload.children_ids {
             if *child_id == payload.destination {
@@ -404,5 +461,96 @@ impl TaxonomyTerm {
         transaction.commit().await?;
 
         Ok(())
+    }
+
+    pub async fn create<'a, E>(
+        payload: &taxonomy_term_create_mutation::Payload,
+        executor: E,
+    ) -> Result<Uuid, operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (trashed, discriminator)
+                    VALUES (0, "taxonomyTerm")
+            "#,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let taxonomy_term_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        let type_id = sqlx::query!(
+            r#"SELECT id FROM type WHERE name = ?"#,
+            payload.taxonomy_type
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .id as i32;
+
+        let instance_id =
+            Self::get_instance_id_of_parent(payload.parent_id, &mut transaction).await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO taxonomy (type_id, instance_id)
+                    VALUES (?, ?)
+            "#,
+            type_id,
+            instance_id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let taxonomy_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO term (name, instance_id)
+                    VALUES (?, ?)
+            "#,
+            payload.name,
+            instance_id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let term_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+            .fetch_one(&mut transaction)
+            .await?
+            .id as i32;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO term_taxonomy (id, term_id, taxonomy_id, parent_id, description)
+                    VALUES (?, ?, ?, ?, ?)
+            "#,
+            taxonomy_term_id,
+            term_id,
+            taxonomy_id,
+            payload.parent_id,
+            payload.description,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        CreateTaxonomyTermEventPayload::new(taxonomy_term_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
+
+        let taxonomy_term = Self::fetch_via_transaction(taxonomy_term_id, &mut transaction).await?;
+
+        transaction.commit().await?;
+
+        Ok(taxonomy_term)
     }
 }

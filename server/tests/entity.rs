@@ -428,7 +428,6 @@ mod add_revision_mutation {
 
 #[cfg(test)]
 mod create_mutation {
-    use assert_json_diff::assert_json_include;
     use test_utils::*;
 
     #[actix_rt::test]

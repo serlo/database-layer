@@ -1191,6 +1191,16 @@
     },
     "query": "update blog_post set author_id = ? where author_id = ?"
   },
+  "649f401fd7262aa959e1e5a8f1071d74a7315cce328cdbbce4ad1a4aec849820": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, \"taxonomyTerm\")\n            "
+  },
   "65c764b58fbe6ce246e2d35773b7af5ae8222e831f50b5791cfb8ed318d203d8": {
     "describe": {
       "columns": [],
@@ -2236,6 +2246,16 @@
     },
     "query": "update entity_revision set author_id = ? where author_id = ?"
   },
+  "b59a46d428d4becb6e149c8e61fa505f2a1144310abf8ad4c843c8915487126c": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                INSERT INTO taxonomy (type_id, instance_id)\n                    VALUES (?, ?)\n            "
+  },
   "b67a6cd1168e030043fc309da009c241d88b7543ce11598b7e183086dd2f5077": {
     "describe": {
       "columns": [
@@ -2492,6 +2512,16 @@
       }
     },
     "query": "update ad set author_id = ? where author_id = ?"
+  },
+  "c835eae74be0aed997f0866173e654539b14213b61fe175a6a081b0a9c0dc709": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "\n                INSERT INTO term_taxonomy (id, term_id, taxonomy_id, parent_id, description)\n                    VALUES (?, ?, ?, ?, ?)\n            "
   },
   "c8b4c137c46ca9c5a5df78a2f3aa679f9d7b528e086e16ac6d92a1fc4fd091da": {
     "describe": {
@@ -2944,6 +2974,16 @@
       }
     },
     "query": "\n                    INSERT INTO event_parameter_string (value, event_parameter_id)\n                        VALUES (?, ?)\n                "
+  },
+  "e736bceb5406d25408675dde70e9292e48eceeedc08c5d0469962c1b0c3d4b4b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                INSERT INTO term (name, instance_id)\n                    VALUES (?, ?)\n            "
   },
   "e9a80b5531000c8562bd2e7e3646216aa5ceb68730510d69dd17bce84ff8ea3f": {
     "describe": {

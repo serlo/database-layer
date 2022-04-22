@@ -105,6 +105,16 @@ async function exec(): Promise<void> {
         date: '2022-04-08',
         added: ['Add `AllThreadsQuery`', 'Add `UserDeleteRegularUserMutation`'],
       },
+      {
+        tagName: 'v0.3.36',
+        name: '0.3.36',
+        date: '2022-04-22',
+        added: [
+          'Add `TaxonomyCreateMutation` #207',
+          'Add `TaxonomyTermMoveMutation`',
+        ],
+        fixed: ['Fix 2h delay in saving events #205'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

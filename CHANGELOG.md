@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.36](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.35..v0.3.36) - April 22, 2022
+
+### Added
+
+- Add `TaxonomyCreateMutation` #207
+
+- Add `TaxonomyTermMoveMutation`
+
+### Fixed
+
+- Fix 2h delay in saving events #205
+
 ## [0.3.35](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.34..v0.3.35) - April 8, 2022
 
 ### Added

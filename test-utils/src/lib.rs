@@ -5,10 +5,12 @@ use convert_case::{Case, Casing};
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::{from_slice, from_value};
 pub use serde_json::{json, Value};
+use std::collections::HashMap;
 
 use server::create_database_pool;
 use server::database::Connection;
 use server::message::{Message as ServerMessage, MessageResponder};
+use server::uuid::abstract_entity_revision::EntityRevisionType;
 use server::uuid::TaxonomyType;
 use std::str::FromStr;
 
@@ -218,6 +220,108 @@ pub async fn assert_event_revision_ok(
         );
     })
     .await;
+}
+
+pub struct EntityRevisionTestWrapper<'a> {
+    pub typename: EntityRevisionType,
+    pub entity_id: i32,
+    pub query_fields: Option<HashMap<&'a str, &'a str>>,
+    own_field_keys: Vec<&'a str>,
+}
+
+impl EntityRevisionTestWrapper<'static> {
+    pub fn fields(&self) -> HashMap<&str, &str> {
+        let all_entity_fields: HashMap<&str, &str> = HashMap::from([
+            ("content", "test content"),
+            ("description", "test description"),
+            ("metaDescription", "test metaDescription"),
+            ("metaTitle", "test metaTitle"),
+            ("title", "test title"),
+            ("url", "test url"),
+            ("cohesive", "true"),
+        ]);
+
+        let mut fields = all_entity_fields.clone();
+        fields.retain(|key, _| self.own_field_keys.contains(key));
+        fields
+    }
+
+    pub fn all() -> [Self; 10] {
+        [
+            EntityRevisionTestWrapper {
+                typename: EntityRevisionType::Applet,
+                entity_id: 35596,
+                own_field_keys: vec!["content", "title", "metaTitle", "metDescription", "url"],
+                query_fields: None,
+            },
+            EntityRevisionTestWrapper {
+                typename: EntityRevisionType::Article,
+                entity_id: 1503,
+                own_field_keys: vec!["content", "title", "metaTitle", "metDescription"],
+                query_fields: None,
+            },
+            EntityRevisionTestWrapper {
+                typename: EntityRevisionType::Course,
+                entity_id: 18275,
+                own_field_keys: vec!["description", "title", "metaDescription"],
+                query_fields: Some(HashMap::from([
+                    ("content", "test description"),
+                    ("metaDescription", "test metaDescription"),
+                    ("title", "test title"),
+                ])),
+            },
+            EntityRevisionTestWrapper {
+                typename: EntityRevisionType::CoursePage,
+                entity_id: 18521,
+                own_field_keys: vec!["content", "title"],
+                query_fields: None,
+            },
+            EntityRevisionTestWrapper {
+                typename: EntityRevisionType::Event,
+                entity_id: 35554,
+                own_field_keys: vec!["content", "title", "metaTitle", "metDescription"],
+                query_fields: None,
+            },
+            EntityRevisionTestWrapper {
+                typename: EntityRevisionType::Exercise,
+                entity_id: 2327,
+                own_field_keys: vec!["content"],
+                query_fields: None,
+            },
+            EntityRevisionTestWrapper {
+                typename: EntityRevisionType::ExerciseGroup,
+                entity_id: 2217,
+                own_field_keys: vec!["content", "cohesive"],
+                query_fields: Some(HashMap::from([
+                    ("content", "test content"),
+                    // TODO: missing test due mismatch type
+                    // ("cohesive", true),
+                ])),
+            },
+            EntityRevisionTestWrapper {
+                typename: EntityRevisionType::GroupedExercise,
+                entity_id: 2219,
+                own_field_keys: vec!["content"],
+                query_fields: None,
+            },
+            EntityRevisionTestWrapper {
+                typename: EntityRevisionType::Solution,
+                entity_id: 2221,
+                own_field_keys: vec!["content"],
+                query_fields: None,
+            },
+            EntityRevisionTestWrapper {
+                typename: EntityRevisionType::Video,
+                entity_id: 16078,
+                own_field_keys: vec!["content", "title", "description"],
+                query_fields: Some(HashMap::from([
+                    ("url", "test content"),
+                    ("content", "test description"),
+                    ("title", "test title"),
+                ])),
+            },
+        ]
+    }
 }
 
 fn random_string(nr: usize) -> String {

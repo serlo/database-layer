@@ -18,412 +18,53 @@ mod unrevised_entities_query {
 
 #[cfg(test)]
 mod add_revision_mutation {
-    use server::uuid::abstract_entity_revision::EntityRevisionType;
     use test_utils::*;
 
     #[actix_rt::test]
-    async fn adds_applet_revision() {
-        let mut transaction = begin_transaction().await;
+    async fn adds_revision() {
+        for revision in EntityRevisionTestWrapper::all().iter() {
+            let mut transaction = begin_transaction().await;
 
-        let mutation_response = Message::new(
-            "EntityAddRevisionMutation",
-            json!({
-                "revisionType": EntityRevisionType::Applet,
-                "input": {
-                    "changes": "test changes",
-                    "entityId": 35596,
-                    "needsReview": true,
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "fields": {
-                        "content": "test content",
-                        "metaDescription": "test metaDescription",
-                        "metaTitle": "test metaTitle",
-                        "title": "test title",
-                        "url": "test url",
+            let mutation_response = Message::new(
+                "EntityAddRevisionMutation",
+                json!({
+                    "revisionType": revision.typename,
+                    "input": {
+                        "changes": "test changes",
+                        "entityId": revision.entity_id,
+                        "needsReview": true,
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "fields": revision.fields()
                     },
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        let revision_id = get_json(mutation_response).await["revisionId"].clone();
-
-        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
+                    "userId": 1,
+                }),
+            )
             .execute_on(&mut transaction)
             .await;
 
-        assert_ok_with(query_response, |result| {
-            assert_eq!(result["changes"], "test changes");
-            assert_eq!(result["content"], "test content");
-            assert_eq!(result["metaTitle"], "test metaTitle");
-            assert_eq!(result["metaDescription"], "test metaDescription");
-            assert_eq!(result["title"], "test title");
-            assert_eq!(result["url"], "test url");
-        })
-        .await;
+            let revision_id = get_json(mutation_response).await["revisionId"].clone();
 
-        assert_event_revision_ok(revision_id, 35596, &mut transaction).await;
-    }
+            let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
+                .execute_on(&mut transaction)
+                .await;
 
-    #[actix_rt::test]
-    async fn adds_article_revision() {
-        let mut transaction = begin_transaction().await;
+            assert_ok_with(query_response, |result| {
+                assert_eq!(result["changes"], "test changes");
+                if revision.query_fields.is_some() {
+                    for (key, value) in revision.query_fields.clone().unwrap() {
+                        assert_eq!(result[key], value);
+                    }
+                } else {
+                    for (key, value) in revision.fields() {
+                        assert_eq!(result[key], value);
+                    }
+                }
+            })
+            .await;
 
-        let mutation_response = Message::new(
-            "EntityAddRevisionMutation",
-            json!({
-                "revisionType": EntityRevisionType::Article,
-                "input": {
-                    "changes": "test changes",
-                    "entityId": 1503,
-                    "needsReview": true,
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "fields": {
-                        "content": "test content",
-                        "metaDescription": "test metaDescription",
-                        "metaTitle": "test metaTitle",
-                        "title": "test title",
-                    },
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        let query_response = Message::new(
-            "UuidQuery",
-            json!({"id": get_json(mutation_response).await["revisionId"]}),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        assert_ok_with(query_response, |result| {
-            assert_eq!(result["changes"], "test changes");
-            assert_eq!(result["content"], "test content");
-            assert_eq!(result["metaTitle"], "test metaTitle");
-            assert_eq!(result["metaDescription"], "test metaDescription");
-            assert_eq!(result["title"], "test title");
-        })
-        .await;
-    }
-    #[actix_rt::test]
-    async fn adds_course_revision() {
-        let mut transaction = begin_transaction().await;
-
-        let mutation_response = Message::new(
-            "EntityAddRevisionMutation",
-            json!({
-                "revisionType": EntityRevisionType::Course,
-                "input": {
-                    "changes": "test changes",
-                    "entityId": 18275,
-                    "needsReview": true,
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "fields": {
-                        "description": "test description",
-                        "metaDescription": "test metaDescription",
-                        "title": "test title",
-                    },
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        let query_response = Message::new(
-            "UuidQuery",
-            json!({"id": get_json(mutation_response).await["revisionId"]}),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        assert_ok_with(query_response, |result| {
-            assert_eq!(result["changes"], "test changes");
-            assert_eq!(result["content"], "test description");
-            assert_eq!(result["metaDescription"], "test metaDescription");
-            assert_eq!(result["title"], "test title");
-        })
-        .await;
-    }
-    #[actix_rt::test]
-    async fn adds_course_page_revision() {
-        let mut transaction = begin_transaction().await;
-
-        let mutation_response = Message::new(
-            "EntityAddRevisionMutation",
-            json!({
-                "revisionType": EntityRevisionType::CoursePage,
-                "input": {
-                    "changes": "test changes",
-                    "entityId": 18521,
-                    "needsReview": true,
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "fields": {
-                        "content": "test content",
-                        "title": "test title",
-                    },
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        let query_response = Message::new(
-            "UuidQuery",
-            json!({"id": get_json(mutation_response).await["revisionId"]}),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        assert_ok_with(query_response, |result| {
-            assert_eq!(result["changes"], "test changes");
-            assert_eq!(result["content"], "test content");
-            assert_eq!(result["title"], "test title");
-        })
-        .await;
-    }
-    #[actix_rt::test]
-    async fn adds_event_revision() {
-        let mut transaction = begin_transaction().await;
-
-        let mutation_response = Message::new(
-            "EntityAddRevisionMutation",
-            json!({
-                "revisionType": EntityRevisionType::Event,
-                "input": {
-                    "changes": "test changes",
-                    "entityId": 35554,
-                    "needsReview": true,
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "fields": {
-                        "content": "test content",
-                        "metaDescription": "test metaDescription",
-                        "metaTitle": "test metaTitle",
-                        "title": "test title",
-                    },
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        let query_response = Message::new(
-            "UuidQuery",
-            json!({"id": get_json(mutation_response).await["revisionId"]}),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        assert_ok_with(query_response, |result| {
-            assert_eq!(result["changes"], "test changes");
-            assert_eq!(result["content"], "test content");
-            assert_eq!(result["metaTitle"], "test metaTitle");
-            assert_eq!(result["metaDescription"], "test metaDescription");
-            assert_eq!(result["title"], "test title");
-        })
-        .await;
-    }
-    #[actix_rt::test]
-    async fn adds_exercise_revision() {
-        let mut transaction = begin_transaction().await;
-
-        let mutation_response = Message::new(
-            "EntityAddRevisionMutation",
-            json!({
-                "revisionType": EntityRevisionType::Exercise,
-                "input": {
-                    "changes": "test changes",
-                    "entityId": 2327,
-                    "needsReview": true,
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "fields": {
-                        "content": "test content",
-                    },
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        let query_response = Message::new(
-            "UuidQuery",
-            json!({"id": get_json(mutation_response).await["revisionId"]}),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        assert_ok_with(query_response, |result| {
-            assert_eq!(result["changes"], "test changes");
-            assert_eq!(result["content"], "test content");
-        })
-        .await;
-    }
-    #[actix_rt::test]
-    async fn adds_exercise_group_revision() {
-        let mut transaction = begin_transaction().await;
-
-        let mutation_response = Message::new(
-            "EntityAddRevisionMutation",
-            json!({
-                "revisionType": EntityRevisionType::ExerciseGroup,
-                "input": {
-                    "changes": "test changes",
-                    "entityId": 2217,
-                    "needsReview": true,
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "fields": {
-                        "content": "test content",
-                        "cohesive": "true",
-                    },
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        let query_response = Message::new(
-            "UuidQuery",
-            json!({"id": get_json(mutation_response).await["revisionId"]}),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        assert_ok_with(query_response, |result| {
-            assert_eq!(result["changes"], "test changes");
-            assert_eq!(result["content"], "test content");
-            assert_eq!(result["cohesive"], true);
-        })
-        .await;
-    }
-    #[actix_rt::test]
-    async fn adds_grouped_exercise_revision() {
-        let mut transaction = begin_transaction().await;
-
-        let mutation_response = Message::new(
-            "EntityAddRevisionMutation",
-            json!({
-                "revisionType": EntityRevisionType::GroupedExercise,
-                "input": {
-                    "changes": "test changes",
-                    "entityId": 2219,
-                    "needsReview": true,
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "fields": {
-                        "content": "test content",
-                    },
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        let query_response = Message::new(
-            "UuidQuery",
-            json!({"id": get_json(mutation_response).await["revisionId"]}),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        assert_ok_with(query_response, |result| {
-            assert_eq!(result["changes"], "test changes");
-            assert_eq!(result["content"], "test content");
-        })
-        .await;
-    }
-    #[actix_rt::test]
-    async fn adds_solution_revision() {
-        let mut transaction = begin_transaction().await;
-
-        let mutation_response = Message::new(
-            "EntityAddRevisionMutation",
-            json!({
-                "revisionType": EntityRevisionType::Solution,
-                "input": {
-                    "changes": "test changes",
-                    "entityId": 2221,
-                    "needsReview": true,
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "fields": {
-                        "content": "test content",
-                    },
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        let query_response = Message::new(
-            "UuidQuery",
-            json!({"id": get_json(mutation_response).await["revisionId"]}),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        assert_ok_with(query_response, |result| {
-            assert_eq!(result["changes"], "test changes");
-            assert_eq!(result["content"], "test content");
-        })
-        .await;
-    }
-    #[actix_rt::test]
-    async fn adds_video_revision() {
-        let mut transaction = begin_transaction().await;
-
-        let mutation_response = Message::new(
-            "EntityAddRevisionMutation",
-            json!({
-                "revisionType": EntityRevisionType::Video,
-                "input": {
-                    "changes": "test changes",
-                    "entityId": 16078,
-                    "needsReview": true,
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "fields": {
-                        "content": "test content",
-                        "description": "test description",
-                        "title": "test title",
-                    },
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        let query_response = Message::new(
-            "UuidQuery",
-            json!({"id": get_json(mutation_response).await["revisionId"]}),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        assert_ok_with(query_response, |result| {
-            assert_eq!(result["changes"], "test changes");
-            assert_eq!(result["url"], "test content");
-            assert_eq!(result["content"], "test description");
-            assert_eq!(result["title"], "test title");
-        })
-        .await;
+            assert_event_revision_ok(revision_id, revision.entity_id, &mut transaction).await;
+        }
     }
 }
 

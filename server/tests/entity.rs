@@ -49,12 +49,11 @@ mod add_revision_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        let query_response = Message::new(
-            "UuidQuery",
-            json!({"id": get_json(mutation_response).await["revisionId"]}),
-        )
-        .execute_on(&mut transaction)
-        .await;
+        let revision_id = get_json(mutation_response).await["revisionId"].clone();
+
+        let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
+            .execute_on(&mut transaction)
+            .await;
 
         assert_ok_with(query_response, |result| {
             assert_eq!(result["changes"], "test changes");
@@ -65,6 +64,8 @@ mod add_revision_mutation {
             assert_eq!(result["url"], "test url");
         })
         .await;
+
+        assert_event_revision_ok(revision_id, 35596, &mut transaction).await;
     }
 
     #[actix_rt::test]

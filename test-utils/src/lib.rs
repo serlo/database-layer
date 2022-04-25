@@ -193,6 +193,33 @@ pub fn from_value_to_taxonomy_type(value: Value) -> TaxonomyType {
 pub const ALLOWED_TAXONOMY_TYPES_CREATE: [TaxonomyType; 2] =
     [TaxonomyType::Topic, TaxonomyType::TopicFolder];
 
+pub async fn assert_event_revision_ok(
+    revision_id: Value,
+    entity_id: i32,
+    executor: &mut sqlx::Transaction<'_, sqlx::MySql>,
+) {
+    let events_response = Message::new(
+        "EventsQuery",
+        json!({ "first": 1, "objectId": revision_id }),
+    )
+    .execute_on(executor)
+    .await;
+
+    assert_ok_with(events_response, |result| {
+        assert_json_include!(
+            actual: &result["events"][0],
+            expected: json!({
+                "__typename": "CreateEntityRevisionNotificationEvent",
+                "objectId": revision_id,
+                "entityId": entity_id,
+                "entityRevisionId": revision_id
+
+            })
+        );
+    })
+    .await;
+}
+
 fn random_string(nr: usize) -> String {
     rand::thread_rng()
         .sample_iter(&Alphanumeric)

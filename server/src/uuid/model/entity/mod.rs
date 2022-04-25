@@ -479,6 +479,7 @@ impl Entity {
 
         CreateEntityRevisionEventPayload::new(
             payload.input.entity_id,
+            entity_revision.id,
             payload.user_id,
             instance_id,
         )

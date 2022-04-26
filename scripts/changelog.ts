@@ -115,6 +115,12 @@ async function exec(): Promise<void> {
         ],
         fixed: ['Fix 2h delay in saving events #205'],
       },
+      {
+        tagName: 'v0.3.37',
+        name: '0.3.37',
+        date: '2022-04-26',
+        fixed: ['Fix in saving CreateEntityRevisionEvents #218'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

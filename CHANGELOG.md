@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.37](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.36..v0.3.37) - April 26, 2022
+
+### Fixed
+
+- Fix in saving CreateEntityRevisionEvents #218
+
 ## [0.3.36](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.35..v0.3.36) - April 22, 2022
 
 ### Added

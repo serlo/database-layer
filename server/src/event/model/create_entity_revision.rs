@@ -32,15 +32,17 @@ pub struct CreateEntityRevisionEventPayload {
     actor_id: i32,
     instance_id: i32,
     entity_id: i32,
+    entity_revision_id: i32,
 }
 
 impl CreateEntityRevisionEventPayload {
-    pub fn new(entity_id: i32, actor_id: i32, instance_id: i32) -> Self {
+    pub fn new(entity_id: i32, entity_revision_id: i32, actor_id: i32, instance_id: i32) -> Self {
         Self {
             raw_typename: RawEventType::CreateEntityRevision,
             actor_id,
             instance_id,
             entity_id,
+            entity_revision_id,
         }
     }
 
@@ -51,7 +53,7 @@ impl CreateEntityRevisionEventPayload {
         EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
-            self.entity_id,
+            self.entity_revision_id,
             self.instance_id,
             HashMap::new(),
             [("repository".to_string(), self.entity_id)]

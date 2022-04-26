@@ -236,9 +236,14 @@ impl Page {
         .await?
         .instance_id as i32;
 
-        CreateEntityRevisionEventPayload::new(payload.page_id, payload.user_id, instance_id)
-            .save(&mut transaction)
-            .await?;
+        CreateEntityRevisionEventPayload::new(
+            payload.page_id,
+            page_revision_id,
+            payload.user_id,
+            instance_id,
+        )
+        .save(&mut transaction)
+        .await?;
 
         Page::checkout_revision(
             PageCheckoutRevisionPayload {

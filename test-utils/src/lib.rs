@@ -1,10 +1,12 @@
 use actix_web::body::to_bytes;
 use actix_web::HttpResponse;
 pub use assert_json_diff::assert_json_include;
+use convert_case::{Case, Casing};
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::{from_slice, from_value};
 pub use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use server::create_database_pool;
 use server::database::Connection;
@@ -185,11 +187,13 @@ pub async fn set_entity_revision_field<'a>(
 }
 
 pub fn from_value_to_taxonomy_type(value: Value) -> TaxonomyType {
-    serde_json::from_value(value).unwrap()
+    let type_camel_case = value.as_str().unwrap();
+    let type_kebab_case = type_camel_case.to_case(Case::Kebab);
+    TaxonomyType::from_str(type_kebab_case.as_str()).unwrap()
 }
 
 pub fn from_value_to_entity_type(value: Value) -> EntityType {
-    serde_json::from_value(value).unwrap()
+    from_value(value).unwrap()
 }
 
 pub const ALLOWED_TAXONOMY_TYPES_CREATE: [TaxonomyType; 2] =

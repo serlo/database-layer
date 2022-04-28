@@ -1,7 +1,6 @@
 use actix_web::body::to_bytes;
 use actix_web::HttpResponse;
 pub use assert_json_diff::assert_json_include;
-use convert_case::{Case, Casing};
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::{from_slice, from_value};
 pub use serde_json::{json, Value};
@@ -11,8 +10,7 @@ use server::create_database_pool;
 use server::database::Connection;
 use server::message::{Message as ServerMessage, MessageResponder};
 use server::uuid::abstract_entity_revision::EntityRevisionType;
-use server::uuid::TaxonomyType;
-use std::str::FromStr;
+use server::uuid::{EntityType, TaxonomyType};
 
 pub struct Message<'a> {
     message_type: &'a str,
@@ -187,9 +185,11 @@ pub async fn set_entity_revision_field<'a>(
 }
 
 pub fn from_value_to_taxonomy_type(value: Value) -> TaxonomyType {
-    let type_camel_case = value.as_str().unwrap();
-    let type_kebab_case = type_camel_case.to_case(Case::Kebab);
-    TaxonomyType::from_str(type_kebab_case.as_str()).unwrap()
+    serde_json::from_value(value).unwrap()
+}
+
+pub fn from_value_to_entity_type(value: Value) -> EntityType {
+    serde_json::from_value(value).unwrap()
 }
 
 pub const ALLOWED_TAXONOMY_TYPES_CREATE: [TaxonomyType; 2] =
@@ -222,14 +222,17 @@ pub async fn assert_event_revision_ok(
     .await;
 }
 
-pub struct EntityRevisionTestWrapper<'a> {
-    pub typename: EntityRevisionType,
+pub struct EntityTestWrapper<'a> {
+    pub revision_type: EntityRevisionType,
+    pub typename: EntityType,
     pub entity_id: i32,
+    pub parent_id: Option<i32>,
+    pub taxonomy_term_id: Option<i32>,
     pub query_fields: Option<HashMap<&'a str, &'a str>>,
     own_field_keys: Vec<&'a str>,
 }
 
-impl EntityRevisionTestWrapper<'static> {
+impl EntityTestWrapper<'static> {
     pub fn fields(&self) -> HashMap<&str, &str> {
         let all_entity_fields: HashMap<&str, &str> = HashMap::from([
             ("content", "test content"),
@@ -248,77 +251,107 @@ impl EntityRevisionTestWrapper<'static> {
 
     pub fn all() -> [Self; 10] {
         [
-            EntityRevisionTestWrapper {
-                typename: EntityRevisionType::Applet,
+            EntityTestWrapper {
+                revision_type: EntityRevisionType::Applet,
+                typename: EntityType::Applet,
                 entity_id: 35596,
+                parent_id: None,
                 own_field_keys: vec!["content", "title", "metaTitle", "metDescription", "url"],
                 query_fields: None,
+                taxonomy_term_id: Some(7),
             },
-            EntityRevisionTestWrapper {
-                typename: EntityRevisionType::Article,
+            EntityTestWrapper {
+                revision_type: EntityRevisionType::Article,
+                typename: EntityType::Article,
                 entity_id: 1503,
+                parent_id: None,
                 own_field_keys: vec!["content", "title", "metaTitle", "metDescription"],
                 query_fields: None,
+                taxonomy_term_id: Some(7),
             },
-            EntityRevisionTestWrapper {
-                typename: EntityRevisionType::Course,
+            EntityTestWrapper {
+                revision_type: EntityRevisionType::Course,
+                typename: EntityType::Course,
                 entity_id: 18275,
+                parent_id: None,
                 own_field_keys: vec!["description", "title", "metaDescription"],
                 query_fields: Some(HashMap::from([
                     ("content", "test description"),
                     ("metaDescription", "test metaDescription"),
                     ("title", "test title"),
                 ])),
+                taxonomy_term_id: Some(7),
             },
-            EntityRevisionTestWrapper {
-                typename: EntityRevisionType::CoursePage,
+            EntityTestWrapper {
+                revision_type: EntityRevisionType::CoursePage,
+                typename: EntityType::CoursePage,
                 entity_id: 18521,
+                parent_id: Some(18514),
                 own_field_keys: vec!["content", "title"],
                 query_fields: None,
+                taxonomy_term_id: None,
             },
-            EntityRevisionTestWrapper {
-                typename: EntityRevisionType::Event,
+            EntityTestWrapper {
+                revision_type: EntityRevisionType::Event,
+                typename: EntityType::Event,
                 entity_id: 35554,
+                parent_id: None,
                 own_field_keys: vec!["content", "title", "metaTitle", "metDescription"],
                 query_fields: None,
+                taxonomy_term_id: Some(7),
             },
-            EntityRevisionTestWrapper {
-                typename: EntityRevisionType::Exercise,
+            EntityTestWrapper {
+                revision_type: EntityRevisionType::Exercise,
+                typename: EntityType::Exercise,
                 entity_id: 2327,
+                parent_id: None,
                 own_field_keys: vec!["content"],
                 query_fields: None,
+                taxonomy_term_id: Some(7),
             },
-            EntityRevisionTestWrapper {
-                typename: EntityRevisionType::ExerciseGroup,
+            EntityTestWrapper {
+                revision_type: EntityRevisionType::ExerciseGroup,
+                typename: EntityType::ExerciseGroup,
                 entity_id: 2217,
+                parent_id: None,
                 own_field_keys: vec!["content", "cohesive"],
                 query_fields: Some(HashMap::from([
                     ("content", "test content"),
-                    // TODO: missing test due mismatch type
+                    // TODO: missing test due to mismatch type
                     // ("cohesive", true),
                 ])),
+                taxonomy_term_id: Some(7),
             },
-            EntityRevisionTestWrapper {
-                typename: EntityRevisionType::GroupedExercise,
+            EntityTestWrapper {
+                revision_type: EntityRevisionType::GroupedExercise,
+                typename: EntityType::GroupedExercise,
                 entity_id: 2219,
+                parent_id: Some(2217),
                 own_field_keys: vec!["content"],
                 query_fields: None,
+                taxonomy_term_id: None,
             },
-            EntityRevisionTestWrapper {
-                typename: EntityRevisionType::Solution,
+            EntityTestWrapper {
+                revision_type: EntityRevisionType::Solution,
+                typename: EntityType::Solution,
                 entity_id: 2221,
+                parent_id: Some(2219),
                 own_field_keys: vec!["content"],
                 query_fields: None,
+                taxonomy_term_id: None,
             },
-            EntityRevisionTestWrapper {
-                typename: EntityRevisionType::Video,
+            EntityTestWrapper {
+                revision_type: EntityRevisionType::Video,
+                typename: EntityType::Video,
                 entity_id: 16078,
+                parent_id: None,
                 own_field_keys: vec!["content", "title", "description"],
                 query_fields: Some(HashMap::from([
                     ("url", "test content"),
                     ("content", "test description"),
                     ("title", "test title"),
                 ])),
+                taxonomy_term_id: Some(7),
             },
         ]
     }

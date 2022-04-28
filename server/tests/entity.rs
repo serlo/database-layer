@@ -70,6 +70,7 @@ mod add_revision_mutation {
 
 #[cfg(test)]
 mod create_mutation {
+    use server::uuid::EntityType;
     use test_utils::*;
 
     #[actix_rt::test]
@@ -164,6 +165,63 @@ mod create_mutation {
                         "entityId": new_entity_id
                     })
                 );
+            })
+            .await;
+        }
+    }
+
+    #[actix_rt::test]
+    async fn puts_newly_created_entity_as_last_sibling() {
+        for entity in EntityTestWrapper::all().iter() {
+            let mut transaction = begin_transaction().await;
+
+            let mutation_response = Message::new(
+                "EntityCreateMutation",
+                json!({
+                    "entityType": entity.typename,
+                    "input": {
+                        "changes": "test changes",
+                        "instance": "de",
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "licenseId": 1,
+                        "taxonomyTermId": entity.taxonomy_term_id,
+                        "parentId": entity.parent_id,
+                        "needsReview": true,
+                        "fields": entity.fields(),
+                    },
+                    "userId": 1,
+                }),
+            )
+            .execute_on(&mut transaction)
+            .await;
+
+            let new_entity_id = get_json(mutation_response).await["id"].clone();
+
+            let query_response = match entity.taxonomy_term_id {
+                Some(taxonomy_term_id) => {
+                    Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
+                        .execute_on(&mut transaction)
+                        .await
+                }
+                None => {
+                    Message::new("UuidQuery", json!({ "id": entity.parent_id }))
+                        .execute_on(&mut transaction)
+                        .await
+                }
+            };
+
+            let children_ids_name = match entity.typename {
+                EntityType::CoursePage => "pageIds",
+                EntityType::GroupedExercise => "exerciseIds",
+                EntityType::Solution => return,
+                _ => "childrenIds",
+            };
+
+            assert_ok_with(query_response, |result| {
+                let children_ids_value = result[children_ids_name].clone();
+                let children_ids = children_ids_value.as_array().unwrap();
+                assert_eq!(children_ids[children_ids.len() - 1], new_entity_id);
             })
             .await;
         }

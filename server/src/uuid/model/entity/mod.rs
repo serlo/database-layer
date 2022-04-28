@@ -568,13 +568,27 @@ impl Entity {
                     reason: "parent_id needs to be provided".to_string(),
                 })?;
 
-            sqlx::query!(
+            let last_order = sqlx::query!(
                 r#"
-                    INSERT INTO entity_link (parent_id, child_id, type_id)
-                    VALUES (?, ?, 9)
+                    SELECT IFNULL(MAX(et.order), 0) AS current_last
+                        FROM entity_link et
+                        WHERE et.parent_id = ?
                 "#,
                 parent_id,
-                entity_id
+            )
+            .fetch_one(&mut transaction)
+            .await?
+            .current_last as i32
+                + 1;
+
+            sqlx::query!(
+                r#"
+                    INSERT INTO entity_link (parent_id, child_id, type_id, entity_link.order)
+                    VALUES (?, ?, 9, ?)
+                "#,
+                parent_id,
+                entity_id,
+                last_order
             )
             .execute(&mut transaction)
             .await?;
@@ -596,19 +610,18 @@ impl Entity {
                         reason: "taxonomy_term_id needs to be provided".to_string(),
                     })?;
 
-            let new_position = sqlx::query!(
+            let last_position = sqlx::query!(
                 r#"
-                    SELECT position FROM term_taxonomy_entity
-                    WHERE term_taxonomy_id = ?
-                    ORDER BY position DESC
-                    LIMIT 1
+                    SELECT IFNULL(MAX(position), 0) AS current_last
+                        FROM term_taxonomy_entity
+                        WHERE term_taxonomy_id = ?
                 "#,
                 taxonomy_term_id
             )
-            .fetch_optional(&mut transaction)
+            .fetch_one(&mut transaction)
             .await?
-            .map(|result| result.position as i32 + 1)
-            .unwrap_or(0);
+            .current_last as i32
+                + 1;
 
             sqlx::query!(
                 r#"
@@ -617,7 +630,7 @@ impl Entity {
                 "#,
                 entity_id,
                 taxonomy_term_id,
-                new_position
+                last_position
             )
             .execute(&mut transaction)
             .await?;

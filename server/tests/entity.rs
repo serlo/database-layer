@@ -198,25 +198,22 @@ mod create_mutation {
 
             let new_entity_id = get_json(mutation_response).await["id"].clone();
 
-            let query_response = match entity.taxonomy_term_id {
-                Some(taxonomy_term_id) => {
-                    Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
-                        .execute_on(&mut transaction)
-                        .await
-                }
-                None => {
-                    Message::new("UuidQuery", json!({ "id": entity.parent_id }))
-                        .execute_on(&mut transaction)
-                        .await
-                }
+            let parent_element_id = match entity.taxonomy_term_id {
+                Some(taxonomy_term_id) => taxonomy_term_id,
+                None => entity.parent_id.unwrap(),
             };
 
             let children_ids_name = match entity.typename {
                 EntityType::CoursePage => "pageIds",
                 EntityType::GroupedExercise => "exerciseIds",
-                EntityType::Solution => return,
+                // The parent of solution, exercise group, doesn't have an array of solutions, just one
+                EntityType::Solution => continue,
                 _ => "childrenIds",
             };
+
+            let query_response = Message::new("UuidQuery", json!({ "id": parent_element_id }))
+                .execute_on(&mut transaction)
+                .await;
 
             assert_ok_with(query_response, |result| {
                 let children_ids_value = result[children_ids_name].clone();

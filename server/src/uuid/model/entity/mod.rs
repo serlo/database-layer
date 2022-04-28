@@ -546,7 +546,7 @@ impl Entity {
                 input: entity_add_revision_mutation::Input {
                     changes: payload.input.changes.clone(),
                     entity_id,
-                    needs_review: false,
+                    needs_review: payload.input.needs_review,
                     subscribe_this: payload.input.subscribe_this,
                     subscribe_this_by_email: payload.input.subscribe_this_by_email,
                     fields: payload.input.fields.clone(),

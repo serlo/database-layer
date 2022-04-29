@@ -573,6 +573,27 @@ impl TaxonomyTerm {
         for child_id in payload.entity_ids.clone() {
             Entity::check_entity_exists(child_id, &mut transaction).await?;
 
+            let child_instance_id = sqlx::query!(
+                r#"
+                    SELECT instance_id
+                        FROM entity
+                        WHERE id = ?
+                "#,
+                child_id
+            )
+            .fetch_one(&mut transaction)
+            .await?
+            .instance_id as i32;
+
+            if instance_id != child_instance_id {
+                return Err(operation::Error::BadRequest {
+                    reason: format!(
+                        "Entity {} and taxonomy term {} are not in the same instance",
+                        child_id, payload.taxonomy_term_id
+                    ),
+                });
+            }
+
             let last_position = sqlx::query!(
                 r#"
                     SELECT IFNULL(MAX(position), 0) AS current_last

@@ -381,4 +381,29 @@ mod create_entity_link_mutation {
 
         assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
     }
+
+    #[actix_rt::test]
+    async fn fails_if_parent_and_child_are_in_different_instances() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [2059, 28952];
+        let taxonomy_term_id = 7;
+
+        let response = Message::new(
+            "TaxonomyCreateEntityLinkMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(
+            response,
+            "Entity 28952 and taxonomy term 7 are not in the same instance",
+        )
+        .await;
+    }
 }

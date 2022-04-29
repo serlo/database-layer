@@ -17,6 +17,7 @@ use crate::event::{
 };
 use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
+use crate::uuid::Entity;
 use crate::{format_alias, operation};
 pub use messages::*;
 
@@ -568,6 +569,8 @@ impl TaxonomyTerm {
             Self::get_instance_id_of_parent(payload.taxonomy_term_id, &mut transaction).await?;
 
         for child_id in payload.entity_ids.clone() {
+            Entity::check_entity_exists(child_id, &mut transaction).await?;
+
             let last_position = sqlx::query!(
                 r#"
                     SELECT IFNULL(MAX(position), 0) AS current_last

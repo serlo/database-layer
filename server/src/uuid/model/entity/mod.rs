@@ -424,13 +424,7 @@ impl Entity {
     {
         let mut transaction = executor.begin().await?;
 
-        if let Err(UuidError::NotFound) =
-            Entity::fetch_via_transaction(payload.input.entity_id, &mut transaction).await
-        {
-            return Err(operation::Error::BadRequest {
-                reason: "entity with entity_id does not exist".to_string(),
-            });
-        }
+        Self::check_entity_exists(payload.input.entity_id, &mut transaction).await?;
 
         let entity_revision = EntityRevisionPayload::new(
             payload.user_id,
@@ -490,9 +484,22 @@ impl Entity {
 
         Ok(entity_revision)
     }
-}
 
-impl Entity {
+    pub async fn check_entity_exists<'a, E>(id: i32, executor: E) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        if let Err(UuidError::DatabaseError {
+            inner: sqlx::Error::RowNotFound,
+        }) = Self::fetch_via_transaction(id, executor).await
+        {
+            return Err(operation::Error::BadRequest {
+                reason: format!("Entity with id {} does not exist", id),
+            });
+        }
+        Ok(())
+    }
+
     pub async fn create<'a, E>(
         payload: &entity_create_mutation::Payload,
         executor: E,
@@ -940,71 +947,6 @@ mod tests {
     async fn add_revision() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
-
-        Entity::add_revision(
-            &entity_add_revision_mutation::Payload {
-                input: entity_add_revision_mutation::Input {
-                    changes: "test changes".to_string(),
-                    entity_id: 1495,
-                    needs_review: true,
-                    subscribe_this: false,
-                    subscribe_this_by_email: false,
-                    fields: HashMap::from([
-                        ("content".to_string(), "test content".to_string()),
-                        (
-                            "meta_description".to_string(),
-                            "test meta-description".to_string(),
-                        ),
-                        ("meta_title".to_string(), "test meta-title".to_string()),
-                        ("title".to_string(), "test title".to_string()),
-                    ]),
-                },
-                revision_type: EntityRevisionType::Article,
-                user_id: 1,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let revision = EntityRevision::fetch_via_transaction(revision_id, &mut transaction)
-            .await
-            .unwrap();
-
-        if let ConcreteUuid::EntityRevision(EntityRevision {
-            abstract_entity_revision,
-            ..
-        }) = revision.concrete_uuid
-        {
-            assert_eq!(abstract_entity_revision.changes, "test changes".to_string());
-            assert_eq!(
-                abstract_entity_revision.fields.0["title"],
-                "test title".to_string()
-            );
-            assert_eq!(
-                abstract_entity_revision.fields.0["content"],
-                "test content".to_string()
-            );
-            assert_eq!(
-                abstract_entity_revision.fields.0["meta_description"],
-                "test meta-description".to_string()
-            );
-            assert_eq!(
-                abstract_entity_revision.fields.0["meta_title"],
-                "test meta-title".to_string()
-            );
-        } else {
-            panic!(
-                "Entity Revision does not fulfill assertions: {:?}",
-                revision
-            )
-        }
     }
 
     #[actix_rt::test]

@@ -5,6 +5,7 @@ use actix_web::web::Data;
 use actix_web::App;
 use dotenv::dotenv;
 use regex::Regex;
+use serde::Serialize;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use sqlx::pool::Pool;
 use sqlx::{MySql, MySqlPool};
@@ -106,6 +107,11 @@ impl From<sqlx::Error> for ApplicationError {
     fn from(inner: sqlx::Error) -> Self {
         Self::DatabaseError { inner }
     }
+}
+
+#[derive(Serialize)]
+pub struct SuccessOutput {
+    success: bool,
 }
 
 #[cfg(test)]

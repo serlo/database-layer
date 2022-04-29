@@ -12,7 +12,8 @@ use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 
 use crate::database::Executor;
 use crate::event::{
-    CreateTaxonomyTermEventPayload, SetTaxonomyParentEventPayload, SetTaxonomyTermEventPayload,
+    CreateTaxonomyLinkEventPayload, CreateTaxonomyTermEventPayload, SetTaxonomyParentEventPayload,
+    SetTaxonomyTermEventPayload,
 };
 use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
@@ -552,5 +553,58 @@ impl TaxonomyTerm {
         transaction.commit().await?;
 
         Ok(taxonomy_term)
+    }
+
+    pub async fn create_entity_link<'a, E>(
+        payload: &taxonomy_create_entity_link_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let instance_id =
+            Self::get_instance_id_of_parent(payload.taxonomy_term_id, &mut transaction).await?;
+
+        for child_id in payload.entity_ids.clone() {
+            let last_position = sqlx::query!(
+                r#"
+                    SELECT IFNULL(MAX(position), 0) AS current_last
+                        FROM term_taxonomy_entity
+                        WHERE term_taxonomy_id = ?
+                "#,
+                payload.taxonomy_term_id
+            )
+            .fetch_one(&mut transaction)
+            .await?
+            .current_last as i32
+                + 1;
+
+            sqlx::query!(
+                r#"
+                    INSERT INTO term_taxonomy_entity (entity_id, term_taxonomy_id, position)
+                    VALUES (?, ?, ?)
+                "#,
+                child_id,
+                payload.taxonomy_term_id,
+                last_position
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            CreateTaxonomyLinkEventPayload::new(
+                child_id,
+                payload.taxonomy_term_id,
+                payload.user_id,
+                instance_id,
+            )
+            .save(&mut transaction)
+            .await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(())
     }
 }

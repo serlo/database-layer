@@ -360,4 +360,25 @@ mod create_entity_link_mutation {
 
         assert_bad_request(response, "Entity with id 1 does not exist").await;
     }
+
+    #[actix_rt::test]
+    async fn fails_if_parent_is_not_a_taxonomy_term() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [2059, 2327];
+        let taxonomy_term_id = 1;
+
+        let response = Message::new(
+            "TaxonomyCreateEntityLinkMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
+    }
 }

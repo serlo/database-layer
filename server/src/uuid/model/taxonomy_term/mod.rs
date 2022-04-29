@@ -565,6 +565,8 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
+        Self::check_taxonomy_term_exists(payload.taxonomy_term_id, &mut transaction).await?;
+
         let instance_id =
             Self::get_instance_id_of_parent(payload.taxonomy_term_id, &mut transaction).await?;
 
@@ -608,6 +610,24 @@ impl TaxonomyTerm {
 
         transaction.commit().await?;
 
+        Ok(())
+    }
+
+    pub async fn check_taxonomy_term_exists<'a, E>(
+        id: i32,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        if let Err(UuidError::DatabaseError {
+            inner: sqlx::Error::RowNotFound,
+        }) = Self::fetch_via_transaction(id, executor).await
+        {
+            return Err(operation::Error::BadRequest {
+                reason: format!("Taxonomy term with id {} does not exist", id),
+            });
+        }
         Ok(())
     }
 }

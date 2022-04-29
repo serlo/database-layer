@@ -4,7 +4,7 @@ pub use assert_json_diff::assert_json_include;
 use convert_case::{Case, Casing};
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::{from_slice, from_value};
-pub use serde_json::{json, Value};
+pub use serde_json::{json, to_value, Value};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -321,7 +321,7 @@ impl EntityTestWrapper<'static> {
                 own_field_keys: vec!["content", "cohesive"],
                 query_fields: Some(HashMap::from([
                     ("content", "test content"),
-                    // TODO: missing test due to mismatch type
+                    // TODO: missing test due to mismatched type
                     // ("cohesive", true),
                 ])),
                 taxonomy_term_id: Some(7),

@@ -573,6 +573,27 @@ impl TaxonomyTerm {
         for child_id in payload.entity_ids.clone() {
             Entity::check_entity_exists(child_id, &mut transaction).await?;
 
+            let is_child_already_linked_to_taxonomy = sqlx::query!(
+                r#"
+                    SELECT id FROM term_taxonomy_entity
+                        WHERE entity_id = ?
+                        AND term_taxonomy_id = ?
+                "#,
+                child_id,
+                payload.taxonomy_term_id
+            )
+            .fetch_optional(&mut transaction)
+            .await?;
+
+            if is_child_already_linked_to_taxonomy.is_some() {
+                return Err(operation::Error::BadRequest {
+                    reason: format!(
+                        "Entity {} is already linked to taxonomy term {}",
+                        child_id, payload.taxonomy_term_id
+                    ),
+                });
+            }
+
             let child_instance_id = sqlx::query!(
                 r#"
                     SELECT instance_id

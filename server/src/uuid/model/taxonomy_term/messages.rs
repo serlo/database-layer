@@ -18,6 +18,7 @@ pub enum TaxonomyTermMessage {
     TaxonomyTermMoveMutation(taxonomy_term_move_mutation::Payload),
     TaxonomyTermCreateMutation(taxonomy_term_create_mutation::Payload),
     TaxonomyCreateEntityLinkMutation(taxonomy_create_entity_link_mutation::Payload),
+    TaxonomyDeleteEntityLinkMutation(taxonomy_delete_entity_link_mutation::Payload),
 }
 
 #[async_trait]
@@ -41,6 +42,11 @@ impl MessageResponder for TaxonomyTermMessage {
             TaxonomyTermMessage::TaxonomyCreateEntityLinkMutation(payload) => {
                 payload
                     .handle("TaxonomyCreateEntityLinkMutation", connection)
+                    .await
+            }
+            TaxonomyTermMessage::TaxonomyDeleteEntityLinkMutation(payload) => {
+                payload
+                    .handle("TaxonomyDeleteEntityLinkMutation", connection)
                     .await
             }
         }
@@ -160,6 +166,33 @@ pub mod taxonomy_create_entity_link_mutation {
                 Connection::Pool(pool) => TaxonomyTerm::create_entity_link(self, pool).await?,
                 Connection::Transaction(transaction) => {
                     TaxonomyTerm::create_entity_link(self, transaction).await?
+                }
+            }
+            Ok(SuccessOutput { success: true })
+        }
+    }
+}
+
+pub mod taxonomy_delete_entity_link_mutation {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: i32,
+        pub entity_ids: Vec<i32>,
+        pub taxonomy_term_id: i32,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = SuccessOutput;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => TaxonomyTerm::delete_entity_link(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    TaxonomyTerm::delete_entity_link(self, transaction).await?
                 }
             }
             Ok(SuccessOutput { success: true })

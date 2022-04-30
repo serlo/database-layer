@@ -432,3 +432,82 @@ mod create_entity_link_mutation {
         .await;
     }
 }
+
+#[cfg(test)]
+mod delete_entity_link_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn deletes_entity_link() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [1743, 2095];
+        let taxonomy_term_id = 24503;
+
+        Message::new(
+            "TaxonomyDeleteEntityLinkMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        for child_id in children_ids.iter() {
+            let query_response = Message::new("UuidQuery", json!({ "id": child_id }))
+                .execute_on(&mut transaction)
+                .await;
+
+            assert_ok_with(query_response, |result| {
+                assert!(!result["taxonomyTermIds"]
+                    .as_array()
+                    .unwrap()
+                    .contains(&to_value(taxonomy_term_id).unwrap()));
+            })
+            .await;
+
+            let events_response =
+                Message::new("EventsQuery", json ! ({ "first": 1, "objectId": child_id }))
+                    .execute_on(&mut transaction)
+                    .await;
+
+            assert_ok_with(events_response, |result| {
+                assert_json_include ! (
+                    actual: &result["events"][0],
+                    expected: json ! ({
+                        "__typename": "RemoveTaxonomyLinkNotificationEvent",
+                        "instance": "de",
+                        "actorId": 1,
+                        "objectId": taxonomy_term_id,
+                        "parentId": taxonomy_term_id,
+                        "childId": child_id
+                    })
+                );
+            })
+            .await;
+        }
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_there_is_no_link_already() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [1743, 2059];
+        let taxonomy_term_id = 24503;
+
+        let response = Message::new(
+            "TaxonomyDeleteEntityLinkMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(response, "Id 2059 is not linked to taxonomy term 24503").await;
+    }
+}

@@ -12,8 +12,8 @@ use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 
 use crate::database::Executor;
 use crate::event::{
-    CreateTaxonomyLinkEventPayload, CreateTaxonomyTermEventPayload, SetTaxonomyParentEventPayload,
-    SetTaxonomyTermEventPayload,
+    CreateTaxonomyLinkEventPayload, CreateTaxonomyTermEventPayload, RemoveTaxonomyLinkEventPayload,
+    SetTaxonomyParentEventPayload, SetTaxonomyTermEventPayload,
 };
 use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
@@ -637,6 +637,59 @@ impl TaxonomyTerm {
             .await?;
 
             CreateTaxonomyLinkEventPayload::new(
+                child_id,
+                payload.taxonomy_term_id,
+                payload.user_id,
+                instance_id,
+            )
+            .save(&mut transaction)
+            .await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
+
+    pub async fn delete_entity_link<'a, E>(
+        payload: &taxonomy_delete_entity_link_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut transaction).await?;
+
+        for child_id in payload.entity_ids.clone() {
+            let term_taxonomy_entity_id = sqlx::query!(
+                r#"
+                    SELECT id FROM term_taxonomy_entity
+                        WHERE entity_id = ?
+                        AND term_taxonomy_id = ?
+                "#,
+                child_id,
+                payload.taxonomy_term_id
+            )
+            .fetch_optional(&mut transaction)
+            .await?
+            .ok_or(operation::Error::BadRequest {
+                reason: format!(
+                    "Id {} is not linked to taxonomy term {}",
+                    child_id, payload.taxonomy_term_id
+                ),
+            })?
+            .id as i32;
+
+            sqlx::query!(
+                r#"DELETE FROM term_taxonomy_entity WHERE id = ?"#,
+                term_taxonomy_entity_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            RemoveTaxonomyLinkEventPayload::new(
                 child_id,
                 payload.taxonomy_term_id,
                 payload.user_id,

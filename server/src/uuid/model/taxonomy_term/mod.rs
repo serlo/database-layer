@@ -292,8 +292,8 @@ impl TaxonomyTerm {
         typename.to_case(Case::Camel)
     }
 
-    async fn get_instance_id_of_parent<'a, E>(
-        parent_id: i32,
+    async fn get_instance_id<'a, E>(
+        term_taxonomy_id: i32,
         executor: E,
     ) -> Result<i32, operation::Error>
     where
@@ -307,12 +307,12 @@ impl TaxonomyTerm {
                         ON term.id = term_taxonomy.term_id
                     WHERE term_taxonomy.id = ?
             "#,
-            parent_id
+            term_taxonomy_id
         )
         .fetch_optional(executor)
         .await?
         .ok_or(operation::Error::BadRequest {
-            reason: format!("Taxonomy term with id {} does not exist", parent_id),
+            reason: format!("Taxonomy term with id {} does not exist", term_taxonomy_id),
         })?
         .instance_id as i32)
     }
@@ -385,7 +385,7 @@ impl TaxonomyTerm {
         let mut transaction = executor.begin().await?;
 
         let new_parent_instance_id =
-            Self::get_instance_id_of_parent(payload.destination, &mut transaction).await?;
+            Self::get_instance_id(payload.destination, &mut transaction).await?;
 
         for child_id in &payload.children_ids {
             if *child_id == payload.destination {
@@ -496,8 +496,7 @@ impl TaxonomyTerm {
         .await?
         .id as i32;
 
-        let instance_id =
-            Self::get_instance_id_of_parent(payload.parent_id, &mut transaction).await?;
+        let instance_id = Self::get_instance_id(payload.parent_id, &mut transaction).await?;
 
         sqlx::query!(
             r#"
@@ -565,10 +564,7 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
-        Self::check_taxonomy_term_exists(payload.taxonomy_term_id, &mut transaction).await?;
-
-        let instance_id =
-            Self::get_instance_id_of_parent(payload.taxonomy_term_id, &mut transaction).await?;
+        let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut transaction).await?;
 
         for child_id in payload.entity_ids.clone() {
             Entity::check_entity_exists(child_id, &mut transaction).await?;
@@ -652,24 +648,6 @@ impl TaxonomyTerm {
 
         transaction.commit().await?;
 
-        Ok(())
-    }
-
-    pub async fn check_taxonomy_term_exists<'a, E>(
-        id: i32,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        if let Err(UuidError::DatabaseError {
-            inner: sqlx::Error::RowNotFound,
-        }) = Self::fetch_via_transaction(id, executor).await
-        {
-            return Err(operation::Error::BadRequest {
-                reason: format!("Taxonomy term with id {} does not exist", id),
-            });
-        }
         Ok(())
     }
 }

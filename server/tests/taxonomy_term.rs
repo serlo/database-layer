@@ -491,7 +491,7 @@ mod delete_entity_link_mutation {
     }
 
     #[actix_rt::test]
-    async fn fails_if_there_is_no_link_already() {
+    async fn fails_if_there_is_no_link_yet() {
         let mut transaction = begin_transaction().await;
 
         let children_ids = [1743, 2059];

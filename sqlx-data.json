@@ -1226,6 +1226,16 @@
     },
     "query": "\n                    SELECT IFNULL(MAX(position), 0) AS current_last\n                        FROM term_taxonomy_entity\n                        WHERE term_taxonomy_id = ?\n                "
   },
+  "5d49fc01ec2c4982df4e89c6035932df397436417167aa22134f1c8597856d13": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "DELETE FROM term_taxonomy_entity WHERE id = ?"
+  },
   "5ec29168edbb2527c44c0fd81e1e14ab39b2d768c410b3436ec7770f72df3633": {
     "describe": {
       "columns": [],

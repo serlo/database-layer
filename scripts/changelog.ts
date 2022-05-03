@@ -121,6 +121,15 @@ async function exec(): Promise<void> {
         date: '2022-04-26',
         fixed: ['Fix in saving CreateEntityRevisionEvents #218'],
       },
+      {
+        tagName: 'v0.3.38',
+        name: '0.3.38',
+        date: '2022-05-03',
+        fixed: [
+          'Does not checkout entities automatically #220',
+          'Put newly created sub-entities at the end of the list',
+        ],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

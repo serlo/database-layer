@@ -447,21 +447,21 @@ impl Entity {
             payload.input.entity_id
         )
         .fetch_optional(&mut transaction)
-        .await?;
+        .await?
+        .map(|x| x.id as i32);
 
-        if let Some(revision) = last_not_trashed_revision {
-            if Self::are_fields_same_as_last_not_trashed_revision(
-                revision.id as i32,
-                payload.input.fields.clone(),
-                &mut transaction,
-            )
-            .await?
-            {
-                return Ok(EntityRevision::fetch_via_transaction(
-                    revision.id as i32,
-                    &mut transaction,
-                )
-                .await?);
+        if let Some(revision_id) = last_not_trashed_revision {
+            let last_revision_fields: HashMap<String, String> =
+                fetch_all_fields!(revision_id, &mut transaction)
+                    .await?
+                    .into_iter()
+                    .map(|field| (field.field, field.value))
+                    .collect();
+
+            if Self::are_fields_the_same(last_revision_fields, payload.input.fields.clone()) {
+                return Ok(
+                    EntityRevision::fetch_via_transaction(revision_id, &mut transaction).await?,
+                );
             }
         }
 
@@ -526,37 +526,26 @@ impl Entity {
 
         Ok(entity_revision)
     }
-}
 
-impl Entity {
-    async fn are_fields_same_as_last_not_trashed_revision<'a, E>(
-        last_not_trashed_revision_id: i32,
+    fn are_fields_the_same(
+        last_revision_fields: HashMap<String, String>,
         fields: HashMap<String, String>,
-        executor: E,
-    ) -> Result<bool, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let last_revision_fields: HashMap<String, String> =
-            fetch_all_fields!(last_not_trashed_revision_id, executor)
-                .await?
-                .into_iter()
-                .map(|field| (field.field, field.value))
-                .collect();
-
+    ) -> bool {
         for (key, value) in fields {
             match last_revision_fields.get(key.to_case(Case::Snake).as_str()) {
                 Some(field_value) => {
                     if *field_value != value {
-                        return Ok(false);
+                        return false;
                     }
                 }
-                None => return Ok(false),
+                None => return false,
             }
         }
-        Ok(true)
+        true
     }
+}
 
+impl Entity {
     pub async fn create<'a, E>(
         payload: &entity_create_mutation::Payload,
         executor: E,

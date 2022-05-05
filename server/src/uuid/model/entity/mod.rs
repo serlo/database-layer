@@ -451,14 +451,17 @@ impl Entity {
         .map(|x| x.id as i32);
 
         if let Some(revision_id) = last_not_trashed_revision {
+            let mut new_fields = payload.input.fields.clone();
+            new_fields.insert("changes".to_string(), payload.input.changes.clone());
+
             let last_revision_fields: HashMap<String, String> =
                 fetch_all_fields!(revision_id, &mut transaction)
                     .await?
                     .into_iter()
-                    .map(|field| (field.field, field.value))
+                    .map(|field| (field.field.to_case(Case::Camel), field.value))
                     .collect();
 
-            if Self::are_fields_the_same(last_revision_fields, payload.input.fields.clone()) {
+            if last_revision_fields == new_fields {
                 return Ok(
                     EntityRevision::fetch_via_transaction(revision_id, &mut transaction).await?,
                 );
@@ -525,23 +528,6 @@ impl Entity {
         transaction.commit().await?;
 
         Ok(entity_revision)
-    }
-
-    fn are_fields_the_same(
-        last_revision_fields: HashMap<String, String>,
-        fields: HashMap<String, String>,
-    ) -> bool {
-        for (key, value) in fields {
-            match last_revision_fields.get(key.to_case(Case::Snake).as_str()) {
-                Some(field_value) => {
-                    if *field_value != value {
-                        return false;
-                    }
-                }
-                None => return false,
-            }
-        }
-        true
     }
 }
 

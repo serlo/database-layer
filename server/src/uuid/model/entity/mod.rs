@@ -1,9 +1,11 @@
 use crate::uuid::Subject;
 use async_trait::async_trait;
+use convert_case::{Case, Casing};
 use futures::try_join;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use sqlx::Row;
+use std::collections::HashMap;
 use thiserror::Error;
 
 use abstract_entity::AbstractEntity;
@@ -17,7 +19,7 @@ use crate::event::{
     CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateTaxonomyLinkEventPayload,
     EntityLinkEventPayload, EventError, RevisionEventPayload,
 };
-use crate::format_alias;
+use crate::{fetch_all_fields, format_alias};
 
 use crate::datetime::DateTime;
 use crate::instance::Instance;
@@ -426,6 +428,37 @@ impl Entity {
 
         Self::check_entity_exists(payload.input.entity_id, &mut transaction).await?;
 
+        let last_not_trashed_revision = sqlx::query!(
+            r#"
+            SELECT er.id
+                FROM entity_revision er
+                JOIN uuid ON er.id = uuid.id
+                WHERE repository_id = ?
+                    AND trashed = 0
+                ORDER BY date DESC
+                LIMIT 1
+            "#,
+            payload.input.entity_id
+        )
+        .fetch_optional(&mut transaction)
+        .await?;
+
+        if let Some(revision) = last_not_trashed_revision {
+            if Self::are_fields_same_as_last_not_trashed_revision(
+                revision.id as i32,
+                payload.input.fields.clone(),
+                &mut transaction,
+            )
+            .await?
+            {
+                return Ok(EntityRevision::fetch_via_transaction(
+                    revision.id as i32,
+                    &mut transaction,
+                )
+                .await?);
+            }
+        }
+
         let entity_revision = EntityRevisionPayload::new(
             payload.user_id,
             payload.input.entity_id,
@@ -489,6 +522,7 @@ impl Entity {
     where
         E: Executor<'a>,
     {
+        // TODO: using fetch_via_transaction is too much overhead, use a simpler query
         if let Err(UuidError::DatabaseError {
             inner: sqlx::Error::RowNotFound,
         }) = Self::fetch_via_transaction(id, executor).await
@@ -498,6 +532,34 @@ impl Entity {
             });
         }
         Ok(())
+    }
+
+    async fn are_fields_same_as_last_not_trashed_revision<'a, E>(
+        last_not_trashed_revision_id: i32,
+        fields: HashMap<String, String>,
+        executor: E,
+    ) -> Result<bool, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        let last_revision_fields: HashMap<String, String> =
+            fetch_all_fields!(last_not_trashed_revision_id, executor)
+                .await?
+                .into_iter()
+                .map(|field| (field.field, field.value))
+                .collect();
+
+        for (key, value) in fields {
+            match last_revision_fields.get(key.to_case(Case::Snake).as_str()) {
+                Some(field_value) => {
+                    if *field_value != value {
+                        return Ok(false);
+                    }
+                }
+                None => return Ok(false),
+            }
+        }
+        Ok(true)
     }
 
     pub async fn create<'a, E>(

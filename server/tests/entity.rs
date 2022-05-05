@@ -66,6 +66,49 @@ mod add_revision_mutation {
             assert_event_revision_ok(revision_id, revision.entity_id, &mut transaction).await;
         }
     }
+
+    #[actix_rt::test]
+    async fn does_not_add_revision_if_fields_are_same() {
+        for revision in EntityTestWrapper::all().iter() {
+            let mut transaction = begin_transaction().await;
+            let mutation_message = Message::new(
+                "EntityAddRevisionMutation",
+                json!({
+                    "revisionType": revision.revision_type,
+                    "input": {
+                        "changes": "test changes",
+                        "entityId": revision.entity_id,
+                        "needsReview": true,
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "fields": revision.fields()
+                    },
+                    "userId": 1
+                }),
+            );
+            let first_mutation_response = mutation_message.execute_on(&mut transaction).await;
+
+            let first_revision_id = get_json(first_mutation_response).await["revisionId"].clone();
+
+            let query_message = Message::new("UuidQuery", json!({ "id": revision.entity_id }));
+
+            let first_query_response = query_message.execute_on(&mut transaction).await;
+
+            let first_revision_ids = get_json(first_query_response).await["revisionIds"].clone();
+
+            let second_mutation_response = mutation_message.execute_on(&mut transaction).await;
+
+            let second_revision_id = get_json(second_mutation_response).await["revisionId"].clone();
+
+            assert_eq!(first_revision_id, second_revision_id);
+
+            let second_query_response = query_message.execute_on(&mut transaction).await;
+
+            let second_revision_ids = get_json(second_query_response).await["revisionIds"].clone();
+
+            assert_eq!(first_revision_ids, second_revision_ids);
+        }
+    }
 }
 
 #[cfg(test)]

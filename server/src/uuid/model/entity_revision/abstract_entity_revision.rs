@@ -1,3 +1,4 @@
+use convert_case::{Case, Casing};
 use std::collections::HashMap;
 
 use crate::database::Executor;
@@ -152,14 +153,7 @@ impl EntityRevisionPayload {
         .await?;
 
         for (field, value) in &self.fields {
-            let field_snake_case: String;
-            if field == &"metaDescription".to_string() {
-                field_snake_case = "meta_description".to_string();
-            } else if field == &"metaTitle".to_string() {
-                field_snake_case = "meta_title".to_string();
-            } else {
-                field_snake_case = field.clone();
-            }
+            let field_snake_case = field.to_case(Case::Snake);
 
             sqlx::query!(
                 r#"

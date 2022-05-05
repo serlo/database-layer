@@ -442,7 +442,7 @@ impl Entity {
         .await?;
 
         if !payload.input.needs_review {
-            let _ = Entity::checkout_revision(
+            Entity::checkout_revision(
                 EntityCheckoutRevisionPayload {
                     revision_id: entity_revision.id,
                     user_id: payload.user_id,
@@ -450,7 +450,10 @@ impl Entity {
                 },
                 &mut transaction,
             )
-            .await;
+            .await
+            .map_err(|error| operation::Error::InternalServerError {
+                error: Box::new(error),
+            })?;
         }
 
         if payload.input.subscribe_this {
@@ -535,27 +538,6 @@ impl Entity {
             DateTime::now(),
         )
         .execute(&mut transaction)
-        .await?;
-
-        CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
-            .save(&mut transaction)
-            .await?;
-
-        Entity::add_revision(
-            &entity_add_revision_mutation::Payload {
-                input: entity_add_revision_mutation::Input {
-                    changes: payload.input.changes.clone(),
-                    entity_id,
-                    needs_review: payload.input.needs_review,
-                    subscribe_this: payload.input.subscribe_this,
-                    subscribe_this_by_email: payload.input.subscribe_this_by_email,
-                    fields: payload.input.fields.clone(),
-                },
-                revision_type: EntityRevisionType::from(payload.entity_type.clone()),
-                user_id: payload.user_id,
-            },
-            &mut transaction,
-        )
         .await?;
 
         if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
@@ -644,6 +626,27 @@ impl Entity {
             .save(&mut transaction)
             .await?;
         }
+
+        CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
+
+        Entity::add_revision(
+            &entity_add_revision_mutation::Payload {
+                input: entity_add_revision_mutation::Input {
+                    changes: payload.input.changes.clone(),
+                    entity_id,
+                    needs_review: payload.input.needs_review,
+                    subscribe_this: payload.input.subscribe_this,
+                    subscribe_this_by_email: payload.input.subscribe_this_by_email,
+                    fields: payload.input.fields.clone(),
+                },
+                revision_type: EntityRevisionType::from(payload.entity_type.clone()),
+                user_id: payload.user_id,
+            },
+            &mut transaction,
+        )
+        .await?;
 
         let entity = Entity::fetch_via_transaction(entity_id, &mut transaction).await?;
 

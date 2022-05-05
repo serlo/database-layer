@@ -1,9 +1,11 @@
 use crate::uuid::Subject;
 use async_trait::async_trait;
+use convert_case::{Case, Casing};
 use futures::try_join;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use sqlx::Row;
+use std::collections::HashMap;
 use thiserror::Error;
 
 use abstract_entity::AbstractEntity;
@@ -17,7 +19,7 @@ use crate::event::{
     CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateTaxonomyLinkEventPayload,
     EntityLinkEventPayload, EventError, RevisionEventPayload,
 };
-use crate::format_alias;
+use crate::{fetch_all_fields, format_alias};
 
 use crate::datetime::DateTime;
 use crate::instance::Instance;
@@ -432,14 +434,44 @@ impl Entity {
             });
         }
 
-        let entity_revision = EntityRevisionPayload::new(
-            payload.user_id,
-            payload.input.entity_id,
-            payload.input.changes.clone(),
-            payload.input.fields.clone(),
+        let last_not_trashed_revision = sqlx::query!(
+            r#"
+            SELECT er.id
+                FROM entity_revision er
+                JOIN uuid ON er.id = uuid.id
+                WHERE repository_id = ?
+                    AND trashed = 0
+                ORDER BY date DESC
+                LIMIT 1
+            "#,
+            payload.input.entity_id
         )
-        .save(&mut transaction)
-        .await?;
+        .fetch_optional(&mut transaction)
+        .await?
+        .map(|x| x.id as i32);
+
+        let mut fields = payload.input.fields.clone();
+        fields.insert("changes".to_string(), payload.input.changes.clone());
+
+        if let Some(revision_id) = last_not_trashed_revision {
+            let last_revision_fields: HashMap<String, String> =
+                fetch_all_fields!(revision_id, &mut transaction)
+                    .await?
+                    .into_iter()
+                    .map(|field| (field.field.to_case(Case::Camel), field.value))
+                    .collect();
+
+            if last_revision_fields == fields {
+                return Ok(
+                    EntityRevision::fetch_via_transaction(revision_id, &mut transaction).await?,
+                );
+            }
+        }
+
+        let entity_revision =
+            EntityRevisionPayload::new(payload.user_id, payload.input.entity_id, fields)
+                .save(&mut transaction)
+                .await?;
 
         if !payload.input.needs_review {
             Entity::checkout_revision(
@@ -1011,11 +1043,11 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn add_revision_needs_review_param() {
+    async fn add_revision_when_needs_review_is_true() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        Entity::add_revision(
+        let new_revision = Entity::add_revision(
             &entity_add_revision_mutation::Payload {
                 input: entity_add_revision_mutation::Input {
                     changes: "test changes".to_string(),
@@ -1041,29 +1073,26 @@ mod tests {
         .await
         .unwrap();
 
-        let not_checked_out_revision_id =
-            sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-                .fetch_one(&mut transaction)
-                .await
-                .unwrap()
-                .id as i32;
-
         let entity = Entity::fetch_via_transaction(1495, &mut transaction)
             .await
             .unwrap();
+
         if let ConcreteUuid::Entity(Entity {
             abstract_entity, ..
         }) = entity.concrete_uuid
         {
-            assert_ne!(
-                abstract_entity.current_revision_id,
-                Some(not_checked_out_revision_id)
-            );
+            assert_ne!(abstract_entity.current_revision_id, Some(new_revision.id));
         } else {
             panic!("Entity does not fulfill assertions: {:?}", entity)
         }
+    }
 
-        Entity::add_revision(
+    #[actix_rt::test]
+    async fn add_revision_when_needs_review_is_false() {
+        let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+
+        let new_revision = Entity::add_revision(
             &entity_add_revision_mutation::Payload {
                 input: entity_add_revision_mutation::Input {
                     changes: "test changes".to_string(),
@@ -1089,13 +1118,6 @@ mod tests {
         .await
         .unwrap();
 
-        let checked_out_revision_id =
-            sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-                .fetch_one(&mut transaction)
-                .await
-                .unwrap()
-                .id as i32;
-
         let entity = Entity::fetch_via_transaction(1495, &mut transaction)
             .await
             .unwrap();
@@ -1103,10 +1125,7 @@ mod tests {
             abstract_entity, ..
         }) = entity.concrete_uuid
         {
-            assert_eq!(
-                abstract_entity.current_revision_id,
-                Some(checked_out_revision_id)
-            );
+            assert_eq!(abstract_entity.current_revision_id, Some(new_revision.id));
         } else {
             panic!("Entity does not fulfill assertions: {:?}", entity)
         }

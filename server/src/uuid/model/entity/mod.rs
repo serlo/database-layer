@@ -450,10 +450,10 @@ impl Entity {
         .await?
         .map(|x| x.id as i32);
 
-        if let Some(revision_id) = last_not_trashed_revision {
-            let mut new_fields = payload.input.fields.clone();
-            new_fields.insert("changes".to_string(), payload.input.changes.clone());
+        let mut fields = payload.input.fields.clone();
+        fields.insert("changes".to_string(), payload.input.changes.clone());
 
+        if let Some(revision_id) = last_not_trashed_revision {
             let last_revision_fields: HashMap<String, String> =
                 fetch_all_fields!(revision_id, &mut transaction)
                     .await?
@@ -461,21 +461,17 @@ impl Entity {
                     .map(|field| (field.field.to_case(Case::Camel), field.value))
                     .collect();
 
-            if last_revision_fields == new_fields {
+            if last_revision_fields == fields {
                 return Ok(
                     EntityRevision::fetch_via_transaction(revision_id, &mut transaction).await?,
                 );
             }
         }
 
-        let entity_revision = EntityRevisionPayload::new(
-            payload.user_id,
-            payload.input.entity_id,
-            payload.input.changes.clone(),
-            payload.input.fields.clone(),
-        )
-        .save(&mut transaction)
-        .await?;
+        let entity_revision =
+            EntityRevisionPayload::new(payload.user_id, payload.input.entity_id, fields)
+                .save(&mut transaction)
+                .await?;
 
         if !payload.input.needs_review {
             Entity::checkout_revision(

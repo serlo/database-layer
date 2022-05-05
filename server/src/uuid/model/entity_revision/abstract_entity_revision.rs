@@ -89,21 +89,14 @@ impl EntityRevisionFields {
 pub struct EntityRevisionPayload {
     pub author_id: i32,
     pub repository_id: i32,
-    pub changes: String,
     pub fields: HashMap<String, String>,
 }
 
 impl EntityRevisionPayload {
-    pub fn new(
-        author_id: i32,
-        repository_id: i32,
-        changes: String,
-        fields: HashMap<String, String>,
-    ) -> Self {
+    pub fn new(author_id: i32, repository_id: i32, fields: HashMap<String, String>) -> Self {
         Self {
             author_id,
             repository_id,
-            changes,
             fields,
         }
     }
@@ -137,17 +130,6 @@ impl EntityRevisionPayload {
             self.author_id,
             self.repository_id,
             DateTime::now(),
-        )
-        .execute(&mut transaction)
-        .await?;
-
-        sqlx::query!(
-            r#"
-                INSERT INTO entity_revision_field (field, value, entity_revision_id)
-                    VALUES ("changes", ?, ?)
-            "#,
-            self.changes,
-            entity_revision_id,
         )
         .execute(&mut transaction)
         .await?;

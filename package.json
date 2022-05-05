@@ -22,7 +22,7 @@
     "pacts": "jest --config jest.config-pacts.js",
     "sqlx:prepare": "cargo sqlx prepare --merged",
     "start": "docker-compose up --detach",
-    "version": "./scripts/update_server_version.sh"
+    "update-version": "./scripts/update_server_version.sh"
   },
   "devDependencies": {
     "@inyono/changelog": "0.4",

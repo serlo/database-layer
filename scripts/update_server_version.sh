@@ -2,7 +2,7 @@
 
 source scripts/utils.sh
 
-$EDITOR scripts/changelog.ts
+$(git config core.editor) scripts/changelog.ts
 
 print_header "Generating CHANGELOG"
 yarn changelog

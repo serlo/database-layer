@@ -442,7 +442,7 @@ impl Entity {
         .await?;
 
         if !payload.input.needs_review {
-            let _ = Entity::checkout_revision(
+            Entity::checkout_revision(
                 EntityCheckoutRevisionPayload {
                     revision_id: entity_revision.id,
                     user_id: payload.user_id,
@@ -450,7 +450,10 @@ impl Entity {
                 },
                 &mut transaction,
             )
-            .await;
+            .await
+            .map_err(|error| operation::Error::InternalServerError {
+                error: Box::new(error),
+            })?;
         }
 
         if payload.input.subscribe_this {

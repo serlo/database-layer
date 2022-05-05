@@ -89,25 +89,23 @@ mod add_revision_mutation {
             let first_mutation_response = mutation_message.execute_on(&mut transaction).await;
 
             let first_revision_id = get_json(first_mutation_response).await["revisionId"].clone();
-
-            let query_message = Message::new("UuidQuery", json!({ "id": revision.entity_id }));
-
-            let first_query_response = query_message.execute_on(&mut transaction).await;
-
-            let first_revision_ids = get_json(first_query_response).await["revisionIds"].clone();
+            let first_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
             let second_mutation_response = mutation_message.execute_on(&mut transaction).await;
 
             let second_revision_id = get_json(second_mutation_response).await["revisionId"].clone();
+            let second_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
             assert_eq!(first_revision_id, second_revision_id);
-
-            let second_query_response = query_message.execute_on(&mut transaction).await;
-
-            let second_revision_ids = get_json(second_query_response).await["revisionIds"].clone();
-
             assert_eq!(first_revision_ids, second_revision_ids);
         }
+    }
+
+    async fn get_revisions(id: i32, transaction: &mut sqlx::Transaction<'_, sqlx::MySql>) -> Value {
+        let resp = Message::new("UuidQuery", json!({ "id": id }))
+            .execute_on(transaction)
+            .await;
+        get_json(resp).await["revisionIds"].clone()
     }
 }
 

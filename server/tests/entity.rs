@@ -139,18 +139,16 @@ mod create_mutation {
                 assert_json_include!(
                     actual: &result["events"][0],
                     expected: json!({
-                        "__typename": parent_event_name,
+                        "__typename": "CreateEntityRevisionNotificationEvent",
                         "instance": "de",
                         "actorId": 1,
-                        "objectId": object_id,
-                        "parentId": parent_id,
-                        "childId": new_entity_id
+                        "entityId": new_entity_id
                     })
                 );
                 assert_json_include!(
                     actual: &result["events"][1],
                     expected: json!({
-                        "__typename": "CreateEntityRevisionNotificationEvent",
+                        "__typename": "CreateEntityNotificationEvent",
                         "instance": "de",
                         "actorId": 1,
                         "entityId": new_entity_id
@@ -159,10 +157,12 @@ mod create_mutation {
                 assert_json_include!(
                     actual: &result["events"][2],
                     expected: json!({
-                        "__typename": "CreateEntityNotificationEvent",
+                        "__typename": parent_event_name,
                         "instance": "de",
                         "actorId": 1,
-                        "entityId": new_entity_id
+                        "objectId": object_id,
+                        "parentId": parent_id,
+                        "childId": new_entity_id
                     })
                 );
             })

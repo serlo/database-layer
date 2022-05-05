@@ -264,4 +264,36 @@ mod create_mutation {
             .await;
         }
     }
+
+    #[actix_rt::test]
+    async fn checkouts_new_revision_when_needs_review_is_true() {
+        assert_ok_with(
+            Message::new(
+                "EntityCreateMutation",
+                json!({
+                    "entityType": "Article",
+                    "input": {
+                        "changes": "test changes",
+                        "instance": "de",
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "licenseId": 1 as i32,
+                        "taxonomyTermId": 7 as i32,
+                        "needsReview": false,
+                        "fields": {
+                            "content": "content",
+                            "title": "title",
+                            "metaTitle": "metaTitle",
+                            "metaDescription": "metaDescription"
+                        },
+                    },
+                    "userId": 1 as i32,
+                }),
+            )
+            .execute()
+            .await,
+            |result| assert!(!result["currentRevisionId"].is_null()),
+        )
+        .await;
+    }
 }

@@ -1,3 +1,4 @@
+use convert_case::{Case, Casing};
 use std::collections::HashMap;
 
 use crate::database::Executor;
@@ -88,21 +89,14 @@ impl EntityRevisionFields {
 pub struct EntityRevisionPayload {
     pub author_id: i32,
     pub repository_id: i32,
-    pub changes: String,
     pub fields: HashMap<String, String>,
 }
 
 impl EntityRevisionPayload {
-    pub fn new(
-        author_id: i32,
-        repository_id: i32,
-        changes: String,
-        fields: HashMap<String, String>,
-    ) -> Self {
+    pub fn new(author_id: i32, repository_id: i32, fields: HashMap<String, String>) -> Self {
         Self {
             author_id,
             repository_id,
-            changes,
             fields,
         }
     }
@@ -140,26 +134,8 @@ impl EntityRevisionPayload {
         .execute(&mut transaction)
         .await?;
 
-        sqlx::query!(
-            r#"
-                INSERT INTO entity_revision_field (field, value, entity_revision_id)
-                    VALUES ("changes", ?, ?)
-            "#,
-            self.changes,
-            entity_revision_id,
-        )
-        .execute(&mut transaction)
-        .await?;
-
         for (field, value) in &self.fields {
-            let field_snake_case: String;
-            if field == &"metaDescription".to_string() {
-                field_snake_case = "meta_description".to_string();
-            } else if field == &"metaTitle".to_string() {
-                field_snake_case = "meta_title".to_string();
-            } else {
-                field_snake_case = field.clone();
-            }
+            let field_snake_case = field.to_case(Case::Snake);
 
             sqlx::query!(
                 r#"

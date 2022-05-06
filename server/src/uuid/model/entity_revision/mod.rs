@@ -65,7 +65,7 @@ macro_rules! fetch_one_revision {
         .fetch_one($executor)
     };
 }
-
+#[macro_export]
 macro_rules! fetch_all_fields {
     ($id: expr, $executor: expr) => {
         sqlx::query!(

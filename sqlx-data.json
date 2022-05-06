@@ -2316,6 +2316,31 @@
     },
     "query": "\n                UPDATE page_repository\n                    SET forum_id = ?\n                    WHERE id = ?\n            "
   },
+  "ac8891cb08f9f54f77ad426d4a1637bcaead850391239e65a5eda3df9fa242c6": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n            SELECT er.id\n                FROM entity_revision er\n                JOIN uuid ON er.id = uuid.id\n                WHERE repository_id = ?\n                    AND trashed = 0\n                ORDER BY date DESC\n                LIMIT 1\n            "
+  },
   "af0db2da7d2e46f2291c6edbe0870004af83d90d464346759ddde2067736a294": {
     "describe": {
       "columns": [],

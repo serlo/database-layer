@@ -295,7 +295,7 @@ mod create_entity_link_mutation {
         let taxonomy_term_id = 1288;
 
         Message::new(
-            "TaxonomyCreateEntityLinkMutation",
+            "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
                 "entityIds": children_ids,
@@ -348,7 +348,7 @@ mod create_entity_link_mutation {
         let taxonomy_term_id = 1288;
 
         let response = Message::new(
-            "TaxonomyCreateEntityLinkMutation",
+            "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
                 "entityIds": children_ids,
@@ -369,7 +369,7 @@ mod create_entity_link_mutation {
         let taxonomy_term_id = 1;
 
         let response = Message::new(
-            "TaxonomyCreateEntityLinkMutation",
+            "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
                 "entityIds": children_ids,
@@ -390,7 +390,7 @@ mod create_entity_link_mutation {
         let taxonomy_term_id = 7;
 
         let response = Message::new(
-            "TaxonomyCreateEntityLinkMutation",
+            "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
                 "entityIds": children_ids,
@@ -415,7 +415,7 @@ mod create_entity_link_mutation {
         let taxonomy_term_id = 1307;
 
         let response = Message::new(
-            "TaxonomyCreateEntityLinkMutation",
+            "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
                 "entityIds": children_ids,

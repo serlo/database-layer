@@ -556,7 +556,7 @@ impl TaxonomyTerm {
     }
 
     pub async fn create_entity_link<'a, E>(
-        payload: &taxonomy_create_entity_link_mutation::Payload,
+        payload: &taxonomy_create_entity_links_mutation::Payload,
         executor: E,
     ) -> Result<(), operation::Error>
     where

@@ -566,8 +566,8 @@ impl TaxonomyTerm {
 
         let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut transaction).await?;
 
-        for child_id in payload.entity_ids.clone() {
-            Entity::check_entity_exists(child_id, &mut transaction).await?;
+        for child_id in &payload.entity_ids {
+            Entity::assert_entity_exists(*child_id, &mut transaction).await?;
 
             let is_child_already_linked_to_taxonomy = sqlx::query!(
                 r#"
@@ -637,7 +637,7 @@ impl TaxonomyTerm {
             .await?;
 
             CreateTaxonomyLinkEventPayload::new(
-                child_id,
+                *child_id,
                 payload.taxonomy_term_id,
                 payload.user_id,
                 instance_id,

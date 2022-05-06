@@ -426,7 +426,7 @@ impl Entity {
     {
         let mut transaction = executor.begin().await?;
 
-        Self::check_entity_exists(payload.input.entity_id, &mut transaction).await?;
+        Self::assert_entity_exists(payload.input.entity_id, &mut transaction).await?;
 
         let last_not_trashed_revision = sqlx::query!(
             r#"
@@ -520,18 +520,22 @@ impl Entity {
         Ok(entity_revision)
     }
 
-    pub async fn check_entity_exists<'a, E>(id: i32, executor: E) -> Result<(), operation::Error>
+    pub async fn assert_entity_exists<'a, E>(id: i32, executor: E) -> Result<(), operation::Error>
     where
         E: Executor<'a>,
     {
-        if let Err(UuidError::DatabaseError {
-            inner: sqlx::Error::RowNotFound,
-        }) = Self::fetch_via_transaction(id, executor).await
-        {
-            return Err(operation::Error::BadRequest {
-                reason: format!("Entity with id {} does not exist", id),
-            });
-        }
+        sqlx::query!(r#"SELECT id FROM entity WHERE id = ?"#, id)
+            .fetch_one(executor)
+            .await
+            .map_err(|error| match error {
+                sqlx::Error::RowNotFound => operation::Error::BadRequest {
+                    reason: format!("Entity with id {} does not exist", id),
+                },
+                _ => operation::Error::InternalServerError {
+                    error: Box::new(error),
+                },
+            })?;
+
         Ok(())
     }
 
@@ -971,17 +975,25 @@ mod tests {
         Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload,
         EntityRejectRevisionError, EntityRejectRevisionPayload, EntityRevision,
     };
-    use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
     use crate::subscription::tests::fetch_subscription_by_user_and_object;
     use crate::subscription::Subscription;
     use crate::uuid::abstract_entity_revision::EntityRevisionType;
     use crate::uuid::{entity_add_revision_mutation, ConcreteUuid, Uuid, UuidFetcher};
+    use crate::{create_database_pool, operation};
 
     #[actix_rt::test]
-    async fn add_revision() {
+    async fn check_entity_exists_throws_bad_request_error() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
+
+        match Entity::assert_entity_exists(1, &mut transaction).await {
+            Err(error) => match error {
+                operation::Error::BadRequest { reason: _ } => {}
+                _ => panic!("check_entity_exists didn't throw expected error"),
+            },
+            _ => panic!("check_entity_exists didn't throw expected error"),
+        }
     }
 
     #[actix_rt::test]

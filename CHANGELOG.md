@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.38](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.37..v0.3.38) - May 3, 2022
+
+### Fixed
+
+- Does not checkout entities automatically #220
+
+- Put newly created sub-entities at the end of the list
+
 ## [0.3.37](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.36..v0.3.37) - April 26, 2022
 
 ### Fixed

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::TaxonomyTerm;
 use crate::database::Connection;
 use crate::message::MessageResponder;
-use crate::operation::{self, Operation};
+use crate::operation::{self, Operation, SuccessOutput};
 use crate::uuid::{TaxonomyType, Uuid};
 
 #[derive(Deserialize, Serialize)]
@@ -16,6 +16,8 @@ pub enum TaxonomyTermMessage {
     ),
     TaxonomyTermMoveMutation(taxonomy_term_move_mutation::Payload),
     TaxonomyTermCreateMutation(taxonomy_term_create_mutation::Payload),
+    TaxonomyCreateEntityLinksMutation(taxonomy_create_entity_links_mutation::Payload),
+    TaxonomyDeleteEntityLinksMutation(taxonomy_delete_entity_links_mutation::Payload),
 }
 
 #[async_trait]
@@ -34,6 +36,16 @@ impl MessageResponder for TaxonomyTermMessage {
             TaxonomyTermMessage::TaxonomyTermCreateMutation(payload) => {
                 payload
                     .handle("TaxonomyTermCreateMutation", connection)
+                    .await
+            }
+            TaxonomyTermMessage::TaxonomyCreateEntityLinksMutation(payload) => {
+                payload
+                    .handle("TaxonomyCreateEntityLinksMutation", connection)
+                    .await
+            }
+            TaxonomyTermMessage::TaxonomyDeleteEntityLinksMutation(payload) => {
+                payload
+                    .handle("TaxonomyDeleteEntityLinksMutation", connection)
                     .await
             }
         }
@@ -88,15 +100,9 @@ pub mod taxonomy_term_move_mutation {
         pub destination: i32,
     }
 
-    #[derive(Serialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Output {
-        success: bool,
-    }
-
     #[async_trait]
     impl Operation for Payload {
-        type Output = Output;
+        type Output = SuccessOutput;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             match connection {
@@ -106,7 +112,7 @@ pub mod taxonomy_term_move_mutation {
                 }
             };
 
-            Ok(Output { success: true })
+            Ok(SuccessOutput { success: true })
         }
     }
 }
@@ -135,6 +141,60 @@ pub mod taxonomy_term_create_mutation {
                     TaxonomyTerm::create(self, transaction).await?
                 }
             })
+        }
+    }
+}
+
+pub mod taxonomy_create_entity_links_mutation {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: i32,
+        pub entity_ids: Vec<i32>,
+        pub taxonomy_term_id: i32,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = SuccessOutput;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => TaxonomyTerm::create_entity_link(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    TaxonomyTerm::create_entity_link(self, transaction).await?
+                }
+            }
+            Ok(SuccessOutput { success: true })
+        }
+    }
+}
+
+pub mod taxonomy_delete_entity_links_mutation {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: i32,
+        pub entity_ids: Vec<i32>,
+        pub taxonomy_term_id: i32,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = SuccessOutput;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => TaxonomyTerm::delete_entity_link(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    TaxonomyTerm::delete_entity_link(self, transaction).await?
+                }
+            }
+            Ok(SuccessOutput { success: true })
         }
     }
 }

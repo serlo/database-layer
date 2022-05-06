@@ -1,5 +1,30 @@
 {
   "db": "MySQL",
+  "01614e712579031ca16ed14cd5fad807daa8d962e008ef205903c15e0fe4bd34": {
+    "describe": {
+      "columns": [
+        {
+          "name": "count",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n            SELECT COUNT(*) AS count\n                FROM term_taxonomy_entity\n                WHERE entity_id = ?\n                    AND term_taxonomy_id = ?\n            "
+  },
   "01ec0b909247a28fa877dbb37da8db45610b8d2b460d68a429ca12919e5a2737": {
     "describe": {
       "columns": [
@@ -24,6 +49,31 @@
       }
     },
     "query": "\n                    SELECT p.id\n                        FROM navigation_page p\n                        JOIN navigation_container c ON c.id = p.container_id\n                        JOIN instance i ON i.id = c.instance_id\n                        JOIN type t ON t.id = c.type_id\n                        WHERE i.subdomain = ? AND t.name = 'default' AND p.parent_id IS NULL\n                        ORDER BY p.position, p.id\n                "
+  },
+  "04374dc0d810b4adf803ce463caca688f6a003b47ab1fa770e20c02ed2db3bee": {
+    "describe": {
+      "columns": [
+        {
+          "name": "quantity",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                    SELECT count(*) AS quantity FROM term_taxonomy_entity\n                        WHERE entity_id = ?\n                "
   },
   "04912efa922c870efb5268ef2a98a82dfa657b084a50c91b89031388c514de65": {
     "describe": {
@@ -1201,6 +1251,31 @@
     },
     "query": "\n                SELECT i.id as instance_id\n                    FROM uuid\n                    JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id\n                        UNION ALL\n                        SELECT user.id, 1 FROM user) u\n                    JOIN instance i ON i.id = u.instance_id\n                    WHERE u.id = ?\n            "
   },
+  "5c60c4c7ebcdf3fd09d7b4a0064575e23855b488542e83f15032e65a03956dfe": {
+    "describe": {
+      "columns": [
+        {
+          "name": "instance_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                    SELECT instance_id\n                        FROM entity\n                        WHERE id = ?\n                "
+  },
   "5ccab51b18faa4b93b294ebd0cda410cb79581350902993d9bbd7d93ed8896c7": {
     "describe": {
       "columns": [
@@ -1225,6 +1300,16 @@
       }
     },
     "query": "\n                    SELECT IFNULL(MAX(position), 0) AS current_last\n                        FROM term_taxonomy_entity\n                        WHERE term_taxonomy_id = ?\n                "
+  },
+  "5d49fc01ec2c4982df4e89c6035932df397436417167aa22134f1c8597856d13": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "DELETE FROM term_taxonomy_entity WHERE id = ?"
   },
   "5ec29168edbb2527c44c0fd81e1e14ab39b2d768c410b3436ec7770f72df3633": {
     "describe": {
@@ -1275,6 +1360,31 @@
       }
     },
     "query": "update user set description = ? where id = ?"
+  },
+  "65cd0955be9597ee668c9857b362a8702b70c8d1c0482674e2ad869828622df7": {
+    "describe": {
+      "columns": [
+        {
+          "name": "name",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "select type.name from entity join type on type.id = entity.type_id where entity.id = ?"
   },
   "65d605e2dbfb889b8efc8300283a96aae8696bb8f61aab612e652bc765211d30": {
     "describe": {
@@ -1531,6 +1641,31 @@
       }
     },
     "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, 'entityRevision')\n            "
+  },
+  "7f4a5ca621fe18eb5bdc7f3702904f8fffbb76cbb6dcd3338512abddc153c705": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                    SELECT id FROM term_taxonomy_entity\n                        WHERE entity_id = ?\n                        AND term_taxonomy_id = ?\n                "
   },
   "82e05bbc646bebf37b97af3f23e8599937749cb7ecf4b03bfd079ec152651862": {
     "describe": {
@@ -2305,6 +2440,31 @@
       }
     },
     "query": "\n            SELECT er.id\n                FROM entity_revision er\n                JOIN uuid ON er.id = uuid.id\n                WHERE repository_id = ?\n                    AND trashed = 0\n                ORDER BY date DESC\n                LIMIT 1\n            "
+  },
+  "add1bf803ca6b4b0d570cb40ffdad3383acd5ce093a1b86d4d8d649a73229079": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT id FROM entity WHERE id = ?"
   },
   "af0db2da7d2e46f2291c6edbe0870004af83d90d464346759ddde2067736a294": {
     "describe": {

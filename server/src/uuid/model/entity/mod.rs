@@ -295,6 +295,25 @@ impl UuidFetcher for Entity {
 }
 
 impl Entity {
+    pub async fn fetch_entity_type<'a, E>(
+        id: i32,
+        executor: E,
+    ) -> Result<Option<EntityType>, UuidError>
+    where
+        E: Executor<'a>,
+    {
+        if let Some(result) = sqlx::query!(
+            "select type.name from entity join type on type.id = entity.type_id where entity.id = ?",
+            id
+        )
+        .fetch_optional(executor)
+        .await? {
+            Ok(Some(result.name.parse::<EntityType>()?))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub async fn fetch_canonical_subject(
         id: i32,
         pool: &MySqlPool,
@@ -425,13 +444,7 @@ impl Entity {
     {
         let mut transaction = executor.begin().await?;
 
-        if let Err(UuidError::NotFound) =
-            Entity::fetch_via_transaction(payload.input.entity_id, &mut transaction).await
-        {
-            return Err(operation::Error::BadRequest {
-                reason: "entity with entity_id does not exist".to_string(),
-            });
-        }
+        Self::assert_entity_exists(payload.input.entity_id, &mut transaction).await?;
 
         let last_not_trashed_revision = sqlx::query!(
             r#"
@@ -524,9 +537,26 @@ impl Entity {
 
         Ok(entity_revision)
     }
-}
 
-impl Entity {
+    pub async fn assert_entity_exists<'a, E>(id: i32, executor: E) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        sqlx::query!(r#"SELECT id FROM entity WHERE id = ?"#, id)
+            .fetch_one(executor)
+            .await
+            .map_err(|error| match error {
+                sqlx::Error::RowNotFound => operation::Error::BadRequest {
+                    reason: format!("Entity with id {} does not exist", id),
+                },
+                _ => operation::Error::InternalServerError {
+                    error: Box::new(error),
+                },
+            })?;
+
+        Ok(())
+    }
+
     pub async fn create<'a, E>(
         payload: &entity_create_mutation::Payload,
         executor: E,
@@ -583,8 +613,7 @@ impl Entity {
                     reason: "taxonomy_term_id needs to be provided".to_string(),
                 })?;
 
-            instance_id =
-                TaxonomyTerm::get_instance_id_of_parent(parent_id, &mut transaction).await?;
+            instance_id = TaxonomyTerm::get_instance_id(parent_id, &mut transaction).await?;
         }
 
         sqlx::query!(
@@ -968,81 +997,24 @@ mod tests {
         Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload,
         EntityRejectRevisionError, EntityRejectRevisionPayload, EntityRevision,
     };
-    use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
     use crate::subscription::tests::fetch_subscription_by_user_and_object;
     use crate::subscription::Subscription;
     use crate::uuid::abstract_entity_revision::EntityRevisionType;
     use crate::uuid::{entity_add_revision_mutation, ConcreteUuid, Uuid, UuidFetcher};
+    use crate::{create_database_pool, operation};
 
     #[actix_rt::test]
-    async fn add_revision() {
+    async fn check_entity_exists_throws_bad_request_error() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        Entity::add_revision(
-            &entity_add_revision_mutation::Payload {
-                input: entity_add_revision_mutation::Input {
-                    changes: "test changes".to_string(),
-                    entity_id: 1495,
-                    needs_review: true,
-                    subscribe_this: false,
-                    subscribe_this_by_email: false,
-                    fields: HashMap::from([
-                        ("content".to_string(), "test content".to_string()),
-                        (
-                            "meta_description".to_string(),
-                            "test meta-description".to_string(),
-                        ),
-                        ("meta_title".to_string(), "test meta-title".to_string()),
-                        ("title".to_string(), "test title".to_string()),
-                    ]),
-                },
-                revision_type: EntityRevisionType::Article,
-                user_id: 1,
+        match Entity::assert_entity_exists(1, &mut transaction).await {
+            Err(error) => match error {
+                operation::Error::BadRequest { reason: _ } => {}
+                _ => panic!("check_entity_exists didn't throw expected error"),
             },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
-
-        let revision_id = sqlx::query!(r#"SELECT id FROM entity_revision ORDER BY id desc limit 1"#)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        let revision = EntityRevision::fetch_via_transaction(revision_id, &mut transaction)
-            .await
-            .unwrap();
-
-        if let ConcreteUuid::EntityRevision(EntityRevision {
-            abstract_entity_revision,
-            ..
-        }) = revision.concrete_uuid
-        {
-            assert_eq!(abstract_entity_revision.changes, "test changes".to_string());
-            assert_eq!(
-                abstract_entity_revision.fields.0["title"],
-                "test title".to_string()
-            );
-            assert_eq!(
-                abstract_entity_revision.fields.0["content"],
-                "test content".to_string()
-            );
-            assert_eq!(
-                abstract_entity_revision.fields.0["meta_description"],
-                "test meta-description".to_string()
-            );
-            assert_eq!(
-                abstract_entity_revision.fields.0["meta_title"],
-                "test meta-title".to_string()
-            );
-        } else {
-            panic!(
-                "Entity Revision does not fulfill assertions: {:?}",
-                revision
-            )
+            _ => panic!("check_entity_exists didn't throw expected error"),
         }
     }
 

@@ -441,8 +441,8 @@ mod delete_entity_links_mutation {
     async fn deletes_entity_links() {
         let mut transaction = begin_transaction().await;
 
-        let children_ids = [1743, 2095];
-        let taxonomy_term_id = 24503;
+        let children_ids = [1949, 1543];
+        let taxonomy_term_id = 24370;
 
         Message::new(
             "TaxonomyDeleteEntityLinksMutation",

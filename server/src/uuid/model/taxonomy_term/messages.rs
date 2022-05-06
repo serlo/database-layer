@@ -5,9 +5,8 @@ use serde::{Deserialize, Serialize};
 use super::TaxonomyTerm;
 use crate::database::Connection;
 use crate::message::MessageResponder;
-use crate::operation::{self, Operation};
+use crate::operation::{self, Operation, SuccessOutput};
 use crate::uuid::{TaxonomyType, Uuid};
-use crate::SuccessOutput;
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]

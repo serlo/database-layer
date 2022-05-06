@@ -65,3 +65,8 @@ pub trait Operation {
         }
     }
 }
+
+#[derive(Serialize)]
+pub struct SuccessOutput {
+    pub success: bool,
+}

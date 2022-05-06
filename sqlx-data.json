@@ -1138,6 +1138,31 @@
     },
     "query": "\n                SELECT l.default, l.title, l.url, l.content, l.agreement, l.icon_href, i.subdomain\n                    FROM license l\n                    JOIN instance i ON i.id = l.instance_id\n                    WHERE l.id = ?\n            "
   },
+  "4ceeb741646180dcc5427c0b9cb2799a6d2c82a6bb4ac02c80a7848be093bc53": {
+    "describe": {
+      "columns": [
+        {
+          "name": "instance_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "select instance_id from entity where id = ?"
+  },
   "544017b3c945f404442a6aacf8519449608b8b1cfacb8cf07b3495b313be09da": {
     "describe": {
       "columns": [

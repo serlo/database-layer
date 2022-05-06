@@ -7,7 +7,6 @@ use super::{
     EntityRejectRevisionPayload,
 };
 use crate::database::Connection;
-use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
@@ -179,7 +178,6 @@ pub mod entity_create_mutation {
     #[serde(rename_all = "camelCase")]
     pub struct Input {
         pub changes: String,
-        pub instance: Instance,
         pub license_id: i32,
         pub subscribe_this: bool,
         pub needs_review: bool,

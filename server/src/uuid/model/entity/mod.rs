@@ -22,7 +22,6 @@ use crate::event::{
 use crate::{fetch_all_fields, format_alias};
 
 use crate::datetime::DateTime;
-use crate::instance::Instance;
 use crate::operation;
 use crate::subscription::Subscription;
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
@@ -586,7 +585,36 @@ impl Entity {
             .await?
             .id as i32;
 
-        let instance_id = Instance::fetch_id(&payload.input.instance, &mut transaction).await?;
+        let parent_id: i32;
+        let instance_id: i32;
+
+        if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
+            payload.entity_type
+        {
+            parent_id = payload
+                .input
+                .parent_id
+                .ok_or(operation::Error::BadRequest {
+                    reason: "parent_id needs to be provided".to_string(),
+                })?;
+
+            instance_id = sqlx::query!("select instance_id from entity where id = ?", parent_id)
+                .fetch_optional(&mut transaction)
+                .await?
+                .ok_or(operation::Error::BadRequest {
+                    reason: format!("parent entity with id {} does not exist", parent_id),
+                })?
+                .instance_id as i32;
+        } else {
+            parent_id = payload
+                .input
+                .taxonomy_term_id
+                .ok_or(operation::Error::BadRequest {
+                    reason: "taxonomy_term_id needs to be provided".to_string(),
+                })?;
+
+            instance_id = TaxonomyTerm::get_instance_id(parent_id, &mut transaction).await?;
+        }
 
         sqlx::query!(
             r#"
@@ -605,13 +633,6 @@ impl Entity {
         if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
             payload.entity_type
         {
-            let parent_id = payload
-                .input
-                .parent_id
-                .ok_or(operation::Error::BadRequest {
-                    reason: "parent_id needs to be provided".to_string(),
-                })?;
-
             let last_order = sqlx::query!(
                 r#"
                     SELECT IFNULL(MAX(et.order), 0) AS current_last
@@ -637,30 +658,17 @@ impl Entity {
             .execute(&mut transaction)
             .await?;
 
-            EntityLinkEventPayload::new(
-                entity_id,
-                parent_id,
-                payload.user_id,
-                payload.input.instance.clone(),
-            )
-            .save(&mut transaction)
-            .await?;
+            EntityLinkEventPayload::new(entity_id, parent_id, payload.user_id, instance_id)
+                .save(&mut transaction)
+                .await?;
         } else {
-            let taxonomy_term_id =
-                payload
-                    .input
-                    .taxonomy_term_id
-                    .ok_or(operation::Error::BadRequest {
-                        reason: "taxonomy_term_id needs to be provided".to_string(),
-                    })?;
-
             let last_position = sqlx::query!(
                 r#"
                     SELECT IFNULL(MAX(position), 0) AS current_last
                         FROM term_taxonomy_entity
                         WHERE term_taxonomy_id = ?
                 "#,
-                taxonomy_term_id
+                parent_id
             )
             .fetch_one(&mut transaction)
             .await?
@@ -673,20 +681,15 @@ impl Entity {
                     VALUES (?, ?, ?)
                 "#,
                 entity_id,
-                taxonomy_term_id,
+                parent_id,
                 last_position
             )
             .execute(&mut transaction)
             .await?;
 
-            CreateTaxonomyLinkEventPayload::new(
-                entity_id,
-                taxonomy_term_id,
-                payload.user_id,
-                instance_id,
-            )
-            .save(&mut transaction)
-            .await?;
+            CreateTaxonomyLinkEventPayload::new(entity_id, parent_id, payload.user_id, instance_id)
+                .save(&mut transaction)
+                .await?;
         }
 
         CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)

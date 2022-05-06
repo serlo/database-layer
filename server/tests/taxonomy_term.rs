@@ -481,20 +481,15 @@ mod delete_entity_links_mutation {
 
     #[actix_rt::test]
     async fn fails_if_there_is_no_link_yet() {
-        let mut transaction = begin_transaction().await;
-
-        let children_ids = [1743, 2059];
-        let taxonomy_term_id = 24503;
-
         let response = Message::new(
             "TaxonomyDeleteEntityLinksMutation",
             json! ({
                 "userId": 1,
-                "entityIds": children_ids,
-                "taxonomyTermId": taxonomy_term_id
+                "entityIds": [1743, 2059],
+                "taxonomyTermId": 24503
             }),
         )
-        .execute_on(&mut transaction)
+        .execute()
         .await;
 
         assert_bad_request(response, "Id 2059 is not linked to taxonomy term 24503").await;
@@ -502,20 +497,15 @@ mod delete_entity_links_mutation {
 
     #[actix_rt::test]
     async fn fails_if_it_would_leave_child_orphan() {
-        let mut transaction = begin_transaction().await;
-
-        let children_ids = [12957];
-        let taxonomy_term_id = 1463;
-
         let response = Message::new(
             "TaxonomyDeleteEntityLinksMutation",
             json! ({
                 "userId": 1,
-                "entityIds": children_ids,
-                "taxonomyTermId": taxonomy_term_id
+                "entityIds": [12957],
+                "taxonomyTermId": 1463
             }),
         )
-        .execute_on(&mut transaction)
+        .execute()
         .await;
 
         assert_bad_request(

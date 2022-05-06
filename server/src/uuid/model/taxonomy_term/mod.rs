@@ -682,6 +682,25 @@ impl TaxonomyTerm {
             })?
             .id as i32;
 
+            if 1 == sqlx::query!(
+                r#"
+                    SELECT count(*) AS quantity FROM term_taxonomy_entity
+                        WHERE entity_id = ?
+                "#,
+                child_id,
+            )
+            .fetch_one(&mut transaction)
+            .await?
+            .quantity as i32
+            {
+                return Err(operation::Error::BadRequest {
+                    reason: format!(
+                        "Entity with id {} has to be linked to at least one taxonomy",
+                        child_id
+                    ),
+                });
+            };
+
             sqlx::query!(
                 r#"DELETE FROM term_taxonomy_entity WHERE id = ?"#,
                 term_taxonomy_entity_id,

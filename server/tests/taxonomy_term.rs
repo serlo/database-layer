@@ -510,4 +510,29 @@ mod delete_entity_links_mutation {
 
         assert_bad_request(response, "Id 2059 is not linked to taxonomy term 24503").await;
     }
+
+    #[actix_rt::test]
+    async fn fails_if_it_would_leave_child_orphan() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [12957];
+        let taxonomy_term_id = 1463;
+
+        let response = Message::new(
+            "TaxonomyDeleteEntityLinksMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(
+            response,
+            "Entity with id 12957 has to be linked to at least one taxonomy",
+        )
+        .await;
+    }
 }

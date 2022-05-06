@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.39](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.38..v0.3.39) - May 6, 2022
+
+### Fixed
+
+- Fix autoreview when creating entity #230
+
+- Avoid adding two last not trashed revisions with same content #232
+
 ## [0.3.38](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.37..v0.3.38) - May 3, 2022
 
 ### Fixed

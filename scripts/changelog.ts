@@ -130,6 +130,15 @@ async function exec(): Promise<void> {
           'Put newly created sub-entities at the end of the list',
         ],
       },
+      {
+        tagName: 'v0.3.39',
+        name: '0.3.39',
+        date: '2022-05-06',
+        fixed: [
+          'Fix autoreview when creating entity #230',
+          'Avoid adding two last not trashed revisions with same content #232',
+        ],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

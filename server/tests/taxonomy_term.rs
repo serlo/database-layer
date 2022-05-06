@@ -342,20 +342,15 @@ mod create_entity_link_mutation {
 
     #[actix_rt::test]
     async fn fails_if_a_child_is_not_an_entity() {
-        let mut transaction = begin_transaction().await;
-
-        let children_ids = [2059, 1];
-        let taxonomy_term_id = 1288;
-
         let response = Message::new(
             "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
-                "entityIds": children_ids,
-                "taxonomyTermId": taxonomy_term_id
+                "entityIds": [2059, 1],
+                "taxonomyTermId": 1288
             }),
         )
-        .execute_on(&mut transaction)
+        .execute()
         .await;
 
         assert_bad_request(response, "Entity with id 1 does not exist").await;
@@ -363,20 +358,15 @@ mod create_entity_link_mutation {
 
     #[actix_rt::test]
     async fn fails_if_parent_is_not_a_taxonomy_term() {
-        let mut transaction = begin_transaction().await;
-
-        let children_ids = [2059, 2327];
-        let taxonomy_term_id = 1;
-
         let response = Message::new(
             "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
-                "entityIds": children_ids,
-                "taxonomyTermId": taxonomy_term_id
+                "entityIds": [2059, 2327],
+                "taxonomyTermId": 1
             }),
         )
-        .execute_on(&mut transaction)
+        .execute()
         .await;
 
         assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
@@ -384,20 +374,15 @@ mod create_entity_link_mutation {
 
     #[actix_rt::test]
     async fn fails_if_parent_and_child_are_in_different_instances() {
-        let mut transaction = begin_transaction().await;
-
-        let children_ids = [2059, 28952];
-        let taxonomy_term_id = 7;
-
         let response = Message::new(
             "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
-                "entityIds": children_ids,
-                "taxonomyTermId": taxonomy_term_id
+                "entityIds": [2059, 28952],
+                "taxonomyTermId": 7
             }),
         )
-        .execute_on(&mut transaction)
+        .execute()
         .await;
 
         assert_bad_request(
@@ -411,29 +396,29 @@ mod create_entity_link_mutation {
     async fn does_not_store_same_link_twice() {
         let mut transaction = begin_transaction().await;
 
-        let children_ids = [2059];
+        let entity_id = 2059;
         let taxonomy_term_id = 1307;
 
-        let count =
-            count_taxonomy_entity_links(children_ids[0], taxonomy_term_id, &mut transaction).await;
-        assert_eq!(count, 1);
+        let count_before =
+            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut transaction).await;
 
         let response = Message::new(
             "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
-                "entityIds": children_ids,
+                "entityIds": [entity_id],
                 "taxonomyTermId": taxonomy_term_id
             }),
         )
-        .execute_on(&mut transaction)
+        .execute()
         .await;
 
         assert_ok(response, json!({ "success": true })).await;
 
-        let count =
-            count_taxonomy_entity_links(children_ids[0], taxonomy_term_id, &mut transaction).await;
-        assert_eq!(count, 1)
+        assert_eq!(
+            count_before,
+            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut transaction).await
+        );
     }
 }
 

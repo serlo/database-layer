@@ -139,6 +139,16 @@ async function exec(): Promise<void> {
           'Avoid adding two last not trashed revisions with same content #232',
         ],
       },
+      {
+        tagName: 'v0.3.40',
+        name: '0.3.40',
+        date: '2022-05-06',
+        added: [
+          'Add TaxonomyCreateEntityLinkMutation #221',
+          'Add TaxonomyDeleteEntityLinksMutation #222',
+        ],
+        internal: ['Remove "instance" from EntityCreateMutation #235'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

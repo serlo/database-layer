@@ -1,5 +1,30 @@
 {
   "db": "MySQL",
+  "01614e712579031ca16ed14cd5fad807daa8d962e008ef205903c15e0fe4bd34": {
+    "describe": {
+      "columns": [
+        {
+          "name": "count",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n            SELECT COUNT(*) AS count\n                FROM term_taxonomy_entity\n                WHERE entity_id = ?\n                    AND term_taxonomy_id = ?\n            "
+  },
   "01ec0b909247a28fa877dbb37da8db45610b8d2b460d68a429ca12919e5a2737": {
     "describe": {
       "columns": [

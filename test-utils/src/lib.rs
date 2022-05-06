@@ -361,6 +361,30 @@ impl EntityTestWrapper<'static> {
     }
 }
 
+pub async fn count_taxonomy_entity_links<'a, E>(
+    child_id: i32,
+    taxonomy_term_id: i32,
+    executor: E,
+) -> i32
+where
+    E: sqlx::mysql::MySqlExecutor<'a>,
+{
+    sqlx::query!(
+        r#"
+            SELECT COUNT(*) AS count
+                FROM term_taxonomy_entity
+                WHERE entity_id = ?
+                    AND term_taxonomy_id = ?
+            "#,
+        child_id,
+        taxonomy_term_id
+    )
+    .fetch_one(executor)
+    .await
+    .unwrap()
+    .count as i32
+}
+
 fn random_string(nr: usize) -> String {
     rand::thread_rng()
         .sample_iter(&Alphanumeric)

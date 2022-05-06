@@ -408,11 +408,15 @@ mod create_entity_link_mutation {
     }
 
     #[actix_rt::test]
-    async fn fails_if_link_already_exists() {
+    async fn does_not_store_same_link_twice() {
         let mut transaction = begin_transaction().await;
 
-        let children_ids = [2059, 2327];
+        let children_ids = [2059];
         let taxonomy_term_id = 1307;
+
+        let count =
+            count_taxonomy_entity_links(children_ids[0], taxonomy_term_id, &mut transaction).await;
+        assert_eq!(count, 1);
 
         let response = Message::new(
             "TaxonomyCreateEntityLinksMutation",
@@ -425,11 +429,11 @@ mod create_entity_link_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_bad_request(
-            response,
-            "Entity 2059 is already linked to taxonomy term 1307",
-        )
-        .await;
+        assert_ok(response, json!({ "success": true })).await;
+
+        let count =
+            count_taxonomy_entity_links(children_ids[0], taxonomy_term_id, &mut transaction).await;
+        assert_eq!(count, 1)
     }
 }
 

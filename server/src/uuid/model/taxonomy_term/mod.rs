@@ -582,12 +582,7 @@ impl TaxonomyTerm {
             .await?;
 
             if is_child_already_linked_to_taxonomy.is_some() {
-                return Err(operation::Error::BadRequest {
-                    reason: format!(
-                        "Entity {} is already linked to taxonomy term {}",
-                        child_id, payload.taxonomy_term_id
-                    ),
-                });
+                continue;
             }
 
             let child_instance_id = sqlx::query!(

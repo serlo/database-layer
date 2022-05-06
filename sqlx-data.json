@@ -1336,6 +1336,31 @@
     },
     "query": "update user set description = ? where id = ?"
   },
+  "65cd0955be9597ee668c9857b362a8702b70c8d1c0482674e2ad869828622df7": {
+    "describe": {
+      "columns": [
+        {
+          "name": "name",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "select type.name from entity join type on type.id = entity.type_id where entity.id = ?"
+  },
   "65d605e2dbfb889b8efc8300283a96aae8696bb8f61aab612e652bc765211d30": {
     "describe": {
       "columns": [],

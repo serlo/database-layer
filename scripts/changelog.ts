@@ -134,7 +134,10 @@ async function exec(): Promise<void> {
         tagName: 'v0.3.39',
         name: '0.3.39',
         date: '2022-05-06',
-        fixed: ['Fix autoreview when creating entity #230'],
+        fixed: [
+          'Fix autoreview when creating entity #230',
+          'Avoid adding two last not trashed revisions with same content #232',
+        ],
       },
     ],
   })

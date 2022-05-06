@@ -18,7 +18,7 @@ pub enum TaxonomyTermMessage {
     TaxonomyTermMoveMutation(taxonomy_term_move_mutation::Payload),
     TaxonomyTermCreateMutation(taxonomy_term_create_mutation::Payload),
     TaxonomyCreateEntityLinkMutation(taxonomy_create_entity_link_mutation::Payload),
-    TaxonomyDeleteEntityLinkMutation(taxonomy_delete_entity_link_mutation::Payload),
+    TaxonomyDeleteEntityLinksMutation(taxonomy_delete_entity_links_mutation::Payload),
 }
 
 #[async_trait]
@@ -44,9 +44,9 @@ impl MessageResponder for TaxonomyTermMessage {
                     .handle("TaxonomyCreateEntityLinkMutation", connection)
                     .await
             }
-            TaxonomyTermMessage::TaxonomyDeleteEntityLinkMutation(payload) => {
+            TaxonomyTermMessage::TaxonomyDeleteEntityLinksMutation(payload) => {
                 payload
-                    .handle("TaxonomyDeleteEntityLinkMutation", connection)
+                    .handle("TaxonomyDeleteEntityLinksMutation", connection)
                     .await
             }
         }
@@ -173,7 +173,7 @@ pub mod taxonomy_create_entity_link_mutation {
     }
 }
 
-pub mod taxonomy_delete_entity_link_mutation {
+pub mod taxonomy_delete_entity_links_mutation {
     use super::*;
 
     #[derive(Deserialize, Serialize)]

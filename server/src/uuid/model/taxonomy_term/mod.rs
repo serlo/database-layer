@@ -652,7 +652,7 @@ impl TaxonomyTerm {
     }
 
     pub async fn delete_entity_link<'a, E>(
-        payload: &taxonomy_delete_entity_link_mutation::Payload,
+        payload: &taxonomy_delete_entity_links_mutation::Payload,
         executor: E,
     ) -> Result<(), operation::Error>
     where
@@ -662,7 +662,7 @@ impl TaxonomyTerm {
 
         let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut transaction).await?;
 
-        for child_id in payload.entity_ids.clone() {
+        for child_id in &payload.entity_ids {
             let term_taxonomy_entity_id = sqlx::query!(
                 r#"
                     SELECT id FROM term_taxonomy_entity
@@ -690,7 +690,7 @@ impl TaxonomyTerm {
             .await?;
 
             RemoveTaxonomyLinkEventPayload::new(
-                child_id,
+                *child_id,
                 payload.taxonomy_term_id,
                 payload.user_id,
                 instance_id,

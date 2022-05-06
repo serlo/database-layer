@@ -434,18 +434,18 @@ mod create_entity_link_mutation {
 }
 
 #[cfg(test)]
-mod delete_entity_link_mutation {
+mod delete_entity_links_mutation {
     use test_utils::*;
 
     #[actix_rt::test]
-    async fn deletes_entity_link() {
+    async fn deletes_entity_links() {
         let mut transaction = begin_transaction().await;
 
         let children_ids = [1743, 2095];
         let taxonomy_term_id = 24503;
 
         Message::new(
-            "TaxonomyDeleteEntityLinkMutation",
+            "TaxonomyDeleteEntityLinksMutation",
             json! ({
                 "userId": 1,
                 "entityIds": children_ids,
@@ -498,7 +498,7 @@ mod delete_entity_link_mutation {
         let taxonomy_term_id = 24503;
 
         let response = Message::new(
-            "TaxonomyDeleteEntityLinkMutation",
+            "TaxonomyDeleteEntityLinksMutation",
             json! ({
                 "userId": 1,
                 "entityIds": children_ids,

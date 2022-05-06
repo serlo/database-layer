@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use super::abstract_event::AbstractEvent;
 use super::{Event, EventError, EventPayload, RawEventType};
-use crate::{database::Executor, instance::Instance};
+use crate::database::Executor;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,16 +32,16 @@ pub struct EntityLinkEventPayload {
     child_id: i32,
     actor_id: i32,
     parent_id: i32,
-    instance: Instance,
+    instance_id: i32,
 }
 
 impl EntityLinkEventPayload {
-    pub fn new(child_id: i32, parent_id: i32, actor_id: i32, instance: Instance) -> Self {
+    pub fn new(child_id: i32, parent_id: i32, actor_id: i32, instance_id: i32) -> Self {
         Self {
             child_id,
             actor_id,
             parent_id,
-            instance,
+            instance_id,
         }
     }
 
@@ -55,7 +55,7 @@ impl EntityLinkEventPayload {
             RawEventType::CreateEntityLink,
             self.actor_id,
             self.child_id,
-            self.instance.fetch_id(&mut transaction).await?,
+            self.instance_id,
             HashMap::new(),
             [("parent".to_string(), self.parent_id)]
                 .iter()

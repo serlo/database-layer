@@ -267,6 +267,8 @@ mod tests {
     async fn query_notifications_does_not_return_notifications_with_unsupported_uuid() {
         for uuid_type in ["attachment", "blogPost"].iter() {
             let pool = create_database_pool().await.unwrap();
+            let mut transaction = pool.begin().await.unwrap();
+            let instance_id = Instance::De.fetch_id(&mut transaction).await.unwrap();
 
             let unsupported_uuid =
                 sqlx::query!("select id from uuid where discriminator = ?", uuid_type)
@@ -281,7 +283,7 @@ mod tests {
                         unsupported_uuid,
                         user_id,
                         user_id,
-                        Instance::De,
+                        instance_id,
                     ))
                 },
                 format!(
@@ -299,7 +301,7 @@ mod tests {
                         user_id,
                         unsupported_uuid,
                         user_id,
-                        Instance::De,
+                        instance_id,
                     ))
                 },
                 format!(
@@ -316,6 +318,8 @@ mod tests {
     #[actix_rt::test]
     async fn query_notifications_does_not_return_notifications_with_unsupported_entity() {
         let pool = create_database_pool().await.unwrap();
+        let mut transaction = pool.begin().await.unwrap();
+        let instance_id = Instance::De.fetch_id(&mut transaction).await.unwrap();
 
         let result = sqlx::query!(
             r#"
@@ -327,7 +331,7 @@ mod tests {
                 where type_id = 39
             "#
         )
-        .fetch_one(&pool)
+        .fetch_one(&mut transaction)
         .await
         .unwrap();
 
@@ -337,7 +341,7 @@ mod tests {
                     result.math_puzzle_id as i32,
                     user_id,
                     user_id,
-                    Instance::De,
+                    instance_id,
                 ))
             },
             "when event_log.uuid_id is unsupported entity".to_string(),
@@ -352,7 +356,7 @@ mod tests {
                     user_id,
                     result.math_puzzle_id as i32,
                     user_id,
-                    Instance::De,
+                    instance_id,
                 ))
             },
             "when event_parameter_uuid is unsupported entity".to_string(),

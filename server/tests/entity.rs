@@ -125,7 +125,6 @@ mod create_mutation {
                     "entityType": entity.typename,
                     "input": {
                         "changes": "test changes",
-                        "instance": "de",
                         "subscribeThis": false,
                         "subscribeThisByEmail": false,
                         "licenseId": 1,
@@ -222,7 +221,6 @@ mod create_mutation {
                     "entityType": entity.typename,
                     "input": {
                         "changes": "test changes",
-                        "instance": "de",
                         "subscribeThis": false,
                         "subscribeThisByEmail": false,
                         "licenseId": 1,
@@ -274,12 +272,70 @@ mod create_mutation {
                     "entityType": "Article",
                     "input": {
                         "changes": "test changes",
-                        "instance": "de",
                         "subscribeThis": false,
                         "subscribeThisByEmail": false,
-                        "licenseId": 1 as i32,
-                        "taxonomyTermId": 7 as i32,
+                        "licenseId": 1,
+                        "taxonomyTermId": 7,
                         "needsReview": false,
+                        "fields": {
+                            "content": "content",
+                            "title": "title",
+                            "metaTitle": "metaTitle",
+                            "metaDescription": "metaDescription"
+                        },
+                    },
+                    "userId": 1,
+                }),
+            )
+            .execute()
+            .await,
+            |result| assert!(!result["currentRevisionId"].is_null()),
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_parent_is_no_entity() {
+        assert_bad_request(
+            Message::new(
+                "EntityCreateMutation",
+                json!({
+                    "entityType": "Solution",
+                    "input": {
+                        "changes": "test changes",
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "licenseId": 1,
+                        "parentId": 1,
+                        "needsReview": true,
+                        "fields": {
+                            "content": "content",
+                        },
+                    },
+                    "userId": 1 as i32,
+                }),
+            )
+            .execute()
+            .await,
+            "parent entity with id 1 does not exist",
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_taxonomy_term_does_not_exist() {
+        assert_bad_request(
+            Message::new(
+                "EntityCreateMutation",
+                json!({
+                    "entityType": "Article",
+                    "input": {
+                        "changes": "test changes",
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "licenseId": 1,
+                        "taxonomyTermId": 1,
+                        "needsReview": true,
                         "fields": {
                             "content": "content",
                             "title": "title",
@@ -292,7 +348,7 @@ mod create_mutation {
             )
             .execute()
             .await,
-            |result| assert!(!result["currentRevisionId"].is_null()),
+            "Taxonomy term with id 1 does not exist",
         )
         .await;
     }

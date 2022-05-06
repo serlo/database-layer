@@ -1088,6 +1088,31 @@
     },
     "query": "\n                SELECT l.default, l.title, l.url, l.content, l.agreement, l.icon_href, i.subdomain\n                    FROM license l\n                    JOIN instance i ON i.id = l.instance_id\n                    WHERE l.id = ?\n            "
   },
+  "4ceeb741646180dcc5427c0b9cb2799a6d2c82a6bb4ac02c80a7848be093bc53": {
+    "describe": {
+      "columns": [
+        {
+          "name": "instance_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "select instance_id from entity where id = ?"
+  },
   "544017b3c945f404442a6aacf8519449608b8b1cfacb8cf07b3495b313be09da": {
     "describe": {
       "columns": [
@@ -3288,16 +3313,6 @@
       }
     },
     "query": "\n                SELECT\n                    entity.id,\n                    type.name AS resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND entity.type_id IN (48, 3, 7, 1, 4, 6)\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
-  },
-  "f46abdd164878cc0099fb55982a6ba349c56788b23aade73b7b37e98073364fc": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                INSERT INTO entity_revision_field (field, value, entity_revision_id)\n                    VALUES (\"changes\", ?, ?)\n            "
   },
   "f54a64f3deb41e1dcc06f219f2804cc4a4c18c2d430c3f7c971779342a768f75": {
     "describe": {

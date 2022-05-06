@@ -296,6 +296,25 @@ impl UuidFetcher for Entity {
 }
 
 impl Entity {
+    pub async fn fetch_entity_type<'a, E>(
+        id: i32,
+        executor: E,
+    ) -> Result<Option<EntityType>, UuidError>
+    where
+        E: Executor<'a>,
+    {
+        if let Some(result) = sqlx::query!(
+            "select type.name from entity join type on type.id = entity.type_id where entity.id = ?",
+            id
+        )
+        .fetch_optional(executor)
+        .await? {
+            Ok(Some(result.name.parse::<EntityType>()?))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub async fn fetch_canonical_subject(
         id: i32,
         pool: &MySqlPool,

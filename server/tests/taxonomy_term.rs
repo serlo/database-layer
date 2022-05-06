@@ -353,7 +353,27 @@ mod create_entity_link_mutation {
         .execute()
         .await;
 
-        assert_bad_request(response, "Entity with id 1 does not exist").await;
+        assert_bad_request(response, "entity with id 1 does not exist").await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_a_child_cannot_be_linked_into_a_taxonomy_term() {
+        let response = Message::new(
+            "TaxonomyCreateEntityLinksMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": [29648],
+                "taxonomyTermId": 1288
+            }),
+        )
+        .execute()
+        .await;
+
+        assert_bad_request(
+            response,
+            "entity with id 29648 cannot be linked to a taxonomy term",
+        )
+        .await;
     }
 
     #[actix_rt::test]

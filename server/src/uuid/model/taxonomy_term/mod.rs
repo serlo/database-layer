@@ -18,6 +18,7 @@ use crate::event::{
 use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
 use crate::uuid::Entity;
+use crate::uuid::EntityType;
 use crate::{format_alias, operation};
 pub use messages::*;
 
@@ -567,7 +568,23 @@ impl TaxonomyTerm {
         let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut transaction).await?;
 
         for child_id in &payload.entity_ids {
-            Entity::assert_entity_exists(*child_id, &mut transaction).await?;
+            let entity_type = Entity::fetch_entity_type(*child_id, &mut transaction)
+                .await?
+                .ok_or(operation::Error::BadRequest {
+                    reason: format!("entity with id {} does not exist", child_id),
+                })?;
+
+            match entity_type {
+                EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution => {
+                    return Err(operation::Error::BadRequest {
+                        reason: format!(
+                            "entity with id {} cannot be linked to a taxonomy term",
+                            child_id
+                        ),
+                    })
+                }
+                _ => (),
+            };
 
             let is_child_already_linked_to_taxonomy = sqlx::query!(
                 r#"

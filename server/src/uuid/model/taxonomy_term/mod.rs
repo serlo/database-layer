@@ -290,7 +290,7 @@ impl TaxonomyTerm {
         typename.to_case(Case::Camel)
     }
 
-    async fn get_instance_id_of_parent<'a, E>(
+    pub async fn get_instance_id_of_parent<'a, E>(
         parent_id: i32,
         executor: E,
     ) -> Result<i32, operation::Error>

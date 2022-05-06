@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.40](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.39..v0.3.40) - May 6, 2022
+
+### Added
+
+- Add TaxonomyCreateEntityLinkMutation #221
+
+- Add TaxonomyDeleteEntityLinksMutation #222
+
+### Internal
+
+- Remove "instance" from EntityCreateMutation #235
+
 ## [0.3.39](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.38..v0.3.39) - May 6, 2022
 
 ### Fixed

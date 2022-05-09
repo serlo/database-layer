@@ -9,6 +9,7 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::format_alias;
 use crate::instance::Instance;
+use messages::add_revision_mutation;
 
 use crate::event::{CreateEntityRevisionEventPayload, EventError, RevisionEventPayload};
 use crate::uuid::PageRevision;
@@ -178,7 +179,7 @@ impl From<UuidError> for PageAddRevisionError {
 
 impl Page {
     pub async fn add_revision<'a, E>(
-        payload: PageAddRevisionPayload,
+        payload: &add_revision_mutation::Payload,
         executor: E,
     ) -> Result<Uuid, PageAddRevisionError>
     where
@@ -468,7 +469,7 @@ impl Page {
         };
 
         Page::add_revision(
-            PageAddRevisionPayload {
+            &add_revision_mutation::Payload {
                 content: payload.content.clone(),
                 title: payload.title.clone(),
                 page_id,
@@ -594,15 +595,14 @@ impl Page {
 mod tests {
     use chrono::Duration;
 
+    use super::messages::add_revision_mutation;
     use super::{
         Page, PageCheckoutRevisionError, PageCheckoutRevisionPayload, PageRejectRevisionError,
         PageRejectRevisionPayload, PageRevision,
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-    use crate::uuid::{
-        ConcreteUuid, PageAddRevisionError, PageAddRevisionPayload, Uuid, UuidFetcher,
-    };
+    use crate::uuid::{ConcreteUuid, PageAddRevisionError, Uuid, UuidFetcher};
 
     #[actix_rt::test]
     async fn add_revision() {
@@ -610,7 +610,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let uuid = Page::add_revision(
-            PageAddRevisionPayload {
+            &add_revision_mutation::Payload {
                 content: "test content".to_string(),
                 title: "test title".to_string(),
                 user_id: 1,
@@ -636,7 +636,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Page::add_revision(
-            PageAddRevisionPayload {
+            &add_revision_mutation::Payload {
                 content: "test content".to_string(),
                 title: "test title".to_string(),
                 user_id: 1,

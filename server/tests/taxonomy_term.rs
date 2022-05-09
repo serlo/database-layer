@@ -282,3 +282,256 @@ mod create_mutation {
         }
     }
 }
+
+#[cfg(test)]
+mod create_entity_link_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn creates_entity_link() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [2059, 2327];
+        let taxonomy_term_id = 1288;
+
+        Message::new(
+            "TaxonomyCreateEntityLinksMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        for child_id in children_ids.iter() {
+            let query_response = Message::new("UuidQuery", json!({ "id": child_id }))
+                .execute_on(&mut transaction)
+                .await;
+
+            assert_ok_with(query_response, |result| {
+                assert!(result["taxonomyTermIds"]
+                    .as_array()
+                    .unwrap()
+                    .contains(&to_value(taxonomy_term_id).unwrap()));
+            })
+            .await;
+
+            let events_response =
+                Message::new("EventsQuery", json ! ({ "first": 1, "objectId": child_id }))
+                    .execute_on(&mut transaction)
+                    .await;
+
+            assert_ok_with(events_response, |result| {
+                assert_json_include ! (
+                    actual: &result["events"][0],
+                    expected: json ! ({
+                        "__typename": "CreateTaxonomyLinkNotificationEvent",
+                        "instance": "de",
+                        "actorId": 1,
+                        "objectId": taxonomy_term_id,
+                        "parentId": taxonomy_term_id,
+                        "childId": child_id
+                    })
+                );
+            })
+            .await;
+        }
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_a_child_is_not_an_entity() {
+        let response = Message::new(
+            "TaxonomyCreateEntityLinksMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": [2059, 1],
+                "taxonomyTermId": 1288
+            }),
+        )
+        .execute()
+        .await;
+
+        assert_bad_request(response, "entity with id 1 does not exist").await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_a_child_cannot_be_linked_into_a_taxonomy_term() {
+        let response = Message::new(
+            "TaxonomyCreateEntityLinksMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": [29648],
+                "taxonomyTermId": 1288
+            }),
+        )
+        .execute()
+        .await;
+
+        assert_bad_request(
+            response,
+            "entity with id 29648 cannot be linked to a taxonomy term",
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_parent_is_not_a_taxonomy_term() {
+        let response = Message::new(
+            "TaxonomyCreateEntityLinksMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": [2059, 2327],
+                "taxonomyTermId": 1
+            }),
+        )
+        .execute()
+        .await;
+
+        assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_parent_and_child_are_in_different_instances() {
+        let response = Message::new(
+            "TaxonomyCreateEntityLinksMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": [2059, 28952],
+                "taxonomyTermId": 7
+            }),
+        )
+        .execute()
+        .await;
+
+        assert_bad_request(
+            response,
+            "Entity 28952 and taxonomy term 7 are not in the same instance",
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn does_not_store_same_link_twice() {
+        let mut transaction = begin_transaction().await;
+
+        let entity_id = 2059;
+        let taxonomy_term_id = 1307;
+
+        let count_before =
+            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut transaction).await;
+
+        let response = Message::new(
+            "TaxonomyCreateEntityLinksMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": [entity_id],
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute()
+        .await;
+
+        assert_ok(response, json!({ "success": true })).await;
+
+        assert_eq!(
+            count_before,
+            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut transaction).await
+        );
+    }
+}
+
+#[cfg(test)]
+mod delete_entity_links_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn deletes_entity_links() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [1949, 1543];
+        let taxonomy_term_id = 24370;
+
+        Message::new(
+            "TaxonomyDeleteEntityLinksMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        for child_id in children_ids.iter() {
+            let query_response = Message::new("UuidQuery", json!({ "id": child_id }))
+                .execute_on(&mut transaction)
+                .await;
+
+            assert_ok_with(query_response, |result| {
+                assert!(!result["taxonomyTermIds"]
+                    .as_array()
+                    .unwrap()
+                    .contains(&to_value(taxonomy_term_id).unwrap()));
+            })
+            .await;
+
+            let events_response =
+                Message::new("EventsQuery", json ! ({ "first": 1, "objectId": child_id }))
+                    .execute_on(&mut transaction)
+                    .await;
+
+            assert_ok_with(events_response, |result| {
+                assert_json_include ! (
+                    actual: &result["events"][0],
+                    expected: json ! ({
+                        "__typename": "RemoveTaxonomyLinkNotificationEvent",
+                        "instance": "de",
+                        "actorId": 1,
+                        "objectId": taxonomy_term_id,
+                        "parentId": taxonomy_term_id,
+                        "childId": child_id
+                    })
+                );
+            })
+            .await;
+        }
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_there_is_no_link_yet() {
+        let response = Message::new(
+            "TaxonomyDeleteEntityLinksMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": [1743, 2059],
+                "taxonomyTermId": 24503
+            }),
+        )
+        .execute()
+        .await;
+
+        assert_bad_request(response, "Id 2059 is not linked to taxonomy term 24503").await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_it_would_leave_child_orphan() {
+        let response = Message::new(
+            "TaxonomyDeleteEntityLinksMutation",
+            json! ({
+                "userId": 1,
+                "entityIds": [12957],
+                "taxonomyTermId": 1463
+            }),
+        )
+        .execute()
+        .await;
+
+        assert_bad_request(
+            response,
+            "Entity with id 12957 has to be linked to at least one taxonomy",
+        )
+        .await;
+    }
+}

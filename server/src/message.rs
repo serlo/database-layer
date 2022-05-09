@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use crate::alias::AliasMessage;
 use crate::database::Connection;
 use crate::event::EventMessage;
-use crate::license::LicenseMessage;
 use crate::metadata::MetadataMessage;
 use crate::navigation::NavigationMessage;
 use crate::notification::NotificationMessage;
@@ -28,7 +27,6 @@ pub enum Message {
     AliasMessage(AliasMessage),
     EntityMessage(EntityMessage),
     EventMessage(EventMessage),
-    LicenseMessage(LicenseMessage),
     MetadataMessage(MetadataMessage),
     NavigationMessage(NavigationMessage),
     NotificationMessage(NotificationMessage),
@@ -50,7 +48,6 @@ impl MessageResponder for Message {
             Message::AliasMessage(message) => message.handle(connection).await,
             Message::EntityMessage(message) => message.handle(connection).await,
             Message::EventMessage(message) => message.handle(connection).await,
-            Message::LicenseMessage(message) => message.handle(connection).await,
             Message::MetadataMessage(message) => message.handle(connection).await,
             Message::NavigationMessage(message) => message.handle(connection).await,
             Message::NotificationMessage(message) => message.handle(connection).await,

@@ -124,6 +124,6 @@ PACT_FILE=../api.serlo.org/pacts/api.serlo.org-serlo.org-database-layer.json ./s
 - `cargo clippy` – Lint the whole codebase (see https://github.com/rust-lang/rust-clippy )
 - `yarn mysql` – Start a MySQL shell for the local mysql server.
 - `yarn format` – Format all local source files.
-- `yarn version` – Start process for adding new server version
+- `yarn update-version` – Start process for adding new server version (only required for deployment)
 
 - See also [`package.json`](./package.json) for the list of all yarn scripts.

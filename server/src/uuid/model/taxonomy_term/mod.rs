@@ -12,10 +12,13 @@ use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 
 use crate::database::Executor;
 use crate::event::{
-    CreateTaxonomyTermEventPayload, SetTaxonomyParentEventPayload, SetTaxonomyTermEventPayload,
+    CreateTaxonomyLinkEventPayload, CreateTaxonomyTermEventPayload, RemoveTaxonomyLinkEventPayload,
+    SetTaxonomyParentEventPayload, SetTaxonomyTermEventPayload,
 };
 use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
+use crate::uuid::Entity;
+use crate::uuid::EntityType;
 use crate::{format_alias, operation};
 pub use messages::*;
 
@@ -290,8 +293,8 @@ impl TaxonomyTerm {
         typename.to_case(Case::Camel)
     }
 
-    async fn get_instance_id_of_parent<'a, E>(
-        parent_id: i32,
+    pub async fn get_instance_id<'a, E>(
+        term_taxonomy_id: i32,
         executor: E,
     ) -> Result<i32, operation::Error>
     where
@@ -305,12 +308,12 @@ impl TaxonomyTerm {
                         ON term.id = term_taxonomy.term_id
                     WHERE term_taxonomy.id = ?
             "#,
-            parent_id
+            term_taxonomy_id
         )
         .fetch_optional(executor)
         .await?
         .ok_or(operation::Error::BadRequest {
-            reason: format!("Taxonomy term with id {} does not exist", parent_id),
+            reason: format!("Taxonomy term with id {} does not exist", term_taxonomy_id),
         })?
         .instance_id as i32)
     }
@@ -383,7 +386,7 @@ impl TaxonomyTerm {
         let mut transaction = executor.begin().await?;
 
         let new_parent_instance_id =
-            Self::get_instance_id_of_parent(payload.destination, &mut transaction).await?;
+            Self::get_instance_id(payload.destination, &mut transaction).await?;
 
         for child_id in &payload.children_ids {
             if *child_id == payload.destination {
@@ -494,8 +497,7 @@ impl TaxonomyTerm {
         .await?
         .id as i32;
 
-        let instance_id =
-            Self::get_instance_id_of_parent(payload.parent_id, &mut transaction).await?;
+        let instance_id = Self::get_instance_id(payload.parent_id, &mut transaction).await?;
 
         sqlx::query!(
             r#"
@@ -552,5 +554,184 @@ impl TaxonomyTerm {
         transaction.commit().await?;
 
         Ok(taxonomy_term)
+    }
+
+    pub async fn create_entity_link<'a, E>(
+        payload: &taxonomy_create_entity_links_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut transaction).await?;
+
+        for child_id in &payload.entity_ids {
+            let entity_type = Entity::fetch_entity_type(*child_id, &mut transaction)
+                .await?
+                .ok_or(operation::Error::BadRequest {
+                    reason: format!("entity with id {} does not exist", child_id),
+                })?;
+
+            match entity_type {
+                EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution => {
+                    return Err(operation::Error::BadRequest {
+                        reason: format!(
+                            "entity with id {} cannot be linked to a taxonomy term",
+                            child_id
+                        ),
+                    })
+                }
+                _ => (),
+            };
+
+            let is_child_already_linked_to_taxonomy = sqlx::query!(
+                r#"
+                    SELECT id FROM term_taxonomy_entity
+                        WHERE entity_id = ?
+                        AND term_taxonomy_id = ?
+                "#,
+                child_id,
+                payload.taxonomy_term_id
+            )
+            .fetch_optional(&mut transaction)
+            .await?;
+
+            if is_child_already_linked_to_taxonomy.is_some() {
+                continue;
+            }
+
+            let child_instance_id = sqlx::query!(
+                r#"
+                    SELECT instance_id
+                        FROM entity
+                        WHERE id = ?
+                "#,
+                child_id
+            )
+            .fetch_one(&mut transaction)
+            .await?
+            .instance_id as i32;
+
+            if instance_id != child_instance_id {
+                return Err(operation::Error::BadRequest {
+                    reason: format!(
+                        "Entity {} and taxonomy term {} are not in the same instance",
+                        child_id, payload.taxonomy_term_id
+                    ),
+                });
+            }
+
+            let last_position = sqlx::query!(
+                r#"
+                    SELECT IFNULL(MAX(position), 0) AS current_last
+                        FROM term_taxonomy_entity
+                        WHERE term_taxonomy_id = ?
+                "#,
+                payload.taxonomy_term_id
+            )
+            .fetch_one(&mut transaction)
+            .await?
+            .current_last as i32
+                + 1;
+
+            sqlx::query!(
+                r#"
+                    INSERT INTO term_taxonomy_entity (entity_id, term_taxonomy_id, position)
+                    VALUES (?, ?, ?)
+                "#,
+                child_id,
+                payload.taxonomy_term_id,
+                last_position
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            CreateTaxonomyLinkEventPayload::new(
+                *child_id,
+                payload.taxonomy_term_id,
+                payload.user_id,
+                instance_id,
+            )
+            .save(&mut transaction)
+            .await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
+
+    pub async fn delete_entity_link<'a, E>(
+        payload: &taxonomy_delete_entity_links_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut transaction).await?;
+
+        for child_id in &payload.entity_ids {
+            let term_taxonomy_entity_id = sqlx::query!(
+                r#"
+                    SELECT id FROM term_taxonomy_entity
+                        WHERE entity_id = ?
+                        AND term_taxonomy_id = ?
+                "#,
+                child_id,
+                payload.taxonomy_term_id
+            )
+            .fetch_optional(&mut transaction)
+            .await?
+            .ok_or(operation::Error::BadRequest {
+                reason: format!(
+                    "Id {} is not linked to taxonomy term {}",
+                    child_id, payload.taxonomy_term_id
+                ),
+            })?
+            .id as i32;
+
+            if 1 == sqlx::query!(
+                r#"
+                    SELECT count(*) AS quantity FROM term_taxonomy_entity
+                        WHERE entity_id = ?
+                "#,
+                child_id,
+            )
+            .fetch_one(&mut transaction)
+            .await?
+            .quantity as i32
+            {
+                return Err(operation::Error::BadRequest {
+                    reason: format!(
+                        "Entity with id {} has to be linked to at least one taxonomy",
+                        child_id
+                    ),
+                });
+            };
+
+            sqlx::query!(
+                r#"DELETE FROM term_taxonomy_entity WHERE id = ?"#,
+                term_taxonomy_entity_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            RemoveTaxonomyLinkEventPayload::new(
+                *child_id,
+                payload.taxonomy_term_id,
+                payload.user_id,
+                instance_id,
+            )
+            .save(&mut transaction)
+            .await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(())
     }
 }

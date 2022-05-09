@@ -66,6 +66,65 @@ mod add_revision_mutation {
             assert_event_revision_ok(revision_id, revision.entity_id, &mut transaction).await;
         }
     }
+
+    #[actix_rt::test]
+    async fn does_not_add_revision_if_fields_are_same() {
+        for revision in EntityTestWrapper::all().iter() {
+            let mut transaction = begin_transaction().await;
+
+            let first_mutation_response = Message::new(
+                "EntityAddRevisionMutation",
+                json!({
+                    "revisionType": revision.revision_type,
+                    "input": {
+                        "changes": "test changes",
+                        "entityId": revision.entity_id,
+                        "needsReview": true,
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "fields": revision.fields()
+                    },
+                    "userId": 1
+                }),
+            )
+            .execute_on(&mut transaction)
+            .await;
+
+            let first_revision_id = get_json(first_mutation_response).await["revisionId"].clone();
+            let first_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
+
+            let second_mutation_response = Message::new(
+                "EntityAddRevisionMutation",
+                json!({
+                    "revisionType": revision.revision_type,
+                    "input": {
+                        "changes": "second edit",
+                        "entityId": revision.entity_id,
+                        "needsReview": true,
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "fields": revision.fields()
+                    },
+                    "userId": 1
+                }),
+            )
+            .execute_on(&mut transaction)
+            .await;
+
+            let second_revision_id = get_json(second_mutation_response).await["revisionId"].clone();
+            let second_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
+
+            assert_eq!(first_revision_id, second_revision_id);
+            assert_eq!(first_revision_ids, second_revision_ids);
+        }
+    }
+
+    async fn get_revisions(id: i32, transaction: &mut sqlx::Transaction<'_, sqlx::MySql>) -> Value {
+        let resp = Message::new("UuidQuery", json!({ "id": id }))
+            .execute_on(transaction)
+            .await;
+        get_json(resp).await["revisionIds"].clone()
+    }
 }
 
 #[cfg(test)]
@@ -84,7 +143,6 @@ mod create_mutation {
                     "entityType": entity.typename,
                     "input": {
                         "changes": "test changes",
-                        "instance": "de",
                         "subscribeThis": false,
                         "subscribeThisByEmail": false,
                         "licenseId": 1,
@@ -139,18 +197,16 @@ mod create_mutation {
                 assert_json_include!(
                     actual: &result["events"][0],
                     expected: json!({
-                        "__typename": parent_event_name,
+                        "__typename": "CreateEntityRevisionNotificationEvent",
                         "instance": "de",
                         "actorId": 1,
-                        "objectId": object_id,
-                        "parentId": parent_id,
-                        "childId": new_entity_id
+                        "entityId": new_entity_id
                     })
                 );
                 assert_json_include!(
                     actual: &result["events"][1],
                     expected: json!({
-                        "__typename": "CreateEntityRevisionNotificationEvent",
+                        "__typename": "CreateEntityNotificationEvent",
                         "instance": "de",
                         "actorId": 1,
                         "entityId": new_entity_id
@@ -159,10 +215,12 @@ mod create_mutation {
                 assert_json_include!(
                     actual: &result["events"][2],
                     expected: json!({
-                        "__typename": "CreateEntityNotificationEvent",
+                        "__typename": parent_event_name,
                         "instance": "de",
                         "actorId": 1,
-                        "entityId": new_entity_id
+                        "objectId": object_id,
+                        "parentId": parent_id,
+                        "childId": new_entity_id
                     })
                 );
             })
@@ -181,7 +239,6 @@ mod create_mutation {
                     "entityType": entity.typename,
                     "input": {
                         "changes": "test changes",
-                        "instance": "de",
                         "subscribeThis": false,
                         "subscribeThisByEmail": false,
                         "licenseId": 1,
@@ -222,6 +279,96 @@ mod create_mutation {
             })
             .await;
         }
+    }
+
+    #[actix_rt::test]
+    async fn checkouts_new_revision_when_needs_review_is_true() {
+        assert_ok_with(
+            Message::new(
+                "EntityCreateMutation",
+                json!({
+                    "entityType": "Article",
+                    "input": {
+                        "changes": "test changes",
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "licenseId": 1,
+                        "taxonomyTermId": 7,
+                        "needsReview": false,
+                        "fields": {
+                            "content": "content",
+                            "title": "title",
+                            "metaTitle": "metaTitle",
+                            "metaDescription": "metaDescription"
+                        },
+                    },
+                    "userId": 1,
+                }),
+            )
+            .execute()
+            .await,
+            |result| assert!(!result["currentRevisionId"].is_null()),
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_parent_is_no_entity() {
+        assert_bad_request(
+            Message::new(
+                "EntityCreateMutation",
+                json!({
+                    "entityType": "Solution",
+                    "input": {
+                        "changes": "test changes",
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "licenseId": 1,
+                        "parentId": 1,
+                        "needsReview": true,
+                        "fields": {
+                            "content": "content",
+                        },
+                    },
+                    "userId": 1 as i32,
+                }),
+            )
+            .execute()
+            .await,
+            "parent entity with id 1 does not exist",
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_taxonomy_term_does_not_exist() {
+        assert_bad_request(
+            Message::new(
+                "EntityCreateMutation",
+                json!({
+                    "entityType": "Article",
+                    "input": {
+                        "changes": "test changes",
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "licenseId": 1,
+                        "taxonomyTermId": 1,
+                        "needsReview": true,
+                        "fields": {
+                            "content": "content",
+                            "title": "title",
+                            "metaTitle": "metaTitle",
+                            "metaDescription": "metaDescription"
+                        },
+                    },
+                    "userId": 1 as i32,
+                }),
+            )
+            .execute()
+            .await,
+            "Taxonomy term with id 1 does not exist",
+        )
+        .await;
     }
 }
 

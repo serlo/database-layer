@@ -4,7 +4,7 @@ pub use assert_json_diff::assert_json_include;
 use convert_case::{Case, Casing};
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::{from_slice, from_value};
-pub use serde_json::{json, Value};
+pub use serde_json::{json, to_value, Value};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -260,7 +260,7 @@ impl EntityTestWrapper<'static> {
                 typename: EntityType::Applet,
                 entity_id: 35596,
                 parent_id: None,
-                own_field_keys: vec!["content", "title", "metaTitle", "metDescription", "url"],
+                own_field_keys: vec!["content", "title", "metaTitle", "metaDescription", "url"],
                 query_fields: None,
                 taxonomy_term_id: Some(7),
             },
@@ -269,7 +269,7 @@ impl EntityTestWrapper<'static> {
                 typename: EntityType::Article,
                 entity_id: 1503,
                 parent_id: None,
-                own_field_keys: vec!["content", "title", "metaTitle", "metDescription"],
+                own_field_keys: vec!["content", "title", "metaTitle", "metaDescription"],
                 query_fields: None,
                 taxonomy_term_id: Some(7),
             },
@@ -300,7 +300,7 @@ impl EntityTestWrapper<'static> {
                 typename: EntityType::Event,
                 entity_id: 35554,
                 parent_id: None,
-                own_field_keys: vec!["content", "title", "metaTitle", "metDescription"],
+                own_field_keys: vec!["content", "title", "metaTitle", "metaDescription"],
                 query_fields: None,
                 taxonomy_term_id: Some(7),
             },
@@ -321,7 +321,7 @@ impl EntityTestWrapper<'static> {
                 own_field_keys: vec!["content", "cohesive"],
                 query_fields: Some(HashMap::from([
                     ("content", "test content"),
-                    // TODO: missing test due to mismatch type
+                    // TODO: missing test due to mismatched type
                     // ("cohesive", true),
                 ])),
                 taxonomy_term_id: Some(7),
@@ -359,6 +359,30 @@ impl EntityTestWrapper<'static> {
             },
         ]
     }
+}
+
+pub async fn count_taxonomy_entity_links<'a, E>(
+    child_id: i32,
+    taxonomy_term_id: i32,
+    executor: E,
+) -> i32
+where
+    E: sqlx::mysql::MySqlExecutor<'a>,
+{
+    sqlx::query!(
+        r#"
+            SELECT COUNT(*) AS count
+                FROM term_taxonomy_entity
+                WHERE entity_id = ?
+                    AND term_taxonomy_id = ?
+            "#,
+        child_id,
+        taxonomy_term_id
+    )
+    .fetch_one(executor)
+    .await
+    .unwrap()
+    .count as i32
 }
 
 fn random_string(nr: usize) -> String {

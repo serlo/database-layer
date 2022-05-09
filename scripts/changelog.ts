@@ -121,6 +121,41 @@ async function exec(): Promise<void> {
         date: '2022-04-26',
         fixed: ['Fix in saving CreateEntityRevisionEvents #218'],
       },
+      {
+        tagName: 'v0.3.38',
+        name: '0.3.38',
+        date: '2022-05-03',
+        fixed: [
+          'Does not checkout entities automatically #220',
+          'Put newly created sub-entities at the end of the list',
+        ],
+      },
+      {
+        tagName: 'v0.3.39',
+        name: '0.3.39',
+        date: '2022-05-06',
+        fixed: [
+          'Fix autoreview when creating entity #230',
+          'Avoid adding two last not trashed revisions with same content #232',
+        ],
+      },
+      {
+        tagName: 'v0.3.40',
+        name: '0.3.40',
+        date: '2022-05-06',
+        added: [
+          'Add TaxonomyCreateEntityLinkMutation #221',
+          'Add TaxonomyDeleteEntityLinksMutation #222',
+        ],
+        internal: ['Remove "instance" from EntityCreateMutation #235'],
+      },
+      {
+        tagName: 'v0.3.41',
+        name: '0.3.41',
+        date: '2022-05-09',
+        fixed: ['Ignore `changes` when comparing revisions #238'],
+        changed: ['Removed LicenseQuery #237'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

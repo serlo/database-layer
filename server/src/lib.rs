@@ -15,7 +15,6 @@ pub mod database;
 pub mod datetime;
 pub mod event;
 pub mod instance;
-pub mod license;
 pub mod message;
 pub mod metadata;
 pub mod navigation;

@@ -1003,17 +1003,16 @@ impl Entity {
     where
         E: Executor<'a>,
     {
-        let date_database: Option<DateTime>;
         let date_ref = payload.after.as_ref();
-        match date_ref {
+        let date_database: Option<DateTime> = match date_ref {
             Some(date) => {
-                let date_chrono = chrono::DateTime::parse_from_rfc3339(&(date))
+                let date_chrono = chrono::DateTime::parse_from_rfc3339(date)
                     .unwrap()
                     .with_timezone(&Utc);
-                date_database = Some(datetime::DateTime::from(date_chrono));
+                Some(datetime::DateTime::from(date_chrono))
             }
-            None => date_database = None,
-        }
+            None => None,
+        };
 
         let mut deleted_entities: Vec<DeletedEntity> = Vec::new();
         let result = sqlx::query!(

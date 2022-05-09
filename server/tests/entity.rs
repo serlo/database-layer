@@ -448,6 +448,7 @@ mod deleted_entities_query {
         .await;
     }
 
+    #[actix_rt::test]
     async fn fails_when_date_format_is_wrong() {
         let mut transaction = begin_transaction().await;
         let first: i32 = 4;

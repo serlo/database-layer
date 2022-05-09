@@ -21,7 +21,7 @@ use crate::event::{
     EntityLinkEventPayload, EventError, RevisionEventPayload,
 };
 
-use crate::{fetch_all_fields, format_alias, datetime};
+use crate::{datetime, fetch_all_fields, format_alias};
 
 use crate::datetime::DateTime;
 use crate::operation;
@@ -1003,7 +1003,7 @@ impl Entity {
     where
         E: Executor<'a>,
     {
-        let date_database: Option<datetime::DateTime>;
+        let date_database: Option<DateTime>;
         let test = payload.after.as_ref();
         match test {
             Some(date) => {

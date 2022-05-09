@@ -2428,6 +2428,44 @@
     },
     "query": "\n                SELECT entity_id\n                    FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n                    ORDER BY position ASC\n            "
   },
+  "b964813cc80649c8270680be0b6fb388b102fe7103bb1dbf50a62d5f4973067a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "uuid_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "date",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 76,
+            "type": "Timestamp"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "\n                select uuid_id, max(event_log.date) as date\n                from event_log, uuid, instance, entity\n                where uuid.id = event_log.uuid_id\n                    and (? is null or event_log.date > ?)\n                    and (? is null or instance.subdomain = ?)\n                    and instance.id = entity.instance_id\n                    and entity.id = event_log.uuid_id\n                    and event_log.event_id = 10\n                    and uuid.trashed = 1\n                    and uuid.discriminator = 'entity'\n                group by uuid_id\n                order by date\n                limit ?\n            "
+  },
   "ba2dfff3f9b8b5d4257285ce62af0b05f5067d1920becbba7697875c7cd74785": {
     "describe": {
       "columns": [],

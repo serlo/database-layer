@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.41](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.40..v0.3.41) - May 9, 2022
+
+### Changed
+
+- Removed LicenseQuery #237
+
+### Fixed
+
+- Ignore `changes` when comparing revisions #238
+
 ## [0.3.40](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.39..v0.3.40) - May 6, 2022
 
 ### Added

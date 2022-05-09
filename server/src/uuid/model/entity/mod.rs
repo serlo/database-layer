@@ -1004,8 +1004,8 @@ impl Entity {
         E: Executor<'a>,
     {
         let date_database: Option<DateTime>;
-        let test = payload.after.as_ref();
-        match test {
+        let date_ref = payload.after.as_ref();
+        match date_ref {
             Some(date) => {
                 let date_chrono = chrono::DateTime::parse_from_rfc3339(&(date))
                     .unwrap()

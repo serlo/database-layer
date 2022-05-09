@@ -463,13 +463,13 @@ impl Entity {
         .map(|x| x.id as i32);
 
         let mut fields = payload.input.fields.clone();
-        fields.insert("changes".to_string(), payload.input.changes.clone());
 
         if let Some(revision_id) = last_not_trashed_revision {
             let last_revision_fields: HashMap<String, String> =
                 fetch_all_fields!(revision_id, &mut transaction)
                     .await?
                     .into_iter()
+                    .filter(|field| field.field != "changes")
                     .map(|field| (field.field.to_case(Case::Camel), field.value))
                     .collect();
 
@@ -479,6 +479,8 @@ impl Entity {
                 );
             }
         }
+
+        fields.insert("changes".to_string(), payload.input.changes.clone());
 
         let entity_revision =
             EntityRevisionPayload::new(payload.user_id, payload.input.entity_id, fields)

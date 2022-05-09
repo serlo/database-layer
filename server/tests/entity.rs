@@ -71,7 +71,8 @@ mod add_revision_mutation {
     async fn does_not_add_revision_if_fields_are_same() {
         for revision in EntityTestWrapper::all().iter() {
             let mut transaction = begin_transaction().await;
-            let mutation_message = Message::new(
+
+            let first_mutation_response = Message::new(
                 "EntityAddRevisionMutation",
                 json!({
                     "revisionType": revision.revision_type,
@@ -85,13 +86,30 @@ mod add_revision_mutation {
                     },
                     "userId": 1
                 }),
-            );
-            let first_mutation_response = mutation_message.execute_on(&mut transaction).await;
+            )
+            .execute_on(&mut transaction)
+            .await;
 
             let first_revision_id = get_json(first_mutation_response).await["revisionId"].clone();
             let first_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
-            let second_mutation_response = mutation_message.execute_on(&mut transaction).await;
+            let second_mutation_response = Message::new(
+                "EntityAddRevisionMutation",
+                json!({
+                    "revisionType": revision.revision_type,
+                    "input": {
+                        "changes": "second edit",
+                        "entityId": revision.entity_id,
+                        "needsReview": true,
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "fields": revision.fields()
+                    },
+                    "userId": 1
+                }),
+            )
+            .execute_on(&mut transaction)
+            .await;
 
             let second_revision_id = get_json(second_mutation_response).await["revisionId"].clone();
             let second_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;

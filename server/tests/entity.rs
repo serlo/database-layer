@@ -447,4 +447,23 @@ mod deleted_entities_query {
         })
         .await;
     }
+
+    async fn fails_when_date_format_is_wrong() {
+        let mut transaction = begin_transaction().await;
+        let first: i32 = 4;
+        let date = "No ISO String";
+
+        let response = Message::new(
+            "DeletedEntitiesQuery",
+            json!({"first": first, "after": date,}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(
+            response,
+            "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}",
+        )
+        .await;
+    }
 }

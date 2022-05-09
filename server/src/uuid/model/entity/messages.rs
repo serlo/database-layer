@@ -7,6 +7,7 @@ use super::{
     EntityRejectRevisionPayload,
 };
 use crate::database::Connection;
+use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
@@ -315,7 +316,7 @@ pub mod deleted_entities_query {
     pub struct Payload {
         pub first: i32,
         pub after: Option<String>,
-        pub instance: Option<String>,
+        pub instance: Option<Instance>,
     }
 
     #[derive(Debug, Serialize, Deserialize)]

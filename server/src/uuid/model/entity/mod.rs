@@ -21,7 +21,7 @@ use crate::event::{
     EntityLinkEventPayload, EventError, RevisionEventPayload,
 };
 
-use crate::{datetime, fetch_all_fields, format_alias};
+use crate::{fetch_all_fields, format_alias};
 
 use crate::datetime::DateTime;
 use crate::operation;
@@ -30,7 +30,6 @@ use crate::uuid::abstract_entity_revision::EntityRevisionType;
 pub use messages::*;
 
 use crate::uuid::model::entity::messages::deleted_entities_query;
-use crate::uuid::model::entity::messages::deleted_entities_query::DeletedEntity;
 
 mod abstract_entity;
 mod entity_type;
@@ -999,22 +998,27 @@ impl Entity {
     pub async fn deleted_entities<'a, E>(
         payload: &deleted_entities_query::Payload,
         executor: E,
-    ) -> Result<Vec<DeletedEntity>, sqlx::Error>
+    ) -> Result<Vec<deleted_entities_query::DeletedEntity>, operation::Error>
     where
         E: Executor<'a>,
     {
-        let date_ref = payload.after.as_ref();
-        let date_database: Option<DateTime> = match date_ref {
+        let date_database: Option<DateTime> = match payload.after.as_ref() {
             Some(date) => {
-                let date_chrono = chrono::DateTime::parse_from_rfc3339(date)
-                    .unwrap()
-                    .with_timezone(&Utc);
-                Some(datetime::DateTime::from(date_chrono))
+                let date_chrono = match chrono::DateTime::parse_from_rfc3339(date) {
+                    Ok(parsed_date) => parsed_date.with_timezone(&Utc),
+                    Err(_) => {
+                        return Err(operation::Error::BadRequest {
+                            reason: "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}"
+                                .to_string(),
+                        })
+                    }
+                };
+                Some(DateTime::from(date_chrono))
             }
             None => None,
         };
 
-        let mut deleted_entities: Vec<DeletedEntity> = Vec::new();
+        let mut deleted_entities: Vec<deleted_entities_query::DeletedEntity> = Vec::new();
         let result = sqlx::query!(
             r#"
                 select uuid_id, max(event_log.date) as date
@@ -1042,7 +1046,7 @@ impl Entity {
 
         for entity in result {
             let deletion_date: DateTime = entity.date.unwrap().into();
-            deleted_entities.push(DeletedEntity {
+            deleted_entities.push(deleted_entities_query::DeletedEntity {
                 date_of_deletion: deletion_date.to_string(),
                 id: entity.uuid_id as i32,
             })

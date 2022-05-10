@@ -1,5 +1,6 @@
 use crate::uuid::Subject;
 use async_trait::async_trait;
+use chrono::Utc;
 use convert_case::{Case, Casing};
 use futures::try_join;
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,7 @@ use crate::event::{
     CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateTaxonomyLinkEventPayload,
     EntityLinkEventPayload, EventError, RevisionEventPayload,
 };
+
 use crate::{fetch_all_fields, format_alias};
 
 use crate::datetime::DateTime;
@@ -26,6 +28,8 @@ use crate::operation;
 use crate::subscription::Subscription;
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
 pub use messages::*;
+
+use crate::uuid::model::entity::messages::deleted_entities_query;
 
 mod abstract_entity;
 mod entity_type;
@@ -987,6 +991,69 @@ impl Entity {
         Ok(UnrevisedEntitiesQueryResult {
             unrevised_entity_ids,
         })
+    }
+}
+
+impl Entity {
+    pub async fn deleted_entities<'a, E>(
+        payload: &deleted_entities_query::Payload,
+        executor: E,
+    ) -> Result<Vec<deleted_entities_query::DeletedEntity>, operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let date_database: Option<DateTime> = match payload.after.as_ref() {
+            Some(date) => {
+                let date_chrono = match chrono::DateTime::parse_from_rfc3339(date) {
+                    Ok(parsed_date) => parsed_date.with_timezone(&Utc),
+                    Err(_) => {
+                        return Err(operation::Error::BadRequest {
+                            reason: "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}"
+                                .to_string(),
+                        })
+                    }
+                };
+                Some(DateTime::from(date_chrono))
+            }
+            None => None,
+        };
+
+        let mut deleted_entities: Vec<deleted_entities_query::DeletedEntity> = Vec::new();
+        let result = sqlx::query!(
+            r#"
+                select uuid_id, max(event_log.date) as date
+                from event_log, uuid, instance, entity
+                where uuid.id = event_log.uuid_id
+                    and (? is null or event_log.date > ?)
+                    and (? is null or instance.subdomain = ?)
+                    and instance.id = entity.instance_id
+                    and entity.id = event_log.uuid_id
+                    and event_log.event_id = 10
+                    and uuid.trashed = 1
+                    and uuid.discriminator = 'entity'
+                group by uuid_id
+                order by date
+                limit ?
+            "#,
+            date_database,
+            date_database,
+            payload.instance,
+            payload.instance,
+            payload.first,
+        )
+        .fetch_all(executor)
+        .await?;
+
+        for entity in result {
+            let deletion_date: DateTime =
+                entity.date.ok_or(operation::Error::NotFoundError)?.into();
+            deleted_entities.push(deleted_entities_query::DeletedEntity {
+                date_of_deletion: deletion_date.to_string(),
+                id: entity.uuid_id as i32,
+            })
+        }
+
+        Ok(deleted_entities)
     }
 }
 

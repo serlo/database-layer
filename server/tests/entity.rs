@@ -371,3 +371,100 @@ mod create_mutation {
         .await;
     }
 }
+
+#[cfg(test)]
+mod deleted_entities_query {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_entities() {
+        let mut transaction = begin_transaction().await;
+        let first: i32 = 3;
+        let response = Message::new("DeletedEntitiesQuery", json!({ "first": first }))
+            .execute_on(&mut transaction)
+            .await;
+
+        assert_ok_with(response, |result| {
+            assert_has_length(&result["deletedEntities"], first as usize);
+            assert_json_include!(
+                actual: &result["deletedEntities"][0],
+                expected: json!({
+                    "id": 14809,
+                    "dateOfDeletion": "2014-03-10T13:26:52+01:00",
+                })
+            );
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_entities_after_date() {
+        let mut transaction = begin_transaction().await;
+        let first: i32 = 4;
+        let date = "2014-08-01T00:00:00+02:00";
+        let response = Message::new(
+            "DeletedEntitiesQuery",
+            json!({"first": first, "after": date}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(response, |result| {
+            assert_json_include!(
+                actual: &result["deletedEntities"][0],
+                expected: json!({
+                    "id": 27118,
+                    "dateOfDeletion": "2014-08-11T10:44:47+02:00",
+                })
+            );
+            assert_has_length(&result["deletedEntities"], first as usize);
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_entities_of_instance_after_date() {
+        let mut transaction = begin_transaction().await;
+        let first: i32 = 4;
+        let date = "2014-09-01T00:00:00+02:00";
+        let instance = "de";
+        let response = Message::new(
+            "DeletedEntitiesQuery",
+            json!({"first": first, "after": date, "instance": instance,}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(response, |result| {
+            assert_json_include!(
+                actual: &result["deletedEntities"][0],
+                expected: json!({
+                    "id": 3311,
+                    "dateOfDeletion": "2014-09-01T07:51:32+02:00",
+                })
+            );
+            assert_has_length(&result["deletedEntities"], first as usize);
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_date_format_is_wrong() {
+        let mut transaction = begin_transaction().await;
+        let first: i32 = 4;
+        let date = "No ISO String";
+
+        let response = Message::new(
+            "DeletedEntitiesQuery",
+            json!({"first": first, "after": date,}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(
+            response,
+            "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}",
+        )
+        .await;
+    }
+}

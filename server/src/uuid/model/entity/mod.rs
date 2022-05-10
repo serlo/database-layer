@@ -1045,7 +1045,9 @@ impl Entity {
         .await?;
 
         for entity in result {
-            let deletion_date: DateTime = entity.date.unwrap().into();
+            let deletion_date: DateTime = entity.date.ok_or(
+                operation::Error::NotFoundError
+            )?.into();
             deleted_entities.push(deleted_entities_query::DeletedEntity {
                 date_of_deletion: deletion_date.to_string(),
                 id: entity.uuid_id as i32,

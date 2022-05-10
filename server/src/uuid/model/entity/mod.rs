@@ -1002,21 +1002,19 @@ impl Entity {
     where
         E: Executor<'a>,
     {
-        let date_database: Option<DateTime> = match payload.after.as_ref() {
-            Some(date) => {
-                let date_chrono = match chrono::DateTime::parse_from_rfc3339(date) {
-                    Ok(parsed_date) => parsed_date.with_timezone(&Utc),
-                    Err(_) => {
-                        return Err(operation::Error::BadRequest {
-                            reason: "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}"
-                                .to_string(),
-                        })
+        let after_db_time = payload
+            .after
+            .as_ref()
+            .map(|after| {
+                chrono::DateTime::parse_from_rfc3339(after).map_err(|_| {
+                    operation::Error::BadRequest {
+                        reason: "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}"
+                            .to_string(),
                     }
-                };
-                Some(DateTime::from(date_chrono))
-            }
-            None => None,
-        };
+                })
+            })
+            .transpose()?
+            .map(|date| DateTime::from(date.with_timezone(&Utc)));
 
         let mut deleted_entities: Vec<deleted_entities_query::DeletedEntity> = Vec::new();
         let result = sqlx::query!(
@@ -1035,8 +1033,8 @@ impl Entity {
                 order by date
                 limit ?
             "#,
-            date_database,
-            date_database,
+            after_db_time,
+            after_db_time,
             payload.instance,
             payload.instance,
             payload.first,

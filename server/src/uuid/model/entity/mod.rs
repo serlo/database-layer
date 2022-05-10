@@ -1016,8 +1016,7 @@ impl Entity {
             .transpose()?
             .map(|date| DateTime::from(date.with_timezone(&Utc)));
 
-        let mut deleted_entities: Vec<deleted_entities_query::DeletedEntity> = Vec::new();
-        let result = sqlx::query!(
+        Ok(sqlx::query!(
             r#"
                 select uuid_id, max(event_log.date) as date
                 from event_log, uuid, instance, entity
@@ -1040,18 +1039,17 @@ impl Entity {
             payload.first,
         )
         .fetch_all(executor)
-        .await?;
-
-        for entity in result {
-            let deletion_date: DateTime =
-                entity.date.ok_or(operation::Error::NotFoundError)?.into();
-            deleted_entities.push(deleted_entities_query::DeletedEntity {
-                date_of_deletion: deletion_date.to_string(),
-                id: entity.uuid_id as i32,
-            })
-        }
-
-        Ok(deleted_entities)
+        .await?
+        .into_iter()
+        .filter_map(|result| {
+            result
+                .date
+                .map(|date| deleted_entities_query::DeletedEntity {
+                    id: result.uuid_id as i32,
+                    date_of_deletion: DateTime::from(date).to_string(),
+                })
+        })
+        .collect())
     }
 }
 

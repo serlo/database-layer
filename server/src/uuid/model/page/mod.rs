@@ -12,6 +12,7 @@ use crate::instance::Instance;
 use messages::add_revision_mutation;
 
 use crate::event::{CreateEntityRevisionEventPayload, EventError, RevisionEventPayload};
+use crate::operation;
 use crate::uuid::PageRevision;
 pub use messages::*;
 
@@ -118,84 +119,25 @@ impl UuidFetcher for Page {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageAddRevisionPayload {
-    pub content: String,
-    pub title: String,
-    pub page_id: i32,
-    pub user_id: i32,
-}
-
-#[derive(Error, Debug)]
-pub enum PageAddRevisionError {
-    #[error("Revision could not be added because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Revision could not be added out because of an checkout error: {inner:?}.")]
-    CheckoutRevisionError {
-        inner: Box<PageCheckoutRevisionError>,
-    },
-    #[error("Revision could not be added out because of an event error: {inner:?}.")]
-    EventError { inner: EventError },
-    #[error("Revision could not be added because of an UUID error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Revision could not be added because page was not found.")]
-    PageNotFound,
-}
-impl From<sqlx::Error> for PageAddRevisionError {
-    fn from(inner: sqlx::Error) -> Self {
-        Self::DatabaseError { inner }
-    }
-}
-
-impl From<PageCheckoutRevisionError> for PageAddRevisionError {
-    fn from(error: PageCheckoutRevisionError) -> Self {
-        match error {
-            PageCheckoutRevisionError::DatabaseError { inner } => inner.into(),
-            inner => Self::CheckoutRevisionError {
-                inner: Box::new(inner),
-            },
-        }
-    }
-}
-
-impl From<EventError> for PageAddRevisionError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => Self::EventError { inner },
-        }
-    }
-}
-
-impl From<UuidError> for PageAddRevisionError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => Self::UuidError { inner },
-        }
-    }
-}
-
 impl Page {
     pub async fn add_revision<'a, E>(
         payload: &add_revision_mutation::Payload,
         executor: E,
-    ) -> Result<Uuid, PageAddRevisionError>
+    ) -> Result<Uuid, operation::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
 
-        if let Err(sqlx::Error::RowNotFound) = sqlx::query!(
+        sqlx::query!(
             r#"SELECT id FROM page_repository WHERE id = ?"#,
             payload.page_id
         )
-        .fetch_one(&mut transaction)
-        .await
-        {
-            return Err(PageAddRevisionError::PageNotFound);
-        }
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: "no page found for provided pageId".to_string(),
+        })?;
 
         sqlx::query!(
             r#"
@@ -254,7 +196,11 @@ impl Page {
             },
             &mut transaction,
         )
-        .await?;
+        .await
+        // TODO: Delete
+        .map_err(|error| operation::Error::InternalServerError {
+            error: Box::new(error),
+        })?;
 
         let uuid = PageRevision::fetch_via_transaction(page_revision_id, &mut transaction).await?;
 
@@ -390,8 +336,8 @@ pub enum PageCreateError {
     DatabaseError { inner: sqlx::Error },
     #[error("Page could not be created because of a UUID error: {inner:?}.")]
     UuidError { inner: UuidError },
-    #[error("Page could not be created because of a revision error: {inner:?}.")]
-    RevisionError { inner: PageAddRevisionError },
+    #[error("Page could not be created because of a revision error: {0:?}.")]
+    RevisionError(#[from] operation::Error),
 }
 
 impl From<sqlx::Error> for PageCreateError {
@@ -406,12 +352,6 @@ impl From<UuidError> for PageCreateError {
             UuidError::DatabaseError { inner } => inner.into(),
             inner => Self::UuidError { inner },
         }
-    }
-}
-
-impl From<PageAddRevisionError> for PageCreateError {
-    fn from(inner: PageAddRevisionError) -> Self {
-        Self::RevisionError { inner }
     }
 }
 
@@ -602,7 +542,8 @@ mod tests {
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-    use crate::uuid::{ConcreteUuid, PageAddRevisionError, Uuid, UuidFetcher};
+    use crate::operation;
+    use crate::uuid::{ConcreteUuid, Uuid, UuidFetcher};
 
     #[actix_rt::test]
     async fn add_revision() {
@@ -646,7 +587,7 @@ mod tests {
         )
         .await;
 
-        if let Err(PageAddRevisionError::PageNotFound) = result {
+        if let Err(operation::Error::BadRequest { .. }) = result {
             // This is the expected branch.
         } else {
             panic!("Expected `PageNotFound` error, got: {:?}", result)

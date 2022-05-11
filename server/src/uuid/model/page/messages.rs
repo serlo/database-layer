@@ -6,7 +6,7 @@ use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
-use crate::uuid::{PageAddRevisionError, PageCreateError, PageCreatePayload};
+use crate::uuid::{PageCreateError, PageCreatePayload};
 
 use super::{
     Page, PageCheckoutRevisionError, PageCheckoutRevisionPayload, PageRejectRevisionError,
@@ -71,19 +71,6 @@ pub mod add_revision_mutation {
                 revision_id: page_revision.id,
                 success: true,
             })
-        }
-    }
-
-    impl From<PageAddRevisionError> for operation::Error {
-        fn from(error: PageAddRevisionError) -> Self {
-            match error {
-                PageAddRevisionError::PageNotFound { .. } => operation::Error::BadRequest {
-                    reason: "no page found for provided pageId".to_string(),
-                },
-                _ => operation::Error::InternalServerError {
-                    error: Box::new(error),
-                },
-            }
         }
     }
 }

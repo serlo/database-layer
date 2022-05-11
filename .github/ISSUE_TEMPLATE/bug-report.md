@@ -1,8 +1,13 @@
+---
+name: Bug Report
+about: Issue for reporting a bug
+labels: bug
+---
+
 # What is wrong?
 
-_Description of the bug_
 _Any logs?_
 
-# How should it behave?
+# Steps to reproduce
 
-_Description of the expected behavior_
+# How should it behave?

@@ -785,15 +785,15 @@ __metadata:
   dependencies:
     "@inyono/changelog": 0.4
     "@pact-foundation/pact": ^9.17.3
-    "@types/node": ^17.0.23
-    "@types/ramda": ^0.28.7
+    "@types/node": ^17.0.32
+    "@types/ramda": ^0.28.12
     "@types/semver": ^7.3.9
     jest: ^27.5.1
     prettier: ^2.6.2
     prettier-plugin-packagejson: ^2.2.17
     prettier-plugin-sh: ^0.10.0
     ramda: ^0.28.0
-    semver: ^7.3.5
+    semver: ^7.3.7
     toml: ^3.0.0
     ts-node: ^10.7.0
     typescript: ^4.6.3
@@ -1033,10 +1033,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^17.0.23":
-  version: 17.0.23
-  resolution: "@types/node@npm:17.0.23"
-  checksum: a3517554737cbb042e76c30d0e5482192ac4d9bea0eeb086e2622d9cabf460a0eb52a696b99fcd18e7fcc93c96db6cc7ae507f6608f256ef0b5c1d8c87a5a470
+"@types/node@npm:^17.0.32":
+  version: 17.0.32
+  resolution: "@types/node@npm:17.0.32"
+  checksum: afb05704b42032566b3da8b2d80a68883cd3b888472d1b8b4dd6c84f8fad371454f083d4e28bd30c10589187296119d92aba255638b30067afe062b5922388a5
   languageName: node
   linkType: hard
 
@@ -1092,12 +1092,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/ramda@npm:^0.28.7":
-  version: 0.28.7
-  resolution: "@types/ramda@npm:0.28.7"
+"@types/ramda@npm:^0.28.12":
+  version: 0.28.12
+  resolution: "@types/ramda@npm:0.28.12"
   dependencies:
     ts-toolbelt: ^6.15.1
-  checksum: 0ee50cbd964d45ae75fdfc904113859d0abd7ceabd193ffaceeda3c80669a18fadc4680ea9f06f8ae2d3aa988513535dbff26fc6ee0a5b803c2106b1de8d0c4c
+  checksum: 58146449c6bc7d63773bed263a6843fa3fa48e01ffd8e7109bcc60370d0084477dac4ca88c90229fc218129b68471c2f243b4b8077ca7faa8e795883a586142d
   languageName: node
   linkType: hard
 
@@ -5154,6 +5154,17 @@ __metadata:
   bin:
     semver: bin/semver.js
   checksum: 5eafe6102bea2a7439897c1856362e31cc348ccf96efd455c8b5bc2c61e6f7e7b8250dc26b8828c1d76a56f818a7ee907a36ae9fb37a599d3d24609207001d60
+  languageName: node
+  linkType: hard
+
+"semver@npm:^7.3.7":
+  version: 7.3.7
+  resolution: "semver@npm:7.3.7"
+  dependencies:
+    lru-cache: ^6.0.0
+  bin:
+    semver: bin/semver.js
+  checksum: 2fa3e877568cd6ce769c75c211beaed1f9fce80b28338cadd9d0b6c40f2e2862bafd62c19a6cff42f3d54292b7c623277bcab8816a2b5521cf15210d43e75232
   languageName: node
   linkType: hard
 

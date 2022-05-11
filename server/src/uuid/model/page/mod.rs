@@ -310,36 +310,11 @@ impl Page {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum PageCreateError {
-    #[error("Page could not be created because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Page could not be created because of a UUID error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Page could not be created because of a revision error: {0:?}.")]
-    RevisionError(#[from] operation::Error),
-}
-
-impl From<sqlx::Error> for PageCreateError {
-    fn from(inner: sqlx::Error) -> Self {
-        Self::DatabaseError { inner }
-    }
-}
-
-impl From<UuidError> for PageCreateError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => Self::UuidError { inner },
-        }
-    }
-}
-
 impl Page {
     pub async fn create<'a, E>(
         payload: &create_mutation::Payload,
         executor: E,
-    ) -> Result<Uuid, PageCreateError>
+    ) -> Result<Uuid, operation::Error>
     where
         E: Executor<'a>,
     {

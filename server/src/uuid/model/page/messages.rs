@@ -6,7 +6,7 @@ use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
-use crate::uuid::{PageCreateError, Uuid};
+use crate::uuid::Uuid;
 
 use super::{Page, PageCheckoutRevisionError, PageRejectRevisionError, PageRejectRevisionPayload};
 
@@ -153,12 +153,6 @@ pub mod create_mutation {
                 Connection::Pool(pool) => Page::create(self, pool).await?,
                 Connection::Transaction(transaction) => Page::create(self, transaction).await?,
             })
-        }
-    }
-
-    impl From<PageCreateError> for operation::Error {
-        fn from(e: PageCreateError) -> Self {
-            operation::Error::InternalServerError { error: Box::new(e) }
         }
     }
 }

@@ -149,6 +149,19 @@ async function exec(): Promise<void> {
         ],
         internal: ['Remove "instance" from EntityCreateMutation #235'],
       },
+      {
+        tagName: 'v0.3.41',
+        name: '0.3.41',
+        date: '2022-05-09',
+        fixed: ['Ignore `changes` when comparing revisions #238'],
+        changed: ['Removed LicenseQuery #237'],
+      },
+      {
+        tagName: 'v0.3.42',
+        name: '0.3.42',
+        date: '2022-05-11',
+        added: ['Add DeletedEntitiesQuery #240'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

@@ -1,5 +1,6 @@
 use crate::uuid::Subject;
 use async_trait::async_trait;
+use chrono::Utc;
 use convert_case::{Case, Casing};
 use futures::try_join;
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,7 @@ use crate::event::{
     CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateTaxonomyLinkEventPayload,
     EntityLinkEventPayload, EventError, RevisionEventPayload,
 };
+
 use crate::{fetch_all_fields, format_alias};
 
 use crate::datetime::DateTime;
@@ -26,6 +28,8 @@ use crate::operation;
 use crate::subscription::Subscription;
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
 pub use messages::*;
+
+use crate::uuid::model::entity::messages::deleted_entities_query;
 
 mod abstract_entity;
 mod entity_type;
@@ -463,13 +467,13 @@ impl Entity {
         .map(|x| x.id as i32);
 
         let mut fields = payload.input.fields.clone();
-        fields.insert("changes".to_string(), payload.input.changes.clone());
 
         if let Some(revision_id) = last_not_trashed_revision {
             let last_revision_fields: HashMap<String, String> =
                 fetch_all_fields!(revision_id, &mut transaction)
                     .await?
                     .into_iter()
+                    .filter(|field| field.field != "changes")
                     .map(|field| (field.field.to_case(Case::Camel), field.value))
                     .collect();
 
@@ -479,6 +483,8 @@ impl Entity {
                 );
             }
         }
+
+        fields.insert("changes".to_string(), payload.input.changes.clone());
 
         let entity_revision =
             EntityRevisionPayload::new(payload.user_id, payload.input.entity_id, fields)
@@ -985,6 +991,66 @@ impl Entity {
         Ok(UnrevisedEntitiesQueryResult {
             unrevised_entity_ids,
         })
+    }
+}
+
+impl Entity {
+    pub async fn deleted_entities<'a, E>(
+        payload: &deleted_entities_query::Payload,
+        executor: E,
+    ) -> Result<Vec<deleted_entities_query::DeletedEntity>, operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let after_db_time = payload
+            .after
+            .as_ref()
+            .map(|after| {
+                chrono::DateTime::parse_from_rfc3339(after).map_err(|_| {
+                    operation::Error::BadRequest {
+                        reason: "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}"
+                            .to_string(),
+                    }
+                })
+            })
+            .transpose()?
+            .map(|date| DateTime::from(date.with_timezone(&Utc)));
+
+        Ok(sqlx::query!(
+            r#"
+                SELECT uuid_id, MAX(event_log.date) AS date
+                FROM event_log, uuid, instance, entity
+                WHERE uuid.id = event_log.uuid_id
+                    AND (? is null or event_log.date > ?)
+                    AND (? is null or instance.subdomain = ?)
+                    AND instance.id = entity.instance_id
+                    AND entity.id = event_log.uuid_id
+                    AND event_log.event_id = 10
+                    AND uuid.trashed = 1
+                    AND uuid.discriminator = 'entity'
+                    AND entity.type_id NOT IN (35, 39, 40, 41, 42, 43, 44)
+                GROUP BY uuid_id
+                ORDER BY date
+                LIMIT ?
+            "#,
+            after_db_time,
+            after_db_time,
+            payload.instance,
+            payload.instance,
+            payload.first,
+        )
+        .fetch_all(executor)
+        .await?
+        .into_iter()
+        .filter_map(|result| {
+            result
+                .date
+                .map(|date| deleted_entities_query::DeletedEntity {
+                    id: result.uuid_id as i32,
+                    date_of_deletion: DateTime::from(date).to_string(),
+                })
+        })
+        .collect())
     }
 }
 

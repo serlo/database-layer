@@ -71,7 +71,8 @@ mod add_revision_mutation {
     async fn does_not_add_revision_if_fields_are_same() {
         for revision in EntityTestWrapper::all().iter() {
             let mut transaction = begin_transaction().await;
-            let mutation_message = Message::new(
+
+            let first_mutation_response = Message::new(
                 "EntityAddRevisionMutation",
                 json!({
                     "revisionType": revision.revision_type,
@@ -85,13 +86,30 @@ mod add_revision_mutation {
                     },
                     "userId": 1
                 }),
-            );
-            let first_mutation_response = mutation_message.execute_on(&mut transaction).await;
+            )
+            .execute_on(&mut transaction)
+            .await;
 
             let first_revision_id = get_json(first_mutation_response).await["revisionId"].clone();
             let first_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
-            let second_mutation_response = mutation_message.execute_on(&mut transaction).await;
+            let second_mutation_response = Message::new(
+                "EntityAddRevisionMutation",
+                json!({
+                    "revisionType": revision.revision_type,
+                    "input": {
+                        "changes": "second edit",
+                        "entityId": revision.entity_id,
+                        "needsReview": true,
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "fields": revision.fields()
+                    },
+                    "userId": 1
+                }),
+            )
+            .execute_on(&mut transaction)
+            .await;
 
             let second_revision_id = get_json(second_mutation_response).await["revisionId"].clone();
             let second_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
@@ -349,6 +367,78 @@ mod create_mutation {
             .execute()
             .await,
             "Taxonomy term with id 1 does not exist",
+        )
+        .await;
+    }
+}
+
+#[cfg(test)]
+mod deleted_entities_query {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_entities() {
+        let first: i32 = 3;
+        let response = Message::new("DeletedEntitiesQuery", json!({ "first": first }))
+            .execute()
+            .await;
+
+        assert_ok_with(response, |result| {
+            assert_has_length(&result["deletedEntities"], first as usize);
+            assert_eq!(
+                result["deletedEntities"][0],
+                json!({ "id": 14809, "dateOfDeletion": "2014-03-10T13:26:52+01:00" })
+            );
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_entities_after_date() {
+        let date = "2014-08-01T00:00:00+02:00";
+        let response = Message::new("DeletedEntitiesQuery", json!({ "first": 4, "after": date }))
+            .execute()
+            .await;
+
+        assert_ok_with(response, |result| {
+            assert_eq!(
+                result["deletedEntities"][0],
+                json!({ "id": 27118, "dateOfDeletion": "2014-08-11T10:44:47+02:00" })
+            );
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_entities_of_instance_after_date() {
+        let response = Message::new(
+            "DeletedEntitiesQuery",
+            json!({ "first": 4, "instance": "de" }),
+        )
+        .execute()
+        .await;
+
+        assert_ok_with(response, |result| {
+            assert_eq!(
+                result["deletedEntities"][0],
+                json!({ "id": 14809, "dateOfDeletion": "2014-03-10T13:26:52+01:00" })
+            );
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_date_format_is_wrong() {
+        let response = Message::new(
+            "DeletedEntitiesQuery",
+            json!({ "first": 4, "after": "no date" }),
+        )
+        .execute()
+        .await;
+
+        assert_bad_request(
+            response,
+            "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}",
         )
         .await;
     }

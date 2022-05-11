@@ -7,6 +7,7 @@ use super::{
     EntityRejectRevisionPayload,
 };
 use crate::database::Connection;
+use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
@@ -21,6 +22,7 @@ pub enum EntityMessage {
     EntityCreateMutation(entity_create_mutation::Payload),
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
+    DeletedEntitiesQuery(deleted_entities_query::Payload),
 }
 
 #[async_trait]
@@ -43,6 +45,9 @@ impl MessageResponder for EntityMessage {
                 message.handle(connection).await
             }
             EntityMessage::UnrevisedEntitiesQuery(message) => message.handle(connection).await,
+            EntityMessage::DeletedEntitiesQuery(message) => {
+                message.handle("DeletedEntitiesQuery", connection).await
+            }
         }
     }
 }
@@ -299,6 +304,50 @@ impl MessageResponder for UnrevisedEntitiesQuery {
                 println!("/unrevised-entities: {:?}", e);
                 HttpResponse::InternalServerError().finish()
             }
+        }
+    }
+}
+
+pub mod deleted_entities_query {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub first: i32,
+        pub after: Option<String>,
+        pub instance: Option<Instance>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct DeletedEntity {
+        pub date_of_deletion: String,
+        pub id: i32,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        success: bool,
+        deleted_entities: Vec<DeletedEntity>,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let deleted_entities = match connection {
+                Connection::Pool(pool) => Entity::deleted_entities(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Entity::deleted_entities(self, transaction).await?
+                }
+            };
+            Ok(Output {
+                success: true,
+                deleted_entities,
+            })
         }
     }
 }

@@ -791,7 +791,7 @@ __metadata:
     jest: ^27.5.1
     prettier: ^2.6.2
     prettier-plugin-packagejson: ^2.2.17
-    prettier-plugin-sh: ^0.10.0
+    prettier-plugin-sh: ^0.11.0
     ramda: ^0.28.0
     semver: ^7.3.7
     toml: ^3.0.0
@@ -4307,12 +4307,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nanoid@npm:^3.3.2":
-  version: 3.3.2
-  resolution: "nanoid@npm:3.3.2"
-  bin:
-    nanoid: bin/nanoid.cjs
-  checksum: 376717f0685251fad77850bd84c6b8d57837c71eeb1c05be7c742140cc1835a5a2953562add05166d6dbc8fb65f3fdffa356213037b967a470e1691dc3e7b9cc
+"mvdan-sh@npm:^0.10.1":
+  version: 0.10.1
+  resolution: "mvdan-sh@npm:0.10.1"
+  checksum: 32ac3ad9adb3370a2b98256f1cb80572e7a8bd27958d20c1856e0bf7c339ef3ab232a1547b7615aa670ee8e557702abfc04d7dd362f15cd86ce01bab65172b47
   languageName: node
   linkType: hard
 
@@ -4739,15 +4737,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier-plugin-sh@npm:^0.10.0":
-  version: 0.10.0
-  resolution: "prettier-plugin-sh@npm:0.10.0"
+"prettier-plugin-sh@npm:^0.11.0":
+  version: 0.11.0
+  resolution: "prettier-plugin-sh@npm:0.11.0"
   dependencies:
-    sh-syntax: ^0.1.3
-    synckit: ^0.6.2
+    mvdan-sh: ^0.10.1
   peerDependencies:
     prettier: ^2.0.0
-  checksum: 98c7d75004040dfcd1253b9a7b8719042ba8364e00bbaae6c31ab5fbcbcc3fc35a4f40577ada6064e777e10c4594335682a286a4c51cbb6d7cae481221503ff0
+  checksum: c7821082507c849f4a7d915cb9ec4ad1e25ac787d3aae3937901cd4d4b8faf00a6b2f2ccbc7e91ca92c2f32bbb00be9d324ca01002bbb843da684ba9a95540b5
   languageName: node
   linkType: hard
 
@@ -5222,16 +5219,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sh-syntax@npm:^0.1.3":
-  version: 0.1.3
-  resolution: "sh-syntax@npm:0.1.3"
-  dependencies:
-    nanoid: ^3.3.2
-    tslib: ^2.3.1
-  checksum: 7ae66713c9ed5be9d6410bfce0234c676bb67b963708e19b3a246b85a59a337511b70f20413015612014f9aab8485639f7e2d04ac21806ff0d99703055fa46db
-  languageName: node
-  linkType: hard
-
 "shebang-command@npm:^2.0.0":
   version: 2.0.0
   resolution: "shebang-command@npm:2.0.0"
@@ -5547,15 +5534,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"synckit@npm:^0.6.2":
-  version: 0.6.2
-  resolution: "synckit@npm:0.6.2"
-  dependencies:
-    tslib: ^2.3.1
-  checksum: 267965f9bc2df7e945630ac1e5c3bb28d0d9a639fa6ed0f68f7ed768ee95c8a96172553f52edcebfc8602ef1a8256a4299abc0707d7ac6af133aad4e9a1dd148
-  languageName: node
-  linkType: hard
-
 "tar@npm:^6.0.2, tar@npm:^6.1.11, tar@npm:^6.1.2":
   version: 6.1.11
   resolution: "tar@npm:6.1.11"
@@ -5734,7 +5712,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^2.1.0, tslib@npm:^2.3.1":
+"tslib@npm:^2.1.0":
   version: 2.3.1
   resolution: "tslib@npm:2.3.1"
   checksum: de17a98d4614481f7fcb5cd53ffc1aaf8654313be0291e1bfaee4b4bb31a20494b7d218ff2e15017883e8ea9626599b3b0e0229c18383ba9dce89da2adf15cb9

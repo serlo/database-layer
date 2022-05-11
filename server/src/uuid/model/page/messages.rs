@@ -6,7 +6,7 @@ use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
-use crate::uuid::{PageCreateError, PageCreatePayload};
+use crate::uuid::{PageCreateError, Uuid};
 
 use super::{Page, PageCheckoutRevisionError, PageRejectRevisionError, PageRejectRevisionPayload};
 
@@ -15,7 +15,7 @@ use super::{Page, PageCheckoutRevisionError, PageRejectRevisionError, PageReject
 pub enum PageMessage {
     PageAddRevisionMutation(add_revision_mutation::Payload),
     PageCheckoutRevisionMutation(checkout_revision_mutation::Payload),
-    PageCreateMutation(PageCreateMutation),
+    PageCreateMutation(create_mutation::Payload),
     PageRejectRevisionMutation(PageRejectRevisionMutation),
 }
 
@@ -32,7 +32,9 @@ impl MessageResponder for PageMessage {
                     .handle("PageCheckoutRevisionMutation", connection)
                     .await
             }
-            PageMessage::PageCreateMutation(message) => message.handle(connection).await,
+            PageMessage::PageCreateMutation(payload) => {
+                payload.handle("PageCreateMutation", connection).await
+            }
             PageMessage::PageRejectRevisionMutation(message) => message.handle(connection).await,
         }
     }
@@ -127,53 +129,36 @@ pub mod checkout_revision_mutation {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageCreateMutation {
-    pub content: String,
-    pub discussions_enabled: bool,
-    pub forum_id: Option<i32>,
-    pub instance: Instance,
-    pub license_id: i32,
-    pub title: String,
-    pub user_id: i32,
-}
+pub mod create_mutation {
+    use super::*;
 
-#[async_trait]
-impl MessageResponder for PageCreateMutation {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let payload = PageCreatePayload {
-            content: self.content.clone(),
-            discussions_enabled: self.discussions_enabled,
-            forum_id: self.forum_id,
-            instance: self.instance.clone(),
-            license_id: self.license_id,
-            title: self.title.clone(),
-            user_id: self.user_id,
-        };
-        let response = match connection {
-            Connection::Pool(pool) => Page::create(payload, pool).await,
-            Connection::Transaction(transaction) => Page::create(payload, transaction).await,
-        };
-        match response {
-            Ok(data) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(&data),
-            Err(e) => {
-                println!("/create-page: {:?}", e);
-                match e {
-                    PageCreateError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    PageCreateError::RevisionError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    PageCreateError::UuidError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                }
-            }
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub content: String,
+        pub discussions_enabled: bool,
+        pub forum_id: Option<i32>,
+        pub instance: Instance,
+        pub license_id: i32,
+        pub title: String,
+        pub user_id: i32,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Uuid;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(match connection {
+                Connection::Pool(pool) => Page::create(self, pool).await?,
+                Connection::Transaction(transaction) => Page::create(self, transaction).await?,
+            })
+        }
+    }
+
+    impl From<PageCreateError> for operation::Error {
+        fn from(e: PageCreateError) -> Self {
+            operation::Error::InternalServerError { error: Box::new(e) }
         }
     }
 }

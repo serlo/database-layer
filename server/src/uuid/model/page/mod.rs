@@ -310,18 +310,6 @@ impl Page {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageCreatePayload {
-    pub content: String,
-    pub title: String,
-    pub license_id: i32,
-    pub discussions_enabled: bool,
-    pub forum_id: Option<i32>,
-    pub user_id: i32,
-    pub instance: Instance,
-}
-
 #[derive(Error, Debug)]
 pub enum PageCreateError {
     #[error("Page could not be created because of a database error: {inner:?}.")]
@@ -349,7 +337,7 @@ impl From<UuidError> for PageCreateError {
 
 impl Page {
     pub async fn create<'a, E>(
-        payload: PageCreatePayload,
+        payload: &create_mutation::Payload,
         executor: E,
     ) -> Result<Uuid, PageCreateError>
     where

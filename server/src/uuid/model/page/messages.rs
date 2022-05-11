@@ -8,16 +8,13 @@ use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 use crate::uuid::{PageCreateError, PageCreatePayload};
 
-use super::{
-    Page, PageCheckoutRevisionError, PageCheckoutRevisionPayload, PageRejectRevisionError,
-    PageRejectRevisionPayload,
-};
+use super::{Page, PageCheckoutRevisionError, PageRejectRevisionError, PageRejectRevisionPayload};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum PageMessage {
     PageAddRevisionMutation(add_revision_mutation::Payload),
-    PageCheckoutRevisionMutation(PageCheckoutRevisionMutation),
+    PageCheckoutRevisionMutation(checkout_revision_mutation::Payload),
     PageCreateMutation(PageCreateMutation),
     PageRejectRevisionMutation(PageRejectRevisionMutation),
 }
@@ -30,7 +27,11 @@ impl MessageResponder for PageMessage {
             PageMessage::PageAddRevisionMutation(payload) => {
                 payload.handle("PageAddRevisionMutation", connection).await
             }
-            PageMessage::PageCheckoutRevisionMutation(message) => message.handle(connection).await,
+            PageMessage::PageCheckoutRevisionMutation(payload) => {
+                payload
+                    .handle("PageCheckoutRevisionMutation", connection)
+                    .await
+            }
             PageMessage::PageCreateMutation(message) => message.handle(connection).await,
             PageMessage::PageRejectRevisionMutation(message) => message.handle(connection).await,
         }
@@ -75,71 +76,50 @@ pub mod add_revision_mutation {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageCheckoutRevisionMutation {
-    pub revision_id: i32,
-    pub user_id: i32,
-    pub reason: String,
-}
+pub mod checkout_revision_mutation {
+    use super::*;
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageRevisionData {
-    pub success: bool,
-    pub reason: Option<String>,
-}
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub revision_id: i32,
+        pub user_id: i32,
+        pub reason: String,
+    }
 
-#[async_trait]
-impl MessageResponder for PageCheckoutRevisionMutation {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let payload = PageCheckoutRevisionPayload {
-            revision_id: self.revision_id,
-            user_id: self.user_id,
-            reason: self.reason.to_string(),
-        };
-        let response = match connection {
-            Connection::Pool(pool) => Page::checkout_revision(payload, pool).await,
-            Connection::Transaction(transaction) => {
-                Page::checkout_revision(payload, transaction).await
-            }
-        };
-        match response {
-            Ok(_) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(PageRevisionData {
-                    success: true,
-                    reason: None,
-                }),
-            Err(e) => {
-                println!("/checkout-revision: {:?}", e);
-                match e {
-                    PageCheckoutRevisionError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = operation::SuccessOutput;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => Page::checkout_revision(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Page::checkout_revision(self, transaction).await?
+                }
+            };
+            Ok(operation::SuccessOutput { success: true })
+        }
+    }
+    impl From<PageCheckoutRevisionError> for operation::Error {
+        fn from(e: PageCheckoutRevisionError) -> Self {
+            match e {
+                PageCheckoutRevisionError::DatabaseError { .. }
+                | PageCheckoutRevisionError::EventError { .. }
+                | PageCheckoutRevisionError::UuidError { .. } => {
+                    operation::Error::InternalServerError { error: Box::new(e) }
+                }
+                PageCheckoutRevisionError::RevisionAlreadyCheckedOut => {
+                    operation::Error::BadRequest {
+                        reason: "revision is already checked out".to_string(),
                     }
-                    PageCheckoutRevisionError::EventError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    PageCheckoutRevisionError::UuidError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    PageCheckoutRevisionError::RevisionAlreadyCheckedOut => {
-                        HttpResponse::BadRequest().json(PageRevisionData {
-                            success: false,
-                            reason: Some("revision is already checked out".to_string()),
-                        })
-                    }
-                    PageCheckoutRevisionError::InvalidRevision { .. } => HttpResponse::BadRequest()
-                        .json(PageRevisionData {
-                            success: false,
-                            reason: Some("revision invalid".to_string()),
-                        }),
-                    PageCheckoutRevisionError::InvalidRepository { .. } => {
-                        HttpResponse::BadRequest().json(PageRevisionData {
-                            success: false,
-                            reason: Some("repository invalid".to_string()),
-                        })
+                }
+                PageCheckoutRevisionError::InvalidRevision { .. } => operation::Error::BadRequest {
+                    reason: "revision invalid".to_string(),
+                },
+                PageCheckoutRevisionError::InvalidRepository { .. } => {
+                    operation::Error::BadRequest {
+                        reason: "repository invalid".to_string(),
                     }
                 }
             }
@@ -204,6 +184,13 @@ pub struct PageRejectRevisionMutation {
     pub revision_id: i32,
     pub user_id: i32,
     pub reason: String,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageRevisionData {
+    pub success: bool,
+    pub reason: Option<String>,
 }
 
 #[async_trait]

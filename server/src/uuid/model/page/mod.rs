@@ -189,7 +189,7 @@ impl Page {
         .await?;
 
         Page::checkout_revision(
-            PageCheckoutRevisionPayload {
+            &checkout_revision_mutation::Payload {
                 revision_id: page_revision_id,
                 user_id: payload.user_id,
                 reason: "".to_string(),
@@ -208,14 +208,6 @@ impl Page {
 
         Ok(uuid)
     }
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageCheckoutRevisionPayload {
-    pub revision_id: i32,
-    pub user_id: i32,
-    pub reason: String,
 }
 
 #[derive(Error, Debug)]
@@ -260,7 +252,7 @@ impl From<EventError> for PageCheckoutRevisionError {
 
 impl Page {
     pub async fn checkout_revision<'a, E>(
-        payload: PageCheckoutRevisionPayload,
+        payload: &checkout_revision_mutation::Payload,
         executor: E,
     ) -> Result<(), PageCheckoutRevisionError>
     where
@@ -300,7 +292,7 @@ impl Page {
                     payload.user_id,
                     repository_id,
                     payload.revision_id,
-                    payload.reason,
+                    payload.reason.clone(),
                     page.instance,
                 )
                 .save(&mut transaction)
@@ -535,10 +527,10 @@ impl Page {
 mod tests {
     use chrono::Duration;
 
-    use super::messages::add_revision_mutation;
+    use super::messages::*;
     use super::{
-        Page, PageCheckoutRevisionError, PageCheckoutRevisionPayload, PageRejectRevisionError,
-        PageRejectRevisionPayload, PageRevision,
+        Page, PageCheckoutRevisionError, PageRejectRevisionError, PageRejectRevisionPayload,
+        PageRevision,
     };
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
@@ -600,7 +592,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Page::checkout_revision(
-            PageCheckoutRevisionPayload {
+            &checkout_revision_mutation::Payload {
                 revision_id: 33220,
                 user_id: 1,
                 reason: "Revert changes".to_string(),
@@ -651,7 +643,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Page::checkout_revision(
-            PageCheckoutRevisionPayload {
+            &checkout_revision_mutation::Payload {
                 revision_id: 35476,
                 user_id: 1,
                 reason: "Revert changes".to_string(),

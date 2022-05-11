@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use futures::join;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
@@ -382,14 +382,6 @@ impl Page {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageRejectRevisionPayload {
-    pub revision_id: i32,
-    pub user_id: i32,
-    pub reason: String,
-}
-
 #[derive(Error, Debug)]
 pub enum PageRejectRevisionError {
     #[error("Revision could not be rejected because of a database error: {inner:?}.")]
@@ -436,7 +428,7 @@ impl From<EventError> for PageRejectRevisionError {
 
 impl Page {
     pub async fn reject_revision<'a, E>(
-        payload: PageRejectRevisionPayload,
+        payload: &reject_revision_mutation::Payload,
         executor: E,
     ) -> Result<(), PageRejectRevisionError>
     where
@@ -468,7 +460,7 @@ impl Page {
                     payload.user_id,
                     page_revision.repository_id,
                     payload.revision_id,
-                    payload.reason,
+                    payload.reason.clone(),
                     page.instance,
                 )
                 .save(&mut transaction)
@@ -491,10 +483,7 @@ mod tests {
     use chrono::Duration;
 
     use super::messages::*;
-    use super::{
-        Page, PageCheckoutRevisionError, PageRejectRevisionError, PageRejectRevisionPayload,
-        PageRevision,
-    };
+    use super::{Page, PageCheckoutRevisionError, PageRejectRevisionError, PageRevision};
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
     use crate::operation;
@@ -631,7 +620,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Page::reject_revision(
-            PageRejectRevisionPayload {
+            &reject_revision_mutation::Payload {
                 revision_id: 33220,
                 user_id: 1,
                 reason: "Contains an error".to_string(),
@@ -664,7 +653,7 @@ mod tests {
             .unwrap();
 
         let result = Page::reject_revision(
-            PageRejectRevisionPayload {
+            &reject_revision_mutation::Payload {
                 revision_id: 33220,
                 user_id: 1,
                 reason: "Contains an error".to_string(),
@@ -689,7 +678,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Page::reject_revision(
-            PageRejectRevisionPayload {
+            &reject_revision_mutation::Payload {
                 revision_id: 35476,
                 user_id: 1,
                 reason: "Contains an error".to_string(),

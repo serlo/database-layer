@@ -163,6 +163,31 @@
     },
     "query": "\n                SELECT id\n                    FROM comment\n                    WHERE parent_id = ?\n            "
   },
+  "09f714c5311c90305f996900e153b64698ca86709368f35dbcdab9914f01be38": {
+    "describe": {
+      "columns": [
+        {
+          "name": "entity_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                    SELECT entity_id FROM term_taxonomy_entity\n                        WHERE term_taxonomy_id = ?\n            "
+  },
   "0a2a6e879255cafcdf12a622ef1eee2529c70b55d325ac864078dd2e7b2cc354": {
     "describe": {
       "columns": [],
@@ -1853,6 +1878,16 @@
       }
     },
     "query": "\n                UPDATE term_taxonomy\n                SET description = ?\n                WHERE id = ?\n            "
+  },
+  "8b6f1b63fa051b7fe92165fcd47ece686fdb9e4abd4f3cbef4d947e0ab7c2a01": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "\n                    UPDATE term_taxonomy_entity\n                    SET position = ?\n                    WHERE term_taxonomy_id = ?\n                    AND entity_id = ?\n                "
   },
   "8bc485a59520f399b822928901b4cbd6a3e74c56775810e87c0cc6a25131d28b": {
     "describe": {

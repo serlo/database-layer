@@ -734,4 +734,61 @@ impl TaxonomyTerm {
 
         Ok(())
     }
+
+    pub async fn sort<'a, E>(
+        payload: &taxonomy_sort_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let mut entities_ids: Vec<i32> = sqlx::query!(
+            r#"
+                    SELECT entity_id FROM term_taxonomy_entity
+                        WHERE term_taxonomy_id = ?
+            "#,
+            payload.taxonomy_term_id
+        )
+        .fetch_all(&mut transaction)
+        .await?
+        .into_iter()
+        .map(|x| x.entity_id as i32)
+        .collect();
+
+        if entities_ids == payload.children_ids {
+            return Ok(());
+        }
+
+        entities_ids.sort();
+        let mut children_ids_sorted = payload.children_ids.clone();
+        children_ids_sorted.sort();
+
+        if entities_ids != children_ids_sorted {
+            return Err(operation::Error::BadRequest {reason: "children_ids have to match the current entities ids linked to the taxonomy_term_id".to_string()});
+        }
+
+        for (index, child_id) in payload.children_ids.iter().enumerate() {
+            sqlx::query!(
+                r#"
+                    UPDATE term_taxonomy_entity
+                    SET position = ?
+                    WHERE term_taxonomy_id = ?
+                    AND entity_id = ?
+                "#,
+                index as i32,
+                payload.taxonomy_term_id,
+                child_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        // Event?
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
 }

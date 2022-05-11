@@ -535,3 +535,58 @@ mod delete_entity_links_mutation {
         .await;
     }
 }
+
+#[cfg(test)]
+mod sort {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn sorts_children() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [2021, 1949];
+        let taxonomy_term_id = 24389;
+
+        Message::new(
+            "TaxonomySortMutation",
+            json! ({
+                "userId": 1,
+                "childrenIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(
+            Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
+                .execute_on(&mut transaction)
+                .await,
+            |result| {
+                assert_eq!(result["childrenIds"][0], children_ids[0]);
+                assert_eq!(result["childrenIds"][1], children_ids[1]);
+            },
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_the_children_ids_do_not_match_the_linked_entities_ids() {
+        let response = Message::new(
+            "TaxonomySortMutation",
+            json! ({
+                "userId": 1,
+                "childrenIds": [1743, 2059],
+                "taxonomyTermId": 24503
+            }),
+        )
+        .execute()
+        .await;
+
+        assert_bad_request(
+            response,
+            "children_ids have to match the current entities ids linked to the taxonomy_term_id",
+        )
+        .await;
+    }
+}

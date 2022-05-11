@@ -18,6 +18,7 @@ pub enum TaxonomyTermMessage {
     TaxonomyTermCreateMutation(taxonomy_term_create_mutation::Payload),
     TaxonomyCreateEntityLinksMutation(taxonomy_create_entity_links_mutation::Payload),
     TaxonomyDeleteEntityLinksMutation(taxonomy_delete_entity_links_mutation::Payload),
+    TaxonomySortMutation(taxonomy_sort_mutation::Payload),
 }
 
 #[async_trait]
@@ -47,6 +48,9 @@ impl MessageResponder for TaxonomyTermMessage {
                 payload
                     .handle("TaxonomyDeleteEntityLinksMutation", connection)
                     .await
+            }
+            TaxonomyTermMessage::TaxonomySortMutation(payload) => {
+                payload.handle("TaxonomySortMutation", connection).await
             }
         }
     }
@@ -192,6 +196,33 @@ pub mod taxonomy_delete_entity_links_mutation {
                 Connection::Pool(pool) => TaxonomyTerm::delete_entity_link(self, pool).await?,
                 Connection::Transaction(transaction) => {
                     TaxonomyTerm::delete_entity_link(self, transaction).await?
+                }
+            }
+            Ok(SuccessOutput { success: true })
+        }
+    }
+}
+
+pub mod taxonomy_sort_mutation {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: i32,
+        pub children_ids: Vec<i32>,
+        pub taxonomy_term_id: i32,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = SuccessOutput;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => TaxonomyTerm::sort(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    TaxonomyTerm::sort(self, transaction).await?
                 }
             }
             Ok(SuccessOutput { success: true })

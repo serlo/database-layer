@@ -5,6 +5,7 @@ labels: bug
 ---
 
 # What is wrong?
+
 _Any logs?_
 
 # Steps to reproduce

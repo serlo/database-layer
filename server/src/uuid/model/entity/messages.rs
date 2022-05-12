@@ -23,6 +23,7 @@ pub enum EntityMessage {
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
     DeletedEntitiesQuery(deleted_entities_query::Payload),
+    EntitySetLicenseMutation(entity_set_license_mutation::Payload),
 }
 
 #[async_trait]
@@ -47,6 +48,9 @@ impl MessageResponder for EntityMessage {
             EntityMessage::UnrevisedEntitiesQuery(message) => message.handle(connection).await,
             EntityMessage::DeletedEntitiesQuery(message) => {
                 message.handle("DeletedEntitiesQuery", connection).await
+            }
+            EntityMessage::EntitySetLicenseMutation(message) => {
+                message.handle("EntitySetLicenseMutation", connection).await
             }
         }
     }
@@ -348,6 +352,39 @@ pub mod deleted_entities_query {
                 success: true,
                 deleted_entities,
             })
+        }
+    }
+}
+
+pub mod entity_set_license_mutation {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub entity_id: i32,
+        pub license_id: i32,
+        pub user_id: i32,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        success: bool,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => Entity::entity_set_license(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Entity::entity_set_license(self, transaction).await?
+                }
+            };
+            Ok(Output { success: true })
         }
     }
 }

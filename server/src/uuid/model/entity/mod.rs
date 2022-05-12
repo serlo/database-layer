@@ -17,8 +17,8 @@ use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
 use crate::event::{
-    CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateTaxonomyLinkEventPayload,
-    EntityLinkEventPayload, EventError, RevisionEventPayload,
+    CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateSetLicenseEventPayload,
+    CreateTaxonomyLinkEventPayload, EntityLinkEventPayload, EventError, RevisionEventPayload,
 };
 
 use crate::{fetch_all_fields, format_alias};
@@ -1054,6 +1054,73 @@ impl Entity {
         }
 
         Ok(deleted_entities)
+    }
+}
+
+impl Entity {
+    pub async fn entity_set_license<'a, E>(
+        payload: &entity_set_license_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                select * from user where id = ?
+            "#,
+            payload.user_id,
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: format!("An user with id {} does not exist.", payload.user_id),
+        })?;
+
+        let entity = sqlx::query!(
+            r#"
+                select * from entity where id = ?
+            "#,
+            payload.entity_id,
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: format!("An entity with id {} does not exist.", payload.entity_id),
+        })?;
+
+        if entity.license_id == payload.license_id {
+            return Ok(());
+        }
+
+        sqlx::query!(
+            r#"
+                update entity set license_id = ? where id = ?
+            "#,
+            payload.license_id,
+            payload.entity_id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let instance_id: i32 = sqlx::query!(
+            r#"
+                select instance_id from entity where id = ?
+            "#,
+            payload.entity_id,
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .instance_id;
+
+        CreateSetLicenseEventPayload::new(payload.entity_id, payload.user_id, instance_id)
+            .save(&mut transaction)
+            .await?;
+
+        transaction.commit().await?;
+        Ok(())
     }
 }
 

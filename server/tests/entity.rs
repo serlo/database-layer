@@ -468,3 +468,124 @@ mod deleted_entities_query {
         .await;
     }
 }
+
+#[cfg(test)]
+mod set_license_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn sets_license_and_sets_new_event_log() {
+        let mut transaction = begin_transaction().await;
+
+        let user_id: i32 = 1;
+        let entity_id: i32 = 1495;
+        let license_id: i32 = 2;
+        let event_id: i32 = 3;
+
+        let response = Message::new(
+            "SetLicenseMutation",
+            json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok(response, json!({ "success": true, })).await;
+
+        let new_license_id = sqlx::query!(
+            r#"
+                select license_id from entity where id = ?
+            "#,
+            entity_id,
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap()
+        .license_id;
+
+        assert_eq!(new_license_id, license_id);
+
+        let last_event_log_entry = sqlx::query!(
+            r#"
+                select * from event_log order by date desc limit 1
+            "#,
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap();
+
+        assert_eq!(last_event_log_entry.actor_id, user_id);
+        assert_eq!(last_event_log_entry.event_id, event_id);
+        assert_eq!(last_event_log_entry.uuid_id, entity_id);
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_entity_does_not_exist() {
+        let mut transaction = begin_transaction().await;
+
+        let user_id: i32 = 1;
+        let entity_id: i32 = 0;
+        let license_id: i32 = 2;
+
+        let response = Message::new(
+            "SetLicenseMutation",
+            json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(
+            response,
+            &format!("An entity with id {} does not exist.", entity_id),
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_user_does_not_exist() {
+        let mut transaction = begin_transaction().await;
+
+        let user_id: i32 = 0;
+        let entity_id: i32 = 1495;
+        let license_id: i32 = 2;
+
+        let response = Message::new(
+            "SetLicenseMutation",
+            json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_bad_request(
+            response,
+            &format!("An user with id {} does not exist.", entity_id),
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn does_not_set_a_new_event_log_entry_for_same_license_id() {
+        let mut transaction = begin_transaction().await;
+
+        let user_id: i32 = 1;
+        let entity_id: i32 = 1495;
+        let license_id: i32 = 1;
+
+        Message::new(
+            "SetLicenseMutation",
+            json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        let last_event_log_entry = sqlx::query!(
+            r#"
+                select uuid_id from event_log order by date desc limit 1
+            "#,
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap();
+
+        assert_ne!(last_event_log_entry.uuid_id, entity_id);
+    }
+}

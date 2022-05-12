@@ -335,7 +335,6 @@ mod create_mutation {
             )
             .execute()
             .await,
-            "parent entity with id 1 does not exist",
         )
         .await;
     }
@@ -366,7 +365,6 @@ mod create_mutation {
             )
             .execute()
             .await,
-            "Taxonomy term with id 1 does not exist",
         )
         .await;
     }
@@ -436,10 +434,6 @@ mod deleted_entities_query {
         .execute()
         .await;
 
-        assert_bad_request(
-            response,
-            "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}",
-        )
-        .await;
+        assert_bad_request(response).await;
     }
 }

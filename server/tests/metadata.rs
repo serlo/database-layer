@@ -122,6 +122,6 @@ mod entities_metadata_query {
             .execute()
             .await;
 
-        assert_bad_request(response, "The 'first' value should be less than 10_000").await;
+        assert_bad_request(response).await;
     }
 }

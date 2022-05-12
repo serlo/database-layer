@@ -197,7 +197,6 @@ impl Page {
             &mut transaction,
         )
         .await
-        // TODO: Delete
         .map_err(|error| operation::Error::InternalServerError {
             error: Box::new(error),
         })?;

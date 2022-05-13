@@ -202,7 +202,7 @@ mod user_delete_regular_users_mutation {
             .execute_on(&mut transaction)
             .await;
 
-        assert_bad_request(response, "The requested user does not exist.").await;
+        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -217,7 +217,7 @@ mod user_delete_regular_users_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_bad_request(response, "You cannot delete the user Deleted.").await;
+        assert_bad_request(response).await;
     }
 }
 
@@ -270,7 +270,7 @@ mod user_potential_spam_users_query {
             .execute()
             .await;
 
-        assert_bad_request(response, "parameter `first` is too high").await;
+        assert_bad_request(response).await;
     }
 }
 

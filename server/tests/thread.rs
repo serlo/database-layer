@@ -49,7 +49,7 @@ mod start_thread_mutation {
         .execute()
         .await;
 
-        assert_bad_request(response, "content is empty").await;
+        assert_bad_request(response).await;
     }
 }
 
@@ -72,6 +72,6 @@ mod create_comment_mutation {
         .execute()
         .await;
 
-        assert_bad_request(response, "content is empty").await;
+        assert_bad_request(response).await;
     }
 }

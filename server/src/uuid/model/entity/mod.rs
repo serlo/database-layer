@@ -1179,7 +1179,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Entity::checkout_revision(
-            EntityCheckoutRevisionPayload {
+            &checkout_revision_mutation::Payload {
                 revision_id: 30672,
                 user_id: 1,
                 reason: "Revert changes".to_string(),
@@ -1233,7 +1233,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Entity::checkout_revision(
-            EntityCheckoutRevisionPayload {
+            &checkout_revision_mutation::Payload {
                 revision_id: 30674,
                 user_id: 1,
                 reason: "Revert changes".to_string(),

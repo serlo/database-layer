@@ -17,7 +17,7 @@ pub enum EntityMessage {
     EntityAddRevisionMutation(entity_add_revision_mutation::Payload),
     EntityCheckoutRevisionMutation(checkout_revision_mutation::Payload),
     EntityCreateMutation(entity_create_mutation::Payload),
-    EntityRejectRevisionMutation(EntityRejectRevisionMutation),
+    EntityRejectRevisionMutation(reject_revision_mutation::Payload),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
     DeletedEntitiesQuery(deleted_entities_query::Payload),
 }
@@ -40,8 +40,10 @@ impl MessageResponder for EntityMessage {
             EntityMessage::EntityCreateMutation(message) => {
                 message.handle("EntityCreateMutation", connection).await
             }
-            EntityMessage::EntityRejectRevisionMutation(message) => {
-                message.handle(connection).await
+            EntityMessage::EntityRejectRevisionMutation(payload) => {
+                payload
+                    .handle("EntityRejectRevisionMutation", connection)
+                    .await
             }
             EntityMessage::UnrevisedEntitiesQuery(message) => message.handle(connection).await,
             EntityMessage::DeletedEntitiesQuery(message) => {
@@ -100,13 +102,6 @@ pub mod entity_add_revision_mutation {
             })
         }
     }
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityRevisionData {
-    pub success: bool,
-    pub reason: Option<String>,
 }
 
 pub mod checkout_revision_mutation {
@@ -173,70 +168,69 @@ pub mod entity_create_mutation {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityRejectRevisionMutation {
-    pub revision_id: i32,
-    pub user_id: i32,
-    pub reason: String,
-}
+pub mod reject_revision_mutation {
+    use super::*;
 
-#[async_trait]
-impl MessageResponder for EntityRejectRevisionMutation {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let payload = EntityRejectRevisionPayload {
-            revision_id: self.revision_id,
-            user_id: self.user_id,
-            reason: self.reason.to_string(),
-        };
-        let response = match connection {
-            Connection::Pool(pool) => Entity::reject_revision(payload, pool).await,
-            Connection::Transaction(transaction) => {
-                Entity::reject_revision(payload, transaction).await
-            }
-        };
-        match response {
-            Ok(_) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(EntityRevisionData {
-                    success: true,
-                    reason: None,
-                }),
-            Err(e) => {
-                println!("/reject-revision: {:?}", e);
-                match e {
-                    EntityRejectRevisionError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct EntityRevisionData {
+        pub success: bool,
+        pub reason: Option<String>,
+    }
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub revision_id: i32,
+        pub user_id: i32,
+        pub reason: String,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = EntityRevisionData;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let payload = EntityRejectRevisionPayload {
+                revision_id: self.revision_id,
+                user_id: self.user_id,
+                reason: self.reason.to_string(),
+            };
+            match connection {
+                Connection::Pool(pool) => Entity::reject_revision(payload, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Entity::reject_revision(payload, transaction).await?
+                }
+            };
+            Ok(EntityRevisionData {
+                success: true,
+                reason: None,
+            })
+        }
+    }
+    impl From<EntityRejectRevisionError> for operation::Error {
+        fn from(e: EntityRejectRevisionError) -> Self {
+            match e {
+                EntityRejectRevisionError::DatabaseError { .. }
+                | EntityRejectRevisionError::EventError { .. }
+                | EntityRejectRevisionError::UuidError { .. } => {
+                    operation::Error::InternalServerError { error: Box::new(e) }
+                }
+                EntityRejectRevisionError::RevisionAlreadyRejected => {
+                    operation::Error::BadRequest {
+                        reason: "revision has already been rejected".to_string(),
                     }
-                    EntityRejectRevisionError::EventError { .. } => {
-                        HttpResponse::InternalServerError().finish()
+                }
+                EntityRejectRevisionError::RevisionCurrentlyCheckedOut => {
+                    operation::Error::BadRequest {
+                        reason: "revision is checked out currently".to_string(),
                     }
-                    EntityRejectRevisionError::UuidError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    EntityRejectRevisionError::RevisionAlreadyRejected => {
-                        HttpResponse::BadRequest().json(EntityRevisionData {
-                            success: false,
-                            reason: Some("revision has already been rejected".to_string()),
-                        })
-                    }
-                    EntityRejectRevisionError::RevisionCurrentlyCheckedOut => {
-                        HttpResponse::BadRequest().json(EntityRevisionData {
-                            success: false,
-                            reason: Some("revision is checked out currently".to_string()),
-                        })
-                    }
-                    EntityRejectRevisionError::InvalidRevision { .. } => HttpResponse::BadRequest()
-                        .json(EntityRevisionData {
-                            success: false,
-                            reason: Some("revision invalid".to_string()),
-                        }),
-                    EntityRejectRevisionError::InvalidRepository { .. } => {
-                        HttpResponse::BadRequest().json(EntityRevisionData {
-                            success: false,
-                            reason: Some("repository invalid".to_string()),
-                        })
+                }
+                EntityRejectRevisionError::InvalidRevision { .. } => operation::Error::BadRequest {
+                    reason: "revision invalid".to_string(),
+                },
+                EntityRejectRevisionError::InvalidRepository { .. } => {
+                    operation::Error::BadRequest {
+                        reason: "repository invalid".to_string(),
                     }
                 }
             }

@@ -62,11 +62,11 @@ pub mod events_query {
     #[derive(Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        after: Option<i32>,
-        actor_id: Option<i32>,
-        object_id: Option<i32>,
-        instance: Option<Instance>,
-        first: i32,
+        pub after: Option<i32>,
+        pub actor_id: Option<i32>,
+        pub object_id: Option<i32>,
+        pub instance: Option<Instance>,
+        pub first: i32,
     }
 
     #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -88,27 +88,9 @@ pub mod events_query {
             }
 
             Ok(match connection {
-                Connection::Pool(pool) => {
-                    Event::fetch_events(
-                        self.first,
-                        self.after,
-                        self.actor_id,
-                        self.object_id,
-                        self.instance.as_ref(),
-                        pool,
-                    )
-                    .await?
-                }
+                Connection::Pool(pool) => Event::fetch_events(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    Event::fetch_events(
-                        self.first,
-                        self.after,
-                        self.actor_id,
-                        self.object_id,
-                        self.instance.as_ref(),
-                        transaction,
-                    )
-                    .await?
+                    Event::fetch_events(self, transaction).await?
                 }
             })
         }

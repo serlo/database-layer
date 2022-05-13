@@ -258,18 +258,14 @@ impl EventPayload {
 
 impl Event {
     pub async fn fetch_events<'a, E>(
-        max_events: i32,
-        after: Option<i32>,
-        actor_id: Option<i32>,
-        object_id: Option<i32>,
-        instance: Option<&Instance>,
+        payload: &events_query::Payload,
         executor: E,
     ) -> Result<events_query::Output, sqlx::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await.unwrap();
-        let instance_id = match instance {
+        let instance_id = match payload.instance.as_ref() {
             Some(instance) => Some(Instance::fetch_id(instance, &mut transaction).await?),
             None => None,
         };
@@ -312,16 +308,16 @@ impl Event {
                 ORDER BY el.id DESC
                 LIMIT ?
             "#,
-            after,
-            after,
-            actor_id,
-            actor_id,
-            object_id,
-            object_id,
-            object_id,
+            payload.after,
+            payload.after,
+            payload.actor_id,
+            payload.actor_id,
+            payload.object_id,
+            payload.object_id,
+            payload.object_id,
             instance_id,
             instance_id,
-            max_events + 1
+            payload.first + 1
         )
         .fetch(&mut transaction);
 
@@ -329,7 +325,7 @@ impl Event {
         let mut has_next_page = false;
 
         while let Some(record) = event_records.try_next().await? {
-            if events.len() as i32 == max_events {
+            if events.len() as i32 == payload.first {
                 has_next_page = true;
                 break;
             }

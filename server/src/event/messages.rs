@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{Event, EventError, Events};
+use super::model::{Event, EventError};
 use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
@@ -69,9 +69,16 @@ pub mod events_query {
         first: i32,
     }
 
+    #[derive(Debug, Eq, PartialEq, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub events: Vec<Event>,
+        pub has_next_page: bool,
+    }
+
     #[async_trait]
     impl Operation for Payload {
-        type Output = Events;
+        type Output = Output;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             if self.first > 10_000 {
@@ -82,7 +89,7 @@ pub mod events_query {
 
             Ok(match connection {
                 Connection::Pool(pool) => {
-                    Events::fetch(
+                    Event::fetch_events(
                         self.first,
                         self.after,
                         self.actor_id,
@@ -93,7 +100,7 @@ pub mod events_query {
                     .await?
                 }
                 Connection::Transaction(transaction) => {
-                    Events::fetch_via_transaction(
+                    Event::fetch_events(
                         self.first,
                         self.after,
                         self.actor_id,

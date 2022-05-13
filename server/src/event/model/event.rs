@@ -5,6 +5,7 @@ use futures::TryStreamExt;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
+use super::super::messages::*;
 use super::abstract_event::AbstractEvent;
 use super::create_comment::CreateCommentEvent;
 use super::create_entity::CreateEntityEvent;
@@ -255,33 +256,15 @@ impl EventPayload {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Events {
-    events: Vec<Event>,
-    has_next_page: bool,
-}
-
-impl Events {
-    pub async fn fetch(
-        max_events: i32,
-        after: Option<i32>,
-        actor_id: Option<i32>,
-        object_id: Option<i32>,
-        instance: Option<&Instance>,
-        pool: &MySqlPool,
-    ) -> Result<Events, sqlx::Error> {
-        Self::fetch_via_transaction(max_events, after, actor_id, object_id, instance, pool).await
-    }
-
-    pub async fn fetch_via_transaction<'a, E>(
+impl Event {
+    pub async fn fetch_events<'a, E>(
         max_events: i32,
         after: Option<i32>,
         actor_id: Option<i32>,
         object_id: Option<i32>,
         instance: Option<&Instance>,
         executor: E,
-    ) -> Result<Events, sqlx::Error>
+    ) -> Result<events_query::Output, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -405,7 +388,7 @@ impl Events {
             }
         }
 
-        Ok(Events {
+        Ok(events_query::Output {
             events,
             has_next_page,
         })

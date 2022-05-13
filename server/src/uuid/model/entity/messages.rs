@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::{Entity, EntityRejectRevisionError, EntityRejectRevisionPayload};
+use super::{Entity, EntityRejectRevisionError};
 use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
@@ -184,15 +184,10 @@ pub mod reject_revision_mutation {
         type Output = SuccessOutput;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            let payload = EntityRejectRevisionPayload {
-                revision_id: self.revision_id,
-                user_id: self.user_id,
-                reason: self.reason.to_string(),
-            };
             match connection {
-                Connection::Pool(pool) => Entity::reject_revision(payload, pool).await?,
+                Connection::Pool(pool) => Entity::reject_revision(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    Entity::reject_revision(payload, transaction).await?
+                    Entity::reject_revision(self, transaction).await?
                 }
             };
             Ok(SuccessOutput { success: true })

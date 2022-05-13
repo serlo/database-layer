@@ -800,14 +800,6 @@ impl Entity {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityRejectRevisionPayload {
-    pub revision_id: i32,
-    pub user_id: i32,
-    pub reason: String,
-}
-
 #[derive(Error, Debug)]
 pub enum EntityRejectRevisionError {
     #[error("Revision could not be rejected because of a database error: {inner:?}.")]
@@ -854,7 +846,7 @@ impl From<EventError> for EntityRejectRevisionError {
 
 impl Entity {
     pub async fn reject_revision<'a, E>(
-        payload: EntityRejectRevisionPayload,
+        payload: &reject_revision_mutation::Payload,
         executor: E,
     ) -> Result<(), EntityRejectRevisionError>
     where
@@ -893,7 +885,7 @@ impl Entity {
                     payload.user_id,
                     abstract_entity_revision.repository_id,
                     payload.revision_id,
-                    payload.reason,
+                    payload.reason.clone(),
                     abstract_entity.instance,
                 )
                 .save(&mut transaction)
@@ -1258,7 +1250,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Entity::reject_revision(
-            EntityRejectRevisionPayload {
+            &reject_revision_mutation::Payload {
                 revision_id: 30672,
                 user_id: 1,
                 reason: "Contains an error".to_string(),
@@ -1291,7 +1283,7 @@ mod tests {
             .unwrap();
 
         let result = Entity::reject_revision(
-            EntityRejectRevisionPayload {
+            &reject_revision_mutation::Payload {
                 revision_id: 30672,
                 user_id: 1,
                 reason: "Contains an error".to_string(),
@@ -1316,7 +1308,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Entity::reject_revision(
-            EntityRejectRevisionPayload {
+            &reject_revision_mutation::Payload {
                 revision_id: 30674,
                 user_id: 1,
                 reason: "Contains an error".to_string(),

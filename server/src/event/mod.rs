@@ -1,4 +1,4 @@
-pub use messages::{EventMessage, EventsQuery};
+pub use messages::EventMessage;
 pub use model::*;
 
 mod messages;

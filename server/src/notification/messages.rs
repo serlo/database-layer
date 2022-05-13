@@ -2,13 +2,10 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{
-    Notifications, SetNotificationStateError, SetNotificationStatePayload,
-    SetNotificationStateResponse,
-};
+use super::model::{Notifications, SetNotificationStateError, SetNotificationStatePayload};
 use crate::database::Connection;
 use crate::message::MessageResponder;
-use crate::operation::{self, Operation};
+use crate::operation::{self, Operation, SuccessOutput};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
@@ -71,7 +68,7 @@ pub mod set_state_mutation {
 
     #[async_trait]
     impl Operation for Payload {
-        type Output = SetNotificationStateResponse;
+        type Output = SuccessOutput;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             let payload = SetNotificationStatePayload {
@@ -79,14 +76,15 @@ pub mod set_state_mutation {
                 user_id: self.user_id,
                 unread: self.unread,
             };
-            Ok(match connection {
+            match connection {
                 Connection::Pool(pool) => {
                     Notifications::set_notification_state(payload, pool).await?
                 }
                 Connection::Transaction(transaction) => {
                     Notifications::set_notification_state(payload, transaction).await?
                 }
-            })
+            };
+            Ok(SuccessOutput { success: true })
         }
     }
     impl From<SetNotificationStateError> for operation::Error {

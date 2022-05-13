@@ -18,7 +18,7 @@ pub enum EntityMessage {
     EntityCheckoutRevisionMutation(checkout_revision_mutation::Payload),
     EntityCreateMutation(entity_create_mutation::Payload),
     EntityRejectRevisionMutation(reject_revision_mutation::Payload),
-    UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
+    UnrevisedEntitiesQuery(unrevised_entities_query::Payload),
     DeletedEntitiesQuery(deleted_entities_query::Payload),
 }
 
@@ -45,7 +45,9 @@ impl MessageResponder for EntityMessage {
                     .handle("EntityRejectRevisionMutation", connection)
                     .await
             }
-            EntityMessage::UnrevisedEntitiesQuery(message) => message.handle(connection).await,
+            EntityMessage::UnrevisedEntitiesQuery(payload) => {
+                payload.handle("UnrevisedEntitiesQuery", connection).await
+            }
             EntityMessage::DeletedEntitiesQuery(message) => {
                 message.handle("DeletedEntitiesQuery", connection).await
             }
@@ -195,26 +197,32 @@ pub mod reject_revision_mutation {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UnrevisedEntitiesQuery {}
+pub mod unrevised_entities_query {
+    use super::*;
 
-#[async_trait]
-impl MessageResponder for UnrevisedEntitiesQuery {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let response = match connection {
-            Connection::Pool(pool) => Entity::unrevised_entities(pool).await,
-            Connection::Transaction(transaction) => Entity::unrevised_entities(transaction).await,
-        };
-        match response {
-            Ok(data) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(data),
-            Err(e) => {
-                println!("/unrevised-entities: {:?}", e);
-                HttpResponse::InternalServerError().finish()
-            }
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {}
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub unrevised_entity_ids: Vec<i32>,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(Output {
+                unrevised_entity_ids: match connection {
+                    Connection::Pool(pool) => Entity::unrevised_entities(pool).await?,
+                    Connection::Transaction(transaction) => {
+                        Entity::unrevised_entities(transaction).await?
+                    }
+                },
+            })
         }
     }
 }

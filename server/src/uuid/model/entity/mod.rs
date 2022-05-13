@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use chrono::Utc;
 use convert_case::{Case, Casing};
 use futures::try_join;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::MySqlPool;
 use sqlx::Row;
 use std::collections::HashMap;
@@ -866,20 +866,12 @@ impl Entity {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UnrevisedEntitiesQueryResult {
-    pub unrevised_entity_ids: Vec<i32>,
-}
-
 impl Entity {
-    pub async fn unrevised_entities<'a, E>(
-        executor: E,
-    ) -> Result<UnrevisedEntitiesQueryResult, sqlx::Error>
+    pub async fn unrevised_entities<'a, E>(executor: E) -> Result<Vec<i32>, sqlx::Error>
     where
         E: Executor<'a>,
     {
-        let unrevised_entity_ids = sqlx::query!(
+        Ok(sqlx::query!(
             r#"
                 SELECT
                     MIN(e.id) as entity_id,
@@ -899,11 +891,7 @@ impl Entity {
         .await?
         .iter()
         .map(|record| record.entity_id.unwrap() as i32)
-        .collect();
-
-        Ok(UnrevisedEntitiesQueryResult {
-            unrevised_entity_ids,
-        })
+        .collect())
     }
 }
 

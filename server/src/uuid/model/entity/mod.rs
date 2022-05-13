@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 use sqlx::Row;
 use std::collections::HashMap;
-use thiserror::Error;
 
 use abstract_entity::AbstractEntity;
 pub use entity_type::EntityType;
@@ -18,7 +17,7 @@ use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
 use crate::event::{
     CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateTaxonomyLinkEventPayload,
-    EntityLinkEventPayload, EventError, RevisionEventPayload,
+    EntityLinkEventPayload, RevisionEventPayload,
 };
 
 use crate::{fetch_all_fields, format_alias};
@@ -800,55 +799,11 @@ impl Entity {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum EntityRejectRevisionError {
-    #[error("Revision could not be rejected because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Revision could not be rejected because of an event error: {inner:?}.")]
-    EventError { inner: EventError },
-    #[error("Revision could not be rejected because of an UUID error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Revision could not be rejected out because it already has been rejected.")]
-    RevisionAlreadyRejected,
-    #[error("Revision could not be rejected out because it is checked out currently.")]
-    RevisionCurrentlyCheckedOut,
-    #[error(
-        "Revision could not be rejected because the provided UUID is not a revision: {uuid:?}."
-    )]
-    InvalidRevision { uuid: Uuid },
-    #[error("Revision could not be rejected because its repository is invalid: {uuid:?}.")]
-    InvalidRepository { uuid: Uuid },
-}
-
-impl From<sqlx::Error> for EntityRejectRevisionError {
-    fn from(inner: sqlx::Error) -> Self {
-        Self::DatabaseError { inner }
-    }
-}
-
-impl From<UuidError> for EntityRejectRevisionError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => Self::UuidError { inner },
-        }
-    }
-}
-
-impl From<EventError> for EntityRejectRevisionError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => Self::EventError { inner },
-        }
-    }
-}
-
 impl Entity {
     pub async fn reject_revision<'a, E>(
         payload: &reject_revision_mutation::Payload,
         executor: E,
-    ) -> Result<(), EntityRejectRevisionError>
+    ) -> Result<(), operation::Error>
     where
         E: Executor<'a>,
     {
@@ -863,7 +818,9 @@ impl Entity {
         }) = revision.concrete_uuid
         {
             if revision.trashed {
-                return Err(EntityRejectRevisionError::RevisionAlreadyRejected);
+                return Err(operation::Error::BadRequest {
+                    reason: "revision is already rejected".to_string(),
+                });
             }
 
             let repository_id = abstract_entity_revision.repository_id;
@@ -875,7 +832,9 @@ impl Entity {
             }) = repository.concrete_uuid
             {
                 if abstract_entity.current_revision_id == Some(revision_id) {
-                    return Err(EntityRejectRevisionError::RevisionCurrentlyCheckedOut);
+                    return Err(operation::Error::BadRequest {
+                        reason: "revision is checked out currently".to_string(),
+                    });
                 }
 
                 Uuid::set_state(revision_id, true, &mut transaction).await?;
@@ -895,10 +854,14 @@ impl Entity {
 
                 Ok(())
             } else {
-                Err(EntityRejectRevisionError::InvalidRepository { uuid: repository })
+                Err(operation::Error::BadRequest {
+                    reason: "repository invalid".to_string(),
+                })
             }
         } else {
-            Err(EntityRejectRevisionError::InvalidRevision { uuid: revision })
+            Err(operation::Error::BadRequest {
+                reason: "revision invalid".to_string(),
+            })
         }
     }
 }
@@ -1292,7 +1255,7 @@ mod tests {
         )
         .await;
 
-        if let Err(EntityRejectRevisionError::RevisionAlreadyRejected) = result {
+        if let Err(operation::Error::BadRequest { .. }) = result {
             // This is the expected branch.
         } else {
             panic!(
@@ -1317,7 +1280,7 @@ mod tests {
         )
         .await;
 
-        if let Err(EntityRejectRevisionError::RevisionCurrentlyCheckedOut) = result {
+        if let Err(operation::Error::BadRequest { .. }) = result {
             // This is the expected branch.
         } else {
             panic!(

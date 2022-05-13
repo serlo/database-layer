@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::{Entity, EntityRejectRevisionError};
+use super::Entity;
 use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
@@ -191,35 +191,6 @@ pub mod reject_revision_mutation {
                 }
             };
             Ok(SuccessOutput { success: true })
-        }
-    }
-    impl From<EntityRejectRevisionError> for operation::Error {
-        fn from(e: EntityRejectRevisionError) -> Self {
-            match e {
-                EntityRejectRevisionError::DatabaseError { .. }
-                | EntityRejectRevisionError::EventError { .. }
-                | EntityRejectRevisionError::UuidError { .. } => {
-                    operation::Error::InternalServerError { error: Box::new(e) }
-                }
-                EntityRejectRevisionError::RevisionAlreadyRejected => {
-                    operation::Error::BadRequest {
-                        reason: "revision has already been rejected".to_string(),
-                    }
-                }
-                EntityRejectRevisionError::RevisionCurrentlyCheckedOut => {
-                    operation::Error::BadRequest {
-                        reason: "revision is checked out currently".to_string(),
-                    }
-                }
-                EntityRejectRevisionError::InvalidRevision { .. } => operation::Error::BadRequest {
-                    reason: "revision invalid".to_string(),
-                },
-                EntityRejectRevisionError::InvalidRepository { .. } => {
-                    operation::Error::BadRequest {
-                        reason: "repository invalid".to_string(),
-                    }
-                }
-            }
         }
     }
 }

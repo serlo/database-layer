@@ -493,7 +493,7 @@ impl Entity {
 
         if !payload.input.needs_review {
             Entity::checkout_revision(
-                EntityCheckoutRevisionPayload {
+                &checkout_revision_mutation::Payload {
                     revision_id: entity_revision.id,
                     user_id: payload.user_id,
                     reason: "".to_string(),
@@ -727,17 +727,9 @@ impl Entity {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityCheckoutRevisionPayload {
-    pub revision_id: i32,
-    pub user_id: i32,
-    pub reason: String,
-}
-
 impl Entity {
     pub async fn checkout_revision<'a, E>(
-        payload: EntityCheckoutRevisionPayload,
+        payload: &checkout_revision_mutation::Payload,
         executor: E,
     ) -> Result<(), operation::Error>
     where
@@ -786,7 +778,7 @@ impl Entity {
                     payload.user_id,
                     repository_id,
                     payload.revision_id,
-                    payload.reason,
+                    payload.reason.clone(),
                     abstract_entity.instance,
                 )
                 .save(&mut transaction)

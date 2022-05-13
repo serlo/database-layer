@@ -2,9 +2,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::{
-    Entity, EntityCheckoutRevisionPayload, EntityRejectRevisionError, EntityRejectRevisionPayload,
-};
+use super::{Entity, EntityRejectRevisionError, EntityRejectRevisionPayload};
 use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
@@ -127,15 +125,10 @@ pub mod checkout_revision_mutation {
         type Output = SuccessOutput;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            let payload = EntityCheckoutRevisionPayload {
-                revision_id: self.revision_id,
-                user_id: self.user_id,
-                reason: self.reason.to_string(),
-            };
             match connection {
-                Connection::Pool(pool) => Entity::checkout_revision(payload, pool).await?,
+                Connection::Pool(pool) => Entity::checkout_revision(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    Entity::checkout_revision(payload, transaction).await?
+                    Entity::checkout_revision(self, transaction).await?
                 }
             };
             Ok(SuccessOutput { success: true })

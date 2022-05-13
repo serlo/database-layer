@@ -2,7 +2,10 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{Notifications, SetNotificationStateError, SetNotificationStatePayload};
+use super::model::{
+    Notifications, SetNotificationStateError, SetNotificationStatePayload,
+    SetNotificationStateResponse,
+};
 use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
@@ -11,7 +14,7 @@ use crate::operation::{self, Operation};
 #[serde(tag = "type", content = "payload")]
 pub enum NotificationMessage {
     NotificationsQuery(notifications_query::Payload),
-    NotificationSetStateMutation(NotificationSetStateMutation),
+    NotificationSetStateMutation(set_state_mutation::Payload),
 }
 
 #[async_trait]
@@ -22,8 +25,10 @@ impl MessageResponder for NotificationMessage {
             NotificationMessage::NotificationsQuery(payload) => {
                 payload.handle("NotificationsQuery", connection).await
             }
-            NotificationMessage::NotificationSetStateMutation(message) => {
-                message.handle(connection).await
+            NotificationMessage::NotificationSetStateMutation(payload) => {
+                payload
+                    .handle("NotificationSetStateMutation", connection)
+                    .await
             }
         }
     }
@@ -53,41 +58,40 @@ pub mod notifications_query {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NotificationSetStateMutation {
-    pub ids: Vec<i32>,
-    pub user_id: i32,
-    pub unread: bool,
-}
+pub mod set_state_mutation {
+    use super::*;
 
-#[async_trait]
-impl MessageResponder for NotificationSetStateMutation {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let payload = SetNotificationStatePayload {
-            ids: self.ids.clone(),
-            user_id: self.user_id,
-            unread: self.unread,
-        };
-        let response = match connection {
-            Connection::Pool(pool) => Notifications::set_notification_state(payload, pool).await,
-            Connection::Transaction(transaction) => {
-                Notifications::set_notification_state(payload, transaction).await
-            }
-        };
-        match response {
-            Ok(data) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(&data),
-            Err(e) => {
-                println!("/set-notification-state: {:?}", e);
-                match e {
-                    SetNotificationStateError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub ids: Vec<i32>,
+        pub user_id: i32,
+        pub unread: bool,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = SetNotificationStateResponse;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let payload = SetNotificationStatePayload {
+                ids: self.ids.clone(),
+                user_id: self.user_id,
+                unread: self.unread,
+            };
+            Ok(match connection {
+                Connection::Pool(pool) => {
+                    Notifications::set_notification_state(payload, pool).await?
                 }
-            }
+                Connection::Transaction(transaction) => {
+                    Notifications::set_notification_state(payload, transaction).await?
+                }
+            })
+        }
+    }
+    impl From<SetNotificationStateError> for operation::Error {
+        fn from(e: SetNotificationStateError) -> Self {
+            operation::Error::InternalServerError { error: Box::new(e) }
         }
     }
 }

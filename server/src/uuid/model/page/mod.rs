@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use futures::join;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sqlx::MySqlPool;
 use thiserror::Error;
 
@@ -9,8 +9,10 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::format_alias;
 use crate::instance::Instance;
+use messages::add_revision_mutation;
 
 use crate::event::{CreateEntityRevisionEventPayload, EventError, RevisionEventPayload};
+use crate::operation;
 use crate::uuid::PageRevision;
 pub use messages::*;
 
@@ -117,84 +119,25 @@ impl UuidFetcher for Page {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageAddRevisionPayload {
-    pub content: String,
-    pub title: String,
-    pub page_id: i32,
-    pub user_id: i32,
-}
-
-#[derive(Error, Debug)]
-pub enum PageAddRevisionError {
-    #[error("Revision could not be added because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Revision could not be added out because of an checkout error: {inner:?}.")]
-    CheckoutRevisionError {
-        inner: Box<PageCheckoutRevisionError>,
-    },
-    #[error("Revision could not be added out because of an event error: {inner:?}.")]
-    EventError { inner: EventError },
-    #[error("Revision could not be added because of an UUID error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Revision could not be added because page was not found.")]
-    PageNotFound,
-}
-impl From<sqlx::Error> for PageAddRevisionError {
-    fn from(inner: sqlx::Error) -> Self {
-        Self::DatabaseError { inner }
-    }
-}
-
-impl From<PageCheckoutRevisionError> for PageAddRevisionError {
-    fn from(error: PageCheckoutRevisionError) -> Self {
-        match error {
-            PageCheckoutRevisionError::DatabaseError { inner } => inner.into(),
-            inner => Self::CheckoutRevisionError {
-                inner: Box::new(inner),
-            },
-        }
-    }
-}
-
-impl From<EventError> for PageAddRevisionError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => Self::EventError { inner },
-        }
-    }
-}
-
-impl From<UuidError> for PageAddRevisionError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => Self::UuidError { inner },
-        }
-    }
-}
-
 impl Page {
     pub async fn add_revision<'a, E>(
-        payload: PageAddRevisionPayload,
+        payload: &add_revision_mutation::Payload,
         executor: E,
-    ) -> Result<Uuid, PageAddRevisionError>
+    ) -> Result<Uuid, operation::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
 
-        if let Err(sqlx::Error::RowNotFound) = sqlx::query!(
+        sqlx::query!(
             r#"SELECT id FROM page_repository WHERE id = ?"#,
             payload.page_id
         )
-        .fetch_one(&mut transaction)
-        .await
-        {
-            return Err(PageAddRevisionError::PageNotFound);
-        }
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: "no page found for provided pageId".to_string(),
+        })?;
 
         sqlx::query!(
             r#"
@@ -246,14 +189,17 @@ impl Page {
         .await?;
 
         Page::checkout_revision(
-            PageCheckoutRevisionPayload {
+            &checkout_revision_mutation::Payload {
                 revision_id: page_revision_id,
                 user_id: payload.user_id,
                 reason: "".to_string(),
             },
             &mut transaction,
         )
-        .await?;
+        .await
+        .map_err(|error| operation::Error::InternalServerError {
+            error: Box::new(error),
+        })?;
 
         let uuid = PageRevision::fetch_via_transaction(page_revision_id, &mut transaction).await?;
 
@@ -261,14 +207,6 @@ impl Page {
 
         Ok(uuid)
     }
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageCheckoutRevisionPayload {
-    pub revision_id: i32,
-    pub user_id: i32,
-    pub reason: String,
 }
 
 #[derive(Error, Debug)]
@@ -313,7 +251,7 @@ impl From<EventError> for PageCheckoutRevisionError {
 
 impl Page {
     pub async fn checkout_revision<'a, E>(
-        payload: PageCheckoutRevisionPayload,
+        payload: &checkout_revision_mutation::Payload,
         executor: E,
     ) -> Result<(), PageCheckoutRevisionError>
     where
@@ -353,7 +291,7 @@ impl Page {
                     payload.user_id,
                     repository_id,
                     payload.revision_id,
-                    payload.reason,
+                    payload.reason.clone(),
                     page.instance,
                 )
                 .save(&mut transaction)
@@ -371,54 +309,11 @@ impl Page {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageCreatePayload {
-    pub content: String,
-    pub title: String,
-    pub license_id: i32,
-    pub discussions_enabled: bool,
-    pub forum_id: Option<i32>,
-    pub user_id: i32,
-    pub instance: Instance,
-}
-
-#[derive(Error, Debug)]
-pub enum PageCreateError {
-    #[error("Page could not be created because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Page could not be created because of a UUID error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Page could not be created because of a revision error: {inner:?}.")]
-    RevisionError { inner: PageAddRevisionError },
-}
-
-impl From<sqlx::Error> for PageCreateError {
-    fn from(inner: sqlx::Error) -> Self {
-        Self::DatabaseError { inner }
-    }
-}
-
-impl From<UuidError> for PageCreateError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => Self::UuidError { inner },
-        }
-    }
-}
-
-impl From<PageAddRevisionError> for PageCreateError {
-    fn from(inner: PageAddRevisionError) -> Self {
-        Self::RevisionError { inner }
-    }
-}
-
 impl Page {
     pub async fn create<'a, E>(
-        payload: PageCreatePayload,
+        payload: &create_mutation::Payload,
         executor: E,
-    ) -> Result<Uuid, PageCreateError>
+    ) -> Result<Uuid, operation::Error>
     where
         E: Executor<'a>,
     {
@@ -468,7 +363,7 @@ impl Page {
         };
 
         Page::add_revision(
-            PageAddRevisionPayload {
+            &add_revision_mutation::Payload {
                 content: payload.content.clone(),
                 title: payload.title.clone(),
                 page_id,
@@ -484,14 +379,6 @@ impl Page {
 
         Ok(page)
     }
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageRejectRevisionPayload {
-    pub revision_id: i32,
-    pub user_id: i32,
-    pub reason: String,
 }
 
 #[derive(Error, Debug)]
@@ -540,7 +427,7 @@ impl From<EventError> for PageRejectRevisionError {
 
 impl Page {
     pub async fn reject_revision<'a, E>(
-        payload: PageRejectRevisionPayload,
+        payload: &reject_revision_mutation::Payload,
         executor: E,
     ) -> Result<(), PageRejectRevisionError>
     where
@@ -572,7 +459,7 @@ impl Page {
                     payload.user_id,
                     page_revision.repository_id,
                     payload.revision_id,
-                    payload.reason,
+                    payload.reason.clone(),
                     page.instance,
                 )
                 .save(&mut transaction)
@@ -594,15 +481,12 @@ impl Page {
 mod tests {
     use chrono::Duration;
 
-    use super::{
-        Page, PageCheckoutRevisionError, PageCheckoutRevisionPayload, PageRejectRevisionError,
-        PageRejectRevisionPayload, PageRevision,
-    };
+    use super::messages::*;
+    use super::{Page, PageCheckoutRevisionError, PageRejectRevisionError, PageRevision};
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-    use crate::uuid::{
-        ConcreteUuid, PageAddRevisionError, PageAddRevisionPayload, Uuid, UuidFetcher,
-    };
+    use crate::operation;
+    use crate::uuid::{ConcreteUuid, Uuid, UuidFetcher};
 
     #[actix_rt::test]
     async fn add_revision() {
@@ -610,7 +494,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let uuid = Page::add_revision(
-            PageAddRevisionPayload {
+            &add_revision_mutation::Payload {
                 content: "test content".to_string(),
                 title: "test title".to_string(),
                 user_id: 1,
@@ -636,7 +520,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Page::add_revision(
-            PageAddRevisionPayload {
+            &add_revision_mutation::Payload {
                 content: "test content".to_string(),
                 title: "test title".to_string(),
                 user_id: 1,
@@ -646,7 +530,7 @@ mod tests {
         )
         .await;
 
-        if let Err(PageAddRevisionError::PageNotFound) = result {
+        if let Err(operation::Error::BadRequest { .. }) = result {
             // This is the expected branch.
         } else {
             panic!("Expected `PageNotFound` error, got: {:?}", result)
@@ -659,7 +543,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Page::checkout_revision(
-            PageCheckoutRevisionPayload {
+            &checkout_revision_mutation::Payload {
                 revision_id: 33220,
                 user_id: 1,
                 reason: "Revert changes".to_string(),
@@ -710,7 +594,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Page::checkout_revision(
-            PageCheckoutRevisionPayload {
+            &checkout_revision_mutation::Payload {
                 revision_id: 35476,
                 user_id: 1,
                 reason: "Revert changes".to_string(),
@@ -735,7 +619,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Page::reject_revision(
-            PageRejectRevisionPayload {
+            &reject_revision_mutation::Payload {
                 revision_id: 33220,
                 user_id: 1,
                 reason: "Contains an error".to_string(),
@@ -768,7 +652,7 @@ mod tests {
             .unwrap();
 
         let result = Page::reject_revision(
-            PageRejectRevisionPayload {
+            &reject_revision_mutation::Payload {
                 revision_id: 33220,
                 user_id: 1,
                 reason: "Contains an error".to_string(),
@@ -793,7 +677,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let result = Page::reject_revision(
-            PageRejectRevisionPayload {
+            &reject_revision_mutation::Payload {
                 revision_id: 35476,
                 user_id: 1,
                 reason: "Contains an error".to_string(),

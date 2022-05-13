@@ -9,7 +9,7 @@ use super::{
 use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
-use crate::operation::{self, Operation};
+use crate::operation::{self, Operation, SuccessOutput};
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
 use crate::uuid::{EntityType, Uuid};
 use std::collections::HashMap;
@@ -18,7 +18,7 @@ use std::collections::HashMap;
 #[serde(tag = "type", content = "payload")]
 pub enum EntityMessage {
     EntityAddRevisionMutation(entity_add_revision_mutation::Payload),
-    EntityCheckoutRevisionMutation(EntityCheckoutRevisionMutation),
+    EntityCheckoutRevisionMutation(checkout_revision_mutation::Payload),
     EntityCreateMutation(entity_create_mutation::Payload),
     EntityRejectRevisionMutation(EntityRejectRevisionMutation),
     UnrevisedEntitiesQuery(UnrevisedEntitiesQuery),
@@ -35,8 +35,10 @@ impl MessageResponder for EntityMessage {
                     .handle("EntityAddRevisionMutation", connection)
                     .await
             }
-            EntityMessage::EntityCheckoutRevisionMutation(message) => {
-                message.handle(connection).await
+            EntityMessage::EntityCheckoutRevisionMutation(payload) => {
+                payload
+                    .handle("EntityCheckoutRevisionMutation", connection)
+                    .await
             }
             EntityMessage::EntityCreateMutation(message) => {
                 message.handle("EntityCreateMutation", connection).await
@@ -105,70 +107,64 @@ pub mod entity_add_revision_mutation {
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct EntityCheckoutRevisionMutation {
-    pub revision_id: i32,
-    pub user_id: i32,
-    pub reason: String,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct EntityRevisionData {
     pub success: bool,
     pub reason: Option<String>,
 }
 
-#[async_trait]
-impl MessageResponder for EntityCheckoutRevisionMutation {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let payload = EntityCheckoutRevisionPayload {
-            revision_id: self.revision_id,
-            user_id: self.user_id,
-            reason: self.reason.to_string(),
-        };
-        let response = match connection {
-            Connection::Pool(pool) => Entity::checkout_revision(payload, pool).await,
-            Connection::Transaction(transaction) => {
-                Entity::checkout_revision(payload, transaction).await
-            }
-        };
-        match response {
-            Ok(_) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(EntityRevisionData {
-                    success: true,
-                    reason: None,
-                }),
-            Err(e) => {
-                println!("/checkout-revision: {:?}", e);
-                match e {
-                    EntityCheckoutRevisionError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
+pub mod checkout_revision_mutation {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub revision_id: i32,
+        pub user_id: i32,
+        pub reason: String,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = SuccessOutput;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let payload = EntityCheckoutRevisionPayload {
+                revision_id: self.revision_id,
+                user_id: self.user_id,
+                reason: self.reason.to_string(),
+            };
+            match connection {
+                Connection::Pool(pool) => Entity::checkout_revision(payload, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Entity::checkout_revision(payload, transaction).await?
+                }
+            };
+            Ok(SuccessOutput { success: true })
+        }
+    }
+
+    impl From<EntityCheckoutRevisionError> for operation::Error {
+        fn from(e: EntityCheckoutRevisionError) -> Self {
+            match e {
+                EntityCheckoutRevisionError::DatabaseError { .. }
+                | EntityCheckoutRevisionError::EventError { .. }
+                | EntityCheckoutRevisionError::UuidError { .. } => {
+                    operation::Error::InternalServerError { error: Box::new(e) }
+                }
+                EntityCheckoutRevisionError::RevisionAlreadyCheckedOut => {
+                    operation::Error::BadRequest {
+                        reason: "revision is already checked out".to_string(),
                     }
-                    EntityCheckoutRevisionError::EventError { .. } => {
-                        HttpResponse::InternalServerError().finish()
+                }
+
+                EntityCheckoutRevisionError::InvalidRevision { .. } => {
+                    operation::Error::BadRequest {
+                        reason: "revision invalid".to_string(),
                     }
-                    EntityCheckoutRevisionError::UuidError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
-                    EntityCheckoutRevisionError::RevisionAlreadyCheckedOut => {
-                        HttpResponse::BadRequest().json(EntityRevisionData {
-                            success: false,
-                            reason: Some("revision is already checked out".to_string()),
-                        })
-                    }
-                    EntityCheckoutRevisionError::InvalidRevision { .. } => {
-                        HttpResponse::BadRequest().json(EntityRevisionData {
-                            success: false,
-                            reason: Some("revision invalid".to_string()),
-                        })
-                    }
-                    EntityCheckoutRevisionError::InvalidRepository { .. } => {
-                        HttpResponse::BadRequest().json(EntityRevisionData {
-                            success: false,
-                            reason: Some("repository invalid".to_string()),
-                        })
+                }
+                EntityCheckoutRevisionError::InvalidRepository { .. } => {
+                    operation::Error::BadRequest {
+                        reason: "repository invalid".to_string(),
                     }
                 }
             }

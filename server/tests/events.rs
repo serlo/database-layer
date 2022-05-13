@@ -132,6 +132,6 @@ mod events_query {
             .execute()
             .await;
 
-        assert_bad_request(response, "parameter `first` is too high").await;
+        assert_bad_request(response).await;
     }
 }

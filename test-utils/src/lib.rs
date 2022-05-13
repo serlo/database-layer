@@ -57,8 +57,14 @@ pub async fn assert_not_found(response: HttpResponse) {
     assert_response_is(response, 404, Value::Null).await;
 }
 
-pub async fn assert_bad_request(response: HttpResponse, reason: &str) {
-    assert_response_is(response, 400, json!({ "success": false, "reason": reason })).await;
+pub async fn assert_bad_request(response: HttpResponse) {
+    assert_eq!(response.status(), 400);
+
+    let json = get_json(response).await;
+
+    assert_eq!(json["success"], false);
+    assert!(json["reason"].is_string());
+    assert!(!json["reason"].as_str().unwrap().is_empty());
 }
 
 pub fn assert_has_length(value: &Value, length: usize) {

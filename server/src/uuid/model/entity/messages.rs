@@ -173,12 +173,6 @@ pub mod reject_revision_mutation {
 
     #[derive(Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
-    pub struct EntityRevisionData {
-        pub success: bool,
-        pub reason: Option<String>,
-    }
-    #[derive(Deserialize, Serialize)]
-    #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub revision_id: i32,
         pub user_id: i32,
@@ -187,7 +181,7 @@ pub mod reject_revision_mutation {
 
     #[async_trait]
     impl Operation for Payload {
-        type Output = EntityRevisionData;
+        type Output = SuccessOutput;
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             let payload = EntityRejectRevisionPayload {
@@ -201,10 +195,7 @@ pub mod reject_revision_mutation {
                     Entity::reject_revision(payload, transaction).await?
                 }
             };
-            Ok(EntityRevisionData {
-                success: true,
-                reason: None,
-            })
+            Ok(SuccessOutput { success: true })
         }
     }
     impl From<EntityRejectRevisionError> for operation::Error {

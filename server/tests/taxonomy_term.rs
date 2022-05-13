@@ -65,7 +65,7 @@ mod set_name_and_description_mutation {
         .execute()
         .await;
 
-        assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
+        assert_bad_request(response).await;
     }
 }
 
@@ -136,7 +136,7 @@ mod move_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_bad_request(response, "Child cannot have same id 1288 as destination").await;
+        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -150,7 +150,7 @@ mod move_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
+        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -164,7 +164,7 @@ mod move_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
+        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -178,7 +178,7 @@ mod move_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_bad_request(response, "root taxonomy term 3 cannot be moved").await;
+        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -192,11 +192,7 @@ mod move_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_bad_request(
-            response,
-            "Taxonomy term with id 1300 already child of parent 1288",
-        )
-        .await;
+        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -210,11 +206,7 @@ mod move_mutation {
         .execute_on(&mut transaction)
         .await;
 
-        assert_bad_request(
-            response,
-            "Taxonomy term with id 1300 cannot be moved to another instance",
-        )
-        .await;
+        assert_bad_request(response).await;
     }
 }
 
@@ -353,7 +345,7 @@ mod create_entity_link_mutation {
         .execute()
         .await;
 
-        assert_bad_request(response, "entity with id 1 does not exist").await;
+        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -369,11 +361,7 @@ mod create_entity_link_mutation {
         .execute()
         .await;
 
-        assert_bad_request(
-            response,
-            "entity with id 29648 cannot be linked to a taxonomy term",
-        )
-        .await;
+        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -389,7 +377,7 @@ mod create_entity_link_mutation {
         .execute()
         .await;
 
-        assert_bad_request(response, "Taxonomy term with id 1 does not exist").await;
+        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -405,11 +393,7 @@ mod create_entity_link_mutation {
         .execute()
         .await;
 
-        assert_bad_request(
-            response,
-            "Entity 28952 and taxonomy term 7 are not in the same instance",
-        )
-        .await;
+        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -512,7 +496,7 @@ mod delete_entity_links_mutation {
         .execute()
         .await;
 
-        assert_bad_request(response, "Id 2059 is not linked to taxonomy term 24503").await;
+        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -528,11 +512,7 @@ mod delete_entity_links_mutation {
         .execute()
         .await;
 
-        assert_bad_request(
-            response,
-            "Entity with id 12957 has to be linked to at least one taxonomy",
-        )
-        .await;
+        assert_bad_request(response).await;
     }
 }
 

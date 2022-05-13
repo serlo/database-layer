@@ -78,15 +78,7 @@ mod set_uuid_state_mutation {
             .execute()
             .await;
 
-            assert_bad_request(
-                response,
-                format!(
-                    "uuid {} with type \"{}\" cannot be deleted via a setState mutation",
-                    revision_id, discriminator
-                )
-                .as_str(),
-            )
-            .await;
+            assert_bad_request(response).await;
         }
     }
 }

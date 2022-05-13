@@ -744,10 +744,23 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
-        let mut entities_ids: Vec<i32> = sqlx::query!(
+        let mut children_ids: Vec<i32> = sqlx::query!(
             r#"
-                    SELECT entity_id FROM term_taxonomy_entity
-                        WHERE term_taxonomy_id = ?
+                SELECT id FROM term_taxonomy
+                    WHERE parent_id = ?
+            "#,
+            payload.taxonomy_term_id
+        )
+        .fetch_all(&mut transaction)
+        .await?
+        .into_iter()
+        .map(|x| x.id as i32)
+        .collect();
+
+        let entities_ids: Vec<i32> = sqlx::query!(
+            r#"
+                SELECT entity_id FROM term_taxonomy_entity
+                    WHERE term_taxonomy_id = ?
             "#,
             payload.taxonomy_term_id
         )
@@ -757,25 +770,55 @@ impl TaxonomyTerm {
         .map(|x| x.entity_id as i32)
         .collect();
 
-        if entities_ids == payload.children_ids {
+        children_ids.append(&mut entities_ids.clone());
+
+        if children_ids == payload.children_ids {
             return Ok(());
         }
 
-        entities_ids.sort();
+        children_ids.sort();
         let mut children_ids_sorted = payload.children_ids.clone();
         children_ids_sorted.sort();
 
-        if entities_ids != children_ids_sorted {
-            return Err(operation::Error::BadRequest {reason: "children_ids have to match the current entities ids linked to the taxonomy_term_id".to_string()});
+        if children_ids != children_ids_sorted {
+            return Err(operation::Error::BadRequest {
+                reason: "children_ids have to match the current entities ids linked to the taxonomy_term_id".to_string()
+            });
         }
 
-        for (index, child_id) in payload.children_ids.iter().enumerate() {
+        for (index, entity_id) in payload
+            .children_ids
+            .iter()
+            .filter(|child_id| entities_ids.contains(child_id))
+            .enumerate()
+        {
             sqlx::query!(
                 r#"
                     UPDATE term_taxonomy_entity
                     SET position = ?
                     WHERE term_taxonomy_id = ?
-                    AND entity_id = ?
+                        AND entity_id = ?
+                "#,
+                index as i32,
+                payload.taxonomy_term_id,
+                entity_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        for (index, child_id) in payload
+            .children_ids
+            .iter()
+            .filter(|child_id| !entities_ids.contains(child_id))
+            .enumerate()
+        {
+            sqlx::query!(
+                r#"
+                    UPDATE term_taxonomy
+                    SET weight = ?
+                    WHERE parent_id = ?
+                    AND id = ?
                 "#,
                 index as i32,
                 payload.taxonomy_term_id,

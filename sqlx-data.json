@@ -163,31 +163,6 @@
     },
     "query": "\n                SELECT id\n                    FROM comment\n                    WHERE parent_id = ?\n            "
   },
-  "09f714c5311c90305f996900e153b64698ca86709368f35dbcdab9914f01be38": {
-    "describe": {
-      "columns": [
-        {
-          "name": "entity_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                    SELECT entity_id FROM term_taxonomy_entity\n                        WHERE term_taxonomy_id = ?\n            "
-  },
   "0a2a6e879255cafcdf12a622ef1eee2529c70b55d325ac864078dd2e7b2cc354": {
     "describe": {
       "columns": [],
@@ -1110,6 +1085,31 @@
     },
     "query": "SELECT discriminator FROM uuid WHERE id = ?"
   },
+  "549d8ca0b4fce2f814fdcc548aadf89ea848679ac4a4a8c86136cc77ec353c49": {
+    "describe": {
+      "columns": [
+        {
+          "name": "entity_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT entity_id FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n            "
+  },
   "59220da9f5e4677a6fdc380eca9b95923728d0efd09277eb85290b3b4aafa118": {
     "describe": {
       "columns": [
@@ -1879,16 +1879,6 @@
     },
     "query": "\n                UPDATE term_taxonomy\n                SET description = ?\n                WHERE id = ?\n            "
   },
-  "8b6f1b63fa051b7fe92165fcd47ece686fdb9e4abd4f3cbef4d947e0ab7c2a01": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 3
-      }
-    },
-    "query": "\n                    UPDATE term_taxonomy_entity\n                    SET position = ?\n                    WHERE term_taxonomy_id = ?\n                    AND entity_id = ?\n                "
-  },
   "8bc485a59520f399b822928901b4cbd6a3e74c56775810e87c0cc6a25131d28b": {
     "describe": {
       "columns": [
@@ -1961,6 +1951,31 @@
       }
     },
     "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, 'page')\n            "
+  },
+  "8e91e8b760ebaa2d77b94fa4bc6ce265727f0a98c4c40b110e7655080b37b527": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT id FROM term_taxonomy\n                    WHERE parent_id = ?\n            "
   },
   "8f0dd5d7b5aa39d811447034f9caa898d9298e339fb68774b8f22b0d798fd2d9": {
     "describe": {
@@ -2869,6 +2884,16 @@
     },
     "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            "
   },
+  "d35a02914b03d95c1205f1701e07b31ad0243d01a4bef67dac7d8b620176884b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "\n                    UPDATE term_taxonomy_entity\n                    SET position = ?\n                    WHERE term_taxonomy_id = ?\n                        AND entity_id = ?\n                "
+  },
   "d386b7d0d26c679ecd46fc109df9bb5838de3247ecb8981258f8dacbd1ab2aee": {
     "describe": {
       "columns": [],
@@ -3501,6 +3526,16 @@
       }
     },
     "query": "\n                INSERT INTO entity (id, type_id, instance_id, license_id, date)\n                    VALUES (?, ?, ?, ?, ?)\n            "
+  },
+  "fa09576e9292ec75039ff8945bb2e73d829f11d2d3beba119ea82db32851ab19": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "\n                    UPDATE term_taxonomy\n                    SET weight = ?\n                    WHERE parent_id = ?\n                    AND id = ?\n                "
   },
   "fb7a566e9ea371a8e210e88cec9d3e4cf0832ccc6706c7a164275bd43d86f596": {
     "describe": {

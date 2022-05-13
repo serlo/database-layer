@@ -524,7 +524,7 @@ mod sort {
     async fn sorts_children() {
         let mut transaction = begin_transaction().await;
 
-        let children_ids = [2021, 1949];
+        let children_ids = [2021, 1949, 24390, 1455];
         let taxonomy_term_id = 24389;
 
         Message::new(
@@ -543,8 +543,7 @@ mod sort {
                 .execute_on(&mut transaction)
                 .await,
             |result| {
-                assert_eq!(result["childrenIds"][0], children_ids[0]);
-                assert_eq!(result["childrenIds"][1], children_ids[1]);
+                assert_eq!(result["childrenIds"], to_value(children_ids).unwrap());
             },
         )
         .await;
@@ -552,20 +551,17 @@ mod sort {
 
     #[actix_rt::test]
     async fn fails_if_the_children_ids_do_not_match_the_linked_entities_ids() {
-        let response = Message::new(
-            "TaxonomySortMutation",
-            json! ({
-                "userId": 1,
-                "childrenIds": [1743, 2059],
-                "taxonomyTermId": 24503
-            }),
-        )
-        .execute()
-        .await;
-
         assert_bad_request(
-            response,
-            "children_ids have to match the current entities ids linked to the taxonomy_term_id",
+            Message::new(
+                "TaxonomySortMutation",
+                json! ({
+                    "userId": 1,
+                    "childrenIds": [1743, 2059],
+                    "taxonomyTermId": 24503 as i32
+                }),
+            )
+            .execute()
+            .await,
         )
         .await;
     }

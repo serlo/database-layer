@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod uuid_query {
-    use actix_web::{test, App};
+    use actix_web::{test, App, HttpResponse};
     use test_utils::*;
 
     use server::{configure_app, create_database_pool};
@@ -14,12 +14,10 @@ mod uuid_query {
             .uri("/")
             .set_json(&json!({ "type": "UuidQuery", "payload": { "id": 1 } }))
             .to_request();
-        let response = test::call_service(&app, req).await;
 
-        assert_ok_with(response.into(), |result| {
-            assert_eq!(result["__typename"], "User")
-        })
-        .await;
+        MessageResult::from(HttpResponse::from(test::call_service(&app, req).await))
+            .should_be_ok_with(|result| assert_eq!(result["__typename"], "User"))
+            .await;
     }
 
     #[actix_rt::test]

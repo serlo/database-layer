@@ -7,11 +7,12 @@ use super::model::{
 };
 use crate::database::Connection;
 use crate::message::MessageResponder;
+use crate::operation::{self, Operation};
 
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum NotificationMessage {
-    NotificationsQuery(NotificationsQuery),
+    NotificationsQuery(notifications_query::Payload),
     NotificationSetStateMutation(NotificationSetStateMutation),
 }
 
@@ -20,7 +21,9 @@ impl MessageResponder for NotificationMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
-            NotificationMessage::NotificationsQuery(message) => message.handle(connection).await,
+            NotificationMessage::NotificationsQuery(payload) => {
+                payload.handle("NotificationsQuery", connection).await
+            }
             NotificationMessage::NotificationSetStateMutation(message) => {
                 message.handle(connection).await
             }
@@ -28,32 +31,34 @@ impl MessageResponder for NotificationMessage {
     }
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NotificationsQuery {
-    pub user_id: i32,
-}
+pub mod notifications_query {
+    use super::*;
 
-#[async_trait]
-impl MessageResponder for NotificationsQuery {
-    #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
-        let notifications = match connection {
-            Connection::Pool(pool) => Notifications::fetch(self.user_id, pool).await,
-            Connection::Transaction(transaction) => {
-                Notifications::fetch_via_transaction(self.user_id, transaction).await
-            }
-        };
-        match notifications {
-            Ok(data) => HttpResponse::Ok()
-                .content_type("application/json; charset=utf-8")
-                .json(&data),
-            Err(e) => {
-                println!("/notifications/{}: {:?}", self.user_id, e);
-                match e {
-                    NotificationsError::DatabaseError { .. } => {
-                        HttpResponse::InternalServerError().finish()
-                    }
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: i32,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Notifications;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(match connection {
+                Connection::Pool(pool) => Notifications::fetch(self.user_id, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Notifications::fetch_via_transaction(self.user_id, transaction).await?
+                }
+            })
+        }
+    }
+
+    impl From<NotificationsError> for operation::Error {
+        fn from(e: NotificationsError) -> Self {
+            match e {
+                NotificationsError::DatabaseError { .. } => {
+                    operation::Error::InternalServerError { error: Box::new(e) }
                 }
             }
         }

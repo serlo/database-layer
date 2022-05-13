@@ -264,7 +264,7 @@ impl Event {
     where
         E: Executor<'a>,
     {
-        let mut transaction = executor.begin().await.unwrap();
+        let mut transaction = executor.begin().await?;
         let instance_id = match payload.instance.as_ref() {
             Some(instance) => Some(Instance::fetch_id(instance, &mut transaction).await?),
             None => None,

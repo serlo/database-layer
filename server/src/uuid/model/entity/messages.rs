@@ -3,8 +3,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload, EntityRejectRevisionError,
-    EntityRejectRevisionPayload,
+    Entity, EntityCheckoutRevisionPayload, EntityRejectRevisionError, EntityRejectRevisionPayload,
 };
 use crate::database::Connection;
 use crate::instance::Instance;
@@ -140,34 +139,6 @@ pub mod checkout_revision_mutation {
                 }
             };
             Ok(SuccessOutput { success: true })
-        }
-    }
-
-    impl From<EntityCheckoutRevisionError> for operation::Error {
-        fn from(e: EntityCheckoutRevisionError) -> Self {
-            match e {
-                EntityCheckoutRevisionError::DatabaseError { .. }
-                | EntityCheckoutRevisionError::EventError { .. }
-                | EntityCheckoutRevisionError::UuidError { .. } => {
-                    operation::Error::InternalServerError { error: Box::new(e) }
-                }
-                EntityCheckoutRevisionError::RevisionAlreadyCheckedOut => {
-                    operation::Error::BadRequest {
-                        reason: "revision is already checked out".to_string(),
-                    }
-                }
-
-                EntityCheckoutRevisionError::InvalidRevision { .. } => {
-                    operation::Error::BadRequest {
-                        reason: "revision invalid".to_string(),
-                    }
-                }
-                EntityCheckoutRevisionError::InvalidRepository { .. } => {
-                    operation::Error::BadRequest {
-                        reason: "repository invalid".to_string(),
-                    }
-                }
-            }
         }
     }
 }

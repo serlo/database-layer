@@ -735,51 +735,11 @@ pub struct EntityCheckoutRevisionPayload {
     pub reason: String,
 }
 
-#[derive(Error, Debug)]
-pub enum EntityCheckoutRevisionError {
-    #[error("Revision could not be checked out because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-    #[error("Revision could not be checked out because of an event error: {inner:?}.")]
-    EventError { inner: EventError },
-    #[error("Revision could not be checked out because of an UUID error: {inner:?}.")]
-    UuidError { inner: UuidError },
-    #[error("Revision could not be checked out because it is already the current revision of its repository.")]
-    RevisionAlreadyCheckedOut,
-    #[error("Revision checkout failed because the provided UUID is not a revision: {uuid:?}.")]
-    InvalidRevision { uuid: Uuid },
-    #[error("Revision checkout failed because its repository is invalid: {uuid:?}.")]
-    InvalidRepository { uuid: Uuid },
-}
-
-impl From<sqlx::Error> for EntityCheckoutRevisionError {
-    fn from(inner: sqlx::Error) -> Self {
-        Self::DatabaseError { inner }
-    }
-}
-
-impl From<UuidError> for EntityCheckoutRevisionError {
-    fn from(error: UuidError) -> Self {
-        match error {
-            UuidError::DatabaseError { inner } => inner.into(),
-            inner => Self::UuidError { inner },
-        }
-    }
-}
-
-impl From<EventError> for EntityCheckoutRevisionError {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            inner => Self::EventError { inner },
-        }
-    }
-}
-
 impl Entity {
     pub async fn checkout_revision<'a, E>(
         payload: EntityCheckoutRevisionPayload,
         executor: E,
-    ) -> Result<(), EntityCheckoutRevisionError>
+    ) -> Result<(), operation::Error>
     where
         E: Executor<'a>,
     {
@@ -802,7 +762,9 @@ impl Entity {
             }) = repository.concrete_uuid
             {
                 if abstract_entity.current_revision_id == Some(revision_id) {
-                    return Err(EntityCheckoutRevisionError::RevisionAlreadyCheckedOut);
+                    return Err(operation::Error::BadRequest {
+                        reason: "revision is already checked out".to_string(),
+                    });
                 }
 
                 Uuid::set_state(revision_id, false, &mut transaction).await?;
@@ -834,10 +796,14 @@ impl Entity {
 
                 Ok(())
             } else {
-                Err(EntityCheckoutRevisionError::InvalidRepository { uuid: repository })
+                Err(operation::Error::BadRequest {
+                    reason: "checkout_revision_mutation".to_string(),
+                })
             }
         } else {
-            Err(EntityCheckoutRevisionError::InvalidRevision { uuid: revision })
+            Err(operation::Error::BadRequest {
+                reason: "revision invalid".to_string(),
+            })
         }
     }
 }
@@ -1059,10 +1025,7 @@ mod tests {
     use chrono::Duration;
     use std::collections::HashMap;
 
-    use super::{
-        Entity, EntityCheckoutRevisionError, EntityCheckoutRevisionPayload,
-        EntityRejectRevisionError, EntityRejectRevisionPayload, EntityRevision,
-    };
+    use super::*;
     use crate::event::test_helpers::fetch_age_of_newest_event;
     use crate::subscription::tests::fetch_subscription_by_user_and_object;
     use crate::subscription::Subscription;
@@ -1287,7 +1250,7 @@ mod tests {
         )
         .await;
 
-        if let Err(EntityCheckoutRevisionError::RevisionAlreadyCheckedOut) = result {
+        if let Err(operation::Error::BadRequest { .. }) = result {
             // This is the expected branch.
         } else {
             panic!(

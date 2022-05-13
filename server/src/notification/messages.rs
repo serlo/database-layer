@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{Notifications, SetNotificationStateError};
+use super::model::Notifications;
 use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation, SuccessOutput};
@@ -78,11 +78,6 @@ pub mod set_state_mutation {
                 }
             };
             Ok(SuccessOutput { success: true })
-        }
-    }
-    impl From<SetNotificationStateError> for operation::Error {
-        fn from(e: SetNotificationStateError) -> Self {
-            operation::Error::InternalServerError { error: Box::new(e) }
         }
     }
 }

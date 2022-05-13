@@ -2,7 +2,6 @@ use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
 use serde::Serialize;
-use thiserror::Error;
 
 use super::messages::*;
 use crate::database::Executor;
@@ -176,23 +175,11 @@ impl Notifications {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum SetNotificationStateError {
-    #[error("Notification state cannot be set because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
-
-impl From<sqlx::Error> for SetNotificationStateError {
-    fn from(inner: sqlx::Error) -> Self {
-        SetNotificationStateError::DatabaseError { inner }
-    }
-}
-
 impl Notifications {
     pub async fn set_notification_state<'a, E>(
         payload: &set_state_mutation::Payload,
         executor: E,
-    ) -> Result<(), SetNotificationStateError>
+    ) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {

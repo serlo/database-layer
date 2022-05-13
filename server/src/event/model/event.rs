@@ -25,7 +25,7 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::event::{EventStringParameters, EventUuidParameters};
 use crate::instance::Instance;
-use crate::notification::{Notifications, NotificationsError};
+use crate::notification::Notifications;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct Event {
@@ -244,11 +244,7 @@ impl EventPayload {
         }
 
         let event = Event::fetch_via_transaction(event_id, &mut transaction).await?;
-        Notifications::create_notifications(&event, &mut transaction)
-            .await
-            .map_err(|error| match error {
-                NotificationsError::DatabaseError { inner } => EventError::from(inner),
-            })?;
+        Notifications::create_notifications(&event, &mut transaction).await?;
 
         transaction.commit().await?;
 

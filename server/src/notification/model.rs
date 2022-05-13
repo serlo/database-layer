@@ -16,18 +16,6 @@ pub struct Notifications {
     pub notifications: Vec<Notification>,
 }
 
-#[derive(Error, Debug)]
-pub enum NotificationsError {
-    #[error("Notifications cannot be fetched because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
-
-impl From<sqlx::Error> for NotificationsError {
-    fn from(inner: sqlx::Error) -> Self {
-        NotificationsError::DatabaseError { inner }
-    }
-}
-
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Notification {
@@ -54,17 +42,14 @@ impl Hash for Subscriber {
 }
 
 impl Notifications {
-    pub async fn fetch(
-        user_id: i32,
-        pool: &MySqlPool,
-    ) -> Result<Notifications, NotificationsError> {
+    pub async fn fetch(user_id: i32, pool: &MySqlPool) -> Result<Notifications, sqlx::Error> {
         Self::fetch_via_transaction(user_id, pool).await
     }
 
     pub async fn fetch_via_transaction<'a, E>(
         user_id: i32,
         executor: E,
-    ) -> Result<Notifications, NotificationsError>
+    ) -> Result<Notifications, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -113,10 +98,7 @@ impl Notifications {
         })
     }
 
-    pub async fn create_notifications<'a, E>(
-        event: &Event,
-        executor: E,
-    ) -> Result<(), NotificationsError>
+    pub async fn create_notifications<'a, E>(event: &Event, executor: E) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -160,7 +142,7 @@ impl Notifications {
         event: &Event,
         subscriber: &Subscriber,
         executor: E,
-    ) -> Result<(), NotificationsError>
+    ) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -252,7 +234,7 @@ impl Notifications {
 
 #[cfg(test)]
 mod tests {
-    use super::{Notifications, NotificationsError, SetNotificationStatePayload, Subscriber};
+    use super::{Notifications, SetNotificationStatePayload, Subscriber};
     use crate::create_database_pool;
     use crate::database::Executor;
     use crate::event::{
@@ -392,7 +374,7 @@ mod tests {
         create_event: F,
         message: String,
         executor: E,
-    ) -> Result<(), NotificationsError>
+    ) -> Result<(), sqlx::Error>
     where
         F: Fn(i32) -> EntityPayloadType,
         E: Executor<'a>,

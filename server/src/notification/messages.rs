@@ -2,9 +2,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{
-    Notifications, NotificationsError, SetNotificationStateError, SetNotificationStatePayload,
-};
+use super::model::{Notifications, SetNotificationStateError, SetNotificationStatePayload};
 use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
@@ -51,16 +49,6 @@ pub mod notifications_query {
                     Notifications::fetch_via_transaction(self.user_id, transaction).await?
                 }
             })
-        }
-    }
-
-    impl From<NotificationsError> for operation::Error {
-        fn from(e: NotificationsError) -> Self {
-            match e {
-                NotificationsError::DatabaseError { .. } => {
-                    operation::Error::InternalServerError { error: Box::new(e) }
-                }
-            }
         }
     }
 }

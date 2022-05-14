@@ -4,28 +4,22 @@ mod all_threads_query {
 
     #[actix_rt::test]
     async fn returns_list_of_thread_ids() {
-        let response = Message::new("AllThreadsQuery", json!({ "first": 5 }))
+        Message::new("AllThreadsQuery", json!({ "first": 5 }))
             .execute()
+            .await
+            .should_be_ok_with_body(
+                json!({ "firstCommentIds": [35435, 35361, 35183, 35163, 35090] }),
+            )
             .await;
-
-        assert_ok(
-            response,
-            json!({ "firstCommentIds": [35435, 35361, 35183, 35163, 35090] }),
-        )
-        .await;
     }
 
     #[actix_rt::test]
     async fn with_parameter_after() {
-        let response = Message::new("AllThreadsQuery", json!({ "first": 3, "after": 35361 }))
+        Message::new("AllThreadsQuery", json!({ "first": 3, "after": 35361 }))
             .execute()
+            .await
+            .should_be_ok_with_body(json!({ "firstCommentIds": [35183, 35163, 35090] }))
             .await;
-
-        assert_ok(
-            response,
-            json!({ "firstCommentIds": [35183, 35163, 35090] }),
-        )
-        .await;
     }
 }
 
@@ -35,7 +29,7 @@ mod start_thread_mutation {
 
     #[actix_rt::test]
     async fn fails_when_content_is_empty() {
-        let response = Message::new(
+        Message::new(
             "ThreadCreateThreadMutation",
             json!({
                 "title": "title",
@@ -47,9 +41,9 @@ mod start_thread_mutation {
             }),
         )
         .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 }
 
@@ -59,7 +53,7 @@ mod create_comment_mutation {
 
     #[actix_rt::test]
     async fn fails_when_content_is_empty() {
-        let response = Message::new(
+        Message::new(
             "ThreadCreateCommentMutation",
             json!({
                 "threadId": 17774,
@@ -70,8 +64,8 @@ mod create_comment_mutation {
             }),
         )
         .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 }

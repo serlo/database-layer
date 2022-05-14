@@ -788,7 +788,7 @@ impl Entity {
                 Ok(())
             } else {
                 Err(operation::Error::BadRequest {
-                    reason: "checkout_revision_mutation".to_string(),
+                    reason: "repository  invalid".to_string(),
                 })
             }
         } else {

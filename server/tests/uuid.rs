@@ -34,20 +34,20 @@ mod uuid_query {
         .await
         .unwrap();
 
-        let response = Message::new("UuidQuery", json!({ "id": exercise_group_revision_id }))
+        Message::new("UuidQuery", json!({ "id": exercise_group_revision_id }))
             .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| assert_eq!(result["cohesive"], true))
             .await;
-
-        assert_ok_with(response, |result| assert_eq!(result["cohesive"], true)).await;
     }
 
     #[actix_rt::test]
     async fn returns_property_taxonomy_id_on_taxonomy_terms() {
-        let response = Message::new("UuidQuery", json!({ "id": 1385 }))
+        Message::new("UuidQuery", json!({ "id": 1385 }))
             .execute()
+            .await
+            .should_be_ok_with(|result| assert_eq!(result["taxonomyId"], 4))
             .await;
-
-        assert_ok_with(response, |result| assert_eq!(result["taxonomyId"], 4)).await;
     }
 }
 
@@ -69,14 +69,14 @@ mod set_uuid_state_mutation {
             .unwrap()
             .id as i32;
 
-            let response = Message::new(
+            Message::new(
                 "UuidSetStateMutation",
                 json!({ "ids": [revision_id], "userId": 1, "trashed": true }),
             )
             .execute()
+            .await
+            .should_be_bad_request()
             .await;
-
-            assert_bad_request(response).await;
         }
     }
 }

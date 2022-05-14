@@ -91,47 +91,12 @@ impl MessageResult {
     }
 }
 
-pub async fn assert_ok_with<F>(response: MessageResult, assert_func: F)
-where
-    F: Fn(Value),
-{
-    assert_eq!(response.http_response.status(), 200);
-    assert_func(get_json(response).await);
-}
-
-pub async fn assert_ok(response: MessageResult, expected_result: Value) {
-    assert_response_is(response, 200, expected_result).await;
-}
-
-pub async fn assert_not_found(response: MessageResult) {
-    assert_response_is(response, 404, Value::Null).await;
-}
-
-pub async fn assert_bad_request(response: MessageResult) {
-    assert_eq!(response.http_response.status(), 400);
-
-    let json = get_json(response).await;
-
-    assert_eq!(json["success"], false);
-    assert!(json["reason"].is_string());
-    assert!(!json["reason"].as_str().unwrap().is_empty());
-}
-
 pub fn assert_has_length(value: &Value, length: usize) {
     assert_eq!(value.as_array().unwrap().len(), length);
 }
 
 pub async fn begin_transaction<'a>() -> sqlx::Transaction<'a, sqlx::MySql> {
     create_database_pool().await.unwrap().begin().await.unwrap()
-}
-
-async fn assert_response_is(response: MessageResult, expected_status: u16, expected_result: Value) {
-    assert_eq!(response.http_response.status(), expected_status);
-    assert_eq!(get_json(response).await, expected_result);
-}
-
-pub async fn get_json(response: MessageResult) -> Value {
-    from_slice(&to_bytes(response.http_response.into_body()).await.unwrap()).unwrap()
 }
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>

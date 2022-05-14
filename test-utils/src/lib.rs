@@ -260,14 +260,13 @@ pub async fn assert_event_revision_ok(
     entity_id: i32,
     executor: &mut sqlx::Transaction<'_, sqlx::MySql>,
 ) {
-    let events_response = Message::new(
+    Message::new(
         "EventsQuery",
         json!({ "first": 1, "objectId": revision_id }),
     )
     .execute_on(executor)
-    .await;
-
-    assert_ok_with(events_response, |result| {
+    .await
+    .should_be_ok_with(|result| {
         assert_json_include!(
             actual: &result["events"][0],
             expected: json!({

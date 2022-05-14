@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
+use serde::Serialize;
 
+use super::messages::*;
 use crate::database::Executor;
 use crate::event::{AbstractEvent, Event};
 use crate::subscription::Subscriptions;
@@ -14,18 +14,6 @@ use sqlx::MySqlPool;
 pub struct Notifications {
     pub user_id: i32,
     pub notifications: Vec<Notification>,
-}
-
-#[derive(Error, Debug)]
-pub enum NotificationsError {
-    #[error("Notifications cannot be fetched because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
-
-impl From<sqlx::Error> for NotificationsError {
-    fn from(inner: sqlx::Error) -> Self {
-        NotificationsError::DatabaseError { inner }
-    }
 }
 
 #[derive(Serialize, Debug)]
@@ -54,17 +42,14 @@ impl Hash for Subscriber {
 }
 
 impl Notifications {
-    pub async fn fetch(
-        user_id: i32,
-        pool: &MySqlPool,
-    ) -> Result<Notifications, NotificationsError> {
+    pub async fn fetch(user_id: i32, pool: &MySqlPool) -> Result<Notifications, sqlx::Error> {
         Self::fetch_via_transaction(user_id, pool).await
     }
 
     pub async fn fetch_via_transaction<'a, E>(
         user_id: i32,
         executor: E,
-    ) -> Result<Notifications, NotificationsError>
+    ) -> Result<Notifications, sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -113,10 +98,7 @@ impl Notifications {
         })
     }
 
-    pub async fn create_notifications<'a, E>(
-        event: &Event,
-        executor: E,
-    ) -> Result<(), NotificationsError>
+    pub async fn create_notifications<'a, E>(event: &Event, executor: E) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -160,7 +142,7 @@ impl Notifications {
         event: &Event,
         subscriber: &Subscriber,
         executor: E,
-    ) -> Result<(), NotificationsError>
+    ) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
@@ -193,42 +175,17 @@ impl Notifications {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SetNotificationStatePayload {
-    pub ids: Vec<i32>,
-    pub user_id: i32,
-    pub unread: bool,
-}
-
-#[derive(Error, Debug)]
-pub enum SetNotificationStateError {
-    #[error("Notification state cannot be set because of a database error: {inner:?}.")]
-    DatabaseError { inner: sqlx::Error },
-}
-
-impl From<sqlx::Error> for SetNotificationStateError {
-    fn from(inner: sqlx::Error) -> Self {
-        SetNotificationStateError::DatabaseError { inner }
-    }
-}
-
-#[derive(Serialize)]
-pub struct SetNotificationStateResponse {
-    success: bool,
-}
-
 impl Notifications {
     pub async fn set_notification_state<'a, E>(
-        payload: SetNotificationStatePayload,
+        payload: &set_state_mutation::Payload,
         executor: E,
-    ) -> Result<SetNotificationStateResponse, SetNotificationStateError>
+    ) -> Result<(), sqlx::Error>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
 
-        for id in payload.ids.into_iter() {
+        for id in &payload.ids {
             let seen = !payload.unread;
             sqlx::query!(
                 r#"
@@ -246,13 +203,13 @@ impl Notifications {
 
         transaction.commit().await?;
 
-        Ok(SetNotificationStateResponse { success: true })
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Notifications, NotificationsError, SetNotificationStatePayload, Subscriber};
+    use super::*;
     use crate::create_database_pool;
     use crate::database::Executor;
     use crate::event::{
@@ -392,7 +349,7 @@ mod tests {
         create_event: F,
         message: String,
         executor: E,
-    ) -> Result<(), NotificationsError>
+    ) -> Result<(), sqlx::Error>
     where
         F: Fn(i32) -> EntityPayloadType,
         E: Executor<'a>,
@@ -433,7 +390,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Notifications::set_notification_state(
-            SetNotificationStatePayload {
+            &set_state_mutation::Payload {
                 ids: vec![],
                 user_id: 1,
                 unread: true,
@@ -450,7 +407,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Notifications::set_notification_state(
-            SetNotificationStatePayload {
+            &set_state_mutation::Payload {
                 ids: vec![6522],
                 user_id: 1,
                 unread: false,
@@ -474,7 +431,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         Notifications::set_notification_state(
-            SetNotificationStatePayload {
+            &set_state_mutation::Payload {
                 ids: vec![1293],
                 user_id: 1,
                 unread: true,
@@ -500,7 +457,7 @@ mod tests {
         let ids = vec![1293, 1307, 1311];
 
         Notifications::set_notification_state(
-            SetNotificationStatePayload {
+            &set_state_mutation::Payload {
                 ids: ids.clone(),
                 user_id: 1,
                 unread: true,

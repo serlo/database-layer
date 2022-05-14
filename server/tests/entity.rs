@@ -257,7 +257,7 @@ mod create_mutation {
             .await["id"]
                 .clone();
 
-            let parent_element_id = entity.taxonomy_term_id.unwrap_or(entity.parent_id.unwrap());
+            let parent_element_id = entity.taxonomy_term_id.or(entity.parent_id).unwrap();
 
             let children_ids_name = match entity.typename {
                 EntityType::CoursePage => "pageIds",

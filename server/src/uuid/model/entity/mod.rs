@@ -919,6 +919,8 @@ impl Entity {
 
         Ok(sqlx::query!(
             r#"
+                SELECT *
+                FROM (
                 SELECT uuid_id, MAX(event_log.date) AS date
                 FROM event_log, uuid, instance, entity
                 WHERE uuid.id = event_log.uuid_id
@@ -933,6 +935,8 @@ impl Entity {
                 GROUP BY uuid_id
                 ORDER BY date
                 LIMIT ?
+                ) a
+                ORDER BY date DESC
             "#,
             after_db_time,
             after_db_time,

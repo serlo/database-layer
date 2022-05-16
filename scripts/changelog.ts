@@ -156,6 +156,12 @@ async function exec(): Promise<void> {
         fixed: ['Ignore `changes` when comparing revisions #238'],
         changed: ['Removed LicenseQuery #237'],
       },
+      {
+        tagName: 'v0.3.42',
+        name: '0.3.42',
+        date: '2022-05-11',
+        added: ['Add DeletedEntitiesQuery #240'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

@@ -1002,58 +1002,55 @@ impl Entity {
     where
         E: Executor<'a>,
     {
-        let date_database: Option<DateTime> = match payload.after.as_ref() {
-            Some(date) => {
-                let date_chrono = match chrono::DateTime::parse_from_rfc3339(date) {
-                    Ok(parsed_date) => parsed_date.with_timezone(&Utc),
-                    Err(_) => {
-                        return Err(operation::Error::BadRequest {
-                            reason: "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}"
-                                .to_string(),
-                        })
+        let after_db_time = payload
+            .after
+            .as_ref()
+            .map(|after| {
+                chrono::DateTime::parse_from_rfc3339(after).map_err(|_| {
+                    operation::Error::BadRequest {
+                        reason: "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}"
+                            .to_string(),
                     }
-                };
-                Some(DateTime::from(date_chrono))
-            }
-            None => None,
-        };
+                })
+            })
+            .transpose()?
+            .map(|date| DateTime::from(date.with_timezone(&Utc)));
 
-        let mut deleted_entities: Vec<deleted_entities_query::DeletedEntity> = Vec::new();
-        let result = sqlx::query!(
+        Ok(sqlx::query!(
             r#"
-                select uuid_id, max(event_log.date) as date
-                from event_log, uuid, instance, entity
-                where uuid.id = event_log.uuid_id
-                    and (? is null or event_log.date > ?)
-                    and (? is null or instance.subdomain = ?)
-                    and instance.id = entity.instance_id
-                    and entity.id = event_log.uuid_id
-                    and event_log.event_id = 10
-                    and uuid.trashed = 1
-                    and uuid.discriminator = 'entity'
-                group by uuid_id
-                order by date
-                limit ?
+                SELECT uuid_id, MAX(event_log.date) AS date
+                FROM event_log, uuid, instance, entity
+                WHERE uuid.id = event_log.uuid_id
+                    AND (? is null or event_log.date > ?)
+                    AND (? is null or instance.subdomain = ?)
+                    AND instance.id = entity.instance_id
+                    AND entity.id = event_log.uuid_id
+                    AND event_log.event_id = 10
+                    AND uuid.trashed = 1
+                    AND uuid.discriminator = 'entity'
+                    AND entity.type_id NOT IN (35, 39, 40, 41, 42, 43, 44)
+                GROUP BY uuid_id
+                ORDER BY date
+                LIMIT ?
             "#,
-            date_database,
-            date_database,
+            after_db_time,
+            after_db_time,
             payload.instance,
             payload.instance,
             payload.first,
         )
         .fetch_all(executor)
-        .await?;
-
-        for entity in result {
-            let deletion_date: DateTime =
-                entity.date.ok_or(operation::Error::NotFoundError)?.into();
-            deleted_entities.push(deleted_entities_query::DeletedEntity {
-                date_of_deletion: deletion_date.to_string(),
-                id: entity.uuid_id as i32,
-            })
-        }
-
-        Ok(deleted_entities)
+        .await?
+        .into_iter()
+        .filter_map(|result| {
+            result
+                .date
+                .map(|date| deleted_entities_query::DeletedEntity {
+                    id: result.uuid_id as i32,
+                    date_of_deletion: DateTime::from(date).to_string(),
+                })
+        })
+        .collect())
     }
 }
 

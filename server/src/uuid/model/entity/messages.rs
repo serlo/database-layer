@@ -379,9 +379,9 @@ pub mod entity_set_license_mutation {
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             match connection {
-                Connection::Pool(pool) => Entity::entity_set_license(self, pool).await?,
+                Connection::Pool(pool) => Entity::set_license(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    Entity::entity_set_license(self, transaction).await?
+                    Entity::set_license(self, transaction).await?
                 }
             };
             Ok(Output { success: true })

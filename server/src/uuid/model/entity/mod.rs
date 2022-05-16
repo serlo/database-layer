@@ -1055,7 +1055,7 @@ impl Entity {
 }
 
 impl Entity {
-    pub async fn entity_set_license<'a, E>(
+    pub async fn set_license<'a, E>(
         payload: &entity_set_license_mutation::Payload,
         executor: E,
     ) -> Result<(), operation::Error>
@@ -1102,17 +1102,7 @@ impl Entity {
         .execute(&mut transaction)
         .await?;
 
-        let instance_id: i32 = sqlx::query!(
-            r#"
-                select instance_id from entity where id = ?
-            "#,
-            payload.entity_id,
-        )
-        .fetch_one(&mut transaction)
-        .await?
-        .instance_id;
-
-        CreateSetLicenseEventPayload::new(payload.entity_id, payload.user_id, instance_id)
+        CreateSetLicenseEventPayload::new(payload.entity_id, payload.user_id, entity.instance_id)
             .save(&mut transaction)
             .await?;
 

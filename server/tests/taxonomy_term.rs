@@ -547,6 +547,71 @@ mod sort {
             },
         )
         .await;
+
+        assert_ok_with(
+            Message::new("EventsQuery", json!({ "first": 1, "objectId": 3 }))
+                .execute_on(&mut transaction)
+                .await,
+            |result| {
+                assert_json_include!(
+                    actual: &result["events"][0],
+                    expected: json!({
+                        "__typename": "SetTaxonomyTermNotificationEvent",
+                        "instance": "de",
+                        "actorId": 1,
+                        "objectId": 3
+                    })
+                );
+            },
+        )
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn sorts_children() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [2021, 1949, 24390, 1455];
+        let taxonomy_term_id = 24389;
+
+        Message::new(
+            "TaxonomySortMutation",
+            json! ({
+                "userId": 1,
+                "childrenIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(
+            Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
+                .execute_on(&mut transaction)
+                .await,
+            |result| {
+                assert_eq!(result["childrenIds"], to_value(children_ids).unwrap());
+            },
+        )
+        .await;
+
+        assert_ok_with(
+            Message::new("EventsQuery", json!({ "first": 1, "objectId": 3 }))
+                .execute_on(&mut transaction)
+                .await,
+            |result| {
+                assert_json_include!(
+                    actual: &result["events"][0],
+                    expected: json!({
+                        "__typename": "SetTaxonomyTermNotificationEvent",
+                        "instance": "de",
+                        "actorId": 1,
+                        "objectId": 3
+                    })
+                );
+            },
+        )
+        .await;
     }
 
     #[actix_rt::test]

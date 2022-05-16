@@ -759,7 +759,7 @@ impl TaxonomyTerm {
                 .collect();
 
         let mut children_ids: Vec<i32> = children_taxonomy_ids.clone();
-        children_ids.extend(&mut entities_ids.clone());
+        children_ids.extend(entities_ids.clone());
 
         if children_ids == payload.children_ids {
             return Ok(());
@@ -817,7 +817,29 @@ impl TaxonomyTerm {
             .await?;
         }
 
-        // Event?
+        let root = sqlx::query!(
+            r#"
+                SELECT tt.id, instance_id
+                    FROM term_taxonomy tt
+                    JOIN taxonomy t
+                        ON t.id = tt.taxonomy_id
+                    WHERE instance_id = (
+                        SELECT instance_id
+                        FROM term_taxonomy tt
+                        JOIN taxonomy t
+                            ON t.id = tt.taxonomy_id
+                            WHERE tt.id = ?
+                    )
+                    AND t.type_id = 17
+            "#,
+            payload.taxonomy_term_id,
+        )
+        .fetch_one(&mut transaction)
+        .await?;
+
+        SetTaxonomyTermEventPayload::new(root.id as i32, payload.user_id, root.instance_id)
+            .save(&mut transaction)
+            .await?;
 
         transaction.commit().await?;
 

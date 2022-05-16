@@ -4,11 +4,10 @@ mod subjects_query {
 
     #[actix_rt::test]
     async fn returns_list_of_subjects() {
-        let response = Message::new("SubjectsQuery", Value::Null).execute().await;
-
-        assert_ok(
-            response,
-            json!({
+        Message::new("SubjectsQuery", Value::Null)
+            .execute()
+            .await
+            .should_be_ok_with_body(json!({
               "subjects": [
                 {
                   "instance": "de",
@@ -51,8 +50,7 @@ mod subjects_query {
                   "taxonomyTermId": 35608
                 }
               ]
-            }),
-        )
-        .await;
+            }))
+            .await;
     }
 }

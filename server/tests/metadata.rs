@@ -4,13 +4,10 @@ mod entities_metadata_query {
 
     #[actix_rt::test]
     async fn returns_metadata_of_entities() {
-        let response = Message::new("EntitiesMetadataQuery", json!({ "first": 1 }))
+        Message::new("EntitiesMetadataQuery", json!({ "first": 1 }))
             .execute()
-            .await;
-
-        assert_ok(
-            response,
-            json!({
+            .await
+            .should_be_ok_with_body(json!({
               "entities": [
                 {
                   "@context": [
@@ -48,21 +45,19 @@ mod entities_metadata_query {
                   "version": "https://serlo.org/32614"
                 }
               ]
-            }),
-        )
-        .await;
+            }))
+            .await;
     }
 
     #[actix_rt::test]
     async fn default_value_for_property_name() {
-        let response = Message::new(
+        Message::new(
             "EntitiesMetadataQuery",
             json!({ "first": 1, "after": 20_000 }),
         )
         .execute()
-        .await;
-
-        assert_ok_with(response, |value| {
+        .await
+        .should_be_ok_with(|value| {
             assert_eq!(
                 value["entities"][0]["name"],
                 "Quiz: https://serlo.org/20256"
@@ -73,55 +68,46 @@ mod entities_metadata_query {
 
     #[actix_rt::test]
     async fn with_after_parameter() {
-        let response = Message::new(
+        Message::new(
             "EntitiesMetadataQuery",
             json!({ "first": 1, "after": 1945 }),
         )
         .execute()
-        .await;
-
-        assert_ok_with(response, |value| {
-            assert_eq!(value["entities"][0]["identifier"]["value"], 1947)
-        })
+        .await
+        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 1947))
         .await;
     }
 
     #[actix_rt::test]
     async fn with_instance_parameter() {
-        let response = Message::new(
+        Message::new(
             "EntitiesMetadataQuery",
             json!({ "first": 1, "instance": "en" }),
         )
         .execute()
-        .await;
-
-        assert_ok_with(response, |value| {
-            assert_eq!(value["entities"][0]["identifier"]["value"], 32996)
-        })
+        .await
+        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 32996))
         .await;
     }
 
     #[actix_rt::test]
     async fn with_modified_after_parameter() {
-        let response = Message::new(
+        Message::new(
             "EntitiesMetadataQuery",
             json!({ "first": 1, "modifiedAfter": "2015-01-01T00:00:00Z" }),
         )
         .execute()
-        .await;
-
-        assert_ok_with(response, |value| {
-            assert_eq!(value["entities"][0]["identifier"]["value"], 1647)
-        })
+        .await
+        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 1647))
         .await;
     }
 
     #[actix_rt::test]
     async fn fails_when_first_parameter_is_too_high() {
-        let response = Message::new("EntitiesMetadataQuery", json!({ "first": 1_000_000 }))
+        Message::new("EntitiesMetadataQuery", json!({ "first": 1_000_000 }))
             .execute()
+            .await
+            .should_be_bad_request()
             .await;
-
-        assert_bad_request(response).await;
     }
 }

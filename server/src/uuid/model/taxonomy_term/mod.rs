@@ -744,33 +744,22 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
-        let mut children_ids: Vec<i32> = sqlx::query!(
-            r#"
-                SELECT id FROM term_taxonomy
-                    WHERE parent_id = ?
-            "#,
-            payload.taxonomy_term_id
-        )
-        .fetch_all(&mut transaction)
-        .await?
-        .into_iter()
-        .map(|x| x.id as i32)
-        .collect();
+        let entities_ids: Vec<i32> =
+            fetch_all_entities!(payload.taxonomy_term_id, &mut transaction)
+                .await?
+                .iter()
+                .map(|child| child.entity_id as i32)
+                .collect();
 
-        let entities_ids: Vec<i32> = sqlx::query!(
-            r#"
-                SELECT entity_id FROM term_taxonomy_entity
-                    WHERE term_taxonomy_id = ?
-            "#,
-            payload.taxonomy_term_id
-        )
-        .fetch_all(&mut transaction)
-        .await?
-        .into_iter()
-        .map(|x| x.entity_id as i32)
-        .collect();
+        let children_taxonomy_ids: Vec<i32> =
+            fetch_all_children!(payload.taxonomy_term_id, &mut transaction)
+                .await?
+                .iter()
+                .map(|child| child.id as i32)
+                .collect();
 
-        children_ids.append(&mut entities_ids.clone());
+        let mut children_ids: Vec<i32> = children_taxonomy_ids.clone();
+        children_ids.extend(&mut entities_ids.clone());
 
         if children_ids == payload.children_ids {
             return Ok(());
@@ -810,7 +799,7 @@ impl TaxonomyTerm {
         for (index, child_id) in payload
             .children_ids
             .iter()
-            .filter(|child_id| !entities_ids.contains(child_id))
+            .filter(|child_id| children_taxonomy_ids.contains(child_id))
             .enumerate()
         {
             sqlx::query!(
@@ -818,7 +807,7 @@ impl TaxonomyTerm {
                     UPDATE term_taxonomy
                     SET weight = ?
                     WHERE parent_id = ?
-                    AND id = ?
+                        AND id = ?
                 "#,
                 index as i32,
                 payload.taxonomy_term_id,

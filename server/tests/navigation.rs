@@ -4,14 +4,12 @@ mod navigation_query {
 
     #[actix_rt::test]
     async fn returns_navigatigation_config() {
-        let response = Message::new("NavigationQuery", json!({ "instance": "de" }))
+        Message::new("NavigationQuery", json!({ "instance": "de" }))
             .execute()
-            .await;
-
-        assert_ok(
-            response,
-            serde_json::from_str::<Value>(
-                r#"
+            .await
+            .should_be_ok_with_body(
+                serde_json::from_str::<Value>(
+                    r#"
                     {
                       "data": [
                         {
@@ -554,9 +552,9 @@ mod navigation_query {
                       "instance": "de"
                     }
                 "#,
+                )
+                .unwrap(),
             )
-            .unwrap(),
-        )
-        .await;
+            .await;
     }
 }

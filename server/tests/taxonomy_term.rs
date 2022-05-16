@@ -7,7 +7,7 @@ mod set_name_and_description_mutation {
         for description in [Some("a description"), None] {
             let mut transaction = begin_transaction().await;
 
-            let response = Message::new(
+            Message::new(
                 "TaxonomyTermSetNameAndDescriptionMutation",
                 json!({
                     "id": 7,
@@ -17,43 +17,41 @@ mod set_name_and_description_mutation {
                 }),
             )
             .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with_body(json!({ "success": true }))
             .await;
 
-            assert_ok(response, json!({ "success": true })).await;
-
-            let query_response = Message::new("UuidQuery", json!({ "id": 7 }))
+            Message::new("UuidQuery", json!({ "id": 7 }))
                 .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    assert_eq!(result["name"], "a name");
+                    assert_eq!(result["description"].as_str(), description);
+                })
                 .await;
 
-            assert_ok_with(query_response, |result| {
-                assert_eq!(result["name"], "a name");
-                assert_eq!(result["description"].as_str(), description);
-            })
-            .await;
-
-            let events_response = Message::new("EventsQuery", json!({ "first": 1, "objectId": 7 }))
+            Message::new("EventsQuery", json!({ "first": 1, "objectId": 7 }))
                 .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    assert_json_include!(
+                        actual: &result["events"][0],
+                        expected: json!({
+                            "__typename": "SetTaxonomyTermNotificationEvent",
+                            "instance": "de",
+                            "actorId": 1,
+                            "objectId": 7,
+                            "taxonomyTermId": 7,
+                        })
+                    );
+                })
                 .await;
-
-            assert_ok_with(events_response, |result| {
-                assert_json_include!(
-                    actual: &result["events"][0],
-                    expected: json!({
-                        "__typename": "SetTaxonomyTermNotificationEvent",
-                        "instance": "de",
-                        "actorId": 1,
-                        "objectId": 7,
-                        "taxonomyTermId": 7,
-                    })
-                );
-            })
-            .await;
         }
     }
 
     #[actix_rt::test]
     async fn fails_when_taxonomy_term_does_not_exist() {
-        let response = Message::new(
+        Message::new(
             "TaxonomyTermSetNameAndDescriptionMutation",
             json!({
                 "id": 1,
@@ -63,9 +61,9 @@ mod set_name_and_description_mutation {
             }),
         )
         .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 }
 
@@ -77,136 +75,121 @@ mod move_mutation {
     async fn moves_to_new_parent() {
         let mut transaction = begin_transaction().await;
 
-        let response = Message::new(
+        Message::new(
             "TaxonomyTermMoveMutation",
             json!({ "childrenIds": [1394, 1454], "destination": 5, "userId": 1 }),
         )
         .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with_body(json!({ "success": true }))
         .await;
 
-        assert_ok(response, json!({ "success": true })).await;
-
-        let first_query_response = Message::new("UuidQuery", json!({ "id": 1394 }))
+        Message::new("UuidQuery", json!({ "id": 1394 }))
             .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(result["parentId"], 5);
+            })
             .await;
 
-        assert_ok_with(first_query_response, |result| {
-            assert_eq!(result["parentId"], 5);
-        })
-        .await;
-
-        let second_query_response = Message::new("UuidQuery", json!({ "id": 1454 }))
+        Message::new("UuidQuery", json!({ "id": 1454 }))
             .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(result["parentId"], 5);
+            })
             .await;
 
-        assert_ok_with(second_query_response, |result| {
-            assert_eq!(result["parentId"], 5);
-        })
-        .await;
-
-        let events_response = Message::new("EventsQuery", json!({ "first": 1, "objectId": 1394 }))
+        Message::new("EventsQuery", json!({ "first": 1, "objectId": 1394 }))
             .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_json_include!(
+                    actual: &result["events"][0],
+                    expected: json!({
+                        "__typename": "SetTaxonomyParentNotificationEvent",
+                        "instance": "de",
+                        "actorId": 1,
+                        "objectId": 1394,
+                        "childId": 1394,
+                        "previousParentId": 1288,
+                        "parentId": 5
+                    })
+                );
+            })
             .await;
-
-        assert_ok_with(events_response, |result| {
-            assert_json_include!(
-                actual: &result["events"][0],
-                expected: json!({
-                    "__typename": "SetTaxonomyParentNotificationEvent",
-                    "instance": "de",
-                    "actorId": 1,
-                    "objectId": 1394,
-                    "childId": 1394,
-                    "previousParentId": 1288,
-                    "parentId": 5
-                })
-            );
-        })
-        .await;
     }
 
     #[actix_rt::test]
     async fn fails_when_parent_and_child_have_same_id() {
-        let mut transaction = begin_transaction().await;
-
-        let response = Message::new(
+        Message::new(
             "TaxonomyTermMoveMutation",
             json!({ "childrenIds": [1288], "destination": 1288, "userId": 1 }),
         )
-        .execute_on(&mut transaction)
+        .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
     async fn fails_when_parent_does_not_exist() {
-        let mut transaction = begin_transaction().await;
-
-        let response = Message::new(
+        Message::new(
             "TaxonomyTermMoveMutation",
             json!({ "childrenIds": [1288], "destination": 1, "userId": 1 }),
         )
-        .execute_on(&mut transaction)
+        .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
     async fn fails_when_child_does_not_exist() {
-        let mut transaction = begin_transaction().await;
-
-        let response = Message::new(
+        Message::new(
             "TaxonomyTermMoveMutation",
             json!({ "childrenIds": [1], "destination": 1288, "userId": 1 }),
         )
-        .execute_on(&mut transaction)
+        .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
     async fn fails_when_trying_to_move_root() {
-        let mut transaction = begin_transaction().await;
-
-        let response = Message::new(
+        Message::new(
             "TaxonomyTermMoveMutation",
             json!({ "childrenIds": [3], "destination": 5, "userId": 1 }),
         )
-        .execute_on(&mut transaction)
+        .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
     async fn fails_when_previous_and_new_parent_are_same() {
-        let mut transaction = begin_transaction().await;
-
-        let response = Message::new(
+        Message::new(
             "TaxonomyTermMoveMutation",
             json!({ "childrenIds": [1300], "destination": 1288, "userId": 1 }),
         )
-        .execute_on(&mut transaction)
+        .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
     async fn fails_when_child_and_new_parent_are_in_different_instances() {
-        let mut transaction = begin_transaction().await;
-
-        let response = Message::new(
+        Message::new(
             "TaxonomyTermMoveMutation",
             json!({ "childrenIds": [1300], "destination": 23594, "userId": 1 }),
         )
-        .execute_on(&mut transaction)
+        .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 }
 
@@ -220,7 +203,7 @@ mod create_mutation {
             for description in [Some("a description"), None] {
                 let mut transaction = begin_transaction().await;
 
-                let mutation_response = Message::new(
+                let new_taxonomy_id = Message::new(
                     "TaxonomyTermCreateMutation",
                     json! ({
                     "parentId": 1394,
@@ -231,33 +214,32 @@ mod create_mutation {
                     }),
                 )
                 .execute_on(&mut transaction)
-                .await;
+                .await
+                .get_json()
+                .await["id"]
+                    .clone();
 
-                let new_taxonomy_id = get_json(mutation_response).await["id"].clone();
-
-                let query_response = Message::new("UuidQuery", json!({ "id": new_taxonomy_id }))
+                Message::new("UuidQuery", json!({ "id": new_taxonomy_id }))
                     .execute_on(&mut transaction)
+                    .await
+                    .should_be_ok_with(|result| {
+                        assert_eq!(result["name"], "a name");
+                        assert_eq!(result["description"].as_str(), description);
+                        assert_eq!(result["parentId"], 1394);
+                        assert_eq!(
+                            from_value_to_taxonomy_type(result["type"].clone()),
+                            *taxonomy_type
+                        );
+                    })
                     .await;
 
-                assert_ok_with(query_response, |result| {
-                    assert_eq!(result["name"], "a name");
-                    assert_eq!(result["description"].as_str(), description);
-                    assert_eq!(result["parentId"], 1394);
-                    assert_eq!(
-                        from_value_to_taxonomy_type(result["type"].clone()),
-                        *taxonomy_type
-                    );
-                })
-                .await;
-
-                let events_response = Message::new(
+                Message::new(
                     "EventsQuery",
                     json ! ({ "first": 1, "objectId": new_taxonomy_id }),
                 )
                 .execute_on(&mut transaction)
-                .await;
-
-                assert_ok_with(events_response, |result| {
+                .await
+                .should_be_ok_with(|result| {
                     assert_json_include ! (
                         actual: &result["events"][0],
                         expected: json ! ({
@@ -298,43 +280,40 @@ mod create_entity_link_mutation {
         .await;
 
         for child_id in children_ids.iter() {
-            let query_response = Message::new("UuidQuery", json!({ "id": child_id }))
+            Message::new("UuidQuery", json!({ "id": child_id }))
                 .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    assert!(result["taxonomyTermIds"]
+                        .as_array()
+                        .unwrap()
+                        .contains(&to_value(taxonomy_term_id).unwrap()));
+                })
                 .await;
 
-            assert_ok_with(query_response, |result| {
-                assert!(result["taxonomyTermIds"]
-                    .as_array()
-                    .unwrap()
-                    .contains(&to_value(taxonomy_term_id).unwrap()));
-            })
-            .await;
-
-            let events_response =
-                Message::new("EventsQuery", json ! ({ "first": 1, "objectId": child_id }))
-                    .execute_on(&mut transaction)
-                    .await;
-
-            assert_ok_with(events_response, |result| {
-                assert_json_include ! (
-                    actual: &result["events"][0],
-                    expected: json ! ({
-                        "__typename": "CreateTaxonomyLinkNotificationEvent",
-                        "instance": "de",
-                        "actorId": 1,
-                        "objectId": taxonomy_term_id,
-                        "parentId": taxonomy_term_id,
-                        "childId": child_id
-                    })
-                );
-            })
-            .await;
+            Message::new("EventsQuery", json ! ({ "first": 1, "objectId": child_id }))
+                .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    assert_json_include ! (
+                        actual: &result["events"][0],
+                        expected: json ! ({
+                            "__typename": "CreateTaxonomyLinkNotificationEvent",
+                            "instance": "de",
+                            "actorId": 1,
+                            "objectId": taxonomy_term_id,
+                            "parentId": taxonomy_term_id,
+                            "childId": child_id
+                        })
+                    );
+                })
+                .await;
         }
     }
 
     #[actix_rt::test]
     async fn fails_if_a_child_is_not_an_entity() {
-        let response = Message::new(
+        Message::new(
             "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
@@ -343,30 +322,26 @@ mod create_entity_link_mutation {
             }),
         )
         .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
     async fn fails_if_a_child_cannot_be_linked_into_a_taxonomy_term() {
-        let response = Message::new(
+        Message::new(
             "TaxonomyCreateEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": [29648],
-                "taxonomyTermId": 1288
-            }),
+            json! ({ "userId": 1, "entityIds": [29648], "taxonomyTermId": 1288 }),
         )
         .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
     async fn fails_if_parent_is_not_a_taxonomy_term() {
-        let response = Message::new(
+        Message::new(
             "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
@@ -375,14 +350,14 @@ mod create_entity_link_mutation {
             }),
         )
         .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
     async fn fails_if_parent_and_child_are_in_different_instances() {
-        let response = Message::new(
+        Message::new(
             "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
@@ -391,9 +366,9 @@ mod create_entity_link_mutation {
             }),
         )
         .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
@@ -406,7 +381,7 @@ mod create_entity_link_mutation {
         let count_before =
             count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut transaction).await;
 
-        let response = Message::new(
+        Message::new(
             "TaxonomyCreateEntityLinksMutation",
             json! ({
                 "userId": 1,
@@ -415,9 +390,9 @@ mod create_entity_link_mutation {
             }),
         )
         .execute()
+        .await
+        .should_be_ok_with_body(json!({ "success": true }))
         .await;
-
-        assert_ok(response, json!({ "success": true })).await;
 
         assert_eq!(
             count_before,
@@ -439,79 +414,64 @@ mod delete_entity_links_mutation {
 
         Message::new(
             "TaxonomyDeleteEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": children_ids,
-                "taxonomyTermId": taxonomy_term_id
-            }),
+            json! ({ "userId": 1, "entityIds": children_ids, "taxonomyTermId": taxonomy_term_id }),
         )
         .execute_on(&mut transaction)
         .await;
 
         for child_id in children_ids.iter() {
-            let query_response = Message::new("UuidQuery", json!({ "id": child_id }))
+            Message::new("UuidQuery", json!({ "id": child_id }))
                 .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    assert!(!result["taxonomyTermIds"]
+                        .as_array()
+                        .unwrap()
+                        .contains(&to_value(taxonomy_term_id).unwrap()));
+                })
                 .await;
 
-            assert_ok_with(query_response, |result| {
-                assert!(!result["taxonomyTermIds"]
-                    .as_array()
-                    .unwrap()
-                    .contains(&to_value(taxonomy_term_id).unwrap()));
-            })
-            .await;
-
-            let events_response =
-                Message::new("EventsQuery", json ! ({ "first": 1, "objectId": child_id }))
-                    .execute_on(&mut transaction)
-                    .await;
-
-            assert_ok_with(events_response, |result| {
-                assert_json_include ! (
-                    actual: &result["events"][0],
-                    expected: json ! ({
-                        "__typename": "RemoveTaxonomyLinkNotificationEvent",
-                        "instance": "de",
-                        "actorId": 1,
-                        "objectId": taxonomy_term_id,
-                        "parentId": taxonomy_term_id,
-                        "childId": child_id
-                    })
-                );
-            })
-            .await;
+            Message::new("EventsQuery", json ! ({ "first": 1, "objectId": child_id }))
+                .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    assert_json_include ! (
+                        actual: &result["events"][0],
+                        expected: json ! ({
+                            "__typename": "RemoveTaxonomyLinkNotificationEvent",
+                            "instance": "de",
+                            "actorId": 1,
+                            "objectId": taxonomy_term_id,
+                            "parentId": taxonomy_term_id,
+                            "childId": child_id
+                        })
+                    );
+                })
+                .await;
         }
     }
 
     #[actix_rt::test]
     async fn fails_if_there_is_no_link_yet() {
-        let response = Message::new(
+        Message::new(
             "TaxonomyDeleteEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": [1743, 2059],
-                "taxonomyTermId": 24503
-            }),
+            json! ({ "userId": 1, "entityIds": [1743, 2059], "taxonomyTermId": 24503 }),
         )
         .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 
     #[actix_rt::test]
     async fn fails_if_it_would_leave_child_orphan() {
-        let response = Message::new(
+        Message::new(
             "TaxonomyDeleteEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": [12957],
-                "taxonomyTermId": 1463
-            }),
+            json! ({ "userId": 1, "entityIds": [12957], "taxonomyTermId": 1463 }),
         )
         .execute()
+        .await
+        .should_be_bad_request()
         .await;
-
-        assert_bad_request(response).await;
     }
 }

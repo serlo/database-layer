@@ -9,8 +9,7 @@ mod unrevised_entities_query {
             .await
             .should_be_ok_with_body(
                 json!({ "unrevisedEntityIds": [26892, 33582, 34741, 34907, 35247, 35556] }),
-            )
-            .await;
+            );
     }
 }
 
@@ -40,8 +39,7 @@ mod add_revision_mutation {
             )
             .execute_on(&mut transaction)
             .await
-            .get_json()
-            .await["revisionId"]
+            .get_json()["revisionId"]
                 .clone();
 
             Message::new("UuidQuery", json!({ "id": revision_id }))
@@ -58,8 +56,7 @@ mod add_revision_mutation {
                             assert_eq!(result[key], value);
                         }
                     }
-                })
-                .await;
+                });
 
             assert_event_revision_ok(revision_id, revision.entity_id, &mut transaction).await;
         }
@@ -87,8 +84,7 @@ mod add_revision_mutation {
             )
             .execute_on(&mut transaction)
             .await
-            .get_json()
-            .await["revisionId"]
+            .get_json()["revisionId"]
                 .clone();
             let first_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
@@ -109,8 +105,7 @@ mod add_revision_mutation {
             )
             .execute_on(&mut transaction)
             .await
-            .get_json()
-            .await["revisionId"]
+            .get_json()["revisionId"]
                 .clone();
             let second_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
@@ -123,8 +118,7 @@ mod add_revision_mutation {
         Message::new("UuidQuery", json!({ "id": id }))
             .execute_on(transaction)
             .await
-            .get_json()
-            .await["revisionIds"]
+            .get_json()["revisionIds"]
             .clone()
     }
 }
@@ -158,8 +152,7 @@ mod create_mutation {
             )
             .execute_on(&mut transaction)
             .await
-            .get_json()
-            .await["id"]
+            .get_json()["id"]
                 .clone();
 
             Message::new("UuidQuery", json!({ "id": new_entity_id }))
@@ -172,8 +165,7 @@ mod create_mutation {
                     );
                     assert_eq!(result["licenseId"], 1 as i32);
                     assert_eq!(result["instance"], "de");
-                })
-                .await;
+                });
 
             Message::new(
                 "EventsQuery",
@@ -224,8 +216,7 @@ mod create_mutation {
                         "childId": new_entity_id
                     })
                 );
-            })
-            .await;
+            });
         }
     }
 
@@ -253,8 +244,7 @@ mod create_mutation {
             )
             .execute_on(&mut transaction)
             .await
-            .get_json()
-            .await["id"]
+            .get_json()["id"]
                 .clone();
 
             let parent_element_id = entity.taxonomy_term_id.or(entity.parent_id).unwrap();
@@ -274,8 +264,7 @@ mod create_mutation {
                     let children_ids_value = result[children_ids_name].clone();
                     let children_ids = children_ids_value.as_array().unwrap();
                     assert_eq!(children_ids[children_ids.len() - 1], new_entity_id);
-                })
-                .await;
+                });
         }
     }
 
@@ -304,8 +293,7 @@ mod create_mutation {
         )
         .execute()
         .await
-        .should_be_ok_with(|result| assert!(!result["currentRevisionId"].is_null()))
-        .await;
+        .should_be_ok_with(|result| assert!(!result["currentRevisionId"].is_null()));
     }
 
     #[actix_rt::test]
@@ -330,8 +318,7 @@ mod create_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -359,8 +346,7 @@ mod create_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 }
 
@@ -381,8 +367,7 @@ mod deleted_entities_query {
                     result["deletedEntities"][0],
                     json!({ "id": 14809, "dateOfDeletion": "2014-03-10T13:26:52+01:00" })
                 );
-            })
-            .await;
+            });
     }
 
     #[actix_rt::test]
@@ -397,8 +382,7 @@ mod deleted_entities_query {
                     result["deletedEntities"][0],
                     json!({ "id": 27118, "dateOfDeletion": "2014-08-11T10:44:47+02:00" })
                 );
-            })
-            .await;
+            });
     }
 
     #[actix_rt::test]
@@ -414,8 +398,7 @@ mod deleted_entities_query {
                 result["deletedEntities"][0],
                 json!({ "id": 14809, "dateOfDeletion": "2014-03-10T13:26:52+01:00" })
             );
-        })
-        .await;
+        });
     }
 
     #[actix_rt::test]
@@ -426,7 +409,6 @@ mod deleted_entities_query {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 }

@@ -17,8 +17,7 @@ mod add_revision_mutation {
         )
         .execute_on(&mut transaction)
         .await
-        .get_json()
-        .await["revisionId"]
+        .get_json()["revisionId"]
             .clone();
 
         Message::new("UuidQuery", json!({ "id": new_revision_id }))
@@ -28,8 +27,7 @@ mod add_revision_mutation {
                 assert_eq!(result["content"], "test content");
                 assert_eq!(result["title"], "test title");
                 assert_eq!(result["authorId"], 1 as i32);
-            })
-            .await;
+            });
     }
 }
 
@@ -57,6 +55,5 @@ mod create_mutation {
             assert_eq!(result["instance"], "de");
             assert_eq!(result["licenseId"], 1 as i32);
         })
-        .await
     }
 }

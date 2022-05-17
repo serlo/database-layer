@@ -22,8 +22,7 @@ mod events_query {
                         "taxonomyTermId": 35607
                     })
                 );
-            })
-            .await;
+            });
     }
 
     #[actix_rt::test]
@@ -45,8 +44,7 @@ mod events_query {
                         "repositoryId": 32567
                     })
                 );
-            })
-            .await;
+            });
     }
 
     #[actix_rt::test]
@@ -70,8 +68,7 @@ mod events_query {
                         "commentId": 15469
                     })
                 );
-            })
-            .await;
+            });
     }
 
     #[actix_rt::test]
@@ -94,8 +91,7 @@ mod events_query {
                         "repositoryId": 1565
                     })
                 );
-            })
-            .await;
+            });
     }
 
     #[actix_rt::test]
@@ -117,8 +113,7 @@ mod events_query {
                         "taxonomyTermId": 35607
                     })
                 );
-            })
-            .await;
+            });
     }
 
     #[actix_rt::test]
@@ -126,7 +121,6 @@ mod events_query {
         Message::new("EventsQuery", json!({ "first": 1_000_000 }))
             .execute()
             .await
-            .should_be_bad_request()
-            .await;
+            .should_be_bad_request();
     }
 }

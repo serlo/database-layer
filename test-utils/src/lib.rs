@@ -1,4 +1,6 @@
 use actix_web::body::to_bytes;
+use actix_web::http::StatusCode;
+use actix_web::web::Bytes;
 use actix_web::HttpResponse;
 pub use assert_json_diff::assert_json_include;
 use convert_case::{Case, Casing};
@@ -33,10 +35,9 @@ impl<'a> Message<'a> {
     ) -> MessageResult {
         let message = json!({ "type": self.message_type, "payload": self.payload });
         let message = from_value::<ServerMessage>(message).unwrap();
-        message
-            .handle(Connection::Transaction(transaction))
-            .await
-            .into()
+        let http_response = message.handle(Connection::Transaction(transaction)).await;
+
+        MessageResult::new(http_response).await
     }
 
     pub async fn execute(&self) -> MessageResult {
@@ -45,49 +46,50 @@ impl<'a> Message<'a> {
 }
 
 pub struct MessageResult {
-    http_response: HttpResponse,
-}
-
-impl From<HttpResponse> for MessageResult {
-    fn from(http_response: HttpResponse) -> Self {
-        MessageResult { http_response }
-    }
+    status: StatusCode,
+    body: Bytes,
 }
 
 impl MessageResult {
-    pub async fn should_be_ok_with<F>(self, assert_func: F)
+    pub async fn new(response: HttpResponse) -> MessageResult {
+        MessageResult {
+            status: response.status(),
+            body: to_bytes(response.into_body()).await.unwrap(),
+        }
+    }
+
+    pub fn should_be_ok_with<F>(self, assert_func: F)
     where
         F: Fn(Value),
     {
-        assert_eq!(self.http_response.status(), 200);
-        assert_func(self.get_json().await);
+        assert_eq!(self.status, 200);
+        assert_func(self.get_json());
     }
 
-    pub async fn should_be_ok_with_body(self, expected_result: Value) {
-        self.should_be_response(200, expected_result).await;
+    pub fn should_be_ok_with_body(self, expected_result: Value) {
+        self.should_be_response(200, expected_result);
     }
 
-    pub async fn should_be_not_found(self) {
-        self.should_be_response(404, Value::Null).await;
+    pub fn should_be_not_found(self) {
+        self.should_be_response(404, Value::Null);
     }
 
-    pub async fn should_be_bad_request(self) {
-        assert_eq!(self.http_response.status(), 400);
+    pub fn should_be_bad_request(self) {
+        assert_eq!(self.status, 400);
 
-        let json_body = self.get_json().await;
-
+        let json_body = self.get_json();
         assert_eq!(json_body["success"], false);
         assert!(json_body["reason"].is_string());
         assert!(!json_body["reason"].as_str().unwrap().is_empty());
     }
 
-    pub async fn get_json(self) -> Value {
-        from_slice(&to_bytes(self.http_response.into_body()).await.unwrap()).unwrap()
+    pub fn get_json(self) -> Value {
+        from_slice(&self.body).unwrap()
     }
 
-    async fn should_be_response(self, expected_status: u16, expected_result: Value) {
-        assert_eq!(self.http_response.status(), expected_status);
-        assert_eq!(self.get_json().await, expected_result);
+    fn should_be_response(self, expected_status: u16, expected_result: Value) {
+        assert_eq!(self.status, expected_status);
+        assert_eq!(self.get_json(), expected_result);
     }
 }
 
@@ -242,8 +244,7 @@ pub async fn assert_event_revision_ok(
 
             })
         );
-    })
-    .await;
+    });
 }
 
 pub struct EntityTestWrapper<'a> {

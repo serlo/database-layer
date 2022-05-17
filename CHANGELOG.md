@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.43](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.42..v0.3.43) - May 17, 2022
+
+### Fixed
+
+- return older entries first in DeletedEntitiesQuery #257
+
 ## [0.3.42](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.41..v0.3.42) - May 11, 2022
 
 ### Added

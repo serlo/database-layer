@@ -30,35 +30,65 @@ impl<'a> Message<'a> {
     pub async fn execute_on(
         &self,
         transaction: &mut sqlx::Transaction<'_, sqlx::MySql>,
-    ) -> HttpResponse {
+    ) -> MessageResult {
         let message = json!({ "type": self.message_type, "payload": self.payload });
         let message = from_value::<ServerMessage>(message).unwrap();
-        message.handle(Connection::Transaction(transaction)).await
+        message
+            .handle(Connection::Transaction(transaction))
+            .await
+            .into()
     }
 
-    pub async fn execute(&self) -> HttpResponse {
+    pub async fn execute(&self) -> MessageResult {
         self.execute_on(&mut begin_transaction().await).await
     }
 }
 
-pub async fn assert_ok_with<F>(response: HttpResponse, assert_func: F)
-where
-    F: Fn(Value),
-{
-    assert_eq!(response.status(), 200);
-    assert_func(get_json(response).await);
+pub struct MessageResult {
+    http_response: HttpResponse,
 }
 
-pub async fn assert_ok(response: HttpResponse, expected_result: Value) {
-    assert_response_is(response, 200, expected_result).await;
+impl From<HttpResponse> for MessageResult {
+    fn from(http_response: HttpResponse) -> Self {
+        MessageResult { http_response }
+    }
 }
 
-pub async fn assert_not_found(response: HttpResponse) {
-    assert_response_is(response, 404, Value::Null).await;
-}
+impl MessageResult {
+    pub async fn should_be_ok_with<F>(self, assert_func: F)
+    where
+        F: Fn(Value),
+    {
+        assert_eq!(self.http_response.status(), 200);
+        assert_func(self.get_json().await);
+    }
 
-pub async fn assert_bad_request(response: HttpResponse, reason: &str) {
-    assert_response_is(response, 400, json!({ "success": false, "reason": reason })).await;
+    pub async fn should_be_ok_with_body(self, expected_result: Value) {
+        self.should_be_response(200, expected_result).await;
+    }
+
+    pub async fn should_be_not_found(self) {
+        self.should_be_response(404, Value::Null).await;
+    }
+
+    pub async fn should_be_bad_request(self) {
+        assert_eq!(self.http_response.status(), 400);
+
+        let json_body = self.get_json().await;
+
+        assert_eq!(json_body["success"], false);
+        assert!(json_body["reason"].is_string());
+        assert!(!json_body["reason"].as_str().unwrap().is_empty());
+    }
+
+    pub async fn get_json(self) -> Value {
+        from_slice(&to_bytes(self.http_response.into_body()).await.unwrap()).unwrap()
+    }
+
+    async fn should_be_response(self, expected_status: u16, expected_result: Value) {
+        assert_eq!(self.http_response.status(), expected_status);
+        assert_eq!(self.get_json().await, expected_result);
+    }
 }
 
 pub fn assert_has_length(value: &Value, length: usize) {
@@ -67,15 +97,6 @@ pub fn assert_has_length(value: &Value, length: usize) {
 
 pub async fn begin_transaction<'a>() -> sqlx::Transaction<'a, sqlx::MySql> {
     create_database_pool().await.unwrap().begin().await.unwrap()
-}
-
-async fn assert_response_is(response: HttpResponse, expected_status: u16, expected_result: Value) {
-    assert_eq!(response.status(), expected_status);
-    assert_eq!(get_json(response).await, expected_result);
-}
-
-pub async fn get_json(response: HttpResponse) -> Value {
-    from_slice(&to_bytes(response.into_body()).await.unwrap()).unwrap()
 }
 
 pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>
@@ -204,14 +225,13 @@ pub async fn assert_event_revision_ok(
     entity_id: i32,
     executor: &mut sqlx::Transaction<'_, sqlx::MySql>,
 ) {
-    let events_response = Message::new(
+    Message::new(
         "EventsQuery",
         json!({ "first": 1, "objectId": revision_id }),
     )
     .execute_on(executor)
-    .await;
-
-    assert_ok_with(events_response, |result| {
+    .await
+    .should_be_ok_with(|result| {
         assert_json_include!(
             actual: &result["events"][0],
             expected: json!({

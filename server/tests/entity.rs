@@ -4,15 +4,13 @@ mod unrevised_entities_query {
 
     #[actix_rt::test]
     async fn returns_list_of_unrevised_entities() {
-        let r = Message::new("UnrevisedEntitiesQuery", json!({}))
+        Message::new("UnrevisedEntitiesQuery", json!({}))
             .execute()
+            .await
+            .should_be_ok_with_body(
+                json!({ "unrevisedEntityIds": [26892, 33582, 34741, 34907, 35247, 35556] }),
+            )
             .await;
-
-        assert_ok(
-            r,
-            json!({ "unrevisedEntityIds": [26892, 33582, 34741, 34907, 35247, 35556] }),
-        )
-        .await;
     }
 }
 
@@ -25,7 +23,7 @@ mod add_revision_mutation {
         for revision in EntityTestWrapper::all().iter() {
             let mut transaction = begin_transaction().await;
 
-            let mutation_response = Message::new(
+            let revision_id = Message::new(
                 "EntityAddRevisionMutation",
                 json!({
                     "revisionType": revision.revision_type,
@@ -41,27 +39,27 @@ mod add_revision_mutation {
                 }),
             )
             .execute_on(&mut transaction)
-            .await;
+            .await
+            .get_json()
+            .await["revisionId"]
+                .clone();
 
-            let revision_id = get_json(mutation_response).await["revisionId"].clone();
-
-            let query_response = Message::new("UuidQuery", json!({ "id": revision_id }))
+            Message::new("UuidQuery", json!({ "id": revision_id }))
                 .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    assert_eq!(result["changes"], "test changes");
+                    if revision.query_fields.is_some() {
+                        for (key, value) in revision.query_fields.clone().unwrap() {
+                            assert_eq!(result[key], value);
+                        }
+                    } else {
+                        for (key, value) in revision.fields() {
+                            assert_eq!(result[key], value);
+                        }
+                    }
+                })
                 .await;
-
-            assert_ok_with(query_response, |result| {
-                assert_eq!(result["changes"], "test changes");
-                if revision.query_fields.is_some() {
-                    for (key, value) in revision.query_fields.clone().unwrap() {
-                        assert_eq!(result[key], value);
-                    }
-                } else {
-                    for (key, value) in revision.fields() {
-                        assert_eq!(result[key], value);
-                    }
-                }
-            })
-            .await;
 
             assert_event_revision_ok(revision_id, revision.entity_id, &mut transaction).await;
         }
@@ -72,7 +70,7 @@ mod add_revision_mutation {
         for revision in EntityTestWrapper::all().iter() {
             let mut transaction = begin_transaction().await;
 
-            let first_mutation_response = Message::new(
+            let first_revision_id = Message::new(
                 "EntityAddRevisionMutation",
                 json!({
                     "revisionType": revision.revision_type,
@@ -88,12 +86,13 @@ mod add_revision_mutation {
                 }),
             )
             .execute_on(&mut transaction)
-            .await;
-
-            let first_revision_id = get_json(first_mutation_response).await["revisionId"].clone();
+            .await
+            .get_json()
+            .await["revisionId"]
+                .clone();
             let first_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
-            let second_mutation_response = Message::new(
+            let second_revision_id = Message::new(
                 "EntityAddRevisionMutation",
                 json!({
                     "revisionType": revision.revision_type,
@@ -109,9 +108,10 @@ mod add_revision_mutation {
                 }),
             )
             .execute_on(&mut transaction)
-            .await;
-
-            let second_revision_id = get_json(second_mutation_response).await["revisionId"].clone();
+            .await
+            .get_json()
+            .await["revisionId"]
+                .clone();
             let second_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
             assert_eq!(first_revision_id, second_revision_id);
@@ -120,10 +120,12 @@ mod add_revision_mutation {
     }
 
     async fn get_revisions(id: i32, transaction: &mut sqlx::Transaction<'_, sqlx::MySql>) -> Value {
-        let resp = Message::new("UuidQuery", json!({ "id": id }))
+        Message::new("UuidQuery", json!({ "id": id }))
             .execute_on(transaction)
-            .await;
-        get_json(resp).await["revisionIds"].clone()
+            .await
+            .get_json()
+            .await["revisionIds"]
+            .clone()
     }
 }
 
@@ -137,7 +139,7 @@ mod create_mutation {
         for entity in EntityTestWrapper::all().iter() {
             let mut transaction = begin_transaction().await;
 
-            let mutation_response = Message::new(
+            let new_entity_id = Message::new(
                 "EntityCreateMutation",
                 json!({
                     "entityType": entity.typename,
@@ -155,32 +157,31 @@ mod create_mutation {
                 }),
             )
             .execute_on(&mut transaction)
-            .await;
+            .await
+            .get_json()
+            .await["id"]
+                .clone();
 
-            let new_entity_id = get_json(mutation_response).await["id"].clone();
-
-            let query_response = Message::new("UuidQuery", json!({ "id": new_entity_id }))
+            Message::new("UuidQuery", json!({ "id": new_entity_id }))
                 .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    assert_eq!(
+                        from_value_to_entity_type(result["__typename"].clone()),
+                        entity.typename
+                    );
+                    assert_eq!(result["licenseId"], 1 as i32);
+                    assert_eq!(result["instance"], "de");
+                })
                 .await;
 
-            assert_ok_with(query_response, |result| {
-                assert_eq!(
-                    from_value_to_entity_type(result["__typename"].clone()),
-                    entity.typename
-                );
-                assert_eq!(result["licenseId"], 1 as i32);
-                assert_eq!(result["instance"], "de");
-            })
-            .await;
-
-            let events_response = Message::new(
+            Message::new(
                 "EventsQuery",
                 json!({ "first": 3, "objectId": new_entity_id }),
             )
             .execute_on(&mut transaction)
-            .await;
-
-            assert_ok_with(events_response, |result| {
+            .await
+            .should_be_ok_with(|result| {
                 let (parent_event_name, parent_id, object_id) = match entity.taxonomy_term_id {
                     Some(taxonomy_term_id) => (
                         "CreateTaxonomyLinkNotificationEvent",
@@ -233,7 +234,7 @@ mod create_mutation {
         for entity in EntityTestWrapper::all().iter() {
             let mut transaction = begin_transaction().await;
 
-            let mutation_response = Message::new(
+            let new_entity_id = Message::new(
                 "EntityCreateMutation",
                 json!({
                     "entityType": entity.typename,
@@ -251,14 +252,12 @@ mod create_mutation {
                 }),
             )
             .execute_on(&mut transaction)
-            .await;
+            .await
+            .get_json()
+            .await["id"]
+                .clone();
 
-            let new_entity_id = get_json(mutation_response).await["id"].clone();
-
-            let parent_element_id = match entity.taxonomy_term_id {
-                Some(taxonomy_term_id) => taxonomy_term_id,
-                None => entity.parent_id.unwrap(),
-            };
+            let parent_element_id = entity.taxonomy_term_id.or(entity.parent_id).unwrap();
 
             let children_ids_name = match entity.typename {
                 EntityType::CoursePage => "pageIds",
@@ -268,106 +267,99 @@ mod create_mutation {
                 _ => "childrenIds",
             };
 
-            let query_response = Message::new("UuidQuery", json!({ "id": parent_element_id }))
+            Message::new("UuidQuery", json!({ "id": parent_element_id }))
                 .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    let children_ids_value = result[children_ids_name].clone();
+                    let children_ids = children_ids_value.as_array().unwrap();
+                    assert_eq!(children_ids[children_ids.len() - 1], new_entity_id);
+                })
                 .await;
-
-            assert_ok_with(query_response, |result| {
-                let children_ids_value = result[children_ids_name].clone();
-                let children_ids = children_ids_value.as_array().unwrap();
-                assert_eq!(children_ids[children_ids.len() - 1], new_entity_id);
-            })
-            .await;
         }
     }
 
     #[actix_rt::test]
     async fn checkouts_new_revision_when_needs_review_is_true() {
-        assert_ok_with(
-            Message::new(
-                "EntityCreateMutation",
-                json!({
-                    "entityType": "Article",
-                    "input": {
-                        "changes": "test changes",
-                        "subscribeThis": false,
-                        "subscribeThisByEmail": false,
-                        "licenseId": 1,
-                        "taxonomyTermId": 7,
-                        "needsReview": false,
-                        "fields": {
-                            "content": "content",
-                            "title": "title",
-                            "metaTitle": "metaTitle",
-                            "metaDescription": "metaDescription"
-                        },
+        Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "Article",
+                "input": {
+                    "changes": "test changes",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "taxonomyTermId": 7,
+                    "needsReview": false,
+                    "fields": {
+                        "content": "content",
+                        "title": "title",
+                        "metaTitle": "metaTitle",
+                        "metaDescription": "metaDescription"
                     },
-                    "userId": 1,
-                }),
-            )
-            .execute()
-            .await,
-            |result| assert!(!result["currentRevisionId"].is_null()),
+                },
+                "userId": 1,
+            }),
         )
+        .execute()
+        .await
+        .should_be_ok_with(|result| assert!(!result["currentRevisionId"].is_null()))
         .await;
     }
 
     #[actix_rt::test]
     async fn fails_when_parent_is_no_entity() {
-        assert_bad_request(
-            Message::new(
-                "EntityCreateMutation",
-                json!({
-                    "entityType": "Solution",
-                    "input": {
-                        "changes": "test changes",
-                        "subscribeThis": false,
-                        "subscribeThisByEmail": false,
-                        "licenseId": 1,
-                        "parentId": 1,
-                        "needsReview": true,
-                        "fields": {
-                            "content": "content",
-                        },
+        Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "Solution",
+                "input": {
+                    "changes": "test changes",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "parentId": 1,
+                    "needsReview": true,
+                    "fields": {
+                        "content": "content",
                     },
-                    "userId": 1 as i32,
-                }),
-            )
-            .execute()
-            .await,
-            "parent entity with id 1 does not exist",
+                },
+                "userId": 1 as i32,
+            }),
         )
+        .execute()
+        .await
+        .should_be_bad_request()
         .await;
     }
 
     #[actix_rt::test]
     async fn fails_when_taxonomy_term_does_not_exist() {
-        assert_bad_request(
-            Message::new(
-                "EntityCreateMutation",
-                json!({
-                    "entityType": "Article",
-                    "input": {
-                        "changes": "test changes",
-                        "subscribeThis": false,
-                        "subscribeThisByEmail": false,
-                        "licenseId": 1,
-                        "taxonomyTermId": 1,
-                        "needsReview": true,
-                        "fields": {
-                            "content": "content",
-                            "title": "title",
-                            "metaTitle": "metaTitle",
-                            "metaDescription": "metaDescription"
-                        },
+        Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": "Article",
+                "input": {
+                    "changes": "test changes",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "taxonomyTermId": 1,
+                    "needsReview": true,
+                    "fields": {
+                        "content": "content",
+                        "title": "title",
+                        "metaTitle": "metaTitle",
+                        "metaDescription": "metaDescription"
                     },
-                    "userId": 1 as i32,
-                }),
-            )
-            .execute()
-            .await,
-            "Taxonomy term with id 1 does not exist",
+                },
+                "userId": 1 as i32,
+            }),
         )
+        .execute()
+        .await
+        .should_be_bad_request()
         .await;
     }
 }
@@ -379,49 +371,64 @@ mod deleted_entities_query {
     #[actix_rt::test]
     async fn gives_back_first_deleted_entities() {
         let first: i32 = 3;
-        let response = Message::new("DeletedEntitiesQuery", json!({ "first": first }))
-            .execute()
-            .await;
 
-        assert_ok_with(response, |result| {
-            assert_has_length(&result["deletedEntities"], first as usize);
-            assert_eq!(
-                result["deletedEntities"][0],
-                json!({ "id": 14809, "dateOfDeletion": "2014-03-10T13:26:52+01:00" })
-            );
-        })
-        .await;
+        Message::new("DeletedEntitiesQuery", json!({ "first": first }))
+            .execute()
+            .await
+            .should_be_ok_with(|result| {
+                assert_has_length(&result["deletedEntities"], first as usize);
+                assert_eq!(
+                    result["deletedEntities"][0],
+                    json!({ "id": 17635, "dateOfDeletion": "2014-03-13T15:16:01+01:00" })
+                );
+            })
+            .await;
     }
 
     #[actix_rt::test]
     async fn gives_back_first_deleted_entities_after_date() {
         let date = "2014-08-01T00:00:00+02:00";
-        let response = Message::new("DeletedEntitiesQuery", json!({ "first": 4, "after": date }))
-            .execute()
-            .await;
 
-        assert_ok_with(response, |result| {
-            assert_eq!(
-                result["deletedEntities"][0],
-                json!({ "id": 27118, "dateOfDeletion": "2014-08-11T10:44:47+02:00" })
-            );
-        })
-        .await;
+        Message::new("DeletedEntitiesQuery", json!({ "first": 4, "after": date }))
+            .execute()
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(
+                    result["deletedEntities"][0],
+                    json!({ "id": 28067, "dateOfDeletion": "2014-08-28T08:38:51+02:00" })
+                );
+            })
+            .await;
     }
 
     #[actix_rt::test]
-    async fn gives_back_first_deleted_entities_of_instance_after_date() {
-        let response = Message::new(
+    async fn gives_back_first_deleted_entities_after_date_with_small_time_differences() {
+        let date = "2014-03-24T14:23:20+01:00";
+
+        Message::new("DeletedEntitiesQuery", json!({ "first": 1, "after": date }))
+            .execute()
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(
+                    result["deletedEntities"][0],
+                    json!({ "id": 19595, "dateOfDeletion": "2014-03-24T14:23:28+01:00" })
+                );
+            })
+            .await;
+    }
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_entities_of_instance() {
+        Message::new(
             "DeletedEntitiesQuery",
             json!({ "first": 4, "instance": "de" }),
         )
         .execute()
-        .await;
-
-        assert_ok_with(response, |result| {
+        .await
+        .should_be_ok_with(|result| {
             assert_eq!(
                 result["deletedEntities"][0],
-                json!({ "id": 14809, "dateOfDeletion": "2014-03-10T13:26:52+01:00" })
+                json!({ "id": 17740, "dateOfDeletion": "2014-03-13T17:13:05+01:00" })
             );
         })
         .await;
@@ -429,17 +436,13 @@ mod deleted_entities_query {
 
     #[actix_rt::test]
     async fn fails_when_date_format_is_wrong() {
-        let response = Message::new(
+        Message::new(
             "DeletedEntitiesQuery",
             json!({ "first": 4, "after": "no date" }),
         )
         .execute()
-        .await;
-
-        assert_bad_request(
-            response,
-            "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}",
-        )
+        .await
+        .should_be_bad_request()
         .await;
     }
 }

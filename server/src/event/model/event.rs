@@ -5,6 +5,7 @@ use futures::TryStreamExt;
 use serde::Serialize;
 use sqlx::MySqlPool;
 
+use super::super::messages::*;
 use super::abstract_event::AbstractEvent;
 use super::create_comment::CreateCommentEvent;
 use super::create_entity::CreateEntityEvent;
@@ -24,7 +25,7 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::event::{EventStringParameters, EventUuidParameters};
 use crate::instance::Instance;
-use crate::notification::{Notifications, NotificationsError};
+use crate::notification::Notifications;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct Event {
@@ -243,11 +244,7 @@ impl EventPayload {
         }
 
         let event = Event::fetch_via_transaction(event_id, &mut transaction).await?;
-        Notifications::create_notifications(&event, &mut transaction)
-            .await
-            .map_err(|error| match error {
-                NotificationsError::DatabaseError { inner } => EventError::from(inner),
-            })?;
+        Notifications::create_notifications(&event, &mut transaction).await?;
 
         transaction.commit().await?;
 
@@ -255,38 +252,16 @@ impl EventPayload {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Events {
-    events: Vec<Event>,
-    has_next_page: bool,
-}
-
-impl Events {
-    pub async fn fetch(
-        max_events: i32,
-        after: Option<i32>,
-        actor_id: Option<i32>,
-        object_id: Option<i32>,
-        instance: Option<&Instance>,
-        pool: &MySqlPool,
-    ) -> Result<Events, sqlx::Error> {
-        Self::fetch_via_transaction(max_events, after, actor_id, object_id, instance, pool).await
-    }
-
-    pub async fn fetch_via_transaction<'a, E>(
-        max_events: i32,
-        after: Option<i32>,
-        actor_id: Option<i32>,
-        object_id: Option<i32>,
-        instance: Option<&Instance>,
+impl Event {
+    pub async fn fetch_events<'a, E>(
+        payload: &events_query::Payload,
         executor: E,
-    ) -> Result<Events, sqlx::Error>
+    ) -> Result<events_query::Output, sqlx::Error>
     where
         E: Executor<'a>,
     {
-        let mut transaction = executor.begin().await.unwrap();
-        let instance_id = match instance {
+        let mut transaction = executor.begin().await?;
+        let instance_id = match payload.instance.as_ref() {
             Some(instance) => Some(Instance::fetch_id(instance, &mut transaction).await?),
             None => None,
         };
@@ -329,16 +304,16 @@ impl Events {
                 ORDER BY el.id DESC
                 LIMIT ?
             "#,
-            after,
-            after,
-            actor_id,
-            actor_id,
-            object_id,
-            object_id,
-            object_id,
+            payload.after,
+            payload.after,
+            payload.actor_id,
+            payload.actor_id,
+            payload.object_id,
+            payload.object_id,
+            payload.object_id,
             instance_id,
             instance_id,
-            max_events + 1
+            payload.first + 1
         )
         .fetch(&mut transaction);
 
@@ -346,7 +321,7 @@ impl Events {
         let mut has_next_page = false;
 
         while let Some(record) = event_records.try_next().await? {
-            if events.len() as i32 == max_events {
+            if events.len() as i32 == payload.first {
                 has_next_page = true;
                 break;
             }
@@ -405,7 +380,7 @@ impl Events {
             }
         }
 
-        Ok(Events {
+        Ok(events_query::Output {
             events,
             has_next_page,
         })

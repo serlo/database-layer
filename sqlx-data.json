@@ -1683,6 +1683,44 @@
     },
     "query": "\n                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)\n                    SELECT ?, id, ?, ?, ?\n                    FROM event\n                    WHERE name = ?\n            "
   },
+  "7df305885295f94c49bfa66bc6f30dc365efdb689464ebe3b9df15c9f2bc4f9a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "uuid_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "date",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "\n                SELECT *\n                FROM (\n                SELECT uuid_id, MAX(event_log.date) AS date\n                FROM event_log, uuid, instance, entity\n                WHERE uuid.id = event_log.uuid_id\n                    AND (? is null or event_log.date > ?)\n                    AND (? is null or instance.subdomain = ?)\n                    AND instance.id = entity.instance_id\n                    AND entity.id = event_log.uuid_id\n                    AND event_log.event_id = 10\n                    AND uuid.trashed = 1\n                    AND uuid.discriminator = 'entity'\n                    AND entity.type_id NOT IN (35, 39, 40, 41, 42, 43, 44)\n                GROUP BY uuid_id\n                ORDER BY date\n                LIMIT ?\n                ) a\n                ORDER BY date DESC\n            "
+  },
   "7e34c538baab3f54b402322473b9d7f730122c6023ef4b55f73021d74410e362": {
     "describe": {
       "columns": [],

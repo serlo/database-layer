@@ -449,7 +449,7 @@ mod set_license_mutation {
     use test_utils::*;
 
     #[actix_rt::test]
-    async fn sets_license_and_sets_new_event_log() {
+    async fn sets_license_and_creates_new_event() {
         let mut transaction = begin_transaction().await;
 
         let user_id: i32 = 1;
@@ -478,6 +478,23 @@ mod set_license_mutation {
             .license_id;
 
         assert_eq!(new_license_id, license_id);
+
+        Message::new("EventsQuery", json!({ "first": 1 as usize, "objectId": entity_id as usize}))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_json_include!(
+                    actual: &result["events"][0],
+                    expected: json!({
+                        "__typename": "SetLicenseEvent",
+                        "instance": "de",
+                        "actor_id": user_id,
+                        "object_id": entity_id,
+
+                    })
+                )
+            });
+
 /*
         let last_event_log_entry = sqlx::query!(
             r#"

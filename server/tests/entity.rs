@@ -379,7 +379,7 @@ mod deleted_entities_query {
                 assert_has_length(&result["deletedEntities"], first as usize);
                 assert_eq!(
                     result["deletedEntities"][0],
-                    json!({ "id": 14809, "dateOfDeletion": "2014-03-10T13:26:52+01:00" })
+                    json!({ "id": 17635, "dateOfDeletion": "2014-03-13T15:16:01+01:00" })
                 );
             })
             .await;
@@ -395,14 +395,30 @@ mod deleted_entities_query {
             .should_be_ok_with(|result| {
                 assert_eq!(
                     result["deletedEntities"][0],
-                    json!({ "id": 27118, "dateOfDeletion": "2014-08-11T10:44:47+02:00" })
+                    json!({ "id": 28067, "dateOfDeletion": "2014-08-28T08:38:51+02:00" })
                 );
             })
             .await;
     }
 
     #[actix_rt::test]
-    async fn gives_back_first_deleted_entities_of_instance_after_date() {
+    async fn gives_back_first_deleted_entities_after_date_with_small_time_differences() {
+        let date = "2014-03-24T14:23:20+01:00";
+
+        Message::new("DeletedEntitiesQuery", json!({ "first": 1, "after": date }))
+            .execute()
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(
+                    result["deletedEntities"][0],
+                    json!({ "id": 19595, "dateOfDeletion": "2014-03-24T14:23:28+01:00" })
+                );
+            })
+            .await;
+    }
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_entities_of_instance() {
         Message::new(
             "DeletedEntitiesQuery",
             json!({ "first": 4, "instance": "de" }),
@@ -412,7 +428,7 @@ mod deleted_entities_query {
         .should_be_ok_with(|result| {
             assert_eq!(
                 result["deletedEntities"][0],
-                json!({ "id": 14809, "dateOfDeletion": "2014-03-10T13:26:52+01:00" })
+                json!({ "id": 17740, "dateOfDeletion": "2014-03-13T17:13:05+01:00" })
             );
         })
         .await;

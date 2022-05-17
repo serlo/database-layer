@@ -435,10 +435,10 @@ impl TaxonomyTerm {
 
                 sqlx::query!(
                     r#"
-                    UPDATE term_taxonomy
-                    SET parent_id = ?
-                    WHERE id = ?
-                "#,
+                        UPDATE term_taxonomy
+                        SET parent_id = ?
+                        WHERE id = ?
+                    "#,
                     payload.destination,
                     child_id,
                 )
@@ -489,15 +489,24 @@ impl TaxonomyTerm {
             .await?
             .id as i32;
 
+        let instance_id = Self::get_instance_id(payload.parent_id, &mut transaction).await?;
+
         let type_id = sqlx::query!(
-            r#"SELECT id FROM type WHERE name = ?"#,
-            payload.taxonomy_type
+            r#"
+                SELECT type.id FROM type
+                JOIN taxonomy
+                    ON taxonomy.type_id = type.id
+                JOIN instance
+                    ON taxonomy.instance_id = instance.id
+                WHERE type.name = ?
+                    AND instance_id = ?
+            "#,
+            payload.taxonomy_type,
+            instance_id
         )
         .fetch_one(&mut transaction)
         .await?
         .id as i32;
-
-        let instance_id = Self::get_instance_id(payload.parent_id, &mut transaction).await?;
 
         sqlx::query!(
             r#"

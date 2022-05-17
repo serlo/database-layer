@@ -402,6 +402,22 @@ mod deleted_entities_query {
     }
 
     #[actix_rt::test]
+    async fn gives_back_first_deleted_entities_after_date_with_small_time_differences() {
+        let date = "2014-03-24T14:23:20+01:00";
+
+        Message::new("DeletedEntitiesQuery", json!({ "first": 4, "after": date }))
+            .execute()
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(
+                    result["deletedEntities"][0],
+                    json!({ "id": 19595, "dateOfDeletion": "2014-03-24T14:23:28+01:00" })
+                );
+            })
+            .await;
+    }
+
+    #[actix_rt::test]
     async fn gives_back_first_deleted_entities_of_instance() {
         Message::new(
             "DeletedEntitiesQuery",

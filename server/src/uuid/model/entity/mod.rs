@@ -1,6 +1,6 @@
 use crate::uuid::Subject;
 use async_trait::async_trait;
-use chrono::Utc;
+use chrono_tz::Europe::Berlin;
 use convert_case::{Case, Casing};
 use futures::try_join;
 use serde::Serialize;
@@ -915,7 +915,9 @@ impl Entity {
                 })
             })
             .transpose()?
-            .map(|date| DateTime::from(date.with_timezone(&Utc)));
+            .map(|date| date.with_timezone(&Berlin))
+            .unwrap()
+            .to_string();
 
         Ok(sqlx::query!(
             r#"

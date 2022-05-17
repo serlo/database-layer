@@ -405,7 +405,7 @@ mod deleted_entities_query {
     async fn gives_back_first_deleted_entities_after_date_with_small_time_differences() {
         let date = "2014-03-24T14:23:20+01:00";
 
-        Message::new("DeletedEntitiesQuery", json!({ "first": 4, "after": date }))
+        Message::new("DeletedEntitiesQuery", json!({ "first": 1, "after": date }))
             .execute()
             .await
             .should_be_ok_with(|result| {

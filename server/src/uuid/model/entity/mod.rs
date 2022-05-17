@@ -915,9 +915,7 @@ impl Entity {
                 })
             })
             .transpose()?
-            .map(|date| date.with_timezone(&Berlin))
-            .unwrap()
-            .to_string();
+            .map(|date| date.with_timezone(&Berlin).to_string());
 
         Ok(sqlx::query!(
             r#"

@@ -19,7 +19,7 @@ use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
 use crate::uuid::Entity;
 use crate::uuid::EntityType;
-use crate::{format_alias, operation};
+use crate::{assert_two_vectors_have_same_elements, format_alias, operation};
 pub use messages::*;
 
 mod messages;
@@ -765,15 +765,12 @@ impl TaxonomyTerm {
             return Ok(());
         }
 
-        children_ids.sort();
-        let mut children_ids_sorted = payload.children_ids.clone();
-        children_ids_sorted.sort();
-
-        if children_ids != children_ids_sorted {
-            return Err(operation::Error::BadRequest {
-                reason: "children_ids have to match the current entities ids linked to the taxonomy_term_id".to_string()
-            });
-        }
+        assert_two_vectors_have_same_elements(
+            children_ids.clone(),
+            payload.children_ids.clone(),
+            "children_ids have to match the current entities ids linked to the taxonomy_term_id"
+                .to_string(),
+        )?;
 
         for (index, entity_id) in payload
             .children_ids

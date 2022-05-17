@@ -455,10 +455,9 @@ mod set_license_mutation {
         let user_id: i32 = 1;
         let entity_id: i32 = 1495;
         let license_id: i32 = 2;
-        let event_id: i32 = 3;
 
         let response = Message::new(
-            "SetLicenseMutation",
+            "EntitySetLicenseMutation",
             json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
         )
         .execute_on(&mut transaction)
@@ -468,73 +467,45 @@ mod set_license_mutation {
 
         let new_license_id = sqlx::query!(
             r#"
-                select license_id from entity where id = ?
+                select * from entity where id = ?
             "#,
             entity_id,
         )
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap()
-            .license_id;
-
-        assert_eq!(new_license_id, license_id);
-
-        Message::new("EventsQuery", json!({ "first": 1 as usize, "objectId": entity_id as usize}))
-            .execute_on(&mut transaction)
-            .await
-            .should_be_ok_with(|result| {
-                assert_json_include!(
-                    actual: &result["events"][0],
-                    expected: json!({
-                        "__typename": "SetLicenseEvent",
-                        "instance": "de",
-                        "actor_id": user_id,
-                        "object_id": entity_id,
-
-                    })
-                )
-            });
-
-/*
-        let last_event_log_entry = sqlx::query!(
-            r#"
-                select * from event_log order by date desc limit 1
-            "#,
-        )
         .fetch_one(&mut transaction)
         .await
-        .should_be_ok_with(|result| {
+        .unwrap();
+
+        assert_eq!(new_license_id.license_id, license_id);
+
+        let response = Message::new(
+            "EventsQuery",
+            json!({ "first": 1 as usize, "objectId": entity_id as usize}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_ok_with(response, |result| {
             assert_json_include!(
-                    actual: &result["event_log"][0],
-                    expected: json!({
-                        "__typename": "SetTaxonomyParentNotificationEvent",
-                        "instance": "de",
-                        "actorId": 1,
-                        "objectId": 1394,
-                        "childId": 1394,
-                        "previousParentId": 1288,
-                        "parentId": 5
-                    })
-                );
-        });
-
-        assert_eq!(last_event_log_entry.actor_id, user_id);
-        assert_eq!(last_event_log_entry.event_id, event_id);
-        assert_eq!(last_event_log_entry.uuid_id, entity_id);
-
- */
-
+                actual: &result["events"][0],
+                expected: json!({
+                    "__typename": "SetLicenseNotificationEvent",
+                    "instance": "de",
+                    "actorId": user_id,
+                    "objectId": entity_id,
+                })
+            )
+        })
+        .await;
     }
 
     #[actix_rt::test]
     async fn fails_when_entity_does_not_exist() {
-
         let user_id: i32 = 1;
         let entity_id: i32 = 0;
         let license_id: i32 = 2;
 
         let response = Message::new(
-            "SetLicenseMutation",
+            "EntitySetLicenseMutation",
             json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
         )
         .execute()
@@ -549,13 +520,12 @@ mod set_license_mutation {
 
     #[actix_rt::test]
     async fn fails_when_user_does_not_exist() {
-
         let user_id: i32 = 0;
         let entity_id: i32 = 1495;
         let license_id: i32 = 2;
 
         let response = Message::new(
-            "SetLicenseMutation",
+            "EntitySetLicenseMutation",
             json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
         )
         .execute()
@@ -563,7 +533,7 @@ mod set_license_mutation {
 
         assert_bad_request(
             response,
-            &format!("An user with id {} does not exist.", entity_id),
+            &format!("An user with id {} does not exist.", user_id),
         )
         .await;
     }
@@ -577,7 +547,7 @@ mod set_license_mutation {
         let license_id: i32 = 1;
 
         Message::new(
-            "SetLicenseMutation",
+            "EntitySetLicenseMutation",
             json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
         )
         .execute_on(&mut transaction)

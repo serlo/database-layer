@@ -758,8 +758,8 @@ impl TaxonomyTerm {
                 .map(|child| child.id as i32)
                 .collect();
 
-        let mut children_ids: Vec<i32> = children_taxonomy_ids.clone();
-        children_ids.extend(entities_ids.clone());
+        let mut children_ids: Vec<i32> = entities_ids.clone();
+        children_ids.extend(children_taxonomy_ids.clone());
 
         if children_ids == payload.children_ids {
             return Ok(());

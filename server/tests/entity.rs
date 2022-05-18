@@ -459,35 +459,28 @@ mod set_license_mutation {
         let entity_id: i32 = 1495;
         let license_id: i32 = 2;
 
-        let response = Message::new(
+        Message::new(
             "EntitySetLicenseMutation",
             json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
         )
         .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with_body(json!({ "success": true, }))
         .await;
 
-        assert_ok(response, json!({ "success": true, })).await;
+        Message::new("UuidQuery", json!({ "id": entity_id }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| assert_eq!(result["licenseId"], license_id))
+            .await;
 
-        let new_license_id = sqlx::query!(
-            r#"
-                select * from entity where id = ?
-            "#,
-            entity_id,
-        )
-        .fetch_one(&mut transaction)
-        .await
-        .unwrap();
-
-        assert_eq!(new_license_id.license_id, license_id);
-
-        let response = Message::new(
+        Message::new(
             "EventsQuery",
             json!({ "first": 1 as usize, "objectId": entity_id as usize}),
         )
         .execute_on(&mut transaction)
-        .await;
-
-        assert_ok_with(response, |result| {
+        .await
+        .should_be_ok_with(|result| {
             assert_json_include!(
                 actual: &result["events"][0],
                 expected: json!({
@@ -503,41 +496,25 @@ mod set_license_mutation {
 
     #[actix_rt::test]
     async fn fails_when_entity_does_not_exist() {
-        let user_id: i32 = 1;
-        let entity_id: i32 = 0;
-        let license_id: i32 = 2;
-
-        let response = Message::new(
+        Message::new(
             "EntitySetLicenseMutation",
-            json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
+            json!({"userId": 1, "entityId": 0, "licenseId": 2}),
         )
         .execute()
-        .await;
-
-        assert_bad_request(
-            response,
-            &format!("An entity with id {} does not exist.", entity_id),
-        )
+        .await
+        .should_be_bad_request()
         .await;
     }
 
     #[actix_rt::test]
-    async fn fails_when_user_does_not_exist() {
-        let user_id: i32 = 0;
-        let entity_id: i32 = 1495;
-        let license_id: i32 = 2;
-
-        let response = Message::new(
+    async fn fails_with_bad_request_when_user_does_not_exist() {
+        Message::new(
             "EntitySetLicenseMutation",
-            json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
+            json!({"userId": 0, "entityId": 1495, "licenseId": 2}),
         )
         .execute()
-        .await;
-
-        assert_bad_request(
-            response,
-            &format!("An user with id {} does not exist.", user_id),
-        )
+        .await
+        .should_be_bad_request()
         .await;
     }
 
@@ -545,26 +522,29 @@ mod set_license_mutation {
     async fn does_not_set_a_new_event_log_entry_for_same_license_id() {
         let mut transaction = begin_transaction().await;
 
-        let user_id: i32 = 1;
         let entity_id: i32 = 1495;
-        let license_id: i32 = 1;
 
         Message::new(
             "EntitySetLicenseMutation",
-            json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
+            json!({"userId": 1, "entityId": entity_id, "licenseId": 1}),
         )
         .execute_on(&mut transaction)
         .await;
 
-        let last_event_log_entry = sqlx::query!(
-            r#"
-                select uuid_id from event_log order by date desc limit 1
-            "#,
+        Message::new(
+            "EventsQuery",
+            json!({ "first": 1 as usize, "objectId": entity_id as usize}),
         )
-        .fetch_one(&mut transaction)
+        .execute_on(&mut transaction)
         .await
-        .unwrap();
-
-        assert_ne!(last_event_log_entry.uuid_id as i32, entity_id);
+        .should_be_ok_with(|result| {
+            assert_json_include!(
+                actual: &result["events"][0],
+                expected: json!({
+                    "__typename": "CreateTaxonomyLinkNotificationEvent",
+                })
+            )
+        })
+        .await;
     }
 }

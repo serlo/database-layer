@@ -173,31 +173,6 @@
     },
     "query": "delete from subscription where uuid_id = ?"
   },
-  "0a51f3b7a73d28c526f86f584645810efc966b742588783e2f196971ca315c1e": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                SELECT type.id FROM type\n                JOIN taxonomy\n                    ON taxonomy.type_id = type.id\n                JOIN instance\n                    ON taxonomy.instance_id = instance.id\n                WHERE type.name = ?\n                    AND instance_id = ?\n            "
-  },
   "0f7ddd3073657eb646caeed7f49e8ff4592d21b27f46fc8921f60ff0d6107930": {
     "describe": {
       "columns": [
@@ -2868,6 +2843,31 @@
       }
     },
     "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            "
+  },
+  "d3ba269d63917ac3bb8679df4a041ac5972b46d7648f4d7ad9f4ffd86c597de0": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                SELECT type.id FROM type\n                JOIN taxonomy\n                    ON taxonomy.type_id = type.id\n                WHERE type.name = ?\n                    AND instance_id = ?\n            "
   },
   "d4c1b33938809466906554f5bc60faadae4d6e5781bb9acc02f47c7385960e3a": {
     "describe": {

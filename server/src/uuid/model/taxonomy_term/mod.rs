@@ -496,8 +496,6 @@ impl TaxonomyTerm {
                 SELECT type.id FROM type
                 JOIN taxonomy
                     ON taxonomy.type_id = type.id
-                JOIN instance
-                    ON taxonomy.instance_id = instance.id
                 WHERE type.name = ?
                     AND instance_id = ?
             "#,

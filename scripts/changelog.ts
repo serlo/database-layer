@@ -172,6 +172,7 @@ async function exec(): Promise<void> {
         tagName: 'v0.3.44',
         name: '0.3.44',
         date: '2022-05-18',
+        added: ['Add EntitySetLicenseMutation #249'],
         fixed: ['TaxonomyTermCreate: query type_id with instance #258'],
       },
     ],

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [0.3.44](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.43..v0.3.44) - May 18, 2022
 
+### Added
+
+- Add EntitySetLicenseMutation #249
+
 ### Fixed
 
 - TaxonomyTermCreate: query type_id with instance #258

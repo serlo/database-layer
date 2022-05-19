@@ -70,14 +70,8 @@ mod pages_query {
         Message::new("PagesQuery", json!({}))
             .execute()
             .await
-            .should_be_ok_with(|result| {
-                assert_json_include!(
-                    actual: &result["pages"][0],
-                    expected: json!({
-                        "id": 16256,
-                    })
-                )
-            })
+            .should_be_ok_with(|result| assert_eq!(&result["pages"][0], 16256))
+            .await
     }
 
     #[actix_rt::test]
@@ -85,14 +79,8 @@ mod pages_query {
         Message::new("PagesQuery", json!({"instance": "en"}))
             .execute()
             .await
-            .should_be_ok_with(|result| {
-                assert_json_include!(
-                    actual: &result["pages"][0],
-                    expected: json!({
-                        "id": 23579,
-                    })
-                )
-            })
+            .should_be_ok_with(|result| assert_eq!(&result["pages"][0], 23579))
+            .await
     }
 
     #[actix_rt::test]
@@ -101,5 +89,6 @@ mod pages_query {
             .execute()
             .await
             .should_be_ok_with(|result| assert_has_length(&result["pages"], 0))
+            .await
     }
 }

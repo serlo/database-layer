@@ -2141,6 +2141,16 @@
     },
     "query": "\n                SELECT uuid_id as id\n                    FROM (\n                        SELECT id, uuid_id FROM comment c\n                        UNION ALL\n                        SELECT c.id, p.uuid_id FROM comment p LEFT JOIN comment c ON c.parent_id = p.id\n                    ) t\n                    WHERE id = ? AND uuid_id IS NOT NULL\n            "
   },
+  "9296ed5e839ef7a8c1108c4dbb5bf77078d79c93e3fbd34808fedfec54027232": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                        UPDATE term_taxonomy\n                        SET parent_id = ?\n                        WHERE id = ?\n                    "
+  },
   "93081abb88a7b64f755224129e49c32f58f91648d7e1b59bcb8d65d643c47d5b": {
     "describe": {
       "columns": [],
@@ -3088,15 +3098,30 @@
     },
     "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            "
   },
-  "d386b7d0d26c679ecd46fc109df9bb5838de3247ecb8981258f8dacbd1ab2aee": {
+  "d3ba269d63917ac3bb8679df4a041ac5972b46d7648f4d7ad9f4ffd86c597de0": {
     "describe": {
-      "columns": [],
-      "nullable": [],
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
       "parameters": {
         "Right": 2
       }
     },
-    "query": "\n                    UPDATE term_taxonomy\n                    SET parent_id = ?\n                    WHERE id = ?\n                "
+    "query": "\n                SELECT type.id FROM type\n                JOIN taxonomy\n                    ON taxonomy.type_id = type.id\n                WHERE type.name = ?\n                    AND instance_id = ?\n            "
   },
   "d4c1b33938809466906554f5bc60faadae4d6e5781bb9acc02f47c7385960e3a": {
     "describe": {

@@ -65,6 +65,37 @@ mod set_name_and_description_mutation {
         .should_be_bad_request()
         .await;
     }
+
+    #[actix_rt::test]
+    async fn fails_with_bad_request_when_repeated_name_in_same_instance() {
+        let mut transaction = begin_transaction().await;
+
+        Message::new(
+            "TaxonomyTermSetNameAndDescriptionMutation",
+            json!({
+                "id": 1292,
+                "userId": 1,
+                "name": "repeated_name",
+                "description": "bla"
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        Message::new(
+            "TaxonomyTermSetNameAndDescriptionMutation",
+            json!({
+                "id": 1293,
+                "userId": 1,
+                "name": "repeated_name",
+                "description": "bla"
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_bad_request()
+        .await;
+    }
 }
 
 #[cfg(test)]
@@ -254,6 +285,39 @@ mod create_mutation {
                 .await;
             }
         }
+    }
+
+    #[actix_rt::test]
+    async fn fails_with_bad_request_when_repeated_name_in_same_instance() {
+        let mut transaction = begin_transaction().await;
+
+        Message::new(
+            "TaxonomyTermCreateMutation",
+            json! ({
+            "parentId": 1394,
+            "name": "repeated_name",
+            "description": "bla",
+            "userId": 1,
+            "taxonomyType": "topic-folder"
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        Message::new(
+            "TaxonomyTermCreateMutation",
+            json! ({
+            "parentId": 1394,
+            "name": "repeated_name",
+            "description": "bla",
+            "userId": 1,
+            "taxonomyType": "topic-folder"
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_bad_request()
+        .await;
     }
 }
 

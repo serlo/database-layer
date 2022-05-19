@@ -353,7 +353,23 @@ impl TaxonomyTerm {
             term.id,
         )
         .execute(&mut transaction)
-        .await?;
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::Database(db_error) => {
+                if db_error.message().contains("uq_term_name_language") {
+                    return operation::Error::BadRequest {
+                        reason: "Two taxonomy terms cannot have same name in same instance"
+                            .to_string(),
+                    };
+                };
+                operation::Error::InternalServerError {
+                    error: Box::new(db_error),
+                }
+            }
+            _ => operation::Error::InternalServerError {
+                error: Box::new(error),
+            },
+        })?;
 
         sqlx::query!(
             r#"
@@ -524,7 +540,23 @@ impl TaxonomyTerm {
             instance_id,
         )
         .execute(&mut transaction)
-        .await?;
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::Database(db_error) => {
+                if db_error.message().contains("uq_term_name_language") {
+                    return operation::Error::BadRequest {
+                        reason: "Two taxonomy terms cannot have same name in same instance"
+                            .to_string(),
+                    };
+                };
+                operation::Error::InternalServerError {
+                    error: Box::new(db_error),
+                }
+            }
+            _ => operation::Error::InternalServerError {
+                error: Box::new(error),
+            },
+        })?;
 
         let term_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
             .fetch_one(&mut transaction)

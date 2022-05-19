@@ -288,6 +288,24 @@ mod create_mutation {
     }
 
     #[actix_rt::test]
+    async fn fails_with_bad_request_if_parent_does_not_exist() {
+        Message::new(
+            "TaxonomyTermCreateMutation",
+            json! ({
+            "parentId": 1,
+            "name": "a name",
+            "description": "a description",
+            "userId": 1,
+            "taxonomyType": "topic"
+            }),
+        )
+        .execute()
+        .await
+        .should_be_bad_request()
+        .await;
+    }
+
+    #[actix_rt::test]
     async fn fails_with_bad_request_when_repeated_name_in_same_instance() {
         let mut transaction = begin_transaction().await;
 
@@ -626,6 +644,22 @@ mod sort {
                 );
             })
             .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_with_bad_request_if_taxonomy_does_not_exist() {
+        Message::new(
+            "TaxonomySortMutation",
+            json! ({
+                "userId": 1,
+                "childrenIds": [2021, 1949, 24390, 1455],
+                "taxonomyTermId": 1
+            }),
+        )
+        .execute()
+        .await
+        .should_be_bad_request()
+        .await;
     }
 
     #[actix_rt::test]

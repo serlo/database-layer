@@ -92,6 +92,25 @@ pub trait UuidFetcher {
         Self: Sized;
 }
 
+#[async_trait]
+pub trait AssertExists: UuidFetcher {
+    async fn assert_exists<'a, E>(id: i32, executor: E) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+        Self: Sized,
+    {
+        if let Err(UuidError::NotFound) = Self::fetch_via_transaction(id, executor).await {
+            return Err(operation::Error::BadRequest {
+                reason: format!(
+                    "Id {} does not exist or does not correspond to the type",
+                    id
+                ),
+            });
+        }
+        Ok(())
+    }
+}
+
 macro_rules! fetch_one_uuid {
     ($id: expr, $executor: expr) => {
         sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, $id)

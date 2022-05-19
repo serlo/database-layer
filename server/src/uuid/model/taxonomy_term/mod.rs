@@ -8,7 +8,7 @@ use sqlx::mysql::MySqlTypeInfo;
 use sqlx::MySql;
 use sqlx::MySqlPool;
 
-use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
+use super::{AssertExists, ConcreteUuid, Uuid, UuidError, UuidFetcher};
 
 use crate::database::Executor;
 use crate::event::{
@@ -776,6 +776,8 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
+        Self::assert_exists(payload.taxonomy_term_id, &mut transaction).await?;
+
         let entities_ids: Vec<i32> =
             fetch_all_entities!(payload.taxonomy_term_id, &mut transaction)
                 .await?
@@ -875,3 +877,5 @@ impl TaxonomyTerm {
         Ok(())
     }
 }
+
+impl AssertExists for TaxonomyTerm {}

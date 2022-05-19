@@ -60,3 +60,46 @@ mod create_mutation {
         .await
     }
 }
+
+#[cfg(test)]
+mod pages_query {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn fetches_all_pages() {
+        Message::new("PagesQuery", json!({}))
+            .execute()
+            .await
+            .should_be_ok_with(|result| {
+                assert_json_include!(
+                    actual: &result["pages"][0],
+                    expected: json!({
+                        "id": 16256,
+                    })
+                )
+            })
+    }
+
+    #[actix_rt::test]
+    async fn fetches_all_pages_of_instance() {
+        Message::new("PagesQuery", json!({"instance": "en"}))
+            .execute()
+            .await
+            .should_be_ok_with(|result| {
+                assert_json_include!(
+                    actual: &result["pages"][0],
+                    expected: json!({
+                        "id": 23579,
+                    })
+                )
+            })
+    }
+
+    #[actix_rt::test]
+    async fn fetches_empty_set() {
+        Message::new("PagesQuery", json!({"instance": "hi"}))
+            .execute()
+            .await
+            .should_be_ok_with(|result| assert_has_length(&result["pages"], 0))
+    }
+}

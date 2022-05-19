@@ -17,6 +17,7 @@ pub enum PageMessage {
     PageCheckoutRevisionMutation(checkout_revision_mutation::Payload),
     PageCreateMutation(create_mutation::Payload),
     PageRejectRevisionMutation(reject_revision_mutation::Payload),
+    PagesQuery(pages_query::Payload),
 }
 
 #[async_trait]
@@ -40,6 +41,7 @@ impl MessageResponder for PageMessage {
                     .handle("PageRejectRevisionMutation", connection)
                     .await
             }
+            PageMessage::PagesQuery(payload) => payload.handle("PagesQuery", connection).await,
         }
     }
 }
@@ -209,6 +211,37 @@ pub mod reject_revision_mutation {
                     reason: "repository invalid".to_string(),
                 },
             }
+        }
+    }
+}
+
+pub mod pages_query {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub instance: Option<Instance>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub pages: Vec<i32>,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let result = match connection {
+                Connection::Pool(pool) => Page::fetch_all_pages(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Page::fetch_all_pages(self, transaction).await?
+                }
+            };
+            Ok(Output { pages: result })
         }
     }
 }

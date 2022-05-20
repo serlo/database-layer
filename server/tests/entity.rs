@@ -379,7 +379,7 @@ mod deleted_entities_query {
                 assert_has_length(&result["deletedEntities"], first as usize);
                 assert_eq!(
                     result["deletedEntities"][0],
-                    json!({ "id": 14809, "dateOfDeletion": "2014-03-10T13:26:52+01:00" })
+                    json!({ "id": 17635, "dateOfDeletion": "2014-03-13T15:16:01+01:00" })
                 );
             })
             .await;
@@ -395,14 +395,30 @@ mod deleted_entities_query {
             .should_be_ok_with(|result| {
                 assert_eq!(
                     result["deletedEntities"][0],
-                    json!({ "id": 27118, "dateOfDeletion": "2014-08-11T10:44:47+02:00" })
+                    json!({ "id": 28067, "dateOfDeletion": "2014-08-28T08:38:51+02:00" })
                 );
             })
             .await;
     }
 
     #[actix_rt::test]
-    async fn gives_back_first_deleted_entities_of_instance_after_date() {
+    async fn gives_back_first_deleted_entities_after_date_with_small_time_differences() {
+        let date = "2014-03-24T14:23:20+01:00";
+
+        Message::new("DeletedEntitiesQuery", json!({ "first": 1, "after": date }))
+            .execute()
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(
+                    result["deletedEntities"][0],
+                    json!({ "id": 19595, "dateOfDeletion": "2014-03-24T14:23:28+01:00" })
+                );
+            })
+            .await;
+    }
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_entities_of_instance() {
         Message::new(
             "DeletedEntitiesQuery",
             json!({ "first": 4, "instance": "de" }),
@@ -412,7 +428,7 @@ mod deleted_entities_query {
         .should_be_ok_with(|result| {
             assert_eq!(
                 result["deletedEntities"][0],
-                json!({ "id": 14809, "dateOfDeletion": "2014-03-10T13:26:52+01:00" })
+                json!({ "id": 17740, "dateOfDeletion": "2014-03-13T17:13:05+01:00" })
             );
         })
         .await;
@@ -427,6 +443,108 @@ mod deleted_entities_query {
         .execute()
         .await
         .should_be_bad_request()
+        .await;
+    }
+}
+
+#[cfg(test)]
+mod set_license_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn sets_license_and_creates_new_event() {
+        let mut transaction = begin_transaction().await;
+
+        let user_id: i32 = 1;
+        let entity_id: i32 = 1495;
+        let license_id: i32 = 2;
+
+        Message::new(
+            "EntitySetLicenseMutation",
+            json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with_body(json!({ "success": true, }))
+        .await;
+
+        Message::new("UuidQuery", json!({ "id": entity_id }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| assert_eq!(result["licenseId"], license_id))
+            .await;
+
+        Message::new(
+            "EventsQuery",
+            json!({ "first": 1 as usize, "objectId": entity_id as usize}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with(|result| {
+            assert_json_include!(
+                actual: &result["events"][0],
+                expected: json!({
+                    "__typename": "SetLicenseNotificationEvent",
+                    "instance": "de",
+                    "actorId": user_id,
+                    "objectId": entity_id,
+                })
+            )
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_entity_does_not_exist() {
+        Message::new(
+            "EntitySetLicenseMutation",
+            json!({"userId": 1, "entityId": 0, "licenseId": 2}),
+        )
+        .execute()
+        .await
+        .should_be_bad_request()
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn fails_with_bad_request_when_user_does_not_exist() {
+        Message::new(
+            "EntitySetLicenseMutation",
+            json!({"userId": 0, "entityId": 1495, "licenseId": 2}),
+        )
+        .execute()
+        .await
+        .should_be_bad_request()
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn does_not_set_a_new_event_log_entry_for_same_license_id() {
+        let mut transaction = begin_transaction().await;
+
+        let entity_id: i32 = 1495;
+
+        Message::new(
+            "EntitySetLicenseMutation",
+            json!({"userId": 1, "entityId": entity_id, "licenseId": 1}),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        Message::new(
+            "EventsQuery",
+            json!({ "first": 1 as usize, "objectId": entity_id as usize}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with(|result| {
+            assert_json_include!(
+                actual: &result["events"][0],
+                expected: json!({
+                    "__typename": "CreateTaxonomyLinkNotificationEvent",
+                })
+            )
+        })
         .await;
     }
 }

@@ -1,6 +1,6 @@
 use crate::uuid::Subject;
 use async_trait::async_trait;
-use chrono::Utc;
+use chrono_tz::Europe::Berlin;
 use convert_case::{Case, Casing};
 use futures::try_join;
 use serde::Serialize;
@@ -16,8 +16,8 @@ use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
 use crate::event::{
-    CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateTaxonomyLinkEventPayload,
-    EntityLinkEventPayload, RevisionEventPayload,
+    CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateSetLicenseEventPayload,
+    CreateTaxonomyLinkEventPayload, EntityLinkEventPayload, RevisionEventPayload,
 };
 
 use crate::{fetch_all_fields, format_alias};
@@ -915,10 +915,12 @@ impl Entity {
                 })
             })
             .transpose()?
-            .map(|date| DateTime::from(date.with_timezone(&Utc)));
+            .map(|date| date.with_timezone(&Berlin).to_string());
 
         Ok(sqlx::query!(
             r#"
+                SELECT *
+                FROM (
                 SELECT uuid_id, MAX(event_log.date) AS date
                 FROM event_log, uuid, instance, entity
                 WHERE uuid.id = event_log.uuid_id
@@ -933,6 +935,8 @@ impl Entity {
                 GROUP BY uuid_id
                 ORDER BY date
                 LIMIT ?
+                ) a
+                ORDER BY date DESC
             "#,
             after_db_time,
             after_db_time,
@@ -952,6 +956,63 @@ impl Entity {
                 })
         })
         .collect())
+    }
+}
+
+impl Entity {
+    pub async fn set_license<'a, E>(
+        payload: &entity_set_license_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                select * from user where id = ?
+            "#,
+            payload.user_id,
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: format!("An user with id {} does not exist.", payload.user_id),
+        })?;
+
+        let entity = sqlx::query!(
+            r#"
+                select * from entity where id = ?
+            "#,
+            payload.entity_id,
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: format!("An entity with id {} does not exist.", payload.entity_id),
+        })?;
+
+        if entity.license_id == payload.license_id {
+            return Ok(());
+        }
+
+        sqlx::query!(
+            r#"
+                update entity set license_id = ? where id = ?
+            "#,
+            payload.license_id,
+            payload.entity_id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        CreateSetLicenseEventPayload::new(payload.entity_id, payload.user_id, entity.instance_id)
+            .save(&mut transaction)
+            .await?;
+
+        transaction.commit().await?;
+        Ok(())
     }
 }
 

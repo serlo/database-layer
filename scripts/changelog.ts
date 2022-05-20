@@ -162,6 +162,19 @@ async function exec(): Promise<void> {
         date: '2022-05-11',
         added: ['Add DeletedEntitiesQuery #240'],
       },
+      {
+        tagName: 'v0.3.43',
+        name: '0.3.43',
+        date: '2022-05-17',
+        fixed: ['return older entries first in DeletedEntitiesQuery #257'],
+      },
+      {
+        tagName: 'v0.3.44',
+        name: '0.3.44',
+        date: '2022-05-18',
+        added: ['Add EntitySetLicenseMutation #249'],
+        fixed: ['TaxonomyTermCreate: query type_id with instance #258'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

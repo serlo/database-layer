@@ -1376,6 +1376,135 @@
     },
     "query": "update page_revision set author_id = ? where author_id = ?"
   },
+  "6b867595e8308dd97239e5dcba9b9bc26453fac7aaecbc238e00a16a0a32bcc5": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 508,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "username",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 5
+            },
+            "max_size": 128,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "password",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 200,
+            "type": "String"
+          }
+        },
+        {
+          "name": "logins",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 10,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "date",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1153
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        },
+        {
+          "name": "token",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 128,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "last_login",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        },
+        {
+          "name": "description",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 16
+            },
+            "max_size": 262140,
+            "type": "Blob"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                select * from user where id = ?\n            "
+  },
   "6b8b0b59e5d78d874c22c2cba9a59d3c780dcb3717de0d20347e859a93d0ed4b": {
     "describe": {
       "columns": [
@@ -1566,6 +1695,44 @@
       }
     },
     "query": "\n                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)\n                    SELECT ?, id, ?, ?, ?\n                    FROM event\n                    WHERE name = ?\n            "
+  },
+  "7df305885295f94c49bfa66bc6f30dc365efdb689464ebe3b9df15c9f2bc4f9a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "uuid_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "date",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "\n                SELECT *\n                FROM (\n                SELECT uuid_id, MAX(event_log.date) AS date\n                FROM event_log, uuid, instance, entity\n                WHERE uuid.id = event_log.uuid_id\n                    AND (? is null or event_log.date > ?)\n                    AND (? is null or instance.subdomain = ?)\n                    AND instance.id = entity.instance_id\n                    AND entity.id = event_log.uuid_id\n                    AND event_log.event_id = 10\n                    AND uuid.trashed = 1\n                    AND uuid.discriminator = 'entity'\n                    AND entity.type_id NOT IN (35, 39, 40, 41, 42, 43, 44)\n                GROUP BY uuid_id\n                ORDER BY date\n                LIMIT ?\n                ) a\n                ORDER BY date DESC\n            "
   },
   "7e34c538baab3f54b402322473b9d7f730122c6023ef4b55f73021d74410e362": {
     "describe": {
@@ -1917,44 +2084,6 @@
     },
     "query": "\n                select user.id\n                from user\n                where\n                    user.description is not null\n                    and user.description != \"NULL\"\n                    and (? is null or user.id < ?)\n                order by user.id desc\n                limit ?\n            "
   },
-  "8bdda37af8f8848c2be8f75fae93a335fd6d249c3f213005d200932136203d1a": {
-    "describe": {
-      "columns": [
-        {
-          "name": "uuid_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "date",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 0
-            },
-            "max_size": 76,
-            "type": "Timestamp"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        true
-      ],
-      "parameters": {
-        "Right": 5
-      }
-    },
-    "query": "\n                SELECT uuid_id, MAX(event_log.date) AS date\n                FROM event_log, uuid, instance, entity\n                WHERE uuid.id = event_log.uuid_id\n                    AND (? is null or event_log.date > ?)\n                    AND (? is null or instance.subdomain = ?)\n                    AND instance.id = entity.instance_id\n                    AND entity.id = event_log.uuid_id\n                    AND event_log.event_id = 10\n                    AND uuid.trashed = 1\n                    AND uuid.discriminator = 'entity'\n                    AND entity.type_id NOT IN (35, 39, 40, 41, 42, 43, 44)\n                GROUP BY uuid_id\n                ORDER BY date\n                LIMIT ?\n            "
-  },
   "8e3b780df56a34b1f850956fb746d508f89bf9124d64e4b7bbdb8bd7809a404c": {
     "describe": {
       "columns": [],
@@ -2024,6 +2153,16 @@
       }
     },
     "query": "\n                SELECT uuid_id as id\n                    FROM (\n                        SELECT id, uuid_id FROM comment c\n                        UNION ALL\n                        SELECT c.id, p.uuid_id FROM comment p LEFT JOIN comment c ON c.parent_id = p.id\n                    ) t\n                    WHERE id = ? AND uuid_id IS NOT NULL\n            "
+  },
+  "9296ed5e839ef7a8c1108c4dbb5bf77078d79c93e3fbd34808fedfec54027232": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                        UPDATE term_taxonomy\n                        SET parent_id = ?\n                        WHERE id = ?\n                    "
   },
   "93081abb88a7b64f755224129e49c32f58f91648d7e1b59bcb8d65d643c47d5b": {
     "describe": {
@@ -2271,6 +2410,16 @@
     },
     "query": "\n                SELECT t.name, u.trashed, i.subdomain, e.date, e.current_revision_id, e.license_id, f1.value as title, f2.value as fallback_title\n                    FROM entity e\n                    JOIN uuid u ON u.id = e.id\n                    JOIN instance i ON i.id = e.instance_id\n                    JOIN type t ON t.id = e.type_id\n                    LEFT JOIN entity_revision_field f1 ON f1.entity_revision_id = e.current_revision_id AND f1.field = 'title'\n                    LEFT JOIN entity_revision_field f2 on f2.entity_revision_id = (SELECT id FROM entity_revision WHERE repository_id = ? LIMIT 1) AND f2.field = 'title'\n                    WHERE e.id = ?\n            "
   },
+  "a855db2b12648ed014504f521d21e37620ad3519df0dedc6e36dc03fb1cc431c": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                update entity set license_id = ? where id = ?\n            "
+  },
   "a8c1f1e6eabd7d37743886aa444e0d44960c782491c7aa5f2b8efaafc410c9a7": {
     "describe": {
       "columns": [
@@ -2503,6 +2652,96 @@
       }
     },
     "query": "\n                SELECT entity_id\n                    FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n                    ORDER BY position ASC\n            "
+  },
+  "b8d50d5ea3e6db122c2aca9c330da136526eb6e65a41d02a03e3dfd2504c9d92": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "type_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "instance_id",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "license_id",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "date",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1153
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        },
+        {
+          "name": "current_revision_id",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                select * from entity where id = ?\n            "
   },
   "ba2dfff3f9b8b5d4257285ce62af0b05f5067d1920becbba7697875c7cd74785": {
     "describe": {
@@ -2882,15 +3121,30 @@
     },
     "query": "\n                    UPDATE term_taxonomy_entity\n                    SET position = ?\n                    WHERE term_taxonomy_id = ?\n                        AND entity_id = ?\n                "
   },
-  "d386b7d0d26c679ecd46fc109df9bb5838de3247ecb8981258f8dacbd1ab2aee": {
+  "d3ba269d63917ac3bb8679df4a041ac5972b46d7648f4d7ad9f4ffd86c597de0": {
     "describe": {
-      "columns": [],
-      "nullable": [],
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
       "parameters": {
         "Right": 2
       }
     },
-    "query": "\n                    UPDATE term_taxonomy\n                    SET parent_id = ?\n                    WHERE id = ?\n                "
+    "query": "\n                SELECT type.id FROM type\n                JOIN taxonomy\n                    ON taxonomy.type_id = type.id\n                WHERE type.name = ?\n                    AND instance_id = ?\n            "
   },
   "d4c1b33938809466906554f5bc60faadae4d6e5781bb9acc02f47c7385960e3a": {
     "describe": {

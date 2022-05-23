@@ -179,7 +179,10 @@ async function exec(): Promise<void> {
         tagName: 'v0.3.45',
         name: '0.3.45',
         date: '2022-05-23',
-        added: ['Add TaxonomySortMutation #214'],
+        added: [
+          'Add TaxonomySortMutation #214',
+          'Add friendly error message when storing taxonomy with repeated name',
+        ],
         fixed: ['paginate correctly in DeletedEntitiesQuery #257'],
       },
     ],

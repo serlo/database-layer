@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 - Add TaxonomySortMutation #214
 
+- Add friendly error message when storing taxonomy with repeated name
+
 ### Fixed
 
 - paginate correctly in DeletedEntitiesQuery #257

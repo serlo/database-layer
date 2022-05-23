@@ -9,8 +9,7 @@ mod all_threads_query {
             .await
             .should_be_ok_with_body(
                 json!({ "firstCommentIds": [35435, 35361, 35183, 35163, 35090] }),
-            )
-            .await;
+            );
     }
 
     #[actix_rt::test]
@@ -18,8 +17,7 @@ mod all_threads_query {
         Message::new("AllThreadsQuery", json!({ "first": 3, "after": 35361 }))
             .execute()
             .await
-            .should_be_ok_with_body(json!({ "firstCommentIds": [35183, 35163, 35090] }))
-            .await;
+            .should_be_ok_with_body(json!({ "firstCommentIds": [35183, 35163, 35090] }));
     }
 }
 
@@ -42,8 +40,7 @@ mod start_thread_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 }
 
@@ -65,7 +62,6 @@ mod create_comment_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 }

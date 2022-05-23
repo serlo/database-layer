@@ -9,8 +9,7 @@ mod user_activity_by_type_query {
             .await
             .should_be_ok_with_body(
                 json!({ "edits": 209, "reviews": 213, "comments": 62, "taxonomy": 836 }),
-            )
-            .await;
+            );
     }
 }
 
@@ -32,14 +31,12 @@ mod user_delete_bots_mutation {
             .await
             .should_be_ok_with_body(
                 json!({ "success": true, "emailHashes": ["cd5610c5b6be1e5a62fb621031ae3856"] }),
-            )
-            .await;
+            );
 
         Message::new("UuidQuery", json!({ "id": user_id }))
             .execute_on(&mut transaction)
             .await
-            .should_be_not_found()
-            .await;
+            .should_be_not_found();
     }
 }
 
@@ -56,14 +53,12 @@ mod user_delete_regular_users_mutation {
         Message::new("UserDeleteRegularUsersMutation", json!({ "id": user_id }))
             .execute_on(&mut transaction)
             .await
-            .should_be_ok_with_body(json!({ "success": true, }))
-            .await;
+            .should_be_ok_with_body(json!({ "success": true, }));
 
         Message::new("UuidQuery", json!({ "id": user_id }))
             .execute_on(&mut transaction)
             .await
-            .should_be_not_found()
-            .await;
+            .should_be_not_found();
 
         Message::new(
             "UserActivityByTypeQuery",
@@ -73,8 +68,7 @@ mod user_delete_regular_users_mutation {
         .await
         .should_be_ok_with_body(
             json!({ "edits": 893, "reviews": 923, "comments": 154, "taxonomy": 944 }),
-        )
-        .await;
+        );
 
         let check_ad = sqlx::query!(r#"select author_id from ad where id = 1"#)
             .fetch_one(&mut transaction)
@@ -193,8 +187,7 @@ mod user_delete_regular_users_mutation {
         Message::new("UserDeleteRegularUsersMutation", json!({ "id": -1 }))
             .execute()
             .await
-            .should_be_bad_request()
-            .await;
+            .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -202,8 +195,7 @@ mod user_delete_regular_users_mutation {
         Message::new("UserDeleteRegularUsersMutation", json!({ "id": 4 }))
             .execute()
             .await
-            .should_be_bad_request()
-            .await;
+            .should_be_bad_request();
     }
 }
 
@@ -223,8 +215,7 @@ mod user_potential_spam_users_query {
         Message::new("UserPotentialSpamUsersQuery", json!({ "first": 10 }))
             .execute_on(&mut transaction)
             .await
-            .should_be_ok_with_body(json!({ "userIds": [user_id] }))
-            .await;
+            .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
 
     #[actix_rt::test]
@@ -246,8 +237,7 @@ mod user_potential_spam_users_query {
         )
         .execute_on(&mut transaction)
         .await
-        .should_be_ok_with_body(json!({ "userIds": [user_id] }))
-        .await;
+        .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
 
     #[actix_rt::test]
@@ -255,8 +245,7 @@ mod user_potential_spam_users_query {
         Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1_000_000 }))
             .execute()
             .await
-            .should_be_bad_request()
-            .await;
+            .should_be_bad_request();
     }
 }
 
@@ -274,16 +263,14 @@ mod user_set_description_mutation {
         )
         .execute_on(&mut transaction)
         .await
-        .should_be_ok_with_body(json!({ "success": true }))
-        .await;
+        .should_be_ok_with_body(json!({ "success": true }));
 
         Message::new("UuidQuery", json!({ "id": user_id }))
             .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["description"], "new description".to_string())
-            })
-            .await;
+            });
     }
 }
 
@@ -298,8 +285,7 @@ mod user_set_email_mutation {
         let user = Message::new("UuidQuery", json!({ "id": user_id }))
             .execute_on(&mut transaction)
             .await
-            .get_json()
-            .await;
+            .get_json();
         let username = user.get("username").unwrap().as_str().unwrap();
 
         Message::new(
@@ -308,8 +294,7 @@ mod user_set_email_mutation {
         )
         .execute_on(&mut transaction)
         .await
-        .should_be_ok_with_body(json!({ "success": true, "username": username }))
-        .await;
+        .should_be_ok_with_body(json!({ "success": true, "username": username }));
 
         let email = get_email(user_id, &mut transaction).await.unwrap();
 

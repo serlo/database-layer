@@ -15,9 +15,9 @@ mod uuid_query {
             .set_json(&json!({ "type": "UuidQuery", "payload": { "id": 1 } }))
             .to_request();
 
-        MessageResult::from(HttpResponse::from(test::call_service(&app, req).await))
-            .should_be_ok_with(|result| assert_eq!(result["__typename"], "User"))
-            .await;
+        MessageResult::new(HttpResponse::from(test::call_service(&app, req).await))
+            .await
+            .should_be_ok_with(|result| assert_eq!(result["__typename"], "User"));
     }
 
     #[actix_rt::test]
@@ -37,8 +37,7 @@ mod uuid_query {
         Message::new("UuidQuery", json!({ "id": exercise_group_revision_id }))
             .execute_on(&mut transaction)
             .await
-            .should_be_ok_with(|result| assert_eq!(result["cohesive"], true))
-            .await;
+            .should_be_ok_with(|result| assert_eq!(result["cohesive"], true));
     }
 
     #[actix_rt::test]
@@ -46,8 +45,7 @@ mod uuid_query {
         Message::new("UuidQuery", json!({ "id": 1385 }))
             .execute()
             .await
-            .should_be_ok_with(|result| assert_eq!(result["taxonomyId"], 4))
-            .await;
+            .should_be_ok_with(|result| assert_eq!(result["taxonomyId"], 4));
     }
 }
 
@@ -75,8 +73,7 @@ mod set_uuid_state_mutation {
             )
             .execute()
             .await
-            .should_be_bad_request()
-            .await;
+            .should_be_bad_request();
         }
     }
 }

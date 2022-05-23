@@ -50,7 +50,6 @@ mod subjects_query {
                   "taxonomyTermId": 35608
                 }
               ]
-            }))
-            .await;
+            }));
     }
 }

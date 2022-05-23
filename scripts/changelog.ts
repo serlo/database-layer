@@ -175,6 +175,13 @@ async function exec(): Promise<void> {
         added: ['Add EntitySetLicenseMutation #249'],
         fixed: ['TaxonomyTermCreate: query type_id with instance #258'],
       },
+      {
+        tagName: 'v0.3.45',
+        name: '0.3.45',
+        date: '2022-05-23',
+        added: ['Add TaxonomySortMutation #214'],
+        fixed: ['paginate correctly in DeletedEntitiesQuery #257'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

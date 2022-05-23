@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.45](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.44..v0.3.45) - May 23, 2022
+
+### Added
+
+- Add TaxonomySortMutation #214
+
+### Fixed
+
+- paginate correctly in DeletedEntitiesQuery #257
+
 ## [0.3.44](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.43..v0.3.44) - May 18, 2022
 
 ### Added

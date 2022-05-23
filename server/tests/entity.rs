@@ -389,16 +389,18 @@ mod deleted_entities_query {
     async fn gives_back_first_deleted_entities_after_date_with_small_time_differences() {
         let date = "2014-03-24T14:23:20+01:00";
 
-        Message::new("DeletedEntitiesQuery", json!({ "first": 1, "after": date }))
-            .execute()
-            .await
-            .should_be_ok_with(|result| {
-                assert_eq!(
-                    result["deletedEntities"][0],
-                    json!({ "id": 19595, "dateOfDeletion": "2014-03-24T14:23:28+01:00" })
-                );
-            })
-            .await;
+        Message::new(
+            "DeletedEntitiesQuery",
+            json!({ "first": 1 as i32, "after": date }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with(|result| {
+            assert_eq!(
+                result["deletedEntities"][0],
+                json!({ "id": 19595 as i32, "dateOfDeletion": "2014-03-24T14:23:28+01:00" })
+            );
+        });
     }
 
     #[actix_rt::test]
@@ -447,14 +449,12 @@ mod set_license_mutation {
         )
         .execute_on(&mut transaction)
         .await
-        .should_be_ok_with_body(json!({ "success": true, }))
-        .await;
+        .should_be_ok_with_body(json!({ "success": true, }));
 
         Message::new("UuidQuery", json!({ "id": entity_id }))
             .execute_on(&mut transaction)
             .await
-            .should_be_ok_with(|result| assert_eq!(result["licenseId"], license_id))
-            .await;
+            .should_be_ok_with(|result| assert_eq!(result["licenseId"], license_id));
 
         Message::new(
             "EventsQuery",
@@ -472,8 +472,7 @@ mod set_license_mutation {
                     "objectId": entity_id,
                 })
             )
-        })
-        .await;
+        });
     }
 
     #[actix_rt::test]
@@ -484,8 +483,7 @@ mod set_license_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -496,8 +494,7 @@ mod set_license_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -526,7 +523,6 @@ mod set_license_mutation {
                     "__typename": "CreateTaxonomyLinkNotificationEvent",
                 })
             )
-        })
-        .await;
+        });
     }
 }

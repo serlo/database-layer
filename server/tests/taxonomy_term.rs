@@ -69,8 +69,8 @@ mod set_name_and_description_mutation {
         Message::new(
             "TaxonomyTermSetNameAndDescriptionMutation",
             json!({
-                "id": 1292,
-                "userId": 1,
+                "id": 1292 as i32,
+                "userId": 1 as i32,
                 "name": "repeated_name",
                 "description": "bla"
             }),
@@ -81,16 +81,15 @@ mod set_name_and_description_mutation {
         Message::new(
             "TaxonomyTermSetNameAndDescriptionMutation",
             json!({
-                "id": 1293,
-                "userId": 1,
+                "id": 1293 as i32,
+                "userId": 1 as i32,
                 "name": "repeated_name",
                 "description": "bla"
             }),
         )
         .execute_on(&mut transaction)
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 }
 
@@ -275,17 +274,16 @@ mod create_mutation {
         Message::new(
             "TaxonomyTermCreateMutation",
             json! ({
-            "parentId": 1,
+            "parentId": 1 as i32,
             "name": "a name",
             "description": "a description",
-            "userId": 1,
+            "userId": 1 as i32,
             "taxonomyType": "topic"
             }),
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -295,10 +293,10 @@ mod create_mutation {
         Message::new(
             "TaxonomyTermCreateMutation",
             json! ({
-            "parentId": 1394,
+            "parentId": 1394 as i32,
             "name": "repeated_name",
             "description": "bla",
-            "userId": 1,
+            "userId": 1 as i32,
             "taxonomyType": "topic-folder"
             }),
         )
@@ -308,17 +306,16 @@ mod create_mutation {
         Message::new(
             "TaxonomyTermCreateMutation",
             json! ({
-            "parentId": 1394,
+            "parentId": 1394 as i32,
             "name": "repeated_name",
             "description": "bla",
-            "userId": 1,
+            "userId": 1 as i32,
             "taxonomyType": "topic-folder"
             }),
         )
         .execute_on(&mut transaction)
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 }
 
@@ -557,8 +554,7 @@ mod sort {
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["childrenIds"], to_value(children_ids).unwrap());
-            })
-            .await;
+            });
 
         Message::new("EventsQuery", json!({ "first": 1, "objectId": 3 }))
             .execute_on(&mut transaction)
@@ -571,8 +567,7 @@ mod sort {
                         "__typename": "SetTaxonomyParentNotificationEvent",
                     })
                 );
-            })
-            .await;
+            });
     }
 
     #[actix_rt::test]
@@ -598,8 +593,7 @@ mod sort {
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["childrenIds"], to_value(children_ids).unwrap());
-            })
-            .await;
+            });
 
         Message::new("EventsQuery", json!({ "first": 1, "objectId": 3 }))
             .execute_on(&mut transaction)
@@ -614,8 +608,7 @@ mod sort {
                         "objectId": 3
                     })
                 );
-            })
-            .await;
+            });
     }
 
     #[actix_rt::test]
@@ -630,8 +623,7 @@ mod sort {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -646,7 +638,6 @@ mod sort {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 }

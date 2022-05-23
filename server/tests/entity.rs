@@ -370,16 +370,30 @@ mod deleted_entities_query {
 
     #[actix_rt::test]
     async fn gives_back_first_deleted_entities() {
-        let first: i32 = 3;
+        let first: usize = 3;
 
         Message::new("DeletedEntitiesQuery", json!({ "first": first }))
             .execute()
             .await
             .should_be_ok_with(|result| {
-                assert_has_length(&result["deletedEntities"], first as usize);
+                assert_has_length(&result["deletedEntities"], first);
                 assert_eq!(
-                    result["deletedEntities"][0],
-                    json!({ "id": 17635, "dateOfDeletion": "2014-03-13T15:16:01+01:00" })
+                    result["deletedEntities"],
+                    json!([
+                        {
+                          "dateOfDeletion": "2015-02-25T10:36:41+01:00",
+                          "id": 35147
+                        },
+                        {
+                          "dateOfDeletion": "2015-02-23T18:00:14+01:00",
+                          "id": 33028
+                        },
+                        {
+                          "dateOfDeletion": "2015-02-22T14:57:14+01:00",
+                          "id": 34722
+                        }
+                      ]
+                    )
                 );
             })
             .await;
@@ -387,48 +401,58 @@ mod deleted_entities_query {
 
     #[actix_rt::test]
     async fn gives_back_first_deleted_entities_after_date() {
-        let date = "2014-08-01T00:00:00+02:00";
-
-        Message::new("DeletedEntitiesQuery", json!({ "first": 4, "after": date }))
-            .execute()
-            .await
-            .should_be_ok_with(|result| {
-                assert_eq!(
-                    result["deletedEntities"][0],
-                    json!({ "id": 28067, "dateOfDeletion": "2014-08-28T08:38:51+02:00" })
-                );
-            })
-            .await;
-    }
-
-    #[actix_rt::test]
-    async fn gives_back_first_deleted_entities_after_date_with_small_time_differences() {
-        let date = "2014-03-24T14:23:20+01:00";
-
-        Message::new("DeletedEntitiesQuery", json!({ "first": 1, "after": date }))
-            .execute()
-            .await
-            .should_be_ok_with(|result| {
-                assert_eq!(
-                    result["deletedEntities"][0],
-                    json!({ "id": 19595, "dateOfDeletion": "2014-03-24T14:23:28+01:00" })
-                );
-            })
-            .await;
-    }
-
-    #[actix_rt::test]
-    async fn gives_back_first_deleted_entities_of_instance() {
         Message::new(
             "DeletedEntitiesQuery",
-            json!({ "first": 4, "instance": "de" }),
+            json!({ "first": 3, "after": "2015-02-22T14:57:14+01:00" }),
         )
         .execute()
         .await
         .should_be_ok_with(|result| {
             assert_eq!(
-                result["deletedEntities"][0],
-                json!({ "id": 17740, "dateOfDeletion": "2014-03-13T17:13:05+01:00" })
+                result["deletedEntities"],
+                json!([
+                    {
+                      "dateOfDeletion": "2015-02-22T14:56:59+01:00",
+                      "id": 34721
+                    },
+                    {
+                      "dateOfDeletion": "2015-02-22T14:56:18+01:00",
+                      "id": 34716
+                    },
+                    {
+                      "dateOfDeletion": "2015-02-19T15:32:34+01:00",
+                      "id": 34717
+                    }
+                  ]
+                )
+            );
+        })
+        .await;
+    }
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_entities_of_instance() {
+        let mut transaction = begin_transaction().await;
+
+        Message::new(
+            "UuidSetStateMutation",
+            json!({ "ids": [28952], "userId": 1, "trashed": true }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        Message::new(
+            "DeletedEntitiesQuery",
+            json!({ "first": 1, "instance": "en" }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with(|result| {
+            assert_json_include!(
+                actual: &result["deletedEntities"],
+                expected: json!([
+                    { "id": 28952 }
+                ])
             );
         })
         .await;

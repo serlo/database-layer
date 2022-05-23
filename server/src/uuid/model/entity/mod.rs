@@ -919,13 +919,11 @@ impl Entity {
 
         Ok(sqlx::query!(
             r#"
-                SELECT *
-                FROM (
                 SELECT uuid_id, MAX(event_log.date) AS date
                 FROM event_log, uuid, instance, entity
                 WHERE uuid.id = event_log.uuid_id
-                    AND (? is null or event_log.date > ?)
-                    AND (? is null or instance.subdomain = ?)
+                    AND event_log.date < ?
+                    AND (? is null OR instance.subdomain = ?)
                     AND instance.id = entity.instance_id
                     AND entity.id = event_log.uuid_id
                     AND event_log.event_id = 10
@@ -933,13 +931,10 @@ impl Entity {
                     AND uuid.discriminator = 'entity'
                     AND entity.type_id NOT IN (35, 39, 40, 41, 42, 43, 44)
                 GROUP BY uuid_id
-                ORDER BY date
-                LIMIT ?
-                ) a
                 ORDER BY date DESC
+                LIMIT ?
             "#,
-            after_db_time,
-            after_db_time,
+            after_db_time.unwrap_or(DateTime::now().to_string()),
             payload.instance,
             payload.instance,
             payload.first,

@@ -8,7 +8,7 @@ use sqlx::mysql::MySqlTypeInfo;
 use sqlx::MySql;
 use sqlx::MySqlPool;
 
-use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
+use super::{AssertExists, ConcreteUuid, Uuid, UuidError, UuidFetcher};
 
 use crate::database::Executor;
 use crate::event::{
@@ -19,7 +19,7 @@ use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
 use crate::uuid::Entity;
 use crate::uuid::EntityType;
-use crate::{format_alias, operation};
+use crate::{assert_two_vectors_have_same_elements, format_alias, operation};
 pub use messages::*;
 
 mod messages;
@@ -353,7 +353,23 @@ impl TaxonomyTerm {
             term.id,
         )
         .execute(&mut transaction)
-        .await?;
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::Database(db_error) => {
+                if db_error.message().contains("uq_term_name_language") {
+                    return operation::Error::BadRequest {
+                        reason: "Two taxonomy terms cannot have same name in same instance"
+                            .to_string(),
+                    };
+                };
+                operation::Error::InternalServerError {
+                    error: Box::new(db_error),
+                }
+            }
+            _ => operation::Error::InternalServerError {
+                error: Box::new(error),
+            },
+        })?;
 
         sqlx::query!(
             r#"
@@ -531,7 +547,23 @@ impl TaxonomyTerm {
             instance_id,
         )
         .execute(&mut transaction)
-        .await?;
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::Database(db_error) => {
+                if db_error.message().contains("uq_term_name_language") {
+                    return operation::Error::BadRequest {
+                        reason: "Two taxonomy terms cannot have same name in same instance"
+                            .to_string(),
+                    };
+                };
+                operation::Error::InternalServerError {
+                    error: Box::new(db_error),
+                }
+            }
+            _ => operation::Error::InternalServerError {
+                error: Box::new(error),
+            },
+        })?;
 
         let term_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
             .fetch_one(&mut transaction)
@@ -741,4 +773,116 @@ impl TaxonomyTerm {
 
         Ok(())
     }
+
+    pub async fn sort<'a, E>(
+        payload: &taxonomy_sort_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        Self::assert_exists(payload.taxonomy_term_id, &mut transaction).await?;
+
+        let entities_ids: Vec<i32> =
+            fetch_all_entities!(payload.taxonomy_term_id, &mut transaction)
+                .await?
+                .iter()
+                .map(|child| child.entity_id as i32)
+                .collect();
+
+        let children_taxonomy_ids: Vec<i32> =
+            fetch_all_children!(payload.taxonomy_term_id, &mut transaction)
+                .await?
+                .iter()
+                .map(|child| child.id as i32)
+                .collect();
+
+        let mut children_ids: Vec<i32> = entities_ids.clone();
+        children_ids.extend(children_taxonomy_ids.clone());
+
+        if children_ids == payload.children_ids {
+            return Ok(());
+        }
+
+        assert_two_vectors_have_same_elements(
+            children_ids.clone(),
+            payload.children_ids.clone(),
+            "children_ids have to match the current entities ids linked to the taxonomy_term_id"
+                .to_string(),
+        )?;
+
+        for (index, entity_id) in payload
+            .children_ids
+            .iter()
+            .filter(|child_id| entities_ids.contains(child_id))
+            .enumerate()
+        {
+            sqlx::query!(
+                r#"
+                    UPDATE term_taxonomy_entity
+                    SET position = ?
+                    WHERE term_taxonomy_id = ?
+                        AND entity_id = ?
+                "#,
+                index as i32,
+                payload.taxonomy_term_id,
+                entity_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        for (index, child_id) in payload
+            .children_ids
+            .iter()
+            .filter(|child_id| children_taxonomy_ids.contains(child_id))
+            .enumerate()
+        {
+            sqlx::query!(
+                r#"
+                    UPDATE term_taxonomy
+                    SET weight = ?
+                    WHERE parent_id = ?
+                        AND id = ?
+                "#,
+                index as i32,
+                payload.taxonomy_term_id,
+                child_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        let root = sqlx::query!(
+            r#"
+                SELECT tt.id, instance_id
+                    FROM term_taxonomy tt
+                    JOIN taxonomy t
+                        ON t.id = tt.taxonomy_id
+                    WHERE instance_id = (
+                        SELECT instance_id
+                        FROM term_taxonomy tt
+                        JOIN taxonomy t
+                            ON t.id = tt.taxonomy_id
+                            WHERE tt.id = ?
+                    )
+                    AND t.type_id = 17
+            "#,
+            payload.taxonomy_term_id,
+        )
+        .fetch_one(&mut transaction)
+        .await?;
+
+        SetTaxonomyTermEventPayload::new(root.id as i32, payload.user_id, root.instance_id)
+            .save(&mut transaction)
+            .await?;
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
 }
+
+impl AssertExists for TaxonomyTerm {}

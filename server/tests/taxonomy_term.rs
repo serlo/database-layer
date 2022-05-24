@@ -18,8 +18,7 @@ mod set_name_and_description_mutation {
             )
             .execute_on(&mut transaction)
             .await
-            .should_be_ok_with_body(json!({ "success": true }))
-            .await;
+            .should_be_ok_with_body(json!({ "success": true }));
 
             Message::new("UuidQuery", json!({ "id": 7 }))
                 .execute_on(&mut transaction)
@@ -27,8 +26,7 @@ mod set_name_and_description_mutation {
                 .should_be_ok_with(|result| {
                     assert_eq!(result["name"], "a name");
                     assert_eq!(result["description"].as_str(), description);
-                })
-                .await;
+                });
 
             Message::new("EventsQuery", json!({ "first": 1, "objectId": 7 }))
                 .execute_on(&mut transaction)
@@ -44,8 +42,7 @@ mod set_name_and_description_mutation {
                             "taxonomyTermId": 7,
                         })
                     );
-                })
-                .await;
+                });
         }
     }
 
@@ -62,8 +59,37 @@ mod set_name_and_description_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
+        .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn fails_with_bad_request_when_repeated_name_in_same_instance() {
+        let mut transaction = begin_transaction().await;
+
+        Message::new(
+            "TaxonomyTermSetNameAndDescriptionMutation",
+            json!({
+                "id": 1292 as i32,
+                "userId": 1 as i32,
+                "name": "repeated_name",
+                "description": "bla"
+            }),
+        )
+        .execute_on(&mut transaction)
         .await;
+
+        Message::new(
+            "TaxonomyTermSetNameAndDescriptionMutation",
+            json!({
+                "id": 1293 as i32,
+                "userId": 1 as i32,
+                "name": "repeated_name",
+                "description": "bla"
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_bad_request();
     }
 }
 
@@ -81,24 +107,21 @@ mod move_mutation {
         )
         .execute_on(&mut transaction)
         .await
-        .should_be_ok_with_body(json!({ "success": true }))
-        .await;
+        .should_be_ok_with_body(json!({ "success": true }));
 
         Message::new("UuidQuery", json!({ "id": 1394 }))
             .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["parentId"], 5);
-            })
-            .await;
+            });
 
         Message::new("UuidQuery", json!({ "id": 1454 }))
             .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["parentId"], 5);
-            })
-            .await;
+            });
 
         Message::new("EventsQuery", json!({ "first": 1, "objectId": 1394 }))
             .execute_on(&mut transaction)
@@ -116,8 +139,7 @@ mod move_mutation {
                         "parentId": 5
                     })
                 );
-            })
-            .await;
+            });
     }
 
     #[actix_rt::test]
@@ -128,8 +150,7 @@ mod move_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -140,8 +161,7 @@ mod move_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -152,8 +172,7 @@ mod move_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -164,8 +183,7 @@ mod move_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -176,8 +194,7 @@ mod move_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -188,8 +205,7 @@ mod move_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 }
 
@@ -215,8 +231,7 @@ mod create_mutation {
                 )
                 .execute_on(&mut transaction)
                 .await
-                .get_json()
-                .await["id"]
+                .get_json()["id"]
                     .clone();
 
                 Message::new("UuidQuery", json!({ "id": new_taxonomy_id }))
@@ -230,8 +245,7 @@ mod create_mutation {
                             from_value_to_taxonomy_type(result["type"].clone()),
                             *taxonomy_type
                         );
-                    })
-                    .await;
+                    });
 
                 Message::new(
                     "EventsQuery",
@@ -250,10 +264,58 @@ mod create_mutation {
                             "taxonomyTermId": new_taxonomy_id,
                         })
                     );
-                })
-                .await;
+                });
             }
         }
+    }
+
+    #[actix_rt::test]
+    async fn fails_with_bad_request_if_parent_does_not_exist() {
+        Message::new(
+            "TaxonomyTermCreateMutation",
+            json! ({
+            "parentId": 1 as i32,
+            "name": "a name",
+            "description": "a description",
+            "userId": 1 as i32,
+            "taxonomyType": "topic"
+            }),
+        )
+        .execute()
+        .await
+        .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn fails_with_bad_request_when_repeated_name_in_same_instance() {
+        let mut transaction = begin_transaction().await;
+
+        Message::new(
+            "TaxonomyTermCreateMutation",
+            json! ({
+            "parentId": 1394 as i32,
+            "name": "repeated_name",
+            "description": "bla",
+            "userId": 1 as i32,
+            "taxonomyType": "topic-folder"
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        Message::new(
+            "TaxonomyTermCreateMutation",
+            json! ({
+            "parentId": 1394 as i32,
+            "name": "repeated_name",
+            "description": "bla",
+            "userId": 1 as i32,
+            "taxonomyType": "topic-folder"
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_bad_request();
     }
 }
 
@@ -288,8 +350,7 @@ mod create_entity_link_mutation {
                         .as_array()
                         .unwrap()
                         .contains(&to_value(taxonomy_term_id).unwrap()));
-                })
-                .await;
+                });
 
             Message::new("EventsQuery", json ! ({ "first": 1, "objectId": child_id }))
                 .execute_on(&mut transaction)
@@ -306,8 +367,7 @@ mod create_entity_link_mutation {
                             "childId": child_id
                         })
                     );
-                })
-                .await;
+                });
         }
     }
 
@@ -323,8 +383,7 @@ mod create_entity_link_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -335,8 +394,7 @@ mod create_entity_link_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -351,8 +409,7 @@ mod create_entity_link_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -367,8 +424,7 @@ mod create_entity_link_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -391,8 +447,7 @@ mod create_entity_link_mutation {
         )
         .execute()
         .await
-        .should_be_ok_with_body(json!({ "success": true }))
-        .await;
+        .should_be_ok_with_body(json!({ "success": true }));
 
         assert_eq!(
             count_before,
@@ -428,8 +483,7 @@ mod delete_entity_links_mutation {
                         .as_array()
                         .unwrap()
                         .contains(&to_value(taxonomy_term_id).unwrap()));
-                })
-                .await;
+                });
 
             Message::new("EventsQuery", json ! ({ "first": 1, "objectId": child_id }))
                 .execute_on(&mut transaction)
@@ -446,8 +500,7 @@ mod delete_entity_links_mutation {
                             "childId": child_id
                         })
                     );
-                })
-                .await;
+                });
         }
     }
 
@@ -459,8 +512,7 @@ mod delete_entity_links_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -471,7 +523,121 @@ mod delete_entity_links_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
+        .should_be_bad_request();
+    }
+}
+
+#[cfg(test)]
+mod sort {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn is_ok_when_children_order_is_same_not_triggering_event() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [1557, 1553, 2107, 24398, 30560];
+        let taxonomy_term_id = 1338;
+
+        Message::new(
+            "TaxonomySortMutation",
+            json! ({
+                "userId": 1,
+                "childrenIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
         .await;
+
+        Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(result["childrenIds"], to_value(children_ids).unwrap());
+            });
+
+        Message::new("EventsQuery", json!({ "first": 1, "objectId": 3 }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_json_include!(
+                    actual: &result["events"][0],
+                    expected: json!({
+                        // that means another event
+                        "__typename": "SetTaxonomyParentNotificationEvent",
+                    })
+                );
+            });
+    }
+
+    #[actix_rt::test]
+    async fn sorts_children() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [2021, 1949, 24390, 1455];
+        let taxonomy_term_id = 24389;
+
+        Message::new(
+            "TaxonomySortMutation",
+            json! ({
+                "userId": 1,
+                "childrenIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(result["childrenIds"], to_value(children_ids).unwrap());
+            });
+
+        Message::new("EventsQuery", json!({ "first": 1, "objectId": 3 }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_json_include!(
+                    actual: &result["events"][0],
+                    expected: json!({
+                        "__typename": "SetTaxonomyTermNotificationEvent",
+                        "instance": "de",
+                        "actorId": 1,
+                        "objectId": 3
+                    })
+                );
+            });
+    }
+
+    #[actix_rt::test]
+    async fn fails_with_bad_request_if_taxonomy_does_not_exist() {
+        Message::new(
+            "TaxonomySortMutation",
+            json! ({
+                "userId": 1,
+                "childrenIds": [2021, 1949, 24390, 1455],
+                "taxonomyTermId": 1
+            }),
+        )
+        .execute()
+        .await
+        .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_the_children_ids_do_not_match_the_linked_entities_ids() {
+        Message::new(
+            "TaxonomySortMutation",
+            json! ({
+                "userId": 1,
+                "childrenIds": [1743, 2059],
+                "taxonomyTermId": 24503 as i32
+            }),
+        )
+        .execute()
+        .await
+        .should_be_bad_request();
     }
 }

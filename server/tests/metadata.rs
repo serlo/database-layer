@@ -45,8 +45,7 @@ mod entities_metadata_query {
                   "version": "https://serlo.org/32614"
                 }
               ]
-            }))
-            .await;
+            }));
     }
 
     #[actix_rt::test]
@@ -62,8 +61,7 @@ mod entities_metadata_query {
                 value["entities"][0]["name"],
                 "Quiz: https://serlo.org/20256"
             )
-        })
-        .await;
+        });
     }
 
     #[actix_rt::test]
@@ -74,8 +72,7 @@ mod entities_metadata_query {
         )
         .execute()
         .await
-        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 1947))
-        .await;
+        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 1947));
     }
 
     #[actix_rt::test]
@@ -86,8 +83,7 @@ mod entities_metadata_query {
         )
         .execute()
         .await
-        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 32996))
-        .await;
+        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 32996));
     }
 
     #[actix_rt::test]
@@ -98,8 +94,7 @@ mod entities_metadata_query {
         )
         .execute()
         .await
-        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 1647))
-        .await;
+        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 1647));
     }
 
     #[actix_rt::test]
@@ -107,7 +102,6 @@ mod entities_metadata_query {
         Message::new("EntitiesMetadataQuery", json!({ "first": 1_000_000 }))
             .execute()
             .await
-            .should_be_bad_request()
-            .await;
+            .should_be_bad_request();
     }
 }

@@ -9,8 +9,7 @@ mod unrevised_entities_query {
             .await
             .should_be_ok_with_body(
                 json!({ "unrevisedEntityIds": [26892, 33582, 34741, 34907, 35247, 35556] }),
-            )
-            .await;
+            );
     }
 }
 
@@ -40,8 +39,7 @@ mod add_revision_mutation {
             )
             .execute_on(&mut transaction)
             .await
-            .get_json()
-            .await["revisionId"]
+            .get_json()["revisionId"]
                 .clone();
 
             Message::new("UuidQuery", json!({ "id": revision_id }))
@@ -58,8 +56,7 @@ mod add_revision_mutation {
                             assert_eq!(result[key], value);
                         }
                     }
-                })
-                .await;
+                });
 
             assert_event_revision_ok(revision_id, revision.entity_id, &mut transaction).await;
         }
@@ -87,8 +84,7 @@ mod add_revision_mutation {
             )
             .execute_on(&mut transaction)
             .await
-            .get_json()
-            .await["revisionId"]
+            .get_json()["revisionId"]
                 .clone();
             let first_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
@@ -109,8 +105,7 @@ mod add_revision_mutation {
             )
             .execute_on(&mut transaction)
             .await
-            .get_json()
-            .await["revisionId"]
+            .get_json()["revisionId"]
                 .clone();
             let second_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
@@ -123,8 +118,7 @@ mod add_revision_mutation {
         Message::new("UuidQuery", json!({ "id": id }))
             .execute_on(transaction)
             .await
-            .get_json()
-            .await["revisionIds"]
+            .get_json()["revisionIds"]
             .clone()
     }
 }
@@ -158,8 +152,7 @@ mod create_mutation {
             )
             .execute_on(&mut transaction)
             .await
-            .get_json()
-            .await["id"]
+            .get_json()["id"]
                 .clone();
 
             Message::new("UuidQuery", json!({ "id": new_entity_id }))
@@ -172,8 +165,7 @@ mod create_mutation {
                     );
                     assert_eq!(result["licenseId"], 1 as i32);
                     assert_eq!(result["instance"], "de");
-                })
-                .await;
+                });
 
             Message::new(
                 "EventsQuery",
@@ -224,8 +216,7 @@ mod create_mutation {
                         "childId": new_entity_id
                     })
                 );
-            })
-            .await;
+            });
         }
     }
 
@@ -253,8 +244,7 @@ mod create_mutation {
             )
             .execute_on(&mut transaction)
             .await
-            .get_json()
-            .await["id"]
+            .get_json()["id"]
                 .clone();
 
             let parent_element_id = entity.taxonomy_term_id.or(entity.parent_id).unwrap();
@@ -274,8 +264,7 @@ mod create_mutation {
                     let children_ids_value = result[children_ids_name].clone();
                     let children_ids = children_ids_value.as_array().unwrap();
                     assert_eq!(children_ids[children_ids.len() - 1], new_entity_id);
-                })
-                .await;
+                });
         }
     }
 
@@ -304,8 +293,7 @@ mod create_mutation {
         )
         .execute()
         .await
-        .should_be_ok_with(|result| assert!(!result["currentRevisionId"].is_null()))
-        .await;
+        .should_be_ok_with(|result| assert!(!result["currentRevisionId"].is_null()));
     }
 
     #[actix_rt::test]
@@ -330,8 +318,7 @@ mod create_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -359,8 +346,7 @@ mod create_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 }
 
@@ -370,68 +356,89 @@ mod deleted_entities_query {
 
     #[actix_rt::test]
     async fn gives_back_first_deleted_entities() {
-        let first: i32 = 3;
+        let first: usize = 3;
 
         Message::new("DeletedEntitiesQuery", json!({ "first": first }))
             .execute()
             .await
             .should_be_ok_with(|result| {
-                assert_has_length(&result["deletedEntities"], first as usize);
+                assert_has_length(&result["deletedEntities"], first);
                 assert_eq!(
-                    result["deletedEntities"][0],
-                    json!({ "id": 17635, "dateOfDeletion": "2014-03-13T15:16:01+01:00" })
+                    result["deletedEntities"],
+                    json!([
+                        {
+                          "dateOfDeletion": "2015-02-25T10:36:41+01:00",
+                          "id": 35147
+                        },
+                        {
+                          "dateOfDeletion": "2015-02-23T18:00:14+01:00",
+                          "id": 33028
+                        },
+                        {
+                          "dateOfDeletion": "2015-02-22T14:57:14+01:00",
+                          "id": 34722
+                        }
+                      ]
+                    )
                 );
-            })
-            .await;
+            });
     }
 
     #[actix_rt::test]
     async fn gives_back_first_deleted_entities_after_date() {
-        let date = "2014-08-01T00:00:00+02:00";
-
-        Message::new("DeletedEntitiesQuery", json!({ "first": 4, "after": date }))
-            .execute()
-            .await
-            .should_be_ok_with(|result| {
-                assert_eq!(
-                    result["deletedEntities"][0],
-                    json!({ "id": 28067, "dateOfDeletion": "2014-08-28T08:38:51+02:00" })
-                );
-            })
-            .await;
-    }
-
-    #[actix_rt::test]
-    async fn gives_back_first_deleted_entities_after_date_with_small_time_differences() {
-        let date = "2014-03-24T14:23:20+01:00";
-
-        Message::new("DeletedEntitiesQuery", json!({ "first": 1, "after": date }))
-            .execute()
-            .await
-            .should_be_ok_with(|result| {
-                assert_eq!(
-                    result["deletedEntities"][0],
-                    json!({ "id": 19595, "dateOfDeletion": "2014-03-24T14:23:28+01:00" })
-                );
-            })
-            .await;
-    }
-
-    #[actix_rt::test]
-    async fn gives_back_first_deleted_entities_of_instance() {
         Message::new(
             "DeletedEntitiesQuery",
-            json!({ "first": 4, "instance": "de" }),
+            json!({ "first": 3, "after": "2015-02-22T14:57:14+01:00" }),
         )
         .execute()
         .await
         .should_be_ok_with(|result| {
             assert_eq!(
-                result["deletedEntities"][0],
-                json!({ "id": 17740, "dateOfDeletion": "2014-03-13T17:13:05+01:00" })
+                result["deletedEntities"],
+                json!([
+                    {
+                      "dateOfDeletion": "2015-02-22T14:56:59+01:00",
+                      "id": 34721
+                    },
+                    {
+                      "dateOfDeletion": "2015-02-22T14:56:18+01:00",
+                      "id": 34716
+                    },
+                    {
+                      "dateOfDeletion": "2015-02-19T15:32:34+01:00",
+                      "id": 34717
+                    }
+                  ]
+                )
             );
-        })
+        });
+    }
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_entities_of_instance() {
+        let mut transaction = begin_transaction().await;
+
+        Message::new(
+            "UuidSetStateMutation",
+            json!({ "ids": [28952], "userId": 1, "trashed": true }),
+        )
+        .execute_on(&mut transaction)
         .await;
+
+        Message::new(
+            "DeletedEntitiesQuery",
+            json!({ "first": 1, "instance": "en" }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with(|result| {
+            assert_json_include!(
+                actual: &result["deletedEntities"],
+                expected: json!([
+                    { "id": 28952 }
+                ])
+            );
+        });
     }
 
     #[actix_rt::test]
@@ -442,8 +449,7 @@ mod deleted_entities_query {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 }
 
@@ -465,14 +471,12 @@ mod set_license_mutation {
         )
         .execute_on(&mut transaction)
         .await
-        .should_be_ok_with_body(json!({ "success": true, }))
-        .await;
+        .should_be_ok_with_body(json!({ "success": true, }));
 
         Message::new("UuidQuery", json!({ "id": entity_id }))
             .execute_on(&mut transaction)
             .await
-            .should_be_ok_with(|result| assert_eq!(result["licenseId"], license_id))
-            .await;
+            .should_be_ok_with(|result| assert_eq!(result["licenseId"], license_id));
 
         Message::new(
             "EventsQuery",
@@ -490,8 +494,7 @@ mod set_license_mutation {
                     "objectId": entity_id,
                 })
             )
-        })
-        .await;
+        });
     }
 
     #[actix_rt::test]
@@ -502,8 +505,7 @@ mod set_license_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -514,8 +516,7 @@ mod set_license_mutation {
         )
         .execute()
         .await
-        .should_be_bad_request()
-        .await;
+        .should_be_bad_request();
     }
 
     #[actix_rt::test]
@@ -544,7 +545,6 @@ mod set_license_mutation {
                     "__typename": "CreateTaxonomyLinkNotificationEvent",
                 })
             )
-        })
-        .await;
+        });
     }
 }

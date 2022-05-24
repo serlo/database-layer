@@ -554,7 +554,6 @@ mod navigation_query {
                 "#,
                 )
                 .unwrap(),
-            )
-            .await;
+            );
     }
 }

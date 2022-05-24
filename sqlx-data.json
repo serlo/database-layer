@@ -138,6 +138,44 @@
     },
     "query": "\n                SELECT name, value FROM\n                    (\n                    # Level 1\n                    SELECT k.name, p.value, p.page_id\n                        FROM navigation_parameter p\n                        JOIN navigation_parameter_key k ON k.id = p.key_id\n                        WHERE p.parent_id IS NULL AND value != ''\n                    UNION ALL\n                    # Level 2\n                    SELECT CONCAT(k1.name, '.', k2.name) as name, p2.value, p2.page_id\n                        FROM navigation_parameter p1\n                        JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                        JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                        JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                        WHERE p1.parent_id IS NULL AND p2.value != ''\n                    UNION ALL\n                    # Level 3\n                    SELECT CONCAT(k1.name, '.', k2.name, '.', k3.name) as name, p3.value, p3.page_id\n                        FROM navigation_parameter p1\n                        JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                        JOIN navigation_parameter p3 ON p3.parent_id = p2.id\n                        JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                        JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                        JOIN navigation_parameter_key k3 ON k3.id = p3.key_id\n                        WHERE p1.parent_id IS NULL AND p3.value != ''\n                    ) u\n                    WHERE page_id = ?\n            "
   },
+  "0808f2c95236d428e205e0d3e53ca5c31022993e560b6b840811881bc32202bc": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "instance_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT tt.id, instance_id\n                    FROM term_taxonomy tt\n                    JOIN taxonomy t\n                        ON t.id = tt.taxonomy_id\n                    WHERE instance_id = (\n                        SELECT instance_id\n                        FROM term_taxonomy tt\n                        JOIN taxonomy t\n                            ON t.id = tt.taxonomy_id\n                            WHERE tt.id = ?\n                    )\n                    AND t.type_id = 17\n            "
+  },
   "09965570050adbd7f9f7b6e158a1b5e95d13eab605d25b207bc9898dd9a6fe47": {
     "describe": {
       "columns": [
@@ -1658,44 +1696,6 @@
     },
     "query": "\n                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)\n                    SELECT ?, id, ?, ?, ?\n                    FROM event\n                    WHERE name = ?\n            "
   },
-  "7df305885295f94c49bfa66bc6f30dc365efdb689464ebe3b9df15c9f2bc4f9a": {
-    "describe": {
-      "columns": [
-        {
-          "name": "uuid_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "date",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 128
-            },
-            "max_size": 19,
-            "type": "Timestamp"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        true
-      ],
-      "parameters": {
-        "Right": 5
-      }
-    },
-    "query": "\n                SELECT *\n                FROM (\n                SELECT uuid_id, MAX(event_log.date) AS date\n                FROM event_log, uuid, instance, entity\n                WHERE uuid.id = event_log.uuid_id\n                    AND (? is null or event_log.date > ?)\n                    AND (? is null or instance.subdomain = ?)\n                    AND instance.id = entity.instance_id\n                    AND entity.id = event_log.uuid_id\n                    AND event_log.event_id = 10\n                    AND uuid.trashed = 1\n                    AND uuid.discriminator = 'entity'\n                    AND entity.type_id NOT IN (35, 39, 40, 41, 42, 43, 44)\n                GROUP BY uuid_id\n                ORDER BY date\n                LIMIT ?\n                ) a\n                ORDER BY date DESC\n            "
-  },
   "7e34c538baab3f54b402322473b9d7f730122c6023ef4b55f73021d74410e362": {
     "describe": {
       "columns": [],
@@ -3098,6 +3098,16 @@
     },
     "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            "
   },
+  "d35a02914b03d95c1205f1701e07b31ad0243d01a4bef67dac7d8b620176884b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "\n                    UPDATE term_taxonomy_entity\n                    SET position = ?\n                    WHERE term_taxonomy_id = ?\n                        AND entity_id = ?\n                "
+  },
   "d3ba269d63917ac3bb8679df4a041ac5972b46d7648f4d7ad9f4ffd86c597de0": {
     "describe": {
       "columns": [
@@ -3336,6 +3346,54 @@
       }
     },
     "query": "SELECT uuid_id, user_id, notify_mailman FROM subscription WHERE uuid_id = ?"
+  },
+  "e5384760ba98e78643eb4b8c7318835490413607bf787711997eba1237eee1de": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "\n                    UPDATE term_taxonomy\n                    SET weight = ?\n                    WHERE parent_id = ?\n                        AND id = ?\n                "
+  },
+  "e5b7b6286e74b9e1fb5356ac38f6d3bec98cbf432d7e9bf7e5e0bc877943121b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "uuid_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "date",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 76,
+            "type": "Timestamp"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 4
+      }
+    },
+    "query": "\n                SELECT uuid_id, MAX(event_log.date) AS date\n                FROM event_log, uuid, instance, entity\n                WHERE uuid.id = event_log.uuid_id\n                    AND event_log.date < ?\n                    AND (? is null OR instance.subdomain = ?)\n                    AND instance.id = entity.instance_id\n                    AND entity.id = event_log.uuid_id\n                    AND event_log.event_id = 10\n                    AND uuid.trashed = 1\n                    AND uuid.discriminator = 'entity'\n                    AND entity.type_id NOT IN (35, 39, 40, 41, 42, 43, 44)\n                GROUP BY uuid_id\n                ORDER BY date DESC\n                LIMIT ?\n            "
   },
   "e70be0cb523c16b136810a91281475f3a6ec5a191dd10a495e8c5831fc41d8ca": {
     "describe": {

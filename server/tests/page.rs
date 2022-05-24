@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 #[cfg(test)]
 mod add_revision_mutation {
     use test_utils::*;
@@ -62,7 +64,6 @@ mod create_mutation {
 mod pages_query {
     use test_utils::*;
 
-    /*
     #[actix_rt::test]
     async fn fetches_all_pages() {
 
@@ -220,10 +221,7 @@ mod pages_query {
                     32966
                 ]
             }))
-            .await
     }
-
-     */
 
     #[actix_rt::test]
     async fn fetches_all_pages_of_instance() {
@@ -245,7 +243,6 @@ mod pages_query {
                     32966
                 ]
             }))
-            .await
     }
 
     #[actix_rt::test]
@@ -254,6 +251,5 @@ mod pages_query {
             .execute()
             .await
             .should_be_ok_with(|result| assert_has_length(&result["pages"], 0))
-            .await
     }
 }

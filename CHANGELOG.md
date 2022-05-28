@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.46](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.45..v0.3.46) - May 28, 2022
+
+### Added
+
+- Add PagesQuery #241
+
 ## [0.3.45](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.44..v0.3.45) - May 23, 2022
 
 ### Added

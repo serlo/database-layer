@@ -185,6 +185,12 @@ async function exec(): Promise<void> {
         ],
         fixed: ['paginate correctly in DeletedEntitiesQuery #257'],
       },
+      {
+        tagName: 'v0.3.46',
+        name: '0.3.46',
+        date: '2022-05-28',
+        added: ['Add PagesQuery #241'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

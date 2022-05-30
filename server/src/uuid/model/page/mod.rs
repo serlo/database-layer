@@ -16,6 +16,8 @@ use crate::operation;
 use crate::uuid::PageRevision;
 pub use messages::*;
 
+use crate::uuid::model::page::pages_query;
+
 mod messages;
 
 #[derive(Debug, Serialize)]
@@ -474,6 +476,32 @@ impl Page {
         } else {
             Err(PageRejectRevisionError::InvalidRevision { uuid: revision })
         }
+    }
+}
+
+impl Page {
+    pub async fn fetch_all_pages<'a, E>(
+        payload: &pages_query::Payload,
+        executor: E,
+    ) -> Result<Vec<i32>, sqlx::Error>
+    where
+        E: Executor<'a>,
+    {
+        Ok(sqlx::query!(
+            r#"
+                SELECT page_repository.id
+                FROM page_repository, instance
+                WHERE page_repository.instance_id = instance.id
+                AND (? is null or instance.subdomain = ?)
+            "#,
+            payload.instance,
+            payload.instance,
+        )
+        .fetch_all(executor)
+        .await?
+        .into_iter()
+        .map(|result| result.id as i32)
+        .collect())
     }
 }
 

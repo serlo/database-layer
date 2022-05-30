@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod unrevised_entities_query {
     use test_utils::*;
 
@@ -13,7 +12,6 @@ mod unrevised_entities_query {
     }
 }
 
-#[cfg(test)]
 mod add_revision_mutation {
     use test_utils::*;
 
@@ -123,7 +121,6 @@ mod add_revision_mutation {
     }
 }
 
-#[cfg(test)]
 mod create_mutation {
     use server::uuid::EntityType;
     use test_utils::*;
@@ -350,7 +347,6 @@ mod create_mutation {
     }
 }
 
-#[cfg(test)]
 mod deleted_entities_query {
     use test_utils::*;
 
@@ -453,7 +449,6 @@ mod deleted_entities_query {
     }
 }
 
-#[cfg(test)]
 mod set_license_mutation {
     use test_utils::*;
 

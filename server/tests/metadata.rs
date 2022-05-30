@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod entities_metadata_query {
     use test_utils::*;
 

@@ -1,6 +1,5 @@
 #![recursion_limit = "256"]
 
-#[cfg(test)]
 mod add_revision_mutation {
     use test_utils::*;
 
@@ -60,7 +59,6 @@ mod create_mutation {
     }
 }
 
-#[cfg(test)]
 mod pages_query {
     use test_utils::*;
 

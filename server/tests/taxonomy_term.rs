@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod set_name_and_description_mutation {
     use test_utils::*;
 
@@ -93,7 +92,6 @@ mod set_name_and_description_mutation {
     }
 }
 
-#[cfg(test)]
 mod move_mutation {
     use test_utils::*;
 
@@ -209,7 +207,6 @@ mod move_mutation {
     }
 }
 
-#[cfg(test)]
 mod create_mutation {
     use test_utils::*;
 
@@ -319,7 +316,6 @@ mod create_mutation {
     }
 }
 
-#[cfg(test)]
 mod create_entity_link_mutation {
     use test_utils::*;
 
@@ -456,7 +452,6 @@ mod create_entity_link_mutation {
     }
 }
 
-#[cfg(test)]
 mod delete_entity_links_mutation {
     use test_utils::*;
 
@@ -527,8 +522,7 @@ mod delete_entity_links_mutation {
     }
 }
 
-#[cfg(test)]
-mod sort {
+mod sort_mutation {
     use test_utils::*;
 
     #[actix_rt::test]

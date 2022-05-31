@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod uuid_query {
     use actix_web::{test, App, HttpResponse};
     use test_utils::*;
@@ -49,7 +48,6 @@ mod uuid_query {
     }
 }
 
-#[cfg(test)]
 mod set_uuid_state_mutation {
     use test_utils::*;
 

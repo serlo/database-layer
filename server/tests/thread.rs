@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod all_threads_query {
     use test_utils::*;
 
@@ -21,7 +20,6 @@ mod all_threads_query {
     }
 }
 
-#[cfg(test)]
 mod start_thread_mutation {
     use test_utils::*;
 
@@ -44,7 +42,6 @@ mod start_thread_mutation {
     }
 }
 
-#[cfg(test)]
 mod create_comment_mutation {
     use test_utils::*;
 

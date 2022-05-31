@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod subjects_query {
     use test_utils::*;
 

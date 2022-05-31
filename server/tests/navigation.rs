@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod navigation_query {
     use test_utils::*;
 

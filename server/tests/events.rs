@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod events_query {
     use test_utils::*;
 

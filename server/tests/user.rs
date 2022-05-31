@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod user_activity_by_type_query {
     use test_utils::*;
 
@@ -13,7 +12,6 @@ mod user_activity_by_type_query {
     }
 }
 
-#[cfg(test)]
 mod user_delete_bots_mutation {
     use test_utils::*;
 
@@ -40,7 +38,6 @@ mod user_delete_bots_mutation {
     }
 }
 
-#[cfg(test)]
 mod user_delete_regular_users_mutation {
     use test_utils::*;
 
@@ -199,7 +196,6 @@ mod user_delete_regular_users_mutation {
     }
 }
 
-#[cfg(test)]
 mod user_potential_spam_users_query {
     use server::datetime::DateTime;
     use test_utils::*;

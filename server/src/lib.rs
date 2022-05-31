@@ -107,25 +107,8 @@ impl From<sqlx::Error> for ApplicationError {
     }
 }
 
-pub fn assert_two_vectors_have_same_elements<T: std::cmp::Ord>(
-    mut vec_a: Vec<T>,
-    mut vec_b: Vec<T>,
-    error_message: String,
-) -> Result<(), operation::Error> {
-    vec_a.sort();
-    vec_b.sort();
-
-    if vec_a != vec_b {
-        return Err(operation::Error::BadRequest {
-            reason: error_message,
-        });
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod test {
-    use super::assert_two_vectors_have_same_elements;
     use super::slugify;
 
     #[test]
@@ -134,27 +117,5 @@ mod test {
             slugify("Flächen- und Volumenberechnung mit Integralen"),
             "flächen-und-volumenberechnung-mit-integralen"
         )
-    }
-
-    #[test]
-    fn test_assert_two_vectors_have_same_elements() {
-        assert!(assert_two_vectors_have_same_elements(
-            vec![1, 2, 3],
-            vec![3, 2, 1],
-            "".to_string()
-        )
-        .is_ok());
-        assert!(assert_two_vectors_have_same_elements(
-            vec!['a', 'b', 'c'],
-            vec!['b', 'a', 'c'],
-            "".to_string()
-        )
-        .is_ok());
-        assert!(assert_two_vectors_have_same_elements(
-            vec![1, 2, 3],
-            vec![3, 2, 6],
-            "".to_string()
-        )
-        .is_err());
     }
 }

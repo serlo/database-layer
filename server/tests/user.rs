@@ -201,6 +201,7 @@ mod user_delete_regular_users_mutation {
 
 #[cfg(test)]
 mod user_potential_spam_users_query {
+    use server::datetime::DateTime;
     use test_utils::*;
 
     #[actix_rt::test]
@@ -212,10 +213,10 @@ mod user_potential_spam_users_query {
             .await
             .unwrap();
 
-        Message::new("UserPotentialSpamUsersQuery", json!({ "first": 10 }))
+        Message::new("UserPotentialSpamUsersQuery", json!({ "first": 2 }))
             .execute_on(&mut transaction)
             .await
-            .should_be_ok_with_body(json!({ "userIds": [user_id] }));
+            .should_be_ok_with_body(json!({ "userIds": [user_id, 99] }));
     }
 
     #[actix_rt::test]
@@ -233,11 +234,73 @@ mod user_potential_spam_users_query {
 
         Message::new(
             "UserPotentialSpamUsersQuery",
-            json!({ "first": 10, "after": user_id2 }),
+            json!({ "first": 3, "after": user_id2 }),
         )
         .execute_on(&mut transaction)
         .await
-        .should_be_ok_with_body(json!({ "userIds": [user_id] }));
+        .should_be_ok_with_body(json!({ "userIds": [user_id, 99, 98] }));
+    }
+
+    #[actix_rt::test]
+    async fn does_not_return_user_with_higher_role() {
+        let mut transaction = begin_transaction().await;
+
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+        let user_id2 = create_new_test_user(&mut transaction).await.unwrap();
+        set_description(user_id, "Test", &mut transaction)
+            .await
+            .unwrap();
+        set_description(user_id2, "Test", &mut transaction)
+            .await
+            .unwrap();
+        sqlx::query!(
+            r#"
+                INSERT INTO role_user (user_id, role_id)
+                VALUES (?, 3)
+            "#,
+            user_id2
+        )
+        .execute(&mut transaction)
+        .await;
+
+        Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1 }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with_body(json!({ "userIds": [user_id] }));
+    }
+
+    #[actix_rt::test]
+    async fn does_not_return_user_with_6_edits() {
+        let mut transaction = begin_transaction().await;
+
+        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+        let user_id2 = create_new_test_user(&mut transaction).await.unwrap();
+        set_description(user_id, "Test", &mut transaction)
+            .await
+            .unwrap();
+        set_description(user_id2, "Test", &mut transaction)
+            .await
+            .unwrap();
+
+        for a in 0..5_i32 {
+            sqlx::query!(
+                r#"
+                INSERT INTO event_log (id, actor_id, event_id, uuid_id, instance_id, date)
+                VALUES (? + 500000, ?, 5, 1503 + ?, 1, ?)
+            "#,
+                a,
+                user_id2,
+                a,
+                DateTime::now().to_string()
+            )
+            .execute(&mut transaction)
+            .await;
+        }
+
+        Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1 }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
 
     #[actix_rt::test]

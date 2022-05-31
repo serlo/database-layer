@@ -244,8 +244,7 @@ impl User {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        println!("{:?}", payload.after);
-        let response = sqlx::query!(
+        let result = sqlx::query!(
             r#"
                 SELECT id
                 FROM (
@@ -270,9 +269,9 @@ impl User {
         .into_iter();
 
         let mut ids: Vec<i32> = Vec::new();
-        for item in response {
+        for item in result {
             let activity = User::fetch_activity_by_type(item.id as i32, &mut transaction).await?;
-            if activity.edits < 5 {
+            if activity.edits <= 5 {
                 ids.push(item.id as i32);
             }
         }

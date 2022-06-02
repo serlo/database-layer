@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use async_trait::async_trait;
 use convert_case::{Case, Casing};
 use futures::join;
@@ -19,7 +21,7 @@ use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
 use crate::uuid::Entity;
 use crate::uuid::EntityType;
-use crate::{assert_two_vectors_have_same_elements, format_alias, operation};
+use crate::{format_alias, operation};
 pub use messages::*;
 
 mod messages;
@@ -806,12 +808,13 @@ impl TaxonomyTerm {
             return Ok(());
         }
 
-        assert_two_vectors_have_same_elements(
-            children_ids.clone(),
-            payload.children_ids.clone(),
-            "children_ids have to match the current entities ids linked to the taxonomy_term_id"
-                .to_string(),
-        )?;
+        if HashSet::<i32>::from_iter(children_ids.clone())
+            != HashSet::from_iter(payload.children_ids.clone())
+        {
+            return Err(operation::Error::BadRequest {
+                reason: "children_ids have to match the current entities ids linked to the taxonomy_term_id".to_string()
+            });
+        }
 
         for (index, entity_id) in payload
             .children_ids

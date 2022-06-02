@@ -197,7 +197,6 @@ mod user_delete_regular_users_mutation {
 }
 
 mod user_potential_spam_users_query {
-    use server::datetime::DateTime;
     use test_utils::*;
 
     #[actix_rt::test]
@@ -212,7 +211,7 @@ mod user_potential_spam_users_query {
         Message::new("UserPotentialSpamUsersQuery", json!({ "first": 2 }))
             .execute_on(&mut transaction)
             .await
-            .should_be_ok_with_body(json!({ "userIds": [user_id, 99] }));
+            .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
 
     #[actix_rt::test]
@@ -234,7 +233,7 @@ mod user_potential_spam_users_query {
         )
         .execute_on(&mut transaction)
         .await
-        .should_be_ok_with_body(json!({ "userIds": [user_id, 99, 98] }));
+        .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
 
     #[actix_rt::test]
@@ -256,8 +255,9 @@ mod user_potential_spam_users_query {
             "#,
             user_id2
         )
-        .execute(&mut transaction)
-        .await;
+            .execute(&mut transaction)
+            .await
+            .unwrap();
 
         Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1 }))
             .execute_on(&mut transaction)
@@ -278,22 +278,19 @@ mod user_potential_spam_users_query {
             .await
             .unwrap();
 
-        for a in 0..5_i32 {
-            sqlx::query!(
-                r#"
-                INSERT INTO event_log (id, actor_id, event_id, uuid_id, instance_id, date)
-                VALUES (? + 500000, ?, 5, 1503 + ?, 1, ?)
-            "#,
-                a,
-                user_id2,
-                a,
-                DateTime::now().to_string()
-            )
-            .execute(&mut transaction)
-            .await;
+        for a in 0..6_i32 {
+            Message::new("PageAddRevisionMutation", json!({
+                "title": format!("title{a}"),
+                "content": format!("content{a}"),
+                "userId": user_id2,
+                "pageId": 16569
+            }))
+                .execute_on(&mut transaction)
+                .await
+                .should_be_ok();
         }
 
-        Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1 }))
+        Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1}))
             .execute_on(&mut transaction)
             .await
             .should_be_ok_with_body(json!({ "userIds": [user_id] }));

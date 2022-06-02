@@ -251,7 +251,7 @@ impl User {
                     SELECT user.id AS id, MAX(role_user.role_id) AS role_id
                     FROM user
                     LEFT JOIN role_user ON user.id = role_user.user_id
-                    where user.description IS NOT NULL
+                    WHERE user.description IS NOT NULL
                         AND user.description != "NULL"
                         AND (? IS NULL OR user.id < ?)
                     GROUP BY user.id

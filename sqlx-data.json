@@ -2231,31 +2231,6 @@
     },
     "query": "select email from user where id = ?"
   },
-  "a1019f0eca313fbaee5dd4d7a2b73b0acc2c951d6dfe60400e70dfdae38bb189": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 3
-      }
-    },
-    "query": "\n                SELECT id\n                FROM (\n                    SELECT user.id AS id, MAX(role_user.role_id) AS role_id\n                    FROM user\n                    LEFT JOIN role_user ON user.id = role_user.user_id\n                    where user.description IS NOT NULL\n                        AND user.description != \"NULL\"\n                        AND (? IS NULL OR user.id < ?)\n                    GROUP BY user.id\n                ) A\n                WHERE (role_id IS NULL OR role_id <= 2)\n                ORDER BY id DESC\n                LIMIT ?\n            "
-  },
   "a400f2b325f4baa03878fd49187085fb2b95d0ca886494a2fca05f1ec65b7ed1": {
     "describe": {
       "columns": [
@@ -3295,6 +3270,31 @@
       }
     },
     "query": "\n                INSERT INTO subscription (uuid_id, user_id, notify_mailman, date)\n                    VALUES (?, ?, ?, ?)\n                    ON DUPLICATE KEY UPDATE notify_mailman = ?\n            "
+  },
+  "e33f6ab13ae6fbeb5a2f9bf1a0660d0bcc206aa56aedeef0219686e4626907c2": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "\n                SELECT id\n                FROM (\n                    SELECT user.id AS id, MAX(role_user.role_id) AS role_id\n                    FROM user\n                    LEFT JOIN role_user ON user.id = role_user.user_id\n                    WHERE user.description IS NOT NULL\n                        AND user.description != \"NULL\"\n                        AND (? IS NULL OR user.id < ?)\n                    GROUP BY user.id\n                ) A\n                WHERE (role_id IS NULL OR role_id <= 2)\n                ORDER BY id DESC\n                LIMIT ?\n            "
   },
   "e48ab97ec5329aa75500b78dd7d88f030b6aeb92b4ec5fa207dc15217e8b89f9": {
     "describe": {

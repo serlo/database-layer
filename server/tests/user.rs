@@ -295,7 +295,7 @@ mod user_potential_spam_users_query {
 
         Message::new(
             "UserPotentialSpamUsersQuery",
-            json!({ "first": 1, "after": user_id}),
+            json!({ "first": 1, "after": user_id2}),
         )
         .execute_on(&mut transaction)
         .await

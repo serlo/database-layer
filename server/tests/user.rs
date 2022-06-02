@@ -255,9 +255,9 @@ mod user_potential_spam_users_query {
             "#,
             user_id2
         )
-            .execute(&mut transaction)
-            .await
-            .unwrap();
+        .execute(&mut transaction)
+        .await
+        .unwrap();
 
         Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1 }))
             .execute_on(&mut transaction)
@@ -279,15 +279,18 @@ mod user_potential_spam_users_query {
             .unwrap();
 
         for a in 0..6_i32 {
-            Message::new("PageAddRevisionMutation", json!({
-                "title": format!("title{a}"),
-                "content": format!("content{a}"),
-                "userId": user_id2,
-                "pageId": 16569
-            }))
-                .execute_on(&mut transaction)
-                .await
-                .should_be_ok();
+            Message::new(
+                "PageAddRevisionMutation",
+                json!({
+                    "title": format!("title{a}"),
+                    "content": format!("content{a}"),
+                    "userId": user_id2,
+                    "pageId": 16569
+                }),
+            )
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok();
         }
 
         Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1}))

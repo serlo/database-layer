@@ -293,10 +293,13 @@ mod user_potential_spam_users_query {
             .should_be_ok();
         }
 
-        Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1, "after": user_id}))
-            .execute_on(&mut transaction)
-            .await
-            .should_be_ok_with_body(json!({ "userIds": [user_id] }));
+        Message::new(
+            "UserPotentialSpamUsersQuery",
+            json!({ "first": 1, "after": user_id}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
 
     #[actix_rt::test]

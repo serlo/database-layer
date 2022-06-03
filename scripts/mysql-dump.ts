@@ -20,9 +20,6 @@ const maxInsertCmdLength = 1024 * 1024
 const repositoryBaseDir = path.dirname(__dirname)
 const sqlInitFile = path.join(
   repositoryBaseDir,
-  'packages',
-  'public',
-  'server',
   'docker-entrypoint-initdb.d',
   '001-init.sql'
 )

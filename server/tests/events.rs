@@ -10,7 +10,7 @@ mod events_query {
                 assert_has_length(&result["events"], 100);
                 assert_eq!(result["hasNextPage"], true);
                 assert_eq!(
-                    result["events"][0],
+                    result["events"][1],
                     json!({
                         "__typename": "SetTaxonomyTermNotificationEvent",
                         "id": 86591,
@@ -101,7 +101,7 @@ mod events_query {
             .should_be_ok_with(|result| {
                 assert_eq!(result["hasNextPage"], true);
                 assert_eq!(
-                    result["events"][0],
+                    result["events"][1],
                     json!({
                         "__typename": "SetTaxonomyTermNotificationEvent",
                         "id": 86591,

@@ -144,6 +144,38 @@ mod add_revision_mutation {
         assert_eq!(exercise_group_revision["id"], new_revision["revisionId"]);
     }
 
+    #[actix_rt::test]
+    async fn does_not_add_revision_if_course_page_has_icon() {
+        let revision = Message::new("UuidQuery", json!({ "id": 31315 }))
+            .execute()
+            .await
+            .get_json();
+
+        let new_revision = Message::new(
+            "EntityAddRevisionMutation",
+            json!({
+                "revisionType": "CoursePageRevision",
+                "input": {
+                    "changes": "second edit",
+                    "entityId": revision["repositoryId"],
+                    "needsReview": true,
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "fields": {
+                        "title": revision["title"],
+                        "content": revision["content"]
+                    }
+                },
+                "userId": 1
+            }),
+        )
+        .execute()
+        .await
+        .get_json();
+
+        assert_eq!(revision["id"], new_revision["revisionId"]);
+    }
+
     async fn get_revisions(id: i32, transaction: &mut sqlx::Transaction<'_, sqlx::MySql>) -> Value {
         Message::new("UuidQuery", json!({ "id": id }))
             .execute_on(transaction)

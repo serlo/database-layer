@@ -112,6 +112,38 @@ mod add_revision_mutation {
         }
     }
 
+    #[actix_rt::test]
+    async fn does_not_add_revision_if_cohesive_does_not_exist() {
+        let exercise_group_revision = Message::new("UuidQuery", json!({ "id": 2218 }))
+            .execute()
+            .await
+            .get_json();
+
+        let new_revision = Message::new(
+            "EntityAddRevisionMutation",
+            json!({
+                "revisionType": "ExerciseGroupRevision",
+                "input": {
+                    "changes": "second edit",
+                    "entityId": exercise_group_revision["repositoryId"],
+                    "needsReview": true,
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "fields": {
+                        "cohesive": "false",
+                        "content": exercise_group_revision["content"]
+                    }
+                },
+                "userId": 1
+            }),
+        )
+        .execute()
+        .await
+        .get_json();
+
+        assert_eq!(exercise_group_revision["id"], new_revision["revisionId"]);
+    }
+
     async fn get_revisions(id: i32, transaction: &mut sqlx::Transaction<'_, sqlx::MySql>) -> Value {
         Message::new("UuidQuery", json!({ "id": id }))
             .execute_on(transaction)

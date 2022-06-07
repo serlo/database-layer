@@ -526,45 +526,6 @@ mod sort_mutation {
     use test_utils::*;
 
     #[actix_rt::test]
-    async fn is_ok_when_children_order_is_same_not_triggering_event() {
-        let mut transaction = begin_transaction().await;
-
-        let children_ids = [1557, 1553, 2107, 24398, 30560];
-        let taxonomy_term_id = 1338;
-
-        Message::new(
-            "TaxonomySortMutation",
-            json! ({
-                "userId": 1,
-                "childrenIds": children_ids,
-                "taxonomyTermId": taxonomy_term_id
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
-            .execute_on(&mut transaction)
-            .await
-            .should_be_ok_with(|result| {
-                assert_eq!(result["childrenIds"], to_value(children_ids).unwrap());
-            });
-
-        Message::new("EventsQuery", json!({ "first": 1, "objectId": 3 }))
-            .execute_on(&mut transaction)
-            .await
-            .should_be_ok_with(|result| {
-                assert_json_include!(
-                    actual: &result["events"][0],
-                    expected: json!({
-                        // that means another event
-                        "__typename": "SetTaxonomyParentNotificationEvent",
-                    })
-                );
-            });
-    }
-
-    #[actix_rt::test]
     async fn sorts_children() {
         let mut transaction = begin_transaction().await;
 
@@ -600,6 +561,45 @@ mod sort_mutation {
                         "instance": "de",
                         "actorId": 1,
                         "objectId": 3
+                    })
+                );
+            });
+    }
+
+    #[actix_rt::test]
+    async fn is_ok_when_children_order_is_same_not_triggering_event() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [1557, 1553, 2107, 24398, 30560];
+        let taxonomy_term_id = 1338;
+
+        Message::new(
+            "TaxonomySortMutation",
+            json! ({
+                "userId": 1,
+                "childrenIds": children_ids,
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(result["childrenIds"], to_value(children_ids).unwrap());
+            });
+
+        Message::new("EventsQuery", json!({ "first": 1, "objectId": 3 }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_json_include!(
+                    actual: &result["events"][0],
+                    expected: json!({
+                        // that means another event
+                        "__typename": "SetTaxonomyParentNotificationEvent",
                     })
                 );
             });

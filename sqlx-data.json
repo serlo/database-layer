@@ -1721,6 +1721,16 @@
     },
     "query": "\n                INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)\n                    SELECT ?, id, ?, ?, ?\n                    FROM event\n                    WHERE name = ?\n            "
   },
+  "78844195e06119a416b076365e815242c47eb3049a25a8a85a0a8536f98bc018": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "\n                INSERT INTO page_revision (id, author_id, page_repository_id, title, content, date)\n                    VALUES (?, ?, ?, ?, ?, ?)\n            "
+  },
   "7e34c538baab3f54b402322473b9d7f730122c6023ef4b55f73021d74410e362": {
     "describe": {
       "columns": [],
@@ -3803,16 +3813,6 @@
       }
     },
     "query": "\n                INSERT INTO entity (id, type_id, instance_id, license_id, date)\n                    VALUES (?, ?, ?, ?, ?)\n            "
-  },
-  "fb7a566e9ea371a8e210e88cec9d3e4cf0832ccc6706c7a164275bd43d86f596": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 5
-      }
-    },
-    "query": "\n                INSERT INTO page_revision (id, author_id, page_repository_id, title, content)\n                    VALUES (?, ?, ?, ?, ?)\n            "
   },
   "fc0ca0f5bbca56646e9a9cbad7d897b684ca6301e1c63c108d1497592ef3f34b": {
     "describe": {

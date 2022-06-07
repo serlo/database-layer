@@ -468,13 +468,21 @@ impl Entity {
         let mut fields = payload.input.fields.clone();
 
         if let Some(revision_id) = last_not_trashed_revision {
-            let last_revision_fields: HashMap<String, String> =
+            let mut last_revision_fields: HashMap<String, String> =
                 fetch_all_fields!(revision_id, &mut transaction)
                     .await?
                     .into_iter()
                     .filter(|field| field.field != "changes")
                     .map(|field| (field.field.to_case(Case::Camel), field.value))
                     .collect();
+
+            // FIXME: This is bad design -> let's have a DB migration?!
+            if payload.revision_type == EntityRevisionType::ExerciseGroup
+                && !last_revision_fields.contains_key("cohesive")
+                && fields.contains_key("cohesive")
+            {
+                last_revision_fields.insert("cohesive".to_string(), "false".to_string());
+            }
 
             if last_revision_fields == fields {
                 return Ok(

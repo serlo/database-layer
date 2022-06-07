@@ -191,6 +191,13 @@ async function exec(): Promise<void> {
         date: '2022-05-28',
         added: ['Add PagesQuery #241'],
       },
+            {
+        tagName: 'v0.3.47',
+        name: '0.3.47,
+        date: '2022-06-07',
+        fixed: ['Fix creation of empty revision of parent of type ExerciseGroup #271'],
+      },
+
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

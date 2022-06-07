@@ -498,6 +498,27 @@ impl Entity {
                 .save(&mut transaction)
                 .await?;
 
+        let instance_id = sqlx::query!(
+            r#"
+                SELECT instance_id
+                    FROM entity
+                    WHERE id = ?
+            "#,
+            payload.input.entity_id
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .instance_id as i32;
+
+        CreateEntityRevisionEventPayload::new(
+            payload.input.entity_id,
+            entity_revision.id,
+            payload.user_id,
+            instance_id,
+        )
+        .save(&mut transaction)
+        .await?;
+
         if !payload.input.needs_review {
             Entity::checkout_revision(
                 &checkout_revision_mutation::Payload {
@@ -524,27 +545,6 @@ impl Entity {
             )
             .await?;
         }
-
-        let instance_id = sqlx::query!(
-            r#"
-                SELECT instance_id
-                    FROM entity
-                    WHERE id = ?
-            "#,
-            payload.input.entity_id
-        )
-        .fetch_one(&mut transaction)
-        .await?
-        .instance_id as i32;
-
-        CreateEntityRevisionEventPayload::new(
-            payload.input.entity_id,
-            entity_revision.id,
-            payload.user_id,
-            instance_id,
-        )
-        .save(&mut transaction)
-        .await?;
 
         transaction.commit().await?;
 

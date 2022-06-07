@@ -157,14 +157,15 @@ impl Page {
 
         sqlx::query!(
             r#"
-                INSERT INTO page_revision (id, author_id, page_repository_id, title, content)
-                    VALUES (?, ?, ?, ?, ?)
+                INSERT INTO page_revision (id, author_id, page_repository_id, title, content, date)
+                    VALUES (?, ?, ?, ?, ?, ?)
             "#,
             page_revision_id,
             payload.user_id,
             payload.page_id,
             payload.title,
-            payload.content
+            payload.content,
+            DateTime::now(),
         )
         .execute(&mut transaction)
         .await?;

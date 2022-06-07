@@ -490,9 +490,11 @@ impl Page {
         Ok(sqlx::query!(
             r#"
                 SELECT page_repository.id
-                FROM page_repository, instance
+                FROM instance, page_repository
+                JOIN page_revision ON page_repository.id = page_revision.page_repository_id
                 WHERE page_repository.instance_id = instance.id
                 AND (? is null or instance.subdomain = ?)
+                AND page_repository.current_revision_id = page_revision.id
             "#,
             payload.instance,
             payload.instance,

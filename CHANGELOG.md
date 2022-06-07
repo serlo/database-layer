@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.47](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.46..v0.3.47) - June 7, 2022
+
+### Fixed
+
+- Fix creation of empty revision of parent of type ExerciseGroup #271
+
 ## [0.3.46](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.45..v0.3.46) - May 28, 2022
 
 ### Added

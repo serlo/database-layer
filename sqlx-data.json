@@ -2031,31 +2031,6 @@
     },
     "query": "\n                UPDATE term_taxonomy\n                SET description = ?\n                WHERE id = ?\n            "
   },
-  "8bc485a59520f399b822928901b4cbd6a3e74c56775810e87c0cc6a25131d28b": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 3
-      }
-    },
-    "query": "\n                select user.id\n                from user\n                where\n                    user.description is not null\n                    and user.description != \"NULL\"\n                    and (? is null or user.id < ?)\n                order by user.id desc\n                limit ?\n            "
-  },
   "8c3a0ff16424314091418bca93261698ad987fc5fddd66990d69705ab0d0d241": {
     "describe": {
       "columns": [
@@ -3305,6 +3280,31 @@
       }
     },
     "query": "\n                INSERT INTO subscription (uuid_id, user_id, notify_mailman, date)\n                    VALUES (?, ?, ?, ?)\n                    ON DUPLICATE KEY UPDATE notify_mailman = ?\n            "
+  },
+  "e33f6ab13ae6fbeb5a2f9bf1a0660d0bcc206aa56aedeef0219686e4626907c2": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "\n                SELECT id\n                FROM (\n                    SELECT user.id AS id, MAX(role_user.role_id) AS role_id\n                    FROM user\n                    LEFT JOIN role_user ON user.id = role_user.user_id\n                    WHERE user.description IS NOT NULL\n                        AND user.description != \"NULL\"\n                        AND (? IS NULL OR user.id < ?)\n                    GROUP BY user.id\n                ) A\n                WHERE (role_id IS NULL OR role_id <= 2)\n                ORDER BY id DESC\n                LIMIT ?\n            "
   },
   "e48ab97ec5329aa75500b78dd7d88f030b6aeb92b4ec5fa207dc15217e8b89f9": {
     "describe": {

@@ -567,6 +567,30 @@ mod sort_mutation {
     }
 
     #[actix_rt::test]
+    async fn sorts_children_when_also_subset_is_send() {
+        let mut transaction = begin_transaction().await;
+        let taxonomy_term_id = 24389;
+
+        Message::new(
+            "TaxonomySortMutation",
+            json! ({
+                "userId": 1,
+                "childrenIds": [1949, 24390],
+                "taxonomyTermId": taxonomy_term_id
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(result["childrenIds"], json!([1949, 2021, 24390, 1455]));
+            });
+    }
+
+    #[actix_rt::test]
     async fn is_ok_when_children_order_is_same_not_triggering_event() {
         let mut transaction = begin_transaction().await;
 
@@ -621,7 +645,7 @@ mod sort_mutation {
     }
 
     #[actix_rt::test]
-    async fn fails_if_the_children_ids_do_not_match_the_linked_entities_ids() {
+    async fn fails_if_the_children_ids_are_not_children_of_the_taxonomy_term() {
         Message::new(
             "TaxonomySortMutation",
             json! ({

@@ -70,6 +70,10 @@ impl MessageResult {
         self.should_be_response(200, expected_result);
     }
 
+    pub fn should_be_ok(self) {
+        assert_eq!(self.status, 200);
+    }
+
     pub fn should_be_not_found(self) {
         self.should_be_response(404, Value::Null);
     }

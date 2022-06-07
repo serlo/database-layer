@@ -243,27 +243,39 @@ impl User {
     where
         E: Executor<'a>,
     {
-        println!("{:?}", payload.after);
-        Ok(sqlx::query!(
+        let mut transaction = executor.begin().await?;
+        let result = sqlx::query!(
             r#"
-                select user.id
-                from user
-                where
-                    user.description is not null
-                    and user.description != "NULL"
-                    and (? is null or user.id < ?)
-                order by user.id desc
-                limit ?
+                SELECT id
+                FROM (
+                    SELECT user.id AS id, MAX(role_user.role_id) AS role_id
+                    FROM user
+                    LEFT JOIN role_user ON user.id = role_user.user_id
+                    WHERE user.description IS NOT NULL
+                        AND user.description != "NULL"
+                        AND (? IS NULL OR user.id < ?)
+                    GROUP BY user.id
+                ) A
+                WHERE (role_id IS NULL OR role_id <= 2)
+                ORDER BY id DESC
+                LIMIT ?
             "#,
             payload.after,
             payload.after,
             payload.first,
         )
-        .fetch_all(executor)
+        .fetch_all(&mut transaction)
         .await?
-        .into_iter()
-        .map(|x| x.id as i32)
-        .collect())
+        .into_iter();
+
+        let mut ids: Vec<i32> = Vec::new();
+        for item in result {
+            let activity = User::fetch_activity_by_type(item.id as i32, &mut transaction).await?;
+            if activity.edits <= 5 {
+                ids.push(item.id as i32);
+            }
+        }
+        Ok(ids)
     }
 
     fn now() -> DateTime {

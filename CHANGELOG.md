@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.48](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.47..v0.3.48) - June 8, 2022
+
+### Added
+
+- UserPotentialSpamUsersQuery: filter users with activities and high roles #223
+
+- TaxonomySortMutation works also when not all children ids are given #288
+
+### Fixed
+
+- Fix -2h when adding page revision #284
+
+- PagesQuery: filter pages without revisions #280
+
+- Fix adding of new course page revision with icons #285
+
 ## [0.3.47](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.46..v0.3.47) - June 7, 2022
 
 ### Fixed

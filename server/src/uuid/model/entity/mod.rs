@@ -484,6 +484,13 @@ impl Entity {
                 last_revision_fields.insert("cohesive".to_string(), "false".to_string());
             }
 
+            // FIXME: Do we need to fix this in the frontend?!
+            if payload.revision_type == EntityRevisionType::CoursePage
+                && !fields.contains_key("icon")
+            {
+                fields.insert("icon".to_string(), "book-open".to_string());
+            }
+
             if last_revision_fields == fields {
                 return Ok(
                     EntityRevision::fetch_via_transaction(revision_id, &mut transaction).await?,

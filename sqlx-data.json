@@ -468,7 +468,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4113
+              "bits": 4121
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -795,6 +795,31 @@
       }
     },
     "query": "update event_log set actor_id = ? where actor_id = ?"
+  },
+  "34e6872f5d566d3b3c6ce33c3eeb95e23f6acd41a16ead03d768d6ad8cdd95a7": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                SELECT page_repository.id\n                FROM instance, page_repository\n                JOIN page_revision ON page_repository.id = page_revision.page_repository_id\n                WHERE page_repository.instance_id = instance.id\n                AND (? is null or instance.subdomain = ?)\n                AND page_repository.current_revision_id = page_revision.id\n            "
   },
   "3c53faa4669ab4e83898639d4c51a92a6be3c24b57914864aa0509f75cb61506": {
     "describe": {
@@ -2031,31 +2056,6 @@
     },
     "query": "\n                UPDATE term_taxonomy\n                SET description = ?\n                WHERE id = ?\n            "
   },
-  "8c3a0ff16424314091418bca93261698ad987fc5fddd66990d69705ab0d0d241": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                SELECT page_repository.id\n                FROM page_repository, instance\n                WHERE page_repository.instance_id = instance.id\n                AND (? is null or instance.subdomain = ?)\n            "
-  },
   "8e3b780df56a34b1f850956fb746d508f89bf9124d64e4b7bbdb8bd7809a404c": {
     "describe": {
       "columns": [],
@@ -2347,7 +2347,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4112
+              "bits": 4120
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -2359,7 +2359,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4112
+              "bits": 4120
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -3545,7 +3545,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4113
+              "bits": 4121
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -3871,7 +3871,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 16
+              "bits": 24
             },
             "max_size": 262140,
             "type": "Blob"

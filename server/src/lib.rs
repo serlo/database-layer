@@ -17,7 +17,6 @@ pub mod event;
 pub mod instance;
 pub mod message;
 pub mod metadata;
-pub mod navigation;
 pub mod notification;
 pub mod operation;
 pub mod routes;

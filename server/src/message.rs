@@ -6,7 +6,6 @@ use crate::alias::AliasMessage;
 use crate::database::Connection;
 use crate::event::EventMessage;
 use crate::metadata::MetadataMessage;
-use crate::navigation::NavigationMessage;
 use crate::notification::NotificationMessage;
 use crate::subject::SubjectsMessage;
 use crate::subscription::SubscriptionMessage;
@@ -28,7 +27,6 @@ pub enum Message {
     EntityMessage(EntityMessage),
     EventMessage(EventMessage),
     MetadataMessage(MetadataMessage),
-    NavigationMessage(NavigationMessage),
     NotificationMessage(NotificationMessage),
     PageMessage(PageMessage),
     SubjectsMessage(SubjectsMessage),
@@ -49,7 +47,6 @@ impl MessageResponder for Message {
             Message::EntityMessage(message) => message.handle(connection).await,
             Message::EventMessage(message) => message.handle(connection).await,
             Message::MetadataMessage(message) => message.handle(connection).await,
-            Message::NavigationMessage(message) => message.handle(connection).await,
             Message::NotificationMessage(message) => message.handle(connection).await,
             Message::PageMessage(message) => message.handle(connection).await,
             Message::SubjectsMessage(message) => message.handle(connection).await,

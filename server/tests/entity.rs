@@ -205,7 +205,7 @@ mod create_mutation {
                         "licenseId": 1,
                         "taxonomyTermId": entity.taxonomy_term_id,
                         "parentId": entity.parent_id,
-                        "needsReview": true,
+                        "needsReview": false,
                         "fields": entity.fields(),
                     },
                     "userId": 1,
@@ -230,7 +230,7 @@ mod create_mutation {
 
             Message::new(
                 "EventsQuery",
-                json!({ "first": 3, "objectId": new_entity_id }),
+                json!({ "first": 4, "objectId": new_entity_id }),
             )
             .execute_on(&mut transaction)
             .await
@@ -247,9 +247,17 @@ mod create_mutation {
                         new_entity_id.as_i64().unwrap() as i32,
                     ),
                 };
-
                 assert_json_include!(
                     actual: &result["events"][0],
+                    expected: json!({
+                        "__typename": "CheckoutRevisionNotificationEvent",
+                        "instance": "de",
+                        "actorId": 1,
+                        "repositoryId": new_entity_id
+                    })
+                );
+                assert_json_include!(
+                    actual: &result["events"][1],
                     expected: json!({
                         "__typename": "CreateEntityRevisionNotificationEvent",
                         "instance": "de",
@@ -258,7 +266,7 @@ mod create_mutation {
                     })
                 );
                 assert_json_include!(
-                    actual: &result["events"][1],
+                    actual: &result["events"][2],
                     expected: json!({
                         "__typename": "CreateEntityNotificationEvent",
                         "instance": "de",
@@ -267,7 +275,7 @@ mod create_mutation {
                     })
                 );
                 assert_json_include!(
-                    actual: &result["events"][2],
+                    actual: &result["events"][3],
                     expected: json!({
                         "__typename": parent_event_name,
                         "instance": "de",

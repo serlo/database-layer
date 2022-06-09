@@ -468,7 +468,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4121
+              "bits": 4113
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -1381,6 +1381,44 @@
     },
     "query": "\n                select comment.id\n                from comment\n                join uuid on uuid.id = comment.id\n                where\n                    comment.uuid_id is not null\n                    and comment.id < ?\n                    and uuid.trashed = 0\n                    and comment.archived = 0\n                order by comment.id desc\n                limit ?\n            "
   },
+  "6a0dd2379b5a09442b5194f29eaa7a0767ad16917bf6cc1e7ec3b02dee89b4bd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "instance_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "term_type",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n            select taxonomy.instance_id, type.name as term_type\n            from term_taxonomy\n            join taxonomy on term_taxonomy.taxonomy_id = taxonomy.id\n            join type on type.id = taxonomy.type_id\n            where term_taxonomy.id = ?\n        "
+  },
   "6a17979932c1f7bed8da7136ced51cec3e92cf766b5850d690e46c8c11cb9184": {
     "describe": {
       "columns": [],
@@ -2126,16 +2164,6 @@
     },
     "query": "\n                SELECT uuid_id as id\n                    FROM (\n                        SELECT id, uuid_id FROM comment c\n                        UNION ALL\n                        SELECT c.id, p.uuid_id FROM comment p LEFT JOIN comment c ON c.parent_id = p.id\n                    ) t\n                    WHERE id = ? AND uuid_id IS NOT NULL\n            "
   },
-  "9296ed5e839ef7a8c1108c4dbb5bf77078d79c93e3fbd34808fedfec54027232": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                        UPDATE term_taxonomy\n                        SET parent_id = ?\n                        WHERE id = ?\n                    "
-  },
   "93081abb88a7b64f755224129e49c32f58f91648d7e1b59bcb8d65d643c47d5b": {
     "describe": {
       "columns": [],
@@ -2347,7 +2375,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4120
+              "bits": 4112
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -2359,7 +2387,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4120
+              "bits": 4112
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -3545,7 +3573,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4121
+              "bits": 4113
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -3756,44 +3784,6 @@
     },
     "query": "\n                SELECT\n                    entity.id,\n                    type.name AS resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND entity.type_id IN (48, 3, 7, 1, 4, 6)\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
   },
-  "f54a64f3deb41e1dcc06f219f2804cc4a4c18c2d430c3f7c971779342a768f75": {
-    "describe": {
-      "columns": [
-        {
-          "name": "instance_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "previous_parent_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 8
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        true
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                    SELECT term.instance_id, term_taxonomy.parent_id AS previous_parent_id\n                    FROM term_taxonomy\n                    JOIN term\n                        ON term.id = term_taxonomy.term_id\n                    WHERE term_taxonomy.id = ?\n                "
-  },
   "f6232703fd9b172776710f63c3b6b834d80b2d8d88e56e4c6a8a95e9b6ab0086": {
     "describe": {
       "columns": [],
@@ -3871,7 +3861,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 24
+              "bits": 16
             },
             "max_size": 262140,
             "type": "Blob"

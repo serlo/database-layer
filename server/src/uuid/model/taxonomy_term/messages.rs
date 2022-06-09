@@ -14,7 +14,6 @@ pub enum TaxonomyTermMessage {
     TaxonomyTermSetNameAndDescriptionMutation(
         taxonomy_term_set_name_and_description_mutation::Payload,
     ),
-    TaxonomyTermMoveMutation(taxonomy_term_move_mutation::Payload),
     TaxonomyTermCreateMutation(taxonomy_term_create_mutation::Payload),
     TaxonomyCreateEntityLinksMutation(taxonomy_create_entity_links_mutation::Payload),
     TaxonomyDeleteEntityLinksMutation(taxonomy_delete_entity_links_mutation::Payload),
@@ -30,9 +29,6 @@ impl MessageResponder for TaxonomyTermMessage {
                 payload
                     .handle("TaxonomyTermSetNameAndDescriptionMutation", connection)
                     .await
-            }
-            TaxonomyTermMessage::TaxonomyTermMoveMutation(payload) => {
-                payload.handle("TaxonomyTermMoveMutation", connection).await
             }
             TaxonomyTermMessage::TaxonomyTermCreateMutation(payload) => {
                 payload
@@ -89,34 +85,6 @@ pub mod taxonomy_term_set_name_and_description_mutation {
             };
 
             Ok(Output { success: true })
-        }
-    }
-}
-
-pub mod taxonomy_term_move_mutation {
-    use super::*;
-
-    #[derive(Deserialize, Serialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Payload {
-        pub user_id: i32,
-        pub children_ids: Vec<i32>,
-        pub destination: i32,
-    }
-
-    #[async_trait]
-    impl Operation for Payload {
-        type Output = SuccessOutput;
-
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => TaxonomyTerm::move_to_new_parent(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    TaxonomyTerm::move_to_new_parent(self, transaction).await?
-                }
-            };
-
-            Ok(SuccessOutput { success: true })
         }
     }
 }

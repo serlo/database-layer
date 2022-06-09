@@ -293,7 +293,7 @@ mod create_entity_link_mutation {
     }
 
     #[actix_rt::test]
-    async fn fails_if_exercise_or_exercise_group_should_be_linked_to_topic_folder() {
+    async fn fails_if_exercise_or_exercise_group_should_be_linked_to_none_topic_folder() {
         let exercise_id = 2327;
         let exercise_group_id = 2217;
         let topic_id = 7;
@@ -301,6 +301,30 @@ mod create_entity_link_mutation {
 
         for entity_id in [exercise_id, exercise_group_id] {
             for taxonomy_term_id in [topic_id, curriculum_id] {
+                Message::new(
+                    "TaxonomyCreateEntityLinksMutation",
+                    json! ({
+                        "userId": 1,
+                        "entityIds": [entity_id],
+                        "taxonomyTermId": taxonomy_term_id
+                    }),
+                )
+                .execute()
+                .await
+                .should_be_bad_request();
+            }
+        }
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_none_exercise_should_be_linked_to_topic_folder() {
+        let article_id = 1495;
+        let video_id = 16078;
+        let topic_folder_id = 23662;
+        let curriculum_folder_id = 21016;
+
+        for entity_id in [article_id, video_id] {
+            for taxonomy_term_id in [topic_folder_id, curriculum_folder_id] {
                 Message::new(
                     "TaxonomyCreateEntityLinksMutation",
                     json! ({

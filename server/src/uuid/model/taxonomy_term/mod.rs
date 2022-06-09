@@ -563,7 +563,16 @@ impl TaxonomyTerm {
                         });
                     }
                 }
-                _ => (),
+                _ => {
+                    if taxonomy_is_folder {
+                        return Err(operation::Error::BadRequest {
+                            reason: format!(
+                                "entity with id {} cannot be linked to a topic folder",
+                                child_id
+                            ),
+                        });
+                    }
+                }
             };
 
             let is_child_already_linked_to_taxonomy = sqlx::query!(

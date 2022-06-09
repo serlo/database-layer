@@ -718,11 +718,11 @@ impl TaxonomyTerm {
             return Ok(());
         }
 
-        if HashSet::<i32>::from_iter(children_ids.clone())
-            != HashSet::from_iter(payload.children_ids.clone())
+        if !HashSet::from_iter(payload.children_ids.clone())
+            .is_subset(&HashSet::<i32>::from_iter(children_ids.clone()))
         {
             return Err(operation::Error::BadRequest {
-                reason: "children_ids have to match the current entities ids linked to the taxonomy_term_id".to_string()
+                reason: "children_ids have to be a subset of children entities and taxonomy terms of the given taxonomy term".to_string()
             });
         }
 

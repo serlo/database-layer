@@ -199,6 +199,19 @@ async function exec(): Promise<void> {
           'Fix creation of empty revision of parent of type ExerciseGroup #271',
         ],
       },
+      {
+        tagName: 'v0.3.48',
+        date: '2022-06-08',
+        added: [
+          'UserPotentialSpamUsersQuery: filter users with activities and high roles #223',
+          'TaxonomySortMutation works also when not all children ids are given #288',
+        ],
+        fixed: [
+          'Fix -2h when adding page revision #284',
+          'PagesQuery: filter pages without revisions #280',
+          'Fix adding of new course page revision with icons #285',
+        ],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

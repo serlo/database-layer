@@ -213,11 +213,7 @@ mod create_entity_link_mutation {
 
         Message::new(
             "TaxonomyCreateEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": children_ids,
-                "taxonomyTermId": taxonomy_term_id
-            }),
+            json! ({ "userId": 1, "entityIds": children_ids, "taxonomyTermId": taxonomy_term_id }),
         )
         .execute_on(&mut transaction)
         .await;
@@ -256,11 +252,7 @@ mod create_entity_link_mutation {
     async fn fails_if_a_child_is_not_an_entity() {
         Message::new(
             "TaxonomyCreateEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": [2059, 1],
-                "taxonomyTermId": 1288
-            }),
+            json! ({ "userId": 1, "entityIds": [2059, 1], "taxonomyTermId": 1288 }),
         )
         .execute()
         .await
@@ -282,11 +274,7 @@ mod create_entity_link_mutation {
     async fn fails_if_parent_is_not_a_taxonomy_term() {
         Message::new(
             "TaxonomyCreateEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": [2059, 2327],
-                "taxonomyTermId": 1
-            }),
+            json! ({ "userId": 1, "entityIds": [2059, 2327], "taxonomyTermId": 1 }),
         )
         .execute()
         .await
@@ -297,11 +285,7 @@ mod create_entity_link_mutation {
     async fn fails_if_parent_and_child_are_in_different_instances() {
         Message::new(
             "TaxonomyCreateEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": [2059, 28952],
-                "taxonomyTermId": 7
-            }),
+            json! ({ "userId": 1, "entityIds": [2059, 28952], "taxonomyTermId": 7 }),
         )
         .execute()
         .await

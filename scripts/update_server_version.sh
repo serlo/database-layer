@@ -11,10 +11,10 @@ yarn changelog
 
 print_header "Updating version in Cargo.toml"
 VERSION=$(cat scripts/changelog.ts \
-  | grep 'name:' \
+  | grep 'tagName:' \
   | tail -1 \
   | awk -F: '{ print $2 }' \
-  | sed "s/[', ]//g")
+  | sed "s/[v,', ]//g")
 
 sed -i "0,/version/{s/version.*$/version = \"$VERSION\"/g}" server/Cargo.toml
 cargo update -p server

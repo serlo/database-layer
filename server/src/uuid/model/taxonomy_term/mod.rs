@@ -15,7 +15,7 @@ use super::{AssertExists, ConcreteUuid, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
 use crate::event::{
     CreateTaxonomyLinkEventPayload, CreateTaxonomyTermEventPayload, RemoveTaxonomyLinkEventPayload,
-    SetTaxonomyParentEventPayload, SetTaxonomyTermEventPayload,
+    SetTaxonomyTermEventPayload,
 };
 use crate::instance::Instance;
 use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;

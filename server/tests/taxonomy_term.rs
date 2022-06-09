@@ -208,7 +208,7 @@ mod create_entity_link_mutation {
     async fn creates_entity_link() {
         let mut transaction = begin_transaction().await;
 
-        let children_ids = [2059, 2327];
+        let children_ids = [1495, 16078];
         let taxonomy_term_id = 1288;
 
         Message::new(
@@ -290,6 +290,30 @@ mod create_entity_link_mutation {
         .execute()
         .await
         .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_exercise_or_exercise_group_should_be_linked_to_topic_folder() {
+        let exercise_id = 2327;
+        let exercise_group_id = 2217;
+        let topic_id = 7;
+        let curriculum_id = 16034;
+
+        for entity_id in [exercise_id, exercise_group_id] {
+            for taxonomy_term_id in [topic_id, curriculum_id] {
+                Message::new(
+                    "TaxonomyCreateEntityLinksMutation",
+                    json! ({
+                        "userId": 1,
+                        "entityIds": [entity_id],
+                        "taxonomyTermId": taxonomy_term_id
+                    }),
+                )
+                .execute()
+                .await
+                .should_be_bad_request();
+            }
+        }
     }
 
     #[actix_rt::test]

@@ -633,31 +633,33 @@ mod sort_mutation {
             });
     }
 
-    /*
     #[actix_rt::test]
     async fn sorts_children_when_also_subset_is_send() {
         let mut transaction = begin_transaction().await;
-        let taxonomy_term_id = 24389;
+
+        let children_ids = [9911, 2233, 5075, 9907];
+        let entity_id = 2223;
 
         Message::new(
-            "TaxonomySortMutation",
-            json! ({
-                "userId": 1,
-                "childrenIds": [1949, 24390],
-                "taxonomyTermId": taxonomy_term_id
-            }),
+            "EntitySortMutation",
+            json!({ "userId": 1, "childrenIds": children_ids, "entityId": entity_id }),
         )
         .execute_on(&mut transaction)
-        .await;
+        .await
+        .should_be_ok_with_body(json!({ "success": true }));
 
-        Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
+        Message::new("UuidQuery", json!({ "id": entity_id }))
             .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
-                assert_eq!(result["childrenIds"], json!([1949, 2021, 24390, 1455]));
+                assert_eq!(
+                    result["exerciseIds"],
+                    to_value([9911, 2233, 5075, 9907, 2225, 9899, 9919]).unwrap()
+                );
             });
     }
 
+    /*
     #[actix_rt::test]
     async fn is_ok_when_children_order_is_same_not_triggering_event() {
         let mut transaction = begin_transaction().await;

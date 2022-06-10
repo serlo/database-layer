@@ -631,22 +631,6 @@ mod sort_mutation {
             .should_be_ok_with(|result| {
                 assert_eq!(result["exerciseIds"], to_value(children_ids).unwrap());
             });
-
-        /*
-        Message::new("EventsQuery", json!({ "first": 1, "objectId": 3 }))
-            .execute_on(&mut transaction)
-            .await
-            .should_be_ok_with(|result| {
-                assert_json_include!(
-                    actual: &result["events"][0],
-                    expected: json!({
-                        "__typename": "SetTaxonomyTermNotificationEvent",
-                        "instance": "de",
-                        "actorId": 1,
-                        "objectId": 3
-                    })
-                );
-            });*/
     }
 
     /*

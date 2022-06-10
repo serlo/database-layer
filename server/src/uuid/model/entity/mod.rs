@@ -970,6 +970,93 @@ impl Entity {
 }
 
 impl Entity {
+    pub async fn sort<'a, E>(
+        payload: &entity_sort_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        /*Self::assert_exists(payload.taxonomy_term_id, &mut transaction).await?;
+
+        let entities_ids: Vec<i32> =
+            fetch_all_entities!(payload.taxonomy_term_id, &mut transaction)
+                .await?
+                .iter()
+                .map(|child| child.entity_id as i32)
+                .collect();
+
+        let children_taxonomy_ids: Vec<i32> =
+            fetch_all_children!(payload.taxonomy_term_id, &mut transaction)
+                .await?
+                .iter()
+                .map(|child| child.id as i32)
+                .collect();
+
+        let mut children_ids: Vec<i32> = entities_ids.clone();
+        children_ids.extend(children_taxonomy_ids.clone());
+
+        if children_ids == payload.children_ids {
+            return Ok(());
+        }
+
+        if !HashSet::from_iter(payload.children_ids.clone())
+            .is_subset(&HashSet::<i32>::from_iter(children_ids.clone()))
+        {
+            return Err(operation::Error::BadRequest {
+                reason: "children_ids have to be a subset of children entities and taxonomy terms of the given taxonomy term".to_string()
+            });
+        }*/
+
+        for (index, child_id) in payload.children_ids.iter().enumerate() {
+            sqlx::query!(
+                r#"
+                    UPDATE entity_link
+                    SET entity_link.order = ?
+                    WHERE parent_id = ? AND child_id = ?
+                "#,
+                index as i32,
+                payload.entity_id,
+                child_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        /*
+        let root = sqlx::query!(
+            r#"
+                SELECT tt.id, instance_id
+                    FROM term_taxonomy tt
+                    JOIN taxonomy t
+                        ON t.id = tt.taxonomy_id
+                    WHERE instance_id = (
+                        SELECT instance_id
+                        FROM term_taxonomy tt
+                        JOIN taxonomy t
+                            ON t.id = tt.taxonomy_id
+                            WHERE tt.id = ?
+                    )
+                    AND t.type_id = 17
+            "#,
+            payload.taxonomy_term_id,
+        )
+        .fetch_one(&mut transaction)
+        .await?;
+
+        SetTaxonomyTermEventPayload::new(root.id as i32, payload.user_id, root.instance_id)
+            .save(&mut transaction)
+            .await?;*/
+
+        transaction.commit().await?;
+
+        Ok(())
+    }
+}
+
+impl Entity {
     pub async fn set_license<'a, E>(
         payload: &entity_set_license_mutation::Payload,
         executor: E,

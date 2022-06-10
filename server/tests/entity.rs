@@ -619,7 +619,7 @@ mod sort_mutation {
 
         Message::new(
             "EntitySortMutation",
-            json!({ "userId": 1, "childrenIds": children_ids, "entityId": entity_id }),
+            json!({ "childrenIds": children_ids, "entityId": entity_id }),
         )
         .execute_on(&mut transaction)
         .await
@@ -642,7 +642,7 @@ mod sort_mutation {
 
         Message::new(
             "EntitySortMutation",
-            json!({ "userId": 1, "childrenIds": children_ids, "entityId": entity_id }),
+            json!({ "childrenIds": children_ids, "entityId": entity_id }),
         )
         .execute_on(&mut transaction)
         .await
@@ -663,7 +663,7 @@ mod sort_mutation {
     async fn fails_with_bad_request_if_entity_id_does_not_belong_to_an_entity() {
         Message::new(
             "EntitySortMutation",
-            json! ({ "userId": 1, "childrenIds": [], "entityId": 1 }),
+            json! ({ "childrenIds": [], "entityId": 1 }),
         )
         .execute()
         .await
@@ -674,7 +674,7 @@ mod sort_mutation {
     async fn fails_if_the_children_ids_are_not_children_of_the_entity_id() {
         Message::new(
             "EntitySortMutation",
-            json! ({ "userId": 1, "childrenIds": [9911, 2059], "entityId": 2223 }),
+            json! ({ "childrenIds": [9911, 2059], "entityId": 2223 }),
         )
         .execute()
         .await

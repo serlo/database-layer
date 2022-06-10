@@ -318,7 +318,6 @@ pub mod entity_sort_mutation {
     #[derive(Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        pub user_id: i32,
         pub children_ids: Vec<i32>,
         pub entity_id: i32,
     }

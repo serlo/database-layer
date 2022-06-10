@@ -6,7 +6,7 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 use sqlx::Row;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use abstract_entity::AbstractEntity;
 pub use entity_type::EntityType;
@@ -979,36 +979,29 @@ impl Entity {
     {
         let mut transaction = executor.begin().await?;
 
-        /*Self::assert_exists(payload.taxonomy_term_id, &mut transaction).await?;
+        let children_ids: Vec<i32> = sqlx::query!(
+            "select child_id from entity_link where parent_id = ? order by entity_link.order",
+            payload.entity_id
+        )
+        .fetch_all(&mut transaction)
+        .await?
+        .into_iter()
+        .map(|x| x.child_id as i32)
+        .collect();
 
-        let entities_ids: Vec<i32> =
-            fetch_all_entities!(payload.taxonomy_term_id, &mut transaction)
-                .await?
-                .iter()
-                .map(|child| child.entity_id as i32)
-                .collect();
-
-        let children_taxonomy_ids: Vec<i32> =
-            fetch_all_children!(payload.taxonomy_term_id, &mut transaction)
-                .await?
-                .iter()
-                .map(|child| child.id as i32)
-                .collect();
-
-        let mut children_ids: Vec<i32> = entities_ids.clone();
-        children_ids.extend(children_taxonomy_ids.clone());
-
-        if children_ids == payload.children_ids {
-            return Ok(());
+        if children_ids.is_empty() {
+            return Err(operation::Error::BadRequest {
+                reason: "entity does not exist or has no children".to_string(),
+            });
         }
 
         if !HashSet::from_iter(payload.children_ids.clone())
             .is_subset(&HashSet::<i32>::from_iter(children_ids.clone()))
         {
             return Err(operation::Error::BadRequest {
-                reason: "children_ids have to be a subset of children entities and taxonomy terms of the given taxonomy term".to_string()
+                reason: "children_ids have to be a subset of linked children entities".to_string(),
             });
-        }*/
+        }
 
         for (index, child_id) in payload.children_ids.iter().enumerate() {
             sqlx::query!(

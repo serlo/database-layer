@@ -659,16 +659,11 @@ mod sort_mutation {
             });
     }
 
-    /*
     #[actix_rt::test]
-    async fn fails_with_bad_request_if_taxonomy_does_not_exist() {
+    async fn fails_with_bad_request_if_entity_id_does_not_belong_to_an_entity() {
         Message::new(
-            "TaxonomySortMutation",
-            json! ({
-                "userId": 1,
-                "childrenIds": [2021, 1949, 24390, 1455],
-                "taxonomyTermId": 1
-            }),
+            "EntitySortMutation",
+            json! ({ "userId": 1, "childrenIds": [], "entityId": 1 }),
         )
         .execute()
         .await
@@ -676,17 +671,13 @@ mod sort_mutation {
     }
 
     #[actix_rt::test]
-    async fn fails_if_the_children_ids_are_not_children_of_the_taxonomy_term() {
+    async fn fails_if_the_children_ids_are_not_children_of_the_entity_id() {
         Message::new(
-            "TaxonomySortMutation",
-            json! ({
-                "userId": 1,
-                "childrenIds": [1743, 2059],
-                "taxonomyTermId": 24503 as i32
-            }),
+            "EntitySortMutation",
+            json! ({ "userId": 1, "childrenIds": [9911, 2059], "entityId": 2223 }),
         )
         .execute()
         .await
         .should_be_bad_request();
-    }*/
+    }
 }

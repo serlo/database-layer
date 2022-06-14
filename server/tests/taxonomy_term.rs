@@ -208,16 +208,12 @@ mod create_entity_link_mutation {
     async fn creates_entity_link() {
         let mut transaction = begin_transaction().await;
 
-        let children_ids = [2059, 2327];
+        let children_ids = [1495, 16078];
         let taxonomy_term_id = 1288;
 
         Message::new(
             "TaxonomyCreateEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": children_ids,
-                "taxonomyTermId": taxonomy_term_id
-            }),
+            json! ({ "userId": 1, "entityIds": children_ids, "taxonomyTermId": taxonomy_term_id }),
         )
         .execute_on(&mut transaction)
         .await;
@@ -256,11 +252,7 @@ mod create_entity_link_mutation {
     async fn fails_if_a_child_is_not_an_entity() {
         Message::new(
             "TaxonomyCreateEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": [2059, 1],
-                "taxonomyTermId": 1288
-            }),
+            json! ({ "userId": 1, "entityIds": [2059, 1], "taxonomyTermId": 1288 }),
         )
         .execute()
         .await
@@ -282,11 +274,7 @@ mod create_entity_link_mutation {
     async fn fails_if_parent_is_not_a_taxonomy_term() {
         Message::new(
             "TaxonomyCreateEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": [2059, 2327],
-                "taxonomyTermId": 1
-            }),
+            json! ({ "userId": 1, "entityIds": [2059, 2327], "taxonomyTermId": 1 }),
         )
         .execute()
         .await
@@ -297,15 +285,59 @@ mod create_entity_link_mutation {
     async fn fails_if_parent_and_child_are_in_different_instances() {
         Message::new(
             "TaxonomyCreateEntityLinksMutation",
-            json! ({
-                "userId": 1,
-                "entityIds": [2059, 28952],
-                "taxonomyTermId": 7
-            }),
+            json! ({ "userId": 1, "entityIds": [2059, 28952], "taxonomyTermId": 7 }),
         )
         .execute()
         .await
         .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_exercise_or_exercise_group_should_be_linked_to_none_topic_folder() {
+        let exercise_id = 2327;
+        let exercise_group_id = 2217;
+        let topic_id = 7;
+        let curriculum_id = 16034;
+
+        for entity_id in [exercise_id, exercise_group_id] {
+            for taxonomy_term_id in [topic_id, curriculum_id] {
+                Message::new(
+                    "TaxonomyCreateEntityLinksMutation",
+                    json! ({
+                        "userId": 1,
+                        "entityIds": [entity_id],
+                        "taxonomyTermId": taxonomy_term_id
+                    }),
+                )
+                .execute()
+                .await
+                .should_be_bad_request();
+            }
+        }
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_none_exercise_should_be_linked_to_topic_folder() {
+        let article_id = 1495;
+        let video_id = 16078;
+        let topic_folder_id = 23662;
+        let curriculum_folder_id = 21016;
+
+        for entity_id in [article_id, video_id] {
+            for taxonomy_term_id in [topic_folder_id, curriculum_folder_id] {
+                Message::new(
+                    "TaxonomyCreateEntityLinksMutation",
+                    json! ({
+                        "userId": 1,
+                        "entityIds": [entity_id],
+                        "taxonomyTermId": taxonomy_term_id
+                    }),
+                )
+                .execute()
+                .await
+                .should_be_bad_request();
+            }
+        }
     }
 
     #[actix_rt::test]

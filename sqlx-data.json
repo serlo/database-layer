@@ -1406,6 +1406,44 @@
     },
     "query": "\n                select comment.id\n                from comment\n                join uuid on uuid.id = comment.id\n                where\n                    comment.uuid_id is not null\n                    and comment.id < ?\n                    and uuid.trashed = 0\n                    and comment.archived = 0\n                order by comment.id desc\n                limit ?\n            "
   },
+  "6a0dd2379b5a09442b5194f29eaa7a0767ad16917bf6cc1e7ec3b02dee89b4bd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "instance_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "term_type",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n            select taxonomy.instance_id, type.name as term_type\n            from term_taxonomy\n            join taxonomy on term_taxonomy.taxonomy_id = taxonomy.id\n            join type on type.id = taxonomy.type_id\n            where term_taxonomy.id = ?\n        "
+  },
   "6a17979932c1f7bed8da7136ced51cec3e92cf766b5850d690e46c8c11cb9184": {
     "describe": {
       "columns": [],

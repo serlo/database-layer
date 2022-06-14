@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.49](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.48..v0.3.49) - June 14, 2022
+
+### Added
+
+- Add EntitySortMutation #301
+
+### Changed
+
+- Exercises cannot only be linked to folders and non exercises to topic folders #299
+
 ## [v0.3.48](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.47..v0.3.48) - June 8, 2022
 
 ### Added

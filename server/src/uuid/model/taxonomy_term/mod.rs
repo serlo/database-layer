@@ -516,6 +516,25 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
+        let taxonomy = sqlx::query!(
+            r#"
+            select taxonomy.instance_id, type.name as term_type
+            from term_taxonomy
+            join taxonomy on term_taxonomy.taxonomy_id = taxonomy.id
+            join type on type.id = taxonomy.type_id
+            where term_taxonomy.id = ?
+        "#,
+            payload.taxonomy_term_id
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: "Given target id is no taxonomy term".to_string(),
+        })?;
+        let term_type: TaxonomyType = taxonomy.term_type.parse()?;
+        let taxonomy_is_folder = term_type == TaxonomyType::CurriculumTopicFolder
+            || term_type == TaxonomyType::TopicFolder;
+
         let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut transaction).await?;
 
         for child_id in &payload.entity_ids {
@@ -534,7 +553,26 @@ impl TaxonomyTerm {
                         ),
                     })
                 }
-                _ => (),
+                EntityType::Exercise | EntityType::ExerciseGroup => {
+                    if !taxonomy_is_folder {
+                        return Err(operation::Error::BadRequest {
+                            reason: format!(
+                                "entity with id {} is an exercise or exercise group and can only be linked to a topic folder",
+                                child_id
+                            )
+                        });
+                    }
+                }
+                _ => {
+                    if taxonomy_is_folder {
+                        return Err(operation::Error::BadRequest {
+                            reason: format!(
+                                "entity with id {} cannot be linked to a topic folder",
+                                child_id
+                            ),
+                        });
+                    }
+                }
             };
 
             let is_child_already_linked_to_taxonomy = sqlx::query!(
@@ -565,7 +603,7 @@ impl TaxonomyTerm {
             .await?
             .instance_id as i32;
 
-            if instance_id != child_instance_id {
+            if taxonomy.instance_id != child_instance_id {
                 return Err(operation::Error::BadRequest {
                     reason: format!(
                         "Entity {} and taxonomy term {} are not in the same instance",

@@ -21,6 +21,7 @@ pub enum EntityMessage {
     UnrevisedEntitiesQuery(unrevised_entities_query::Payload),
     DeletedEntitiesQuery(deleted_entities_query::Payload),
     EntitySetLicenseMutation(entity_set_license_mutation::Payload),
+    EntitySortMutation(entity_sort_mutation::Payload),
 }
 
 #[async_trait]
@@ -54,6 +55,9 @@ impl MessageResponder for EntityMessage {
             }
             EntityMessage::EntitySetLicenseMutation(message) => {
                 message.handle("EntitySetLicenseMutation", connection).await
+            }
+            EntityMessage::EntitySortMutation(message) => {
+                message.handle("EntitySortMutation", connection).await
             }
         }
     }
@@ -304,6 +308,30 @@ pub mod entity_set_license_mutation {
                 }
             };
             Ok(Output { success: true })
+        }
+    }
+}
+
+pub mod entity_sort_mutation {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub children_ids: Vec<i32>,
+        pub entity_id: i32,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = SuccessOutput;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => Entity::sort(self, pool).await?,
+                Connection::Transaction(transaction) => Entity::sort(self, transaction).await?,
+            }
+            Ok(SuccessOutput { success: true })
         }
     }
 }

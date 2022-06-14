@@ -212,6 +212,14 @@ async function exec(): Promise<void> {
           'Fix adding of new course page revision with icons #285',
         ],
       },
+      {
+        tagName: 'v0.3.49',
+        date: '2022-06-14',
+        added: ['Add EntitySortMutation #301'],
+        changed: [
+          'Exercises cannot only be linked to folders and non exercises to topic folders #299',
+        ],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

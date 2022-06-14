@@ -606,3 +606,78 @@ mod set_license_mutation {
         });
     }
 }
+
+mod sort_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn sorts_children() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [9911, 9919, 2233, 2225, 5075, 9899, 9907];
+        let entity_id = 2223;
+
+        Message::new(
+            "EntitySortMutation",
+            json!({ "childrenIds": children_ids, "entityId": entity_id }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with_body(json!({ "success": true }));
+
+        Message::new("UuidQuery", json!({ "id": entity_id }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(result["exerciseIds"], to_value(children_ids).unwrap());
+            });
+    }
+
+    #[actix_rt::test]
+    async fn sorts_children_when_also_subset_is_send() {
+        let mut transaction = begin_transaction().await;
+
+        let children_ids = [9911, 2233, 5075, 9907];
+        let entity_id = 2223;
+
+        Message::new(
+            "EntitySortMutation",
+            json!({ "childrenIds": children_ids, "entityId": entity_id }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with_body(json!({ "success": true }));
+
+        Message::new("UuidQuery", json!({ "id": entity_id }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(
+                    result["exerciseIds"],
+                    to_value([9911, 2233, 5075, 9907, 2225, 9899, 9919]).unwrap()
+                );
+            });
+    }
+
+    #[actix_rt::test]
+    async fn fails_with_bad_request_if_entity_id_does_not_belong_to_an_entity() {
+        Message::new(
+            "EntitySortMutation",
+            json! ({ "childrenIds": [], "entityId": 1 }),
+        )
+        .execute()
+        .await
+        .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn fails_if_the_children_ids_are_not_children_of_the_entity_id() {
+        Message::new(
+            "EntitySortMutation",
+            json! ({ "childrenIds": [9911, 2059], "entityId": 2223 }),
+        )
+        .execute()
+        .await
+        .should_be_bad_request();
+    }
+}

@@ -6,7 +6,7 @@ use futures::try_join;
 use serde::Serialize;
 use sqlx::MySqlPool;
 use sqlx::Row;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use abstract_entity::AbstractEntity;
 pub use entity_type::EntityType;
@@ -966,6 +966,61 @@ impl Entity {
                 })
         })
         .collect())
+    }
+}
+
+impl Entity {
+    pub async fn sort<'a, E>(
+        payload: &entity_sort_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let children_ids: Vec<i32> = sqlx::query!(
+            "select child_id from entity_link where parent_id = ? order by entity_link.order",
+            payload.entity_id
+        )
+        .fetch_all(&mut transaction)
+        .await?
+        .into_iter()
+        .map(|x| x.child_id as i32)
+        .collect();
+
+        if children_ids.is_empty() {
+            return Err(operation::Error::BadRequest {
+                reason: "entity does not exist or has no children".to_string(),
+            });
+        }
+
+        if !HashSet::from_iter(payload.children_ids.clone())
+            .is_subset(&HashSet::<i32>::from_iter(children_ids.clone()))
+        {
+            return Err(operation::Error::BadRequest {
+                reason: "children_ids have to be a subset of linked children entities".to_string(),
+            });
+        }
+
+        for (index, child_id) in payload.children_ids.iter().enumerate() {
+            sqlx::query!(
+                r#"
+                    UPDATE entity_link
+                    SET entity_link.order = ?
+                    WHERE parent_id = ? AND child_id = ?
+                "#,
+                index as i32,
+                payload.entity_id,
+                child_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(())
     }
 }
 

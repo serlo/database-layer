@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.50](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.49..v0.3.50) - June 18, 2022
+
+### Added
+
+- Add optional instance parameter to AllThreadsQuery #304
+
 ## [v0.3.49](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.48..v0.3.49) - June 14, 2022
 
 ### Added

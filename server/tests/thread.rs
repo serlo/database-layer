@@ -18,6 +18,14 @@ mod all_threads_query {
             .await
             .should_be_ok_with_body(json!({ "firstCommentIds": [35183, 35163, 35090] }));
     }
+
+    #[actix_rt::test]
+    async fn with_parameter_instance() {
+        Message::new("AllThreadsQuery", json!({ "first": 3, "instance": "en" }))
+            .execute()
+            .await
+            .should_be_ok_with_body(json!({ "firstCommentIds": [] }));
+    }
 }
 
 mod start_thread_mutation {

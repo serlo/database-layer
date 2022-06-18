@@ -9,6 +9,7 @@ use crate::datetime::DateTime;
 use crate::event::{
     CreateCommentEventPayload, CreateThreadEventPayload, SetThreadStateEventPayload,
 };
+use crate::instance::Instance;
 use crate::operation;
 use crate::subscription::Subscription;
 use crate::uuid::{Uuid, UuidFetcher};
@@ -23,28 +24,39 @@ impl Threads {
     pub async fn fetch_all_threads<'a, E>(
         first: i32,
         after: Option<i32>,
+        instance: Option<Instance>,
         executor: E,
     ) -> Result<Self, sqlx::Error>
     where
         E: Executor<'a>,
     {
+        let mut transaction = executor.begin().await?;
+
+        let instance_id = match instance.as_ref() {
+            Some(instance) => Some(Instance::fetch_id(instance, &mut transaction).await?),
+            None => None,
+        };
+
         let result = sqlx::query!(
             r#"
-                select comment.id
-                from comment
-                join uuid on uuid.id = comment.id
-                where
-                    comment.uuid_id is not null
-                    and comment.id < ?
-                    and uuid.trashed = 0
-                    and comment.archived = 0
-                order by comment.id desc
-                limit ?
+                SELECT comment.id
+                FROM comment
+                JOIN uuid ON uuid.id = comment.id
+                WHERE
+                    comment.uuid_id IS NOT NULL
+                    AND comment.id < ?
+                    AND uuid.trashed = 0
+                    AND comment.archived = 0
+                    AND (? is null OR instance_id = ?)
+                ORDER BY comment.id DESC
+                LIMIT ?
             "#,
             after.unwrap_or(1_000_000_000),
+            instance_id,
+            instance_id,
             first
         )
-        .fetch_all(executor)
+        .fetch_all(&mut transaction)
         .await?;
 
         let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();

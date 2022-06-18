@@ -220,6 +220,11 @@ async function exec(): Promise<void> {
           'Exercises cannot only be linked to folders and non exercises to topic folders #299',
         ],
       },
+      {
+        tagName: 'v0.3.50',
+        date: '2022-06-18',
+        added: ['Add optional instance parameter to AllThreadsQuery #304'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

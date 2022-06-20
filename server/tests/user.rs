@@ -311,6 +311,49 @@ mod user_potential_spam_users_query {
     }
 }
 
+mod user_remove_role_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn removes_role_from_user() {
+        let user_id: i32 = 10;
+        let role_name = "sysadmin";
+        let role_id: i32 = 11;
+        let mut transaction = begin_transaction().await;
+        Message::new("UserRemoveRoleMutation", json!({ "userId": user_id, "roleName": role_name}))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok();
+
+        let response = sqlx::query!(
+            r#"
+                SELECT *
+                FROM role_user
+                WHERE user_id = ?
+                and role_id = ?
+            "#,
+            user_id,
+            role_id
+            )
+            .fetch_optional(&mut transaction)
+            .await
+            .unwrap();
+
+        assert!(response.is_none());
+    }
+
+    #[actix_rt::test]
+    async fn is_ok_if_user_does_not_have_role() {
+        let user_id: i32 = 99;
+        let role_name = "sysadmin";
+        let mut transaction = begin_transaction().await;
+        Message::new("UserRemoveRoleMutation", json!({ "userId": user_id, "roleName": role_name}))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok();
+    }
+}
+
 mod user_set_description_mutation {
     use test_utils::*;
 

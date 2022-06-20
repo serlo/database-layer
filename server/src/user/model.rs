@@ -293,8 +293,8 @@ impl User {
         payload: &user_remove_role_mutation::Payload,
         executor: E,
     ) -> Result<(), sqlx::Error>
-        where
-            E: Executor<'a>,
+    where
+        E: Executor<'a>,
     {
         sqlx::query!(
             "DELETE role_user
@@ -305,8 +305,8 @@ impl User {
             payload.user_id,
             payload.role_name
         )
-            .execute(executor)
-            .await?;
+        .execute(executor)
+        .await?;
         Ok(())
     }
 

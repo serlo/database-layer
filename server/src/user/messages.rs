@@ -59,9 +59,7 @@ impl MessageResponder for UserMessage {
                     .await
             }
             UserMessage::UserRemoveRoleMutation(payload) => {
-                payload
-                    .handle("UserRemoveRoleMutation", connection)
-                    .await
+                payload.handle("UserRemoveRoleMutation", connection).await
             }
             UserMessage::UserSetDescriptionMutation(payload) => {
                 payload

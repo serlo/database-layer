@@ -320,10 +320,13 @@ mod user_remove_role_mutation {
         let role_name = "sysadmin";
         let role_id: i32 = 11;
         let mut transaction = begin_transaction().await;
-        Message::new("UserRemoveRoleMutation", json!({ "userId": user_id, "roleName": role_name}))
-            .execute_on(&mut transaction)
-            .await
-            .should_be_ok();
+        Message::new(
+            "UserRemoveRoleMutation",
+            json!({ "userId": user_id, "roleName": role_name}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok();
 
         let response = sqlx::query!(
             r#"
@@ -334,10 +337,10 @@ mod user_remove_role_mutation {
             "#,
             user_id,
             role_id
-            )
-            .fetch_optional(&mut transaction)
-            .await
-            .unwrap();
+        )
+        .fetch_optional(&mut transaction)
+        .await
+        .unwrap();
 
         assert!(response.is_none());
     }
@@ -347,10 +350,13 @@ mod user_remove_role_mutation {
         let user_id: i32 = 99;
         let role_name = "sysadmin";
         let mut transaction = begin_transaction().await;
-        Message::new("UserRemoveRoleMutation", json!({ "userId": user_id, "roleName": role_name}))
-            .execute_on(&mut transaction)
-            .await
-            .should_be_ok();
+        Message::new(
+            "UserRemoveRoleMutation",
+            json!({ "userId": user_id, "roleName": role_name}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok();
     }
 }
 

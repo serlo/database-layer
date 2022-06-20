@@ -19,6 +19,7 @@ pub enum UserMessage {
     UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
     UserDeleteRegularUsersMutation(user_delete_regular_users_mutation::Payload),
     UserPotentialSpamUsersQuery(potential_spam_users_query::Payload),
+    UserRemoveRoleMutation(user_remove_role_mutation::Payload),
     UserSetDescriptionMutation(user_set_description_mutation::Payload),
     UserSetEmailMutation(user_set_email_mutation::Payload),
 }
@@ -55,6 +56,11 @@ impl MessageResponder for UserMessage {
             UserMessage::UserPotentialSpamUsersQuery(payload) => {
                 payload
                     .handle("UserPotentialSpamUsersQuery", connection)
+                    .await
+            }
+            UserMessage::UserRemoveRoleMutation(payload) => {
+                payload
+                    .handle("UserRemoveRoleMutation", connection)
                     .await
             }
             UserMessage::UserSetDescriptionMutation(payload) => {
@@ -244,6 +250,38 @@ pub mod potential_spam_users_query {
                     }
                 },
             })
+        }
+    }
+}
+
+pub mod user_remove_role_mutation {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: i32,
+        pub role_name: String,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub success: bool,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            match connection {
+                Connection::Pool(pool) => User::remove_role_mutation(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    User::remove_role_mutation(self, transaction).await?
+                }
+            };
+            Ok(Output { success: true })
         }
     }
 }

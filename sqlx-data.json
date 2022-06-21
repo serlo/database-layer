@@ -3274,6 +3274,16 @@
     },
     "query": "SELECT id FROM page_repository WHERE id = ?"
   },
+  "db1690cfa9cefadd01f7568995b19a9f67763ccdc7e392715b1ac73f713d2c3c": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "DELETE role_user\n            FROM role_user\n            JOIN role ON role_user.role_id = role.id\n            WHERE user_id = ?\n            AND role.name = ?"
+  },
   "dd536141b3d5119e5f0bffcfc4d2b8e6abbdbbe06c903605451cc0ed98ab95fa": {
     "describe": {
       "columns": [

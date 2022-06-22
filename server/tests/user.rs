@@ -12,6 +12,84 @@ mod user_activity_by_type_query {
     }
 }
 
+mod user_add_role_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn adds_role_to_user() {
+        let user_id: i32 = 98;
+        let role_name = "sysadmin";
+        let role_id: i32 = 11;
+        let mut transaction = begin_transaction().await;
+        Message::new(
+            "UserAddRoleMutation",
+            json!({ "userId": user_id, "roleName": role_name}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok();
+
+        let response = sqlx::query!(
+            r#"
+                SELECT user_id
+                FROM role_user
+                WHERE user_id = ?
+                and role_id = ?
+            "#,
+            user_id,
+            role_id
+        )
+        .fetch_all(&mut transaction)
+        .await
+        .unwrap();
+        assert_eq!(response[0].user_id as i32, user_id);
+    }
+
+    #[actix_rt::test]
+    async fn does_not_add_a_new_row() {
+        let user_id: i32 = 1;
+        let role_name = "sysadmin";
+        let role_id: i32 = 11;
+        let mut transaction = begin_transaction().await;
+        Message::new(
+            "UserAddRoleMutation",
+            json!({ "userId": user_id, "roleName": role_name}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok();
+
+        let response = sqlx::query!(
+            r#"
+                SELECT user_id
+                FROM role_user
+                WHERE user_id = ?
+                and role_id = ?
+            "#,
+            user_id,
+            role_id
+        )
+        .fetch_all(&mut transaction)
+        .await
+        .unwrap();
+
+        assert_eq!(response.len(), 1);
+    }
+
+    #[actix_rt::test]
+    async fn should_throw_bad_request() {
+        let user_id: i32 = 1;
+        let mut transaction = begin_transaction().await;
+        Message::new(
+            "UserAddRoleMutation",
+            json!({ "userId": user_id, "roleName": "not a role"}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_bad_request();
+    }
+}
+
 mod user_delete_bots_mutation {
     use test_utils::*;
 

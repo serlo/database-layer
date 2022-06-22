@@ -2,8 +2,9 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::operation;
 use crate::user::messages::{
-    potential_spam_users_query, user_activity_by_type_query, user_delete_bots_mutation,
-    user_delete_regular_users_mutation, user_set_description_mutation, user_set_email_mutation,
+    potential_spam_users_query, user_activity_by_type_query, user_add_role_mutation,
+    user_delete_bots_mutation, user_delete_regular_users_mutation, user_set_description_mutation,
+    user_set_email_mutation,
 };
 use std::env;
 
@@ -93,6 +94,61 @@ impl User {
             comments: find_counts("comments"),
             taxonomy: find_counts("taxonomy"),
         })
+    }
+
+    pub async fn add_role_mutation<'a, E>(
+        payload: &user_add_role_mutation::Payload,
+        executor: E,
+    ) -> Result<(), operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let mut transaction = executor.begin().await?;
+
+        let role_id = sqlx::query!(
+            r#"
+                SELECT *
+                FROM role
+                WHERE name = ?
+            "#,
+            payload.role_name
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: "This role does not exist.".to_string(),
+        })?
+        .id;
+
+        let response = sqlx::query!(
+            r#"
+                SELECT role.id
+                FROM role_user
+                JOIN role ON role_user.role_id = role.id
+                WHERE user_id = ? AND role.name = ?
+            "#,
+            payload.user_id,
+            payload.role_name,
+        )
+        .fetch_optional(&mut transaction)
+        .await?;
+
+        if response.is_some() {
+            return Ok(());
+        }
+
+        sqlx::query!(
+            r#"
+                INSERT INTO role_user (user_id, role_id)
+                VALUES (?, ?)
+            "#,
+            payload.user_id,
+            role_id
+        )
+        .execute(&mut transaction)
+        .await?;
+        transaction.commit().await?;
+        Ok(())
     }
 
     pub async fn delete_bot<'a, E>(

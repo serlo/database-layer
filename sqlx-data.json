@@ -2628,6 +2628,31 @@
     },
     "query": "\n                INSERT INTO taxonomy (type_id, instance_id)\n                    VALUES (?, ?)\n            "
   },
+  "b65ade50686f6bced288846dbde494f3ac6506e74932088625faba118e4dc59f": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                SELECT role.id\n                FROM role_user\n                JOIN role ON role_user.role_id = role.id\n                WHERE user_id = ? AND role.name = ?\n            "
+  },
   "b67a6cd1168e030043fc309da009c241d88b7543ce11598b7e183086dd2f5077": {
     "describe": {
       "columns": [
@@ -3359,6 +3384,57 @@
     },
     "query": "\n                SELECT id\n                FROM (\n                    SELECT user.id AS id, MAX(role_user.role_id) AS role_id\n                    FROM user\n                    LEFT JOIN role_user ON user.id = role_user.user_id\n                    WHERE user.description IS NOT NULL\n                        AND user.description != \"NULL\"\n                        AND (? IS NULL OR user.id < ?)\n                    GROUP BY user.id\n                ) A\n                WHERE (role_id IS NULL OR role_id <= 2)\n                ORDER BY id DESC\n                LIMIT ?\n            "
   },
+  "e425926c7d13d21fe7454b92e1ec69d4225d8827bc6f4facb5ee12a5d68a86db": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 128,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT *\n                FROM role\n                WHERE name = ?\n            "
+  },
   "e48ab97ec5329aa75500b78dd7d88f030b6aeb92b4ec5fa207dc15217e8b89f9": {
     "describe": {
       "columns": [
@@ -3664,6 +3740,16 @@
       }
     },
     "query": "\n                    UPDATE entity_link\n                    SET entity_link.order = ?\n                    WHERE parent_id = ? AND child_id = ?\n                "
+  },
+  "eeb27875fc1e7f4cb147c92784eafe3946a2cb664cc9f6f97aab1cc37953cf0d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                INSERT INTO role_user (user_id, role_id)\n                VALUES (?, ?)\n            "
   },
   "efc0ab4bd3f789c0cce63a358761f13a56e0455dac5527bf499feb72883c62ae": {
     "describe": {

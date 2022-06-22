@@ -2,8 +2,9 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::operation;
 use crate::user::messages::{
-    potential_spam_users_query, user_activity_by_type_query, user_delete_bots_mutation,
-    user_delete_regular_users_mutation, user_set_description_mutation, user_set_email_mutation,
+    potential_spam_users_query, user_activity_by_type_query, user_create_mutation,
+    user_delete_bots_mutation, user_delete_regular_users_mutation, user_set_description_mutation,
+    user_set_email_mutation,
 };
 use std::env;
 
@@ -93,6 +94,65 @@ impl User {
             comments: find_counts("comments"),
             taxonomy: find_counts("taxonomy"),
         })
+    }
+
+    pub async fn create<'a, E>(
+        payload: &user_create_mutation::Payload,
+        executor: E,
+    ) -> Result<i32, operation::Error>
+        where
+            E: Executor<'a>,
+    {
+        let default_role_id = 2;
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (discriminator)
+                VALUES ('user')
+            "#,
+        )
+            .execute(&mut transaction)
+            .await?;
+
+        let user_id = sqlx::query!(
+            r#"
+                SELECT id
+                FROM uuid
+                ORDER BY id DESC
+                LIMIT 1;
+            "#,
+        )
+            .fetch_one(&mut transaction)
+            .await?
+            .id;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO user (id, email, username, password)
+                VALUES (?, ?, ?, ?)
+            "#,
+            user_id,
+            payload.email,
+            payload.user_name,
+            payload.password
+        )
+            .execute(&mut transaction)
+            .await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO role_user (user_id, role_id)
+                VALUES (?, ?)
+            "#,
+            user_id,
+            default_role_id,
+        )
+            .execute(&mut transaction)
+            .await?;
+
+            transaction.commit().await?;
+        user_id
     }
 
     pub async fn delete_bot<'a, E>(

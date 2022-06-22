@@ -16,6 +16,7 @@ pub enum UserMessage {
     // See https://github.com/serlo/api.serlo.org/issues/459
     ActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserActivityByTypeQuery(user_activity_by_type_query::Payload),
+    UserCreateMutation(user_create_mutation::Payload),
     UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
     UserDeleteRegularUsersMutation(user_delete_regular_users_mutation::Payload),
     UserPotentialSpamUsersQuery(potential_spam_users_query::Payload),
@@ -43,6 +44,9 @@ impl MessageResponder for UserMessage {
             }
             UserMessage::UserActivityByTypeQuery(payload) => {
                 payload.handle("ActivityByTypeQuery", connection).await
+            }
+            UserMessage::UserCreateMutation(payload) => {
+                payload.handle("UserCreateMutation", connection).await
             }
             UserMessage::UserDeleteBotsMutation(payload) => {
                 payload.handle("UserDeleteBotsMutation", connection).await
@@ -140,6 +144,41 @@ pub mod user_activity_by_type_query {
                 Connection::Transaction(transaction) => {
                     User::fetch_activity_by_type(self.user_id, transaction).await?
                 }
+            })
+        }
+    }
+}
+
+pub mod user_create_mutation {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_name: String,
+        pub email: String,
+        pub password: String
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub success: bool,
+        pub user_id: i32,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let user_id: i32 = match connection {
+                Connection::Pool(pool) => User::create(self, pool).await?,
+                Connection::Transaction(transaction) => User::create(self, transaction).await?,
+            };
+            Ok(Output {
+                success: true,
+                user_id,
             })
         }
     }

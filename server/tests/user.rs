@@ -46,7 +46,7 @@ mod user_add_role_mutation {
     }
 
     #[actix_rt::test]
-    async fn does_not_add_a_new_row() {
+    async fn does_not_add_a_new_row_if_user_already_has_role() {
         let user_id: i32 = 1;
         let role_name = "sysadmin";
         let role_id: i32 = 11;

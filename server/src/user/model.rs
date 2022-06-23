@@ -128,12 +128,12 @@ impl User {
             "#,
             payload.user_name
         )
-            .fetch_optional(&mut transaction)
-            .await?
-            .ok_or(operation::Error::BadRequest {
-                reason: "This user does not exist.".to_string(),
-            })?
-            .id;
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: "This user does not exist.".to_string(),
+        })?
+        .id;
 
         let response = sqlx::query!(
             r#"

@@ -17,13 +17,14 @@ mod user_add_role_mutation {
 
     #[actix_rt::test]
     async fn adds_role_to_user() {
+        let user_name = "1229fb21";
         let user_id: i32 = 98;
         let role_name = "sysadmin";
         let role_id: i32 = 11;
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserAddRoleMutation",
-            json!({ "userId": user_id, "roleName": role_name}),
+            json!({ "userName": user_name, "roleName": role_name}),
         )
         .execute_on(&mut transaction)
         .await
@@ -48,12 +49,13 @@ mod user_add_role_mutation {
     #[actix_rt::test]
     async fn does_not_add_a_new_row_if_user_already_has_role() {
         let user_id: i32 = 1;
+        let user_name = "admin";
         let role_name = "sysadmin";
         let role_id: i32 = 11;
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserAddRoleMutation",
-            json!({ "userId": user_id, "roleName": role_name}),
+            json!({ "userName": user_name, "roleName": role_name}),
         )
         .execute_on(&mut transaction)
         .await
@@ -78,11 +80,11 @@ mod user_add_role_mutation {
 
     #[actix_rt::test]
     async fn should_throw_bad_request() {
-        let user_id: i32 = 1;
+        let user_name = "admin";
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserAddRoleMutation",
-            json!({ "userId": user_id, "roleName": "not a role"}),
+            json!({ "userName": user_name, "roleName": "not a role"}),
         )
         .execute_on(&mut transaction)
         .await

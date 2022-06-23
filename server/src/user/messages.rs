@@ -155,7 +155,7 @@ pub mod user_add_role_mutation {
     #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        pub user_id: i32,
+        pub user_name: String,
         pub role_name: String,
     }
 

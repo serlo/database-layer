@@ -107,7 +107,7 @@ impl User {
 
         let role_id = sqlx::query!(
             r#"
-                SELECT *
+                SELECT id
                 FROM role
                 WHERE name = ?
             "#,
@@ -120,15 +120,29 @@ impl User {
         })?
         .id;
 
+        let user_id = sqlx::query!(
+            r#"
+                SELECT id
+                FROM user
+                WHERE username = ?
+            "#,
+            payload.user_name
+        )
+            .fetch_optional(&mut transaction)
+            .await?
+            .ok_or(operation::Error::BadRequest {
+                reason: "This user does not exist.".to_string(),
+            })?
+            .id;
+
         let response = sqlx::query!(
             r#"
-                SELECT role.id
+                SELECT role_id
                 FROM role_user
-                JOIN role ON role_user.role_id = role.id
-                WHERE user_id = ? AND role.name = ?
+                WHERE user_id = ? AND role_id = ?
             "#,
-            payload.user_id,
-            payload.role_name,
+            user_id,
+            role_id,
         )
         .fetch_optional(&mut transaction)
         .await?;
@@ -142,7 +156,7 @@ impl User {
                 INSERT INTO role_user (user_id, role_id)
                 VALUES (?, ?)
             "#,
-            payload.user_id,
+            user_id,
             role_id
         )
         .execute(&mut transaction)

@@ -79,12 +79,25 @@ mod user_add_role_mutation {
     }
 
     #[actix_rt::test]
-    async fn should_throw_bad_request() {
+    async fn should_throw_bad_request_for_non_existent_role() {
         let user_name = "admin";
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserAddRoleMutation",
             json!({ "userName": user_name, "roleName": "not a role"}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn should_throw_bad_request_for_non_existent_user() {
+        let user_name = "not a user";
+        let mut transaction = begin_transaction().await;
+        Message::new(
+            "UserAddRoleMutation",
+            json!({ "userName": user_name, "roleName": "login"}),
         )
         .execute_on(&mut transaction)
         .await

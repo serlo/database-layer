@@ -331,9 +331,8 @@ impl User {
         sqlx::query!(
             "DELETE role_user
             FROM role_user
-            JOIN role ON role_user.role_id = role.id
             WHERE user_id = ?
-            AND role.name = ?",
+                AND role_id = ?",
             user_id,
             role_id,
         )

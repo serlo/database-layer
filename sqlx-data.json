@@ -3186,6 +3186,16 @@
     },
     "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            "
   },
+  "d346efc6bdd45568794b701a17c463cbf692e5666cfffd9cef144057a2c4d4e5": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "DELETE role_user\n            FROM role_user\n            WHERE user_id = ?\n                AND role_id = ?"
+  },
   "d35a02914b03d95c1205f1701e07b31ad0243d01a4bef67dac7d8b620176884b": {
     "describe": {
       "columns": [],
@@ -3323,16 +3333,6 @@
       }
     },
     "query": "SELECT id FROM page_repository WHERE id = ?"
-  },
-  "db1690cfa9cefadd01f7568995b19a9f67763ccdc7e392715b1ac73f713d2c3c": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "DELETE role_user\n            FROM role_user\n            JOIN role ON role_user.role_id = role.id\n            WHERE user_id = ?\n            AND role.name = ?"
   },
   "dd536141b3d5119e5f0bffcfc4d2b8e6abbdbbe06c903605451cc0ed98ab95fa": {
     "describe": {

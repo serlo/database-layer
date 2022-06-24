@@ -292,21 +292,55 @@ impl User {
     pub async fn remove_role_mutation<'a, E>(
         payload: &user_remove_role_mutation::Payload,
         executor: E,
-    ) -> Result<(), sqlx::Error>
+    ) -> Result<(), operation::Error>
     where
         E: Executor<'a>,
     {
+        let mut transaction = executor.begin().await?;
+
+        let role_id = sqlx::query!(
+            r#"
+                SELECT id
+                FROM role
+                WHERE name = ?
+            "#,
+            payload.role_name
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: "This role does not exist.".to_string(),
+        })?
+        .id;
+
+        let user_id = sqlx::query!(
+            r#"
+                SELECT id
+                FROM user
+                WHERE username = ?
+            "#,
+            payload.user_name
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: "This user does not exist.".to_string(),
+        })?
+        .id;
+
         sqlx::query!(
             "DELETE role_user
             FROM role_user
             JOIN role ON role_user.role_id = role.id
             WHERE user_id = ?
             AND role.name = ?",
-            payload.user_id,
-            payload.role_name
+            user_id,
+            role_id,
         )
-        .execute(executor)
+        .execute(&mut transaction)
         .await?;
+
+        transaction.commit().await?;
         Ok(())
     }
 

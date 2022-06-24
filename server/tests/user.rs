@@ -317,12 +317,13 @@ mod user_remove_role_mutation {
     #[actix_rt::test]
     async fn removes_role_from_user() {
         let user_id: i32 = 10;
+        let user_name = "12297f59";
         let role_name = "sysadmin";
         let role_id: i32 = 11;
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserRemoveRoleMutation",
-            json!({ "userId": user_id, "roleName": role_name}),
+            json!({ "userName": user_name, "roleName": role_name}),
         )
         .execute_on(&mut transaction)
         .await
@@ -348,15 +349,42 @@ mod user_remove_role_mutation {
     #[actix_rt::test]
     async fn is_ok_if_user_does_not_have_role() {
         let user_id: i32 = 99;
+        let user_name = "1229ff10";
         let role_name = "sysadmin";
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserRemoveRoleMutation",
-            json!({ "userId": user_id, "roleName": role_name}),
+            json!({ "userName": user_name, "roleName": role_name}),
         )
         .execute_on(&mut transaction)
         .await
         .should_be_ok();
+    }
+
+    #[actix_rt::test]
+    async fn should_throw_bad_request_with_non_existent_role() {
+        let user_name = "admin";
+        let mut transaction = begin_transaction().await;
+        Message::new(
+            "UserRemoveRoleMutation",
+            json!({ "userName": user_name, "roleName": "not a role"}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn should_throw_bad_request_with_non_existent_user() {
+        let user_name = "not a user";
+        let mut transaction = begin_transaction().await;
+        Message::new(
+            "UserRemoveRoleMutation",
+            json!({ "userName": user_name, "roleName": "login"}),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_bad_request();
     }
 }
 

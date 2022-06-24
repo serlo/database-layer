@@ -1148,6 +1148,56 @@
     },
     "query": "select instance_id from entity where id = ?"
   },
+  "508767770b236602aac9db46038e1824848d78dd973825946f3ef15711e7ebbd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "role_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                SELECT role_id\n                FROM role_user\n                WHERE user_id = ? AND role_id = ?\n            "
+  },
+  "5117c47bc2b16c9fce93c9c8d4e46f5e587c72d1528abebf33621fef487890fd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT id\n                FROM user\n                WHERE username = ?\n            "
+  },
   "544017b3c945f404442a6aacf8519449608b8b1cfacb8cf07b3495b313be09da": {
     "describe": {
       "columns": [
@@ -2094,6 +2144,31 @@
     },
     "query": "\n                UPDATE term_taxonomy\n                SET description = ?\n                WHERE id = ?\n            "
   },
+  "89e8deccbcabc9bd5d61a796ece013393088a4a001ac7ef7ae6b2b4c0679f465": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT id\n                FROM role\n                WHERE name = ?\n            "
+  },
   "8e3b780df56a34b1f850956fb746d508f89bf9124d64e4b7bbdb8bd7809a404c": {
     "describe": {
       "columns": [],
@@ -2627,31 +2702,6 @@
       }
     },
     "query": "\n                INSERT INTO taxonomy (type_id, instance_id)\n                    VALUES (?, ?)\n            "
-  },
-  "b65ade50686f6bced288846dbde494f3ac6506e74932088625faba118e4dc59f": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                SELECT role.id\n                FROM role_user\n                JOIN role ON role_user.role_id = role.id\n                WHERE user_id = ? AND role.name = ?\n            "
   },
   "b67a6cd1168e030043fc309da009c241d88b7543ce11598b7e183086dd2f5077": {
     "describe": {
@@ -3383,57 +3433,6 @@
       }
     },
     "query": "\n                SELECT id\n                FROM (\n                    SELECT user.id AS id, MAX(role_user.role_id) AS role_id\n                    FROM user\n                    LEFT JOIN role_user ON user.id = role_user.user_id\n                    WHERE user.description IS NOT NULL\n                        AND user.description != \"NULL\"\n                        AND (? IS NULL OR user.id < ?)\n                    GROUP BY user.id\n                ) A\n                WHERE (role_id IS NULL OR role_id <= 2)\n                ORDER BY id DESC\n                LIMIT ?\n            "
-  },
-  "e425926c7d13d21fe7454b92e1ec69d4225d8827bc6f4facb5ee12a5d68a86db": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "name",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4101
-            },
-            "max_size": 128,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "description",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 0
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                SELECT *\n                FROM role\n                WHERE name = ?\n            "
   },
   "e48ab97ec5329aa75500b78dd7d88f030b6aeb92b4ec5fa207dc15217e8b89f9": {
     "describe": {

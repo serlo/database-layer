@@ -100,6 +100,16 @@
     },
     "query": "SELECT LAST_INSERT_ID() as id"
   },
+  "0506200225b8369dc438105b84d6392436f35763e649cca51850ceb286130d53": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "\n                INSERT INTO user (id, email, username, password, date, token)\n                VALUES (?, ?, ?, ?, ?, ?)\n            "
+  },
   "0775fb20c50e22a43297a12e8959dc4e6c7527a64d40dfbe885f616acf252865": {
     "describe": {
       "columns": [
@@ -535,6 +545,31 @@
       }
     },
     "query": "\n                SELECT n.id, n.seen, e.event_log_id\n                    FROM notification n\n                    JOIN notification_event e ON n.id = e.notification_id\n                    JOIN event_log on event_log.id = e.event_log_id\n                    JOIN uuid uuid1 on uuid1.id = event_log.uuid_id\n                    LEFT JOIN entity entity1 on entity1.id = event_log.uuid_id\n                    LEFT JOIN event_parameter ON event_parameter.log_id = event_log.id\n                    LEFT JOIN event_parameter_uuid ON\n                      event_parameter_uuid.event_parameter_id = event_parameter.id\n                    LEFT JOIN event_parameter_string ON\n                      event_parameter_string.event_parameter_id = event_parameter.id\n                    LEFT JOIN uuid uuid2 on uuid2.id = event_parameter_uuid.uuid_id\n                    LEFT JOIN entity entity2 on entity2.id = event_parameter_uuid.uuid_id\n                    WHERE n.user_id = ?\n                      AND event_parameter_string.value IS NULL\n                      AND uuid1.discriminator NOT IN (\"attachment\", \"blogPost\")\n                      AND (uuid2.discriminator IS NULL OR\n                        uuid2.discriminator NOT IN (\"attachment\", \"blogPost\"))\n                      AND (entity1.type_id IS NULL OR entity1.type_id IN (1,2,3,4,5,6,7,8,49,50))\n                      AND (entity2.type_id IS NULL OR entity2.type_id IN (1,2,3,4,5,6,7,8,49,50))\n                    ORDER BY n.date DESC, n.id DESC\n            "
+  },
+  "24625bc1d3b5bc561b351e0040ed58c6b4aaa6893e5989756f8367ce7002d4fc": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n                SELECT id\n                FROM uuid\n                ORDER BY id DESC\n                LIMIT 1;\n            "
   },
   "2594f7eb0db4993eb684ae6fdf173a8999df485653a8544733a6ce29da94842d": {
     "describe": {
@@ -1172,6 +1207,16 @@
       }
     },
     "query": "SELECT discriminator FROM uuid WHERE id = ?"
+  },
+  "54b27404fec239f7bdf1a65c296c6d50ebc7bed716d867e4e37ce0eb9a91b877": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n                INSERT INTO uuid (discriminator)\n                VALUES ('user')\n            "
   },
   "59220da9f5e4677a6fdc380eca9b95923728d0efd09277eb85290b3b4aafa118": {
     "describe": {
@@ -3664,6 +3709,16 @@
       }
     },
     "query": "\n                    UPDATE entity_link\n                    SET entity_link.order = ?\n                    WHERE parent_id = ? AND child_id = ?\n                "
+  },
+  "eeb27875fc1e7f4cb147c92784eafe3946a2cb664cc9f6f97aab1cc37953cf0d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                INSERT INTO role_user (user_id, role_id)\n                VALUES (?, ?)\n            "
   },
   "efc0ab4bd3f789c0cce63a358761f13a56e0455dac5527bf499feb72883c62ae": {
     "describe": {

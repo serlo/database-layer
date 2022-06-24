@@ -157,7 +157,7 @@ pub mod user_create_mutation {
     pub struct Payload {
         pub user_name: String,
         pub email: String,
-        pub password: String
+        pub password: String,
     }
 
     #[derive(Debug, Serialize, Deserialize)]

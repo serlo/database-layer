@@ -12,6 +12,18 @@ mod user_activity_by_type_query {
     }
 }
 
+mod user_create_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn creates_an_user() {
+        let mut transaction = begin_transaction().await;
+        Message::new("UserCreateMutation", json!({ "username": "testUser", "email": "mail@mail.test", "password": "securePassword!"}))
+            .execute_on(&mut transaction)
+            .await;
+    }
+}
+
 mod user_delete_bots_mutation {
     use test_utils::*;
 

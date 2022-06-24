@@ -16,6 +16,7 @@ convert_case = "0.5.0"
 dotenv = "0.15.0"
 futures = "0.3.0"
 md5 = "0.7.0"
+rand = "0.8.5"
 regex = "1.0.0"
 sentry = { git = "https://github.com/fourbs-net/sentry-rust", branch = "update-actix" }
 sentry-actix = { git = "https://github.com/fourbs-net/sentry-rust", branch = "update-actix" }

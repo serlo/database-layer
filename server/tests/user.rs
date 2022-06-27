@@ -348,7 +348,6 @@ mod user_remove_role_mutation {
 
     #[actix_rt::test]
     async fn is_ok_if_user_does_not_have_role() {
-        let user_id: i32 = 99;
         let user_name = "1229ff10";
         let role_name = "sysadmin";
         let mut transaction = begin_transaction().await;

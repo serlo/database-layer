@@ -1148,31 +1148,6 @@
     },
     "query": "select instance_id from entity where id = ?"
   },
-  "5117c47bc2b16c9fce93c9c8d4e46f5e587c72d1528abebf33621fef487890fd": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                SELECT id\n                FROM user\n                WHERE username = ?\n            "
-  },
   "544017b3c945f404442a6aacf8519449608b8b1cfacb8cf07b3495b313be09da": {
     "describe": {
       "columns": [
@@ -3185,16 +3160,6 @@
       }
     },
     "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            "
-  },
-  "d346efc6bdd45568794b701a17c463cbf692e5666cfffd9cef144057a2c4d4e5": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "DELETE role_user\n            FROM role_user\n            WHERE user_id = ?\n                AND role_id = ?"
   },
   "d35a02914b03d95c1205f1701e07b31ad0243d01a4bef67dac7d8b620176884b": {
     "describe": {

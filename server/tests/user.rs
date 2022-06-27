@@ -141,7 +141,7 @@ mod user_create_mutation {
     }
 
     #[actix_rt::test]
-    async fn fails_when_username_too_long () {
+    async fn fails_when_username_too_long() {
         Message::new("UserCreateMutation", json!({ "username": "testUsertestUsertestUsertestUser!", "email": "mail@mail.test", "password": "securePassword!"}))
             .execute()
             .await
@@ -149,7 +149,7 @@ mod user_create_mutation {
     }
 
     #[actix_rt::test]
-    async fn fails_when_email_too_long () {
+    async fn fails_when_email_too_long() {
         Message::new("UserCreateMutation", json!({ "username": "testUser", "email": "mail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail@mail.test", "password": "securePassword!"}))
             .execute()
             .await
@@ -157,7 +157,7 @@ mod user_create_mutation {
     }
 
     #[actix_rt::test]
-    async fn fails_when_password_too_long () {
+    async fn fails_when_password_too_long() {
         Message::new("UserCreateMutation", json!({ "username": "testUser!", "email": "mail@mail.test", "password": "securePassword!securePassword!securePassword!123456"}))
             .execute()
             .await
@@ -165,11 +165,14 @@ mod user_create_mutation {
     }
 
     #[actix_rt::test]
-    async fn fails_when_username_is_empty_string () {
-        Message::new("UserCreateMutation", json!({ "username": "  ", "email": "mail@mail.test", "password": "securePassword"}))
-            .execute()
-            .await
-            .should_be_bad_request();
+    async fn fails_when_username_is_empty_string() {
+        Message::new(
+            "UserCreateMutation",
+            json!({ "username": "  ", "email": "mail@mail.test", "password": "securePassword"}),
+        )
+        .execute()
+        .await
+        .should_be_bad_request();
     }
 }
 

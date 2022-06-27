@@ -106,6 +106,31 @@ impl User {
         E: Executor<'a>,
     {
         let default_role_id: i32 = 2;
+
+        if payload.username.len() > 32 {
+            return Err(operation::Error::BadRequest {
+                reason: "Username can\'t be longer than 32 characters.".to_string(),
+            });
+        }
+
+        if payload.email.len() > 254 {
+            return Err(operation::Error::BadRequest {
+                reason: "Email can\'t be longer than 254 characters.".to_string(),
+            });
+        }
+
+        if payload.username.trim().len() == 0 {
+            return Err(operation::Error::BadRequest {
+                reason: "Username can\'t be empty.".to_string(),
+            });
+        }
+
+        if payload.password.len() > 50 {
+            return Err(operation::Error::BadRequest {
+                reason: "Password can\'t be longer than 50 characters.".to_string(),
+            });
+        }
+
         let mut transaction = executor.begin().await?;
 
         sqlx::query!(
@@ -119,10 +144,8 @@ impl User {
 
         let user_id = sqlx::query!(
             r#"
-                SELECT id
+                SELECT LAST_INSERT_ID() AS id
                 FROM uuid
-                ORDER BY id DESC
-                LIMIT 1;
             "#,
         )
         .fetch_one(&mut transaction)
@@ -142,10 +165,10 @@ impl User {
             "#,
             user_id,
             payload.email,
-            payload.user_name,
+            payload.username,
             payload.password,
             DateTime::now(),
-            token,
+            token.to_lowercase(),
         )
         .execute(&mut transaction)
         .await?;

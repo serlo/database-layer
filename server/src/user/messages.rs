@@ -155,7 +155,7 @@ pub mod user_create_mutation {
     #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        pub user_name: String,
+        pub username: String,
         pub email: String,
         pub password: String,
     }

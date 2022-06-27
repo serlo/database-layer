@@ -1148,6 +1148,56 @@
     },
     "query": "select instance_id from entity where id = ?"
   },
+  "508767770b236602aac9db46038e1824848d78dd973825946f3ef15711e7ebbd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "role_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                SELECT role_id\n                FROM role_user\n                WHERE user_id = ? AND role_id = ?\n            "
+  },
+  "5117c47bc2b16c9fce93c9c8d4e46f5e587c72d1528abebf33621fef487890fd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT id\n                FROM user\n                WHERE username = ?\n            "
+  },
   "544017b3c945f404442a6aacf8519449608b8b1cfacb8cf07b3495b313be09da": {
     "describe": {
       "columns": [
@@ -2093,6 +2143,31 @@
       }
     },
     "query": "\n                UPDATE term_taxonomy\n                SET description = ?\n                WHERE id = ?\n            "
+  },
+  "89e8deccbcabc9bd5d61a796ece013393088a4a001ac7ef7ae6b2b4c0679f465": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT id\n                FROM role\n                WHERE name = ?\n            "
   },
   "8e3b780df56a34b1f850956fb746d508f89bf9124d64e4b7bbdb8bd7809a404c": {
     "describe": {
@@ -3664,6 +3739,16 @@
       }
     },
     "query": "\n                    UPDATE entity_link\n                    SET entity_link.order = ?\n                    WHERE parent_id = ? AND child_id = ?\n                "
+  },
+  "eeb27875fc1e7f4cb147c92784eafe3946a2cb664cc9f6f97aab1cc37953cf0d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                INSERT INTO role_user (user_id, role_id)\n                VALUES (?, ?)\n            "
   },
   "efc0ab4bd3f789c0cce63a358761f13a56e0455dac5527bf499feb72883c62ae": {
     "describe": {

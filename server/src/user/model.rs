@@ -188,7 +188,7 @@ impl User {
             });
         }
 
-        if payload.username.trim().len() == 0 {
+        if payload.username.trim().is_empty() {
             return Err(operation::Error::BadRequest {
                 reason: "Username can\'t be empty.".to_string(),
             });

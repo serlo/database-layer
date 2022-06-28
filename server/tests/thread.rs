@@ -7,7 +7,7 @@ mod all_threads_query {
             .execute()
             .await
             .should_be_ok_with_body(
-                json!({ "firstCommentIds": [35435, 35361, 35183, 35163, 35090] }),
+                json!({ "firstCommentIds": [35435, 35361, 35163, 35090, 35085] }),
             );
     }
 
@@ -16,7 +16,7 @@ mod all_threads_query {
         Message::new("AllThreadsQuery", json!({ "first": 3, "after": 35361 }))
             .execute()
             .await
-            .should_be_ok_with_body(json!({ "firstCommentIds": [35183, 35163, 35090] }));
+            .should_be_ok_with_body(json!({ "firstCommentIds": [35163, 35090, 35085] }));
     }
 
     #[actix_rt::test]
@@ -25,6 +25,14 @@ mod all_threads_query {
             .execute()
             .await
             .should_be_ok_with_body(json!({ "firstCommentIds": [] }));
+    }
+
+    #[actix_rt::test]
+    async fn does_not_return_threads_on_user_page() {
+        Message::new("AllThreadsQuery", json!({ "first": 1, "after": 27054 }))
+            .execute()
+            .await
+            .should_be_ok_with(|body| assert_ne!(body["firstCommentIds"][0], 27053));
     }
 }
 

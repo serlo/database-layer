@@ -42,12 +42,14 @@ impl Threads {
                 SELECT comment.id
                 FROM comment
                 JOIN uuid ON uuid.id = comment.id
+                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id
                 WHERE
                     comment.uuid_id IS NOT NULL
                     AND comment.id < ?
                     AND uuid.trashed = 0
                     AND comment.archived = 0
                     AND (? is null OR instance_id = ?)
+                    AND parent_uuid.discriminator != "user"
                 ORDER BY comment.id DESC
                 LIMIT ?
             "#,

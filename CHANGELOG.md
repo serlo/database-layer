@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.51](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.50..v0.3.51) - June 29, 2022
+
+### Added
+
+- Add UserAddRoleMutation #306
+
+- Add UserRemoveRoleMutation #305
+
 ## [v0.3.50](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.49..v0.3.50) - June 18, 2022
 
 ### Added

@@ -225,6 +225,14 @@ async function exec(): Promise<void> {
         date: '2022-06-18',
         added: ['Add optional instance parameter to AllThreadsQuery #304'],
       },
+      {
+        tagName: 'v0.3.51',
+        date: '2022-06-29',
+        added: [
+          'Add UserAddRoleMutation #306',
+          'Add UserRemoveRoleMutation #305',
+        ],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

@@ -1376,6 +1376,31 @@
     },
     "query": "update blog_post set author_id = ? where author_id = ?"
   },
+  "5fa748b60833e887fcbbf2f1fabc3ec50ac8604d12ca0e11848e37075d0ff30e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 4
+      }
+    },
+    "query": "\n                SELECT comment.id\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND comment.id < ?\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR instance_id = ?)\n                    AND parent_uuid.discriminator != \"user\"\n                ORDER BY comment.id DESC\n                LIMIT ?\n            "
+  },
   "649f401fd7262aa959e1e5a8f1071d74a7315cce328cdbbce4ad1a4aec849820": {
     "describe": {
       "columns": [],
@@ -3049,31 +3074,6 @@
       }
     },
     "query": "update ad set author_id = ? where author_id = ?"
-  },
-  "c6629efc4e8adb393b9cddbc7a8155372f5aaee37ee25eb02b9c1c6320730cff": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 4
-      }
-    },
-    "query": "\n                SELECT comment.id\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND comment.id < ?\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR instance_id = ?)\n                ORDER BY comment.id DESC\n                LIMIT ?\n            "
   },
   "c835eae74be0aed997f0866173e654539b14213b61fe175a6a081b0a9c0dc709": {
     "describe": {

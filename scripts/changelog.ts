@@ -232,6 +232,7 @@ async function exec(): Promise<void> {
           'Add UserAddRoleMutation #306',
           'Add UserRemoveRoleMutation #305',
         ],
+        fixed: ['Ignore user threads in AllThreadsQuery #310'],
       },
     ],
   })

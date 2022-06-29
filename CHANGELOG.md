@@ -10,6 +10,10 @@ All notable changes to this project will be documented in this file.
 
 - Add UserRemoveRoleMutation #305
 
+### Fixed
+
+- Ignore user threads in AllThreadsQuery #310
+
 ## [v0.3.50](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.49..v0.3.50) - June 18, 2022
 
 ### Added

@@ -26,6 +26,7 @@ use crate::datetime::DateTime;
 use crate::event::{EventStringParameters, EventUuidParameters};
 use crate::instance::Instance;
 use crate::notification::Notifications;
+use crate::operation;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct Event {
@@ -159,6 +160,20 @@ impl EventPayload {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                SELECT *
+                FROM user
+                WHERE id = ?
+            "#,
+            self.actor_id,
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: "The acting user does not exist.".to_string(),
+        })?;
 
         sqlx::query!(
             r#"

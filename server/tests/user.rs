@@ -459,7 +459,7 @@ mod user_remove_role_mutation {
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserRemoveRoleMutation",
-            json!({ "userName": username, "roleName": "not a role"}),
+            json!({ "username": username, "roleName": "not a role"}),
         )
         .execute_on(&mut transaction)
         .await

@@ -163,7 +163,7 @@ pub mod user_add_role_mutation {
     #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        pub user_name: String,
+        pub username: String,
         pub role_name: String,
     }
 
@@ -333,7 +333,7 @@ pub mod user_remove_role_mutation {
     #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        pub user_name: String,
+        pub username: String,
         pub role_name: String,
     }
 

@@ -128,7 +128,7 @@ impl User {
                 FROM user
                 WHERE username = ?
             "#,
-            payload.user_name
+            payload.username
         )
         .fetch_optional(&mut transaction)
         .await?
@@ -480,7 +480,7 @@ impl User {
                 FROM user
                 WHERE username = ?
             "#,
-            payload.user_name
+            payload.username
         )
         .fetch_optional(&mut transaction)
         .await?

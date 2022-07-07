@@ -26,7 +26,6 @@ use crate::datetime::DateTime;
 use crate::event::{EventStringParameters, EventUuidParameters};
 use crate::instance::Instance;
 use crate::notification::Notifications;
-use crate::operation;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 pub struct Event {
@@ -171,9 +170,7 @@ impl EventPayload {
         )
         .fetch_optional(&mut transaction)
         .await?
-        .ok_or(operation::Error::BadRequest {
-            reason: "The acting user does not exist.".to_string(),
-        })?;
+        .ok_or(EventError::MissingUser)?;
 
         sqlx::query!(
             r#"

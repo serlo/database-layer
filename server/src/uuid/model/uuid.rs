@@ -12,7 +12,7 @@ use super::{
     taxonomy_term::TaxonomyTerm, user::User,
 };
 use crate::database::Executor;
-use crate::event::{EventError, SetUuidStateEventPayload};
+use crate::event::SetUuidStateEventPayload;
 use crate::instance::Instance;
 
 #[derive(Debug, Serialize)]
@@ -250,17 +250,6 @@ impl Uuid {
 
     pub fn get_alias(&self) -> String {
         self.alias.clone()
-    }
-}
-
-impl From<EventError> for operation::Error {
-    fn from(error: EventError) -> Self {
-        match error {
-            EventError::DatabaseError { inner } => inner.into(),
-            _ => operation::Error::InternalServerError {
-                error: Box::new(error),
-            },
-        }
     }
 }
 

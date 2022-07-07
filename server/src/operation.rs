@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use serde::Serialize;
 use serde_json::{json, Value};
 
+use crate::event::EventError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -20,6 +21,20 @@ impl From<sqlx::Error> for Error {
     fn from(error: sqlx::Error) -> Self {
         Error::InternalServerError {
             error: Box::new(error),
+        }
+    }
+}
+
+impl From<EventError> for Error {
+    fn from(error: EventError) -> Self {
+        match error {
+            EventError::MissingUser => Error::BadRequest {
+                reason: "acting user does not exist".to_string(),
+            },
+            EventError::DatabaseError { inner } => inner.into(),
+            _ => Error::InternalServerError {
+                error: Box::new(error),
+            },
         }
     }
 }

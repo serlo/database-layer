@@ -17,6 +17,7 @@ pub enum UserMessage {
     ActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserAddRoleMutation(user_add_role_mutation::Payload),
+    UserCreateMutation(user_create_mutation::Payload),
     UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
     UserDeleteRegularUsersMutation(user_delete_regular_users_mutation::Payload),
     UserPotentialSpamUsersQuery(potential_spam_users_query::Payload),
@@ -43,11 +44,14 @@ impl MessageResponder for UserMessage {
             UserMessage::ActivityByTypeQuery(payload) => {
                 payload.handle("ActivityByTypeQuery", connection).await
             }
+            UserMessage::UserActivityByTypeQuery(payload) => {
+                payload.handle("ActivityByTypeQuery", connection).await
+            }
             UserMessage::UserAddRoleMutation(payload) => {
                 payload.handle("UserAddRoleMutation", connection).await
             }
-            UserMessage::UserActivityByTypeQuery(payload) => {
-                payload.handle("ActivityByTypeQuery", connection).await
+            UserMessage::UserCreateMutation(payload) => {
+                payload.handle("UserCreateMutation", connection).await
             }
             UserMessage::UserDeleteBotsMutation(payload) => {
                 payload.handle("UserDeleteBotsMutation", connection).await
@@ -159,7 +163,7 @@ pub mod user_add_role_mutation {
     #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        pub user_name: String,
+        pub username: String,
         pub role_name: String,
     }
 
@@ -181,6 +185,41 @@ pub mod user_add_role_mutation {
                 }
             };
             Ok(Output { success: true })
+        }
+    }
+}
+
+pub mod user_create_mutation {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub username: String,
+        pub email: String,
+        pub password: String,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub success: bool,
+        pub user_id: i32,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let user_id: i32 = match connection {
+                Connection::Pool(pool) => User::create(self, pool).await?,
+                Connection::Transaction(transaction) => User::create(self, transaction).await?,
+            };
+            Ok(Output {
+                success: true,
+                user_id,
+            })
         }
     }
 }
@@ -294,7 +333,7 @@ pub mod user_remove_role_mutation {
     #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        pub user_name: String,
+        pub username: String,
         pub role_name: String,
     }
 

@@ -17,14 +17,14 @@ mod user_add_role_mutation {
 
     #[actix_rt::test]
     async fn adds_role_to_user() {
-        let user_name = "1229fb21";
+        let username = "1229fb21";
         let user_id: i32 = 98;
         let role_name = "sysadmin";
         let role_id: i32 = 11;
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserAddRoleMutation",
-            json!({ "userName": user_name, "roleName": role_name}),
+            json!({ "username": username, "roleName": role_name}),
         )
         .execute_on(&mut transaction)
         .await
@@ -49,13 +49,13 @@ mod user_add_role_mutation {
     #[actix_rt::test]
     async fn does_not_add_a_new_row_if_user_already_has_role() {
         let user_id: i32 = 1;
-        let user_name = "admin";
+        let username = "admin";
         let role_name = "sysadmin";
         let role_id: i32 = 11;
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserAddRoleMutation",
-            json!({ "userName": user_name, "roleName": role_name}),
+            json!({ "username": username, "roleName": role_name}),
         )
         .execute_on(&mut transaction)
         .await
@@ -80,11 +80,11 @@ mod user_add_role_mutation {
 
     #[actix_rt::test]
     async fn should_throw_bad_request_for_non_existent_role() {
-        let user_name = "admin";
+        let username = "admin";
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserAddRoleMutation",
-            json!({ "userName": user_name, "roleName": "not a role"}),
+            json!({ "username": username, "roleName": "not a role"}),
         )
         .execute_on(&mut transaction)
         .await
@@ -93,13 +93,84 @@ mod user_add_role_mutation {
 
     #[actix_rt::test]
     async fn should_throw_bad_request_for_non_existent_user() {
-        let user_name = "not a user";
+        let username = "not a user";
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserAddRoleMutation",
-            json!({ "userName": user_name, "roleName": "login"}),
+            json!({ "username": username, "roleName": "login"}),
         )
         .execute_on(&mut transaction)
+        .await
+        .should_be_bad_request();
+    }
+}
+
+mod user_create_mutation {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn creates_an_user() {
+        let mut transaction = begin_transaction().await;
+        let response = Message::new("UserCreateMutation", json!({ "username": "testUser", "email": "mail@mail.test", "password": "securePassword!"}))
+            .execute_on(&mut transaction)
+            .await
+            .get_json();
+
+        let last_id = sqlx::query!(
+            r#"
+                SELECT LAST_INSERT_ID() AS id
+                FROM uuid;
+            "#,
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .unwrap()
+        .id;
+
+        let user_id = &response["userId"];
+
+        assert_eq!(user_id, last_id);
+
+        let user = Message::new("UuidQuery", json!({ "id": user_id }))
+            .execute_on(&mut transaction)
+            .await
+            .get_json();
+
+        assert_eq!(user["username"], "testUser");
+        assert_eq!(user["roles"][0], "login");
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_username_too_long() {
+        Message::new("UserCreateMutation", json!({ "username": "testUsertestUsertestUsertestUser!", "email": "mail@mail.test", "password": "securePassword!"}))
+            .execute()
+            .await
+            .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_email_too_long() {
+        Message::new("UserCreateMutation", json!({ "username": "testUser", "email": "mail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail.testmail@mail.test", "password": "securePassword!"}))
+            .execute()
+            .await
+            .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_password_too_long() {
+        Message::new("UserCreateMutation", json!({ "username": "testUser!", "email": "mail@mail.test", "password": "securePassword!securePassword!securePassword!123456"}))
+            .execute()
+            .await
+            .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_username_is_empty_string() {
+        Message::new(
+            "UserCreateMutation",
+            json!({ "username": "  ", "email": "mail@mail.test", "password": "securePassword"}),
+        )
+        .execute()
         .await
         .should_be_bad_request();
     }
@@ -410,13 +481,13 @@ mod user_remove_role_mutation {
     #[actix_rt::test]
     async fn removes_role_from_user() {
         let user_id: i32 = 10;
-        let user_name = "12297f59";
+        let username = "12297f59";
         let role_name = "sysadmin";
         let role_id: i32 = 11;
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserRemoveRoleMutation",
-            json!({ "userName": user_name, "roleName": role_name}),
+            json!({ "username": username, "roleName": role_name}),
         )
         .execute_on(&mut transaction)
         .await
@@ -441,12 +512,12 @@ mod user_remove_role_mutation {
 
     #[actix_rt::test]
     async fn is_ok_if_user_does_not_have_role() {
-        let user_name = "1229ff10";
+        let username = "1229ff10";
         let role_name = "sysadmin";
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserRemoveRoleMutation",
-            json!({ "userName": user_name, "roleName": role_name}),
+            json!({ "username": username, "roleName": role_name}),
         )
         .execute_on(&mut transaction)
         .await
@@ -455,11 +526,11 @@ mod user_remove_role_mutation {
 
     #[actix_rt::test]
     async fn should_throw_bad_request_with_non_existent_role() {
-        let user_name = "admin";
+        let username = "admin";
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserRemoveRoleMutation",
-            json!({ "userName": user_name, "roleName": "not a role"}),
+            json!({ "username": username, "roleName": "not a role"}),
         )
         .execute_on(&mut transaction)
         .await
@@ -468,11 +539,11 @@ mod user_remove_role_mutation {
 
     #[actix_rt::test]
     async fn should_throw_bad_request_with_non_existent_user() {
-        let user_name = "not a user";
+        let username = "not a user";
         let mut transaction = begin_transaction().await;
         Message::new(
             "UserRemoveRoleMutation",
-            json!({ "userName": user_name, "roleName": "login"}),
+            json!({ "username": username, "roleName": "login"}),
         )
         .execute_on(&mut transaction)
         .await

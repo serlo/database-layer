@@ -100,6 +100,16 @@
     },
     "query": "SELECT LAST_INSERT_ID() as id"
   },
+  "0506200225b8369dc438105b84d6392436f35763e649cca51850ceb286130d53": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "\n                INSERT INTO user (id, email, username, password, date, token)\n                VALUES (?, ?, ?, ?, ?, ?)\n            "
+  },
   "0775fb20c50e22a43297a12e8959dc4e6c7527a64d40dfbe885f616acf252865": {
     "describe": {
       "columns": [
@@ -1223,6 +1233,16 @@
     },
     "query": "SELECT discriminator FROM uuid WHERE id = ?"
   },
+  "54b27404fec239f7bdf1a65c296c6d50ebc7bed716d867e4e37ce0eb9a91b877": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n                INSERT INTO uuid (discriminator)\n                VALUES ('user')\n            "
+  },
   "59220da9f5e4677a6fdc380eca9b95923728d0efd09277eb85290b3b4aafa118": {
     "describe": {
       "columns": [
@@ -2308,6 +2328,31 @@
       }
     },
     "query": "DELETE FROM uuid WHERE id = ? AND discriminator = 'user'"
+  },
+  "959bb5814c4a61f0b54dd6a26638cc474af69a741d3234bacc22050a694a25cc": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 161
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n                SELECT LAST_INSERT_ID() AS id\n                FROM uuid\n            "
   },
   "95cd88b4c06459122c191536fbef5c1c71a523fbf84a008593af1002721218d3": {
     "describe": {

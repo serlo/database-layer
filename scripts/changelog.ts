@@ -234,6 +234,11 @@ async function exec(): Promise<void> {
         ],
         fixed: ['Ignore user threads in AllThreadsQuery #310'],
       },
+      {
+        tagName: 'v0.3.52',
+        date: '2022-07-07',
+        added: ['add UserCreateMutation #298'],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

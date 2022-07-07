@@ -4,6 +4,8 @@ set -e
 
 source scripts/utils.sh
 
+git stash --include-untracked
+
 $(git config core.editor) scripts/changelog.ts
 
 print_header "Generating CHANGELOG"
@@ -25,3 +27,5 @@ yarn format
 print_header "Time to commit 🚀️"
 git add -p
 git commit
+
+git stash pop

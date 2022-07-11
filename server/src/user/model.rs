@@ -3,9 +3,11 @@ use crate::datetime::DateTime;
 use crate::operation;
 use crate::user::messages::{
     potential_spam_users_query, user_activity_by_type_query, user_add_role_mutation,
-    user_delete_bots_mutation, user_delete_regular_users_mutation, user_remove_role_mutation,
-    user_set_description_mutation, user_set_email_mutation,
+    user_create_mutation, user_delete_bots_mutation, user_delete_regular_users_mutation,
+    user_remove_role_mutation, user_set_description_mutation, user_set_email_mutation,
 };
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 use std::env;
 
 pub struct User {}
@@ -126,7 +128,7 @@ impl User {
                 FROM user
                 WHERE username = ?
             "#,
-            payload.user_name
+            payload.username
         )
         .fetch_optional(&mut transaction)
         .await?
@@ -163,6 +165,96 @@ impl User {
         .await?;
         transaction.commit().await?;
         Ok(())
+    }
+
+    pub async fn create<'a, E>(
+        payload: &user_create_mutation::Payload,
+        executor: E,
+    ) -> Result<i32, operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let default_role_id: i32 = 2;
+
+        if payload.username.len() > 32 {
+            return Err(operation::Error::BadRequest {
+                reason: "Username can\'t be longer than 32 characters.".to_string(),
+            });
+        }
+
+        if payload.email.len() > 254 {
+            return Err(operation::Error::BadRequest {
+                reason: "Email can\'t be longer than 254 characters.".to_string(),
+            });
+        }
+
+        if payload.username.trim().is_empty() {
+            return Err(operation::Error::BadRequest {
+                reason: "Username can\'t be empty.".to_string(),
+            });
+        }
+
+        if payload.password.len() > 50 {
+            return Err(operation::Error::BadRequest {
+                reason: "Password can\'t be longer than 50 characters.".to_string(),
+            });
+        }
+
+        let mut transaction = executor.begin().await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO uuid (discriminator)
+                VALUES ('user')
+            "#,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        let user_id = sqlx::query!(
+            r#"
+                SELECT LAST_INSERT_ID() AS id
+                FROM uuid
+            "#,
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .id;
+
+        let token: String = thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(8)
+            .map(char::from)
+            .collect();
+
+        sqlx::query!(
+            r#"
+                INSERT INTO user (id, email, username, password, date, token)
+                VALUES (?, ?, ?, ?, ?, ?)
+            "#,
+            user_id,
+            payload.email,
+            payload.username,
+            payload.password,
+            DateTime::now(),
+            token.to_lowercase(),
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(
+            r#"
+                INSERT INTO role_user (user_id, role_id)
+                VALUES (?, ?)
+            "#,
+            user_id,
+            default_role_id,
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        transaction.commit().await?;
+        Ok(user_id as i32)
     }
 
     pub async fn delete_bot<'a, E>(
@@ -388,7 +480,7 @@ impl User {
                 FROM user
                 WHERE username = ?
             "#,
-            payload.user_name
+            payload.username
         )
         .fetch_optional(&mut transaction)
         .await?

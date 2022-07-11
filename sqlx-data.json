@@ -211,6 +211,135 @@
     },
     "query": "delete from subscription where uuid_id = ?"
   },
+  "0eca65d1eb3fe8686ef46df2f9fad9cfb0fa44f786d09043609fb1a6a411fbf5": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 508,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "username",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 5
+            },
+            "max_size": 128,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "password",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 200,
+            "type": "String"
+          }
+        },
+        {
+          "name": "logins",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 10,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "date",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1153
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        },
+        {
+          "name": "token",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 128,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "last_login",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        },
+        {
+          "name": "description",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 16
+            },
+            "max_size": 262140,
+            "type": "Blob"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT *\n                FROM user\n                WHERE id = ?\n            "
+  },
   "0f7ddd3073657eb646caeed7f49e8ff4592d21b27f46fc8921f60ff0d6107930": {
     "describe": {
       "columns": [

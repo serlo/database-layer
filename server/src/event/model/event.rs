@@ -162,6 +162,18 @@ impl EventPayload {
 
         sqlx::query!(
             r#"
+                SELECT *
+                FROM user
+                WHERE id = ?
+            "#,
+            self.actor_id,
+        )
+        .fetch_optional(&mut transaction)
+        .await?
+        .ok_or(EventError::MissingUser)?;
+
+        sqlx::query!(
+            r#"
                 INSERT INTO event_log (actor_id, event_id, uuid_id, instance_id, date)
                     SELECT ?, id, ?, ?, ?
                     FROM event

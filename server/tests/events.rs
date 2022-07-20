@@ -123,3 +123,46 @@ mod events_query {
             .should_be_bad_request();
     }
 }
+
+mod general_events {
+    use server::uuid::abstract_entity_revision::EntityRevisionType;
+    use std::collections::HashMap;
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn fails_when_event_is_initialized_by_non_existing_actor_id() {
+        let mut transaction = begin_transaction().await;
+
+        let revision_id = Message::new(
+            "EntityAddRevisionMutation",
+            json!({
+                "revisionType": EntityRevisionType::Article,
+                "userId": 1,
+                "input": {
+                    "changes": "test changes",
+                    "entityId": 1495,
+                    "needsReview": true,
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "fields": HashMap::from([("1","2")]),
+                }
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .get_json()["revisionId"]
+            .clone();
+
+        Message::new(
+            "EntityCheckoutRevisionMutation",
+            json!({
+                "revisionId": revision_id,
+                "userId": 3,
+                "reason": "reason",
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_bad_request();
+    }
+}

@@ -50,6 +50,8 @@ pub enum EventError {
     InvalidInstance,
     #[error("Event cannot be fetched because a required field is missing.")]
     MissingRequiredField,
+    #[error("Event cannot be saved because the acting user does not exist.")]
+    MissingUser,
     #[error("Event cannot be fetched because it does not exist.")]
     NotFound,
 }

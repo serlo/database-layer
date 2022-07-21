@@ -551,6 +551,67 @@ mod user_remove_role_mutation {
     }
 }
 
+mod user_by_role_query {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn should_give_back_first_2_sysadmins_after_id_1 () {
+        let role_name = "sysadmin";
+        let first: i32 = 2;
+        let after: i32 = 1;
+
+        Message::new(
+            "UsersByRoleQuery",
+            json!({"roleName": role_name, "first": first, "after": after}),
+        )
+            .execute()
+            .await
+            .should_be_ok_with_body(json!({"usersByRole": [2, 6]}));
+    }
+
+    #[actix_rt::test]
+    async fn should_give_back_first_2_sysadmins () {
+        let role_name = "sysadmin";
+        let first: i32 = 2;
+
+        Message::new(
+            "UsersByRoleQuery",
+            json!({"roleName": role_name, "first": first}),
+        )
+            .execute()
+            .await
+            .should_be_ok_with_body(json!({"usersByRole": [1, 2]}));
+    }
+
+    #[actix_rt::test]
+    async fn should_fail_when_first_is_too_great () {
+        let role_name = "sysadmin";
+        let first: i32 = 10001;
+
+        Message::new(
+            "UsersByRoleQuery",
+            json!({"roleName": role_name, "first": first}),
+        )
+            .execute()
+            .await
+            .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn should_fail_when_role_does_not_exist () {
+        let role_name = "not a role";
+        let first: i32 = 10001;
+
+        Message::new(
+            "UsersByRoleQuery",
+            json!({"roleName": role_name, "first": first}),
+        )
+            .execute()
+            .await
+            .should_be_bad_request();
+    }
+}
+
 mod user_set_description_mutation {
     use test_utils::*;
 

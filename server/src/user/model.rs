@@ -4,11 +4,12 @@ use crate::operation;
 use crate::user::messages::{
     potential_spam_users_query, user_activity_by_type_query, user_add_role_mutation,
     user_create_mutation, user_delete_bots_mutation, user_delete_regular_users_mutation,
-    user_remove_role_mutation, user_set_description_mutation, user_set_email_mutation,
+    user_remove_role_mutation, users_by_role_query, user_set_description_mutation, user_set_email_mutation,
 };
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use std::env;
+use sqlx::{MySql, Transaction};
 
 pub struct User {}
 
@@ -504,6 +505,61 @@ impl User {
         Ok(())
     }
 
+    pub async fn users_by_role<'a, E>(
+        payload: &users_by_role_query::Payload,
+        executor: E,
+    ) -> Result<Vec<i32>, operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        if payload.first > 10000 {
+            return Err(operation::Error::BadRequest {
+                reason: "The parameter first is not allowed to be greater than 10,000.".to_string(),
+            });
+        }
+        let mut transaction = executor.begin().await?;
+        let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
+        Ok(
+            sqlx::query!(
+                r#"
+                    SELECT user_id
+                    FROM role_user
+                    WHERE role_id = ?
+                        AND (? IS NULL OR user_id > ?)
+                    ORDER BY user_id
+                    LIMIT ?
+                "#,
+                role_id,
+                payload.after,
+                payload.after,
+                payload.first,
+            )
+                .fetch_all(&mut transaction)
+                .await?
+                .into_iter()
+                .map(|x| x.user_id as i32)
+                .collect()
+            )
+    }
+
+    async fn role_name_to_id<'a>(name: &str, transaction: &mut Transaction<'a, MySql>) -> Result<i32, operation::Error>
+    {
+        Ok(sqlx::query!(
+            r#"
+                SELECT id
+                FROM role
+                WHERE name = ?
+            "#,
+            name
+        )
+            .fetch_optional(transaction)
+            .await?
+            .ok_or(operation::Error::BadRequest {
+                reason: "This role does not exist.".to_string(),
+            })?
+            .id)
+    }
+
     pub async fn set_description<'a, E>(
         payload: &user_set_description_mutation::Payload,
         executor: E,
@@ -545,3 +601,5 @@ impl User {
         Ok(username)
     }
 }
+
+

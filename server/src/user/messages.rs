@@ -22,6 +22,7 @@ pub enum UserMessage {
     UserDeleteRegularUsersMutation(user_delete_regular_users_mutation::Payload),
     UserPotentialSpamUsersQuery(potential_spam_users_query::Payload),
     UserRemoveRoleMutation(user_remove_role_mutation::Payload),
+    UsersByRoleQuery(users_by_role_query::Payload),
     UserSetDescriptionMutation(user_set_description_mutation::Payload),
     UserSetEmailMutation(user_set_email_mutation::Payload),
 }
@@ -68,6 +69,9 @@ impl MessageResponder for UserMessage {
             }
             UserMessage::UserRemoveRoleMutation(payload) => {
                 payload.handle("UserRemoveRoleMutation", connection).await
+            }
+            UserMessage::UsersByRoleQuery(payload) => {
+                payload.handle("UsersByRoleQuery", connection).await
             }
             UserMessage::UserSetDescriptionMutation(payload) => {
                 payload
@@ -355,6 +359,40 @@ pub mod user_remove_role_mutation {
                 }
             };
             Ok(Output { success: true })
+        }
+    }
+}
+
+pub mod users_by_role_query {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub role_name: String,
+        pub first: i32,
+        pub after: Option<i32>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        pub users_by_role: Vec<i32>,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(Output {
+            users_by_role: match connection {
+                Connection::Pool(pool) => User::users_by_role(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    User::users_by_role(self, transaction).await?
+                }
+            }}
+            )
         }
     }
 }

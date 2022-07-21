@@ -4,12 +4,13 @@ use crate::operation;
 use crate::user::messages::{
     potential_spam_users_query, user_activity_by_type_query, user_add_role_mutation,
     user_create_mutation, user_delete_bots_mutation, user_delete_regular_users_mutation,
-    user_remove_role_mutation, users_by_role_query, user_set_description_mutation, user_set_email_mutation,
+    user_remove_role_mutation, user_set_description_mutation, user_set_email_mutation,
+    users_by_role_query,
 };
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
-use std::env;
 use sqlx::{MySql, Transaction};
+use std::env;
 
 pub struct User {}
 
@@ -519,9 +520,8 @@ impl User {
         }
         let mut transaction = executor.begin().await?;
         let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
-        Ok(
-            sqlx::query!(
-                r#"
+        Ok(sqlx::query!(
+            r#"
                     SELECT user_id
                     FROM role_user
                     WHERE role_id = ?
@@ -529,21 +529,22 @@ impl User {
                     ORDER BY user_id
                     LIMIT ?
                 "#,
-                role_id,
-                payload.after,
-                payload.after,
-                payload.first,
-            )
-                .fetch_all(&mut transaction)
-                .await?
-                .into_iter()
-                .map(|x| x.user_id as i32)
-                .collect()
-            )
+            role_id,
+            payload.after,
+            payload.after,
+            payload.first,
+        )
+        .fetch_all(&mut transaction)
+        .await?
+        .into_iter()
+        .map(|x| x.user_id as i32)
+        .collect())
     }
 
-    async fn role_name_to_id<'a>(name: &str, transaction: &mut Transaction<'a, MySql>) -> Result<i32, operation::Error>
-    {
+    async fn role_name_to_id<'a>(
+        name: &str,
+        transaction: &mut Transaction<'a, MySql>,
+    ) -> Result<i32, operation::Error> {
         Ok(sqlx::query!(
             r#"
                 SELECT id
@@ -552,12 +553,12 @@ impl User {
             "#,
             name
         )
-            .fetch_optional(transaction)
-            .await?
-            .ok_or(operation::Error::BadRequest {
-                reason: "This role does not exist.".to_string(),
-            })?
-            .id)
+        .fetch_optional(transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: "This role does not exist.".to_string(),
+        })?
+        .id)
     }
 
     pub async fn set_description<'a, E>(
@@ -601,5 +602,3 @@ impl User {
         Ok(username)
     }
 }
-
-

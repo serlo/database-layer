@@ -386,13 +386,13 @@ pub mod users_by_role_query {
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             Ok(Output {
-            users_by_role: match connection {
-                Connection::Pool(pool) => User::users_by_role(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    User::users_by_role(self, transaction).await?
-                }
-            }}
-            )
+                users_by_role: match connection {
+                    Connection::Pool(pool) => User::users_by_role(self, pool).await?,
+                    Connection::Transaction(transaction) => {
+                        User::users_by_role(self, transaction).await?
+                    }
+                },
+            })
         }
     }
 }

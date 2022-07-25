@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.53](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.52..v0.3.53) - July 25, 2022
+
+### Added
+
+- Add UsersByRoleQuery
+
+### Changed
+
+- Event: throw BadUserInput (not Server Error) in case of inexistent userId
+
 ## [v0.3.52](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.51..v0.3.52) - July 7, 2022
 
 ### Added

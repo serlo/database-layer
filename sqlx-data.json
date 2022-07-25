@@ -950,6 +950,31 @@
     },
     "query": "delete from comment_vote where user_id = ?"
   },
+  "32c1f53266ed337eb33b4ab310eec9f0ad88909c9ba96773bbea28144e000275": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 4
+      }
+    },
+    "query": "\n                    SELECT user_id\n                    FROM role_user\n                    WHERE role_id = ?\n                        AND (? IS NULL OR user_id > ?)\n                    ORDER BY user_id\n                    LIMIT ?\n                "
+  },
   "3475791793b58ee5c67fe97f0aab6eb28b1d0882f95d830463ab9a4bef1acf12": {
     "describe": {
       "columns": [],

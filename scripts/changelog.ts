@@ -239,6 +239,14 @@ async function exec(): Promise<void> {
         date: '2022-07-07',
         added: ['add UserCreateMutation #298'],
       },
+      {
+        tagName: 'v0.3.53',
+        date: '2022-07-25',
+        added: ['Add UsersByRoleQuery'],
+        changed: [
+          'Event: throw BadUserInput (not Server Error) in case of inexistent userId',
+        ],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

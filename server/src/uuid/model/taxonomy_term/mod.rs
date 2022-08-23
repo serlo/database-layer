@@ -484,10 +484,10 @@ impl TaxonomyTerm {
 
         let heaviest_weight = sqlx::query!(
             r#"
-                    SELECT IFNULL(MAX(tt.weight), 0) AS current_heaviest
-                        FROM term_taxonomy tt
-                        WHERE tt.parent_id = ?
-                "#,
+                SELECT IFNULL(MAX(tt.weight), 0) AS current_heaviest
+                    FROM term_taxonomy tt
+                    WHERE tt.parent_id = ?
+            "#,
             payload.parent_id,
         )
         .fetch_one(&mut transaction)

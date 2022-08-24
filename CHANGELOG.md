@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.54](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.53..v0.3.54) - August 24, 2022
+
+### Fixed
+
+- Put newly created Taxonomy Terms into the last position in relation to its siblings
+
 ## [v0.3.53](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.52..v0.3.53) - July 25, 2022
 
 ### Added

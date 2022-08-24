@@ -247,6 +247,13 @@ async function exec(): Promise<void> {
           'Event: throw BadUserInput (not Server Error) in case of inexistent userId',
         ],
       },
+      {
+        tagName: 'v0.3.54',
+        date: '2022-08-24',
+        fixed: [
+          'Put newly created Taxonomy Terms into the last position in relation to its siblings',
+        ],
+      },
     ],
   })
   await writeFile(path.join(__dirname, '..', 'CHANGELOG.md'), content)

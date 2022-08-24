@@ -50,13 +50,15 @@ if [ -n "$FIXED" ]; then
   ]"
 fi
 print_header "Changelog entry suggestion"
-echo "Based on:"
-git log $(git describe --tags --abbrev=0)..HEAD --oneline
+echo "BASED ON"
+echo "++++++++"
+echo
+git log "$(git describe --tags --abbrev=0)"..HEAD --oneline
 if [ -n "$CURRENT_PR_TITLE" ]; then
   echo "PR title: $CURRENT_PR_TITLE"
 fi
 echo
-echo "We suggest the following changelog entry"
+echo "WE SUGGEST THE FOLLOWING CHANGELOG ENTRY"
 echo "++++++++++++++++++++++++++++++++++++++++"
 echo """
 {

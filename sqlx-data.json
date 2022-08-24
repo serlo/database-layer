@@ -3274,16 +3274,6 @@
     },
     "query": "update ad set author_id = ? where author_id = ?"
   },
-  "c835eae74be0aed997f0866173e654539b14213b61fe175a6a081b0a9c0dc709": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 5
-      }
-    },
-    "query": "\n                INSERT INTO term_taxonomy (id, term_id, taxonomy_id, parent_id, description)\n                    VALUES (?, ?, ?, ?, ?)\n            "
-  },
   "c8b4c137c46ca9c5a5df78a2f3aa679f9d7b528e086e16ac6d92a1fc4fd091da": {
     "describe": {
       "columns": [
@@ -3607,6 +3597,16 @@
       }
     },
     "query": "\n                SELECT term_taxonomy_id as id\n                    FROM (\n                        SELECT term_taxonomy_id, entity_id FROM term_taxonomy_entity\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l ON t.entity_id = l.parent_id\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l2.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l1 ON t.entity_id = l1.parent_id\n                            JOIN entity_link l2 ON l2.parent_id = l1.child_id\n                    ) u\n                    WHERE entity_id = ?\n            "
+  },
+  "e14024e5584079e74f13206f1cea5284f06572386a8ee1aecb54348fd4afda13": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "\n                INSERT INTO term_taxonomy (id, term_id, taxonomy_id, parent_id, description, weight)\n                    VALUES (?, ?, ?, ?, ?, ?)\n            "
   },
   "e301aa5d422549cc37a921cfb491915ffe39e03b48bfc5dd7d2c6316a3fca185": {
     "describe": {
@@ -4112,6 +4112,31 @@
       }
     },
     "query": "\n                SELECT\n                    entity.id,\n                    type.name AS resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND entity.type_id IN (48, 3, 7, 1, 4, 6)\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
+  },
+  "f4c0ed10e768ab3538997268981783d7d8348ad4e51c52db9d660be1d099a426": {
+    "describe": {
+      "columns": [
+        {
+          "name": "current_heaviest",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 11,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT IFNULL(MAX(tt.weight), 0) AS current_heaviest\n                    FROM term_taxonomy tt\n                    WHERE tt.parent_id = ?\n            "
   },
   "f6232703fd9b172776710f63c3b6b834d80b2d8d88e56e4c6a8a95e9b6ab0086": {
     "describe": {

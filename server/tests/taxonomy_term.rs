@@ -152,6 +152,33 @@ mod create_mutation {
     }
 
     #[actix_rt::test]
+    async fn puts_new_taxonomy_terms_into_the_last_position() {
+        let mut transaction = begin_transaction().await;
+
+        let new_taxonomy_id = Message::new(
+            "TaxonomyTermCreateMutation",
+            json! ({
+            "parentId": 1440,
+            "name": "the last name",
+            "description": "the last one",
+            "userId": 1,
+            "taxonomyType": "curriculum"
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .get_json()["id"]
+            .clone();
+
+        Message::new("UuidQuery", json!({ "id": 1440 }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(result["childrenIds"][2], new_taxonomy_id);
+            });
+    }
+
+    #[actix_rt::test]
     async fn fails_with_bad_request_if_parent_does_not_exist() {
         Message::new(
             "TaxonomyTermCreateMutation",

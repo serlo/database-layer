@@ -482,16 +482,30 @@ impl TaxonomyTerm {
             .await?
             .id as i32;
 
+        let heaviest_weight = sqlx::query!(
+            r#"
+                SELECT IFNULL(MAX(tt.weight), 0) AS current_heaviest
+                    FROM term_taxonomy tt
+                    WHERE tt.parent_id = ?
+            "#,
+            payload.parent_id,
+        )
+        .fetch_one(&mut transaction)
+        .await?
+        .current_heaviest as i32
+            + 1;
+
         sqlx::query!(
             r#"
-                INSERT INTO term_taxonomy (id, term_id, taxonomy_id, parent_id, description)
-                    VALUES (?, ?, ?, ?, ?)
+                INSERT INTO term_taxonomy (id, term_id, taxonomy_id, parent_id, description, weight)
+                    VALUES (?, ?, ?, ?, ?, ?)
             "#,
             taxonomy_term_id,
             term_id,
             taxonomy_id,
             payload.parent_id,
             payload.description,
+            heaviest_weight
         )
         .execute(&mut transaction)
         .await?;

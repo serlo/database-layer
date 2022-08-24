@@ -12,14 +12,15 @@ ADDED=$(echo $PRS_BODY_MESSAGES | grep 'feat' | awk -F: '{ print $2 }' | sed '$!
 FIXED=$(echo $PRS_BODY_MESSAGES | grep 'fix' | awk -F: '{ print $2 }' | sed '$!s/$/,/')
 BREAKING_CHANGES=$(echo $PRS_BODY_MESSAGES | grep '!' | awk -F: '{ print $2 }' | sed '$!s/$/,/')
 
-echo "Upgrading version..."
+echo "Finding new version..."
 LAST_VERSION=$(cat scripts/changelog.ts \
   | grep 'tagName:' \
   | tail -1 \
   | awk -F: '{ print $2 }' \
   | sed "s/[v,', ]//g")
 
-IFS=. read MAJOR MINOR PATCH <<< $LAST_VERSION
+IFS=.
+read MAJOR MINOR PATCH <<< $LAST_VERSION
 
 if [ -n "$BREAKING_CHANGES" ]; then
   NEW_VERSION="$(($MAJOR + 1)).0.0"
@@ -37,9 +38,23 @@ fi
 
 DATE=$(date +%F)
 
+if [ -n "$ADDED" ]; then
+  ADDED_ENTRIES="added: [
+  $ADDED
+  ]"
+fi
+
+if [ -n "$FIXED" ]; then
+  FIXED_ENTRIES="fixed: [
+  $FIXED
+  ]"
+fi
 print_header "Changelog entry suggestion"
 echo "Based on:"
 git log $(git describe --tags --abbrev=0)..HEAD --oneline
+if [ -n "$CURRENT_PR_TITLE" ]; then
+  echo "PR title: $CURRENT_PR_TITLE"
+fi
 echo
 echo "We suggest the following changelog entry"
 echo "++++++++++++++++++++++++++++++++++++++++"
@@ -47,12 +62,7 @@ echo """
 {
   tagName: 'v$NEW_VERSION',
   date: '$DATE',
-  added: [
-    $ADDED
-  ],
-  fixed: [
-    $FIXED
-  ]
-},
-
+  $(if [ -n "$ADDED_ENTRIES" ]; then echo "$ADDED_ENTRIES,"; fi)
+  $FIXED_ENTRIES
+}
 """

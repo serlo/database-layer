@@ -38,13 +38,15 @@ test('Pacts', async () => {
     },
   }
   const stateHandlers = new Proxy({}, handler)
+  console.log(process.env.PACT_BROKER_USERNAME)
+
   await new Verifier({
     provider: 'serlo.org-database-layer',
     providerVersion,
     providerBaseUrl: 'http://localhost:8080',
     pactBrokerUrl: 'https://pact.serlo.org',
-    pactBrokerUsername: process.env.PACT_BROKER_USERNAME,
-    pactBrokerPassword: process.env.PACT_BROKER_PASSWORD,
+    pactBrokerUsername: process.env.PACT_BROKER_USERNAME ?? 'user',
+    pactBrokerPassword: process.env.PACT_BROKER_PASSWORD ?? 'password',
     pactUrls: process.env.PACT_FILE
       ? [path.resolve(process.env.PACT_FILE)]
       : [],

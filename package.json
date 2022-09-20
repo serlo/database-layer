@@ -20,7 +20,7 @@
     "mysql:dump": "ts-node --experimental-specifier-resolution=node scripts/mysql-dump",
     "mysql:import-anonymous-data": "ts-node --experimental-specifier-resolution=node scripts/mysql-import-anonymous-data",
     "mysql:rollback": "ts-node --experimental-specifier-resolution=node scripts/mysql-rollback",
-    "pacts": "jest --config jest.config-pacts.js",
+    "pacts": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config-pacts.js",
     "sqlx:prepare": "cargo sqlx prepare --merged",
     "start": "docker-compose up --detach",
     "update-version": "./scripts/update_server_version.sh"

@@ -1,23 +1,25 @@
-const { Verifier } = require('@pact-foundation/pact')
-const { spawnSync } = require('child_process')
-const fs = require('fs')
-const path = require('path')
-const process = require('process')
-const toml = require('toml')
-const util = require('util')
+import { Verifier } from '@pact-foundation/pact'
+import { spawnSync } from 'node:child_process'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import * as process from 'node:process'
+import { parse } from 'toml'
+import { jest } from '@jest/globals'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 jest.setTimeout(120 * 1000)
 
 test('Pacts', async () => {
   async function fetchCargoToml() {
-    const readFile = util.promisify(fs.readFile)
-    const file = await readFile(
+    const file = await fs.promises.readFile(
       path.join(__dirname, '..', 'server', 'Cargo.toml'),
       {
         encoding: 'utf-8',
       }
     )
-    const { package: pkg } = await toml.parse(file)
+    const { package: pkg } = await parse(file)
     return { version: pkg.version }
   }
 
@@ -38,7 +40,6 @@ test('Pacts', async () => {
     },
   }
   const stateHandlers = new Proxy({}, handler)
-  console.log(process.env.PACT_BROKER_USERNAME)
 
   await new Verifier({
     provider: 'serlo.org-database-layer',

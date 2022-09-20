@@ -1,11 +1,14 @@
-import { spawnSync } from 'child_process'
-import * as fs from 'fs'
-import * as path from 'path'
+import { spawnSync } from 'node:child_process'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 import * as R from 'ramda'
-import * as semver from 'semver'
+import semverParse from 'semver/functions/parse.js'
+import SemVer from 'semver/classes/semver.js'
 import * as toml from 'toml'
-import * as util from 'util'
+import { fileURLToPath } from 'node:url'
+import * as util from 'node:util'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.join(__dirname, '..')
 const cargoTomlPath = path.join(root, 'server', 'Cargo.toml')
 
@@ -41,7 +44,7 @@ function buildDockerImage({
   Dockerfile,
   context,
 }: DockerImageOptions) {
-  const semanticVersion = semver.parse(version)
+  const semanticVersion = semverParse(version)
 
   if (semanticVersion === null) throw new Error(`illegal version ${version}`)
 
@@ -93,7 +96,7 @@ function buildDockerImage({
   })
 }
 
-function getTargetVersions(version: semver.SemVer) {
+function getTargetVersions(version: SemVer) {
   const { major, minor, patch, prerelease } = version
 
   return prerelease.length > 0

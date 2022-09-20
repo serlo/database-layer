@@ -12,18 +12,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 jest.setTimeout(120 * 1000)
 
 test('Pacts', async () => {
-  async function fetchCargoToml() {
-    const file = await fs.promises.readFile(
-      path.join(__dirname, '..', 'server', 'Cargo.toml'),
-      {
-        encoding: 'utf-8',
-      }
-    )
-    const { package: pkg } = await parse(file)
-    return { version: pkg.version }
-  }
-
-  const { version } = await fetchCargoToml()
+  const cargoToml = await fs.promises.readFile(
+    path.join(__dirname, '..', 'server', 'Cargo.toml'),
+    {
+      encoding: 'utf-8',
+    }
+  )
+  const { version } = await parse(cargoToml).package
 
   const result = spawnSync('git', ['rev-parse', '--short', 'HEAD'], {
     stdio: 'pipe',

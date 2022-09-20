@@ -8,6 +8,7 @@
   "repository": "serlo/serlo.org-database-layer",
   "license": "Apache-2.0",
   "author": "Serlo Education e.V.",
+  "type": "module",
   "scripts": {
     "changelog": "ts-node scripts/changelog",
     "check:all": "scripts/run_all_checks.sh",

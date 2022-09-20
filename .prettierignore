@@ -1,5 +1,5 @@
+# Omit prettier in files and directories which are contoled by other tools
+# and not changed manually by programmers
 target/
-sqlx-data.json
-
-# Yarn
 .yarn/
+sqlx-data.json

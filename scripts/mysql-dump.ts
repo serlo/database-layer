@@ -4,14 +4,18 @@
  * container during `yarn start`.
  */
 
-import { spawn } from 'child_process'
-import * as fs from 'fs'
-import * as path from 'path'
-import * as process from 'process'
+import { spawn } from 'node:child_process'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import * as process from 'node:process'
+import { fileURLToPath } from 'node:url'
+
 import {
   ConcatenateInsertCommands,
   IgnoreInsecurePasswordWarning,
 } from './transform'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Currently we have wrongly encoded characters in the DB and the dump only
 // works when we handle it with a 1 Byte character set (see #166)
@@ -56,6 +60,6 @@ mysqldump.on('error', (error) => {
   console.error('ERROR: ' + error)
 })
 
-mysqldump.on('exit', (code, signal) => {
+mysqldump.on('exit', (code) => {
   process.exit(code !== null ? code : 1)
 })

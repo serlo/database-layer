@@ -6,7 +6,6 @@ import semverParse from 'semver/functions/parse.js'
 import SemVer from 'semver/classes/semver.js'
 import * as toml from 'toml'
 import { fileURLToPath } from 'node:url'
-import * as util from 'node:util'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.join(__dirname, '..')
@@ -14,22 +13,16 @@ const cargoTomlPath = path.join(root, 'server', 'Cargo.toml')
 
 const fsOptions: { encoding: BufferEncoding } = { encoding: 'utf-8' }
 
-const readFile = util.promisify(fs.readFile)
-
-void run().then(() => {})
-
-async function run() {
-  const { version } = await fetchCargoToml()
-  buildDockerImage({
-    name: 'serlo-org-database-layer',
-    version,
-    Dockerfile: path.join(root, 'Dockerfile'),
-    context: '.',
-  })
-}
+const { version } = await fetchCargoToml()
+buildDockerImage({
+  name: 'serlo-org-database-layer',
+  version,
+  Dockerfile: path.join(root, 'Dockerfile'),
+  context: '.',
+})
 
 async function fetchCargoToml() {
-  const file = await readFile(cargoTomlPath, fsOptions)
+  const file = await fs.promises.readFile(cargoTomlPath, fsOptions)
   const { package: pkg } = (await toml.parse(file)) as {
     package: {
       version: string

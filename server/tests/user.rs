@@ -635,6 +635,20 @@ mod user_set_description_mutation {
                 assert_eq!(result["description"], "new description".to_string())
             });
     }
+
+    #[actix_rt::test]
+    async fn fails_when_description_is_longer_than_64kb() {
+        Message::new(
+            "UserSetDescriptionMutation",
+            json!({
+                "userId": 1,
+                "description": std::iter::repeat("X").take(64*1024).collect::<String>()
+            }),
+        )
+        .execute()
+        .await
+        .should_be_bad_request();
+    }
 }
 
 mod user_set_email_mutation {

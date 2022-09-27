@@ -5,7 +5,6 @@ use sqlx::MySqlPool;
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 use crate::database::Executor;
 use crate::datetime::DateTime;
-use crate::format_alias;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -44,21 +43,18 @@ impl UuidFetcher for PageRevision {
             sqlx::Error::RowNotFound => UuidError::NotFound,
             error => error.into(),
         })
-        .map(|revision| {
-            Uuid {
-                id,
-                trashed: revision.trashed != 0,
-                // TODO:
-                alias: format_alias(None, id, Some(&revision.title)),
-                concrete_uuid: ConcreteUuid::PageRevision(PageRevision {
-                    __typename: "PageRevision".to_string(),
-                    title: revision.title,
-                    content: revision.content,
-                    date: revision.date.into(),
-                    author_id: revision.author_id as i32,
-                    repository_id: revision.page_repository_id as i32,
-                }),
-            }
+        .map(|revision| Uuid {
+            id,
+            trashed: revision.trashed != 0,
+            alias: format!("/entity/repository/compare/0/{}", id),
+            concrete_uuid: ConcreteUuid::PageRevision(PageRevision {
+                __typename: "PageRevision".to_string(),
+                title: revision.title,
+                content: revision.content,
+                date: revision.date.into(),
+                author_id: revision.author_id as i32,
+                repository_id: revision.page_repository_id as i32,
+            }),
         })
     }
 }

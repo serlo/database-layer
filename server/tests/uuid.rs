@@ -46,6 +46,16 @@ mod uuid_query {
             .await
             .should_be_ok_with(|result| assert_eq!(result["taxonomyId"], 4));
     }
+
+    #[actix_rt::test]
+    async fn returns_proper_alias_for_page_revisions() {
+        Message::new("UuidQuery", json!({ "id": 26769 }))
+            .execute()
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(result["alias"], "/entity/repository/compare/0/26769")
+            });
+    }
 }
 
 mod set_uuid_state_mutation {

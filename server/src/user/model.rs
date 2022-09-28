@@ -564,10 +564,16 @@ impl User {
     pub async fn set_description<'a, E>(
         payload: &user_set_description_mutation::Payload,
         executor: E,
-    ) -> Result<(), sqlx::Error>
+    ) -> Result<(), operation::Error>
     where
         E: Executor<'a>,
     {
+        if payload.description.len() >= 64 * 1024 {
+            return Err(operation::Error::BadRequest {
+                reason: "description is too long".to_string(),
+            });
+        }
+
         sqlx::query!(
             "update user set description = ? where id = ?",
             payload.description,

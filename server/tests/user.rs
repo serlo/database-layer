@@ -211,10 +211,13 @@ mod user_delete_regular_users_mutation {
         let user_id: i32 = 10;
         let deleted_user_id: i32 = 4;
 
-        Message::new("UserDeleteRegularUsersMutation", json!({ "id": user_id }))
-            .execute_on(&mut transaction)
-            .await
-            .should_be_ok_with_body(json!({ "success": true, }));
+        Message::new(
+            "UserDeleteRegularUsersMutation",
+            json!({ "userId": user_id }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with_body(json!({ "success": true, }));
 
         Message::new("UuidQuery", json!({ "id": user_id }))
             .execute_on(&mut transaction)
@@ -330,7 +333,7 @@ mod user_delete_regular_users_mutation {
 
         Message::new(
             "UserDeleteRegularUsersMutation",
-            json!({ "id": reporter_id }),
+            json!({ "userId": reporter_id }),
         )
         .execute_on(&mut transaction)
         .await;
@@ -345,7 +348,7 @@ mod user_delete_regular_users_mutation {
 
     #[actix_rt::test]
     async fn fails_when_user_does_not_exist() {
-        Message::new("UserDeleteRegularUsersMutation", json!({ "id": -1 }))
+        Message::new("UserDeleteRegularUsersMutation", json!({ "userId": -1 }))
             .execute()
             .await
             .should_be_bad_request();
@@ -353,7 +356,7 @@ mod user_delete_regular_users_mutation {
 
     #[actix_rt::test]
     async fn fails_when_trying_to_delete_deleted() {
-        Message::new("UserDeleteRegularUsersMutation", json!({ "id": 4 }))
+        Message::new("UserDeleteRegularUsersMutation", json!({ "userId": 4 }))
             .execute()
             .await
             .should_be_bad_request();

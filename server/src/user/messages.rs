@@ -267,7 +267,7 @@ pub mod user_delete_regular_users_mutation {
     #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
-        pub id: i32,
+        pub user_id: i32,
     }
 
     #[derive(Debug, Serialize, Deserialize)]

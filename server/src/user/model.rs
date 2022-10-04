@@ -301,7 +301,7 @@ impl User {
     {
         let deleted_user_id: i32 = 4;
 
-        if payload.id == deleted_user_id {
+        if payload.user_id == deleted_user_id {
             return Err(operation::Error::BadRequest {
                 reason: "You cannot delete the user Deleted.".to_string(),
             });
@@ -309,7 +309,7 @@ impl User {
 
         let mut transaction = executor.begin().await?;
 
-        sqlx::query!(r#"select * from user where id = ?"#, payload.id,)
+        sqlx::query!(r#"select * from user where id = ?"#, payload.user_id)
             .fetch_optional(&mut transaction)
             .await?
             .ok_or(operation::Error::BadRequest {
@@ -319,7 +319,7 @@ impl User {
         sqlx::query!(
             r#"update ad set author_id = ? where author_id = ?"#,
             deleted_user_id,
-            payload.id,
+            payload.user_id
         )
         .execute(&mut transaction)
         .await?;
@@ -327,7 +327,7 @@ impl User {
         sqlx::query!(
             r#"update blog_post set author_id = ? where author_id = ?"#,
             deleted_user_id,
-            payload.id,
+            payload.user_id
         )
         .execute(&mut transaction)
         .await?;
@@ -335,19 +335,22 @@ impl User {
         sqlx::query!(
             r#"update comment set author_id = ? where author_id = ?"#,
             deleted_user_id,
-            payload.id,
+            payload.user_id
         )
         .execute(&mut transaction)
         .await?;
 
-        sqlx::query!(r#"delete from comment_vote where user_id = ?"#, payload.id,)
-            .execute(&mut transaction)
-            .await?;
+        sqlx::query!(
+            r#"delete from comment_vote where user_id = ?"#,
+            payload.user_id
+        )
+        .execute(&mut transaction)
+        .await?;
 
         sqlx::query!(
             r#"update entity_revision set author_id = ? where author_id = ?"#,
             deleted_user_id,
-            payload.id,
+            payload.user_id
         )
         .execute(&mut transaction)
         .await?;
@@ -355,42 +358,54 @@ impl User {
         sqlx::query!(
             r#"update event_log set actor_id = ? where actor_id = ?"#,
             deleted_user_id,
-            payload.id,
+            payload.user_id
         )
         .execute(&mut transaction)
         .await?;
 
-        sqlx::query!(r#"delete from flag where reporter_id = ?"#, payload.id,)
+        sqlx::query!(r#"delete from flag where reporter_id = ?"#, payload.user_id)
             .execute(&mut transaction)
             .await?;
 
-        sqlx::query!(r#"delete from notification where user_id = ?"#, payload.id,)
-            .execute(&mut transaction)
-            .await?;
+        sqlx::query!(
+            r#"delete from notification where user_id = ?"#,
+            payload.user_id
+        )
+        .execute(&mut transaction)
+        .await?;
 
         sqlx::query!(
             r#"update page_revision set author_id = ? where author_id = ?"#,
             deleted_user_id,
-            payload.id,
+            payload.user_id
         )
         .execute(&mut transaction)
         .await?;
 
-        sqlx::query!(r#"delete from role_user where user_id = ?"#, payload.id,)
-            .execute(&mut transaction)
-            .await?;
+        sqlx::query!(
+            r#"delete from role_user where user_id = ?"#,
+            payload.user_id
+        )
+        .execute(&mut transaction)
+        .await?;
 
-        sqlx::query!(r#"delete from subscription where user_id = ?"#, payload.id,)
-            .execute(&mut transaction)
-            .await?;
+        sqlx::query!(
+            r#"delete from subscription where user_id = ?"#,
+            payload.user_id
+        )
+        .execute(&mut transaction)
+        .await?;
 
-        sqlx::query!(r#"delete from subscription where uuid_id = ?"#, payload.id,)
-            .execute(&mut transaction)
-            .await?;
+        sqlx::query!(
+            r#"delete from subscription where uuid_id = ?"#,
+            payload.user_id
+        )
+        .execute(&mut transaction)
+        .await?;
 
         sqlx::query!(
             r#"delete from uuid where id = ? and discriminator = 'user'"#,
-            payload.id,
+            payload.user_id
         )
         .execute(&mut transaction)
         .await?;

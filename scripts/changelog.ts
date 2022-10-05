@@ -243,6 +243,15 @@ const content = generateChangelog({
         'Put newly created Taxonomy Terms into the last position in relation to its siblings',
       ],
     },
+    {
+      tagName: 'v0.3.55',
+      date: '2022-10-05',
+      fixed: [
+        'Update payload of `UserDeleteRegularUserMutation` to match API contract #327',
+        'Do not accept user descriptions bigger than 64KB #323',
+        'Fix alias for page revisions #325',
+      ],
+    },
   ],
 })
 

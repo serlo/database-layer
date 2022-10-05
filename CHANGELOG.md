@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.55](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.54..v0.3.55) - October 5, 2022
+
+### Fixed
+
+- Update payload of `UserDeleteRegularUserMutation` to match API contract #327
+
+- Do not accept user descriptions bigger than 64KB #323
+
+- Fix alias for page revisions #325
+
 ## [v0.3.54](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.53..v0.3.54) - August 24, 2022
 
 ### Fixed

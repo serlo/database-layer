@@ -2,8 +2,7 @@ import { spawnSync } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import * as R from 'ramda'
-import semverParse from 'semver/functions/parse'
-import SemVer from 'semver/classes/semver'
+import SemVer from 'semver/classes/semver.js'
 import * as toml from 'toml'
 import { fileURLToPath } from 'node:url'
 
@@ -37,7 +36,7 @@ function buildDockerImage({
   Dockerfile,
   context,
 }: DockerImageOptions) {
-  const semanticVersion = semverParse(version)
+  const semanticVersion = new SemVer(version)
 
   if (semanticVersion === null) throw new Error(`illegal version ${version}`)
 

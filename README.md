@@ -12,7 +12,7 @@ You need [Docker](https://docs.docker.com/engine/installation/) and [Rust](https
 
 ```sh
 # Clone the project:
-$ git clone https://github.com/serlo/serlo.org-database-layer.git
+$ git clone https://github.com/serlo/database-layer.git
 $ cd serlo.org-database-layer
 ```
 

@@ -8,14 +8,6 @@ The database layer provides a Restful API in front of the database of [Serlo](ht
 
 You need [Docker](https://docs.docker.com/engine/installation/) and [Rust](https://www.rust-lang.org) installed on your system. In order to run the pact tests (= contract test suite we use) you need to install [Node.js](https://nodejs.org/) version `14.x` and [yarn](https://yarnpkg.com/).
 
-### Clone
-
-```sh
-# Clone the project:
-$ git clone https://github.com/serlo/database-layer.git
-$ cd database-layer
-```
-
 ### Install sqlx-cli
 
 You need to install [`sqlx-cli`](https://github.com/launchbadge/sqlx/tree/master/sqlx-cli) via

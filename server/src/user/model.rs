@@ -2,7 +2,7 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::operation;
 use crate::user::messages::{
-    potential_spam_users_query, user_activity_by_type_query, user_add_role_mutation,
+    potential_spam_users_query, user_activity_by_type_query, user_add_role,
     user_create_mutation, user_delete_bots_mutation, user_delete_regular_users_mutation,
     user_remove_role_mutation, user_set_description_mutation, user_set_email_mutation,
     users_by_role_query,
@@ -100,8 +100,8 @@ impl User {
         })
     }
 
-    pub async fn add_role_mutation<'a, E>(
-        payload: &user_add_role_mutation::Payload,
+    pub async fn add_role<'a, E>(
+        payload: &user_add_role::Payload,
         executor: E,
     ) -> Result<(), operation::Error>
     where
@@ -467,7 +467,7 @@ impl User {
         }
     }
 
-    pub async fn remove_role_mutation<'a, E>(
+    pub async fn remove_role<'a, E>(
         payload: &user_remove_role_mutation::Payload,
         executor: E,
     ) -> Result<(), operation::Error>

@@ -16,7 +16,7 @@ pub enum UserMessage {
     // See https://github.com/serlo/api.serlo.org/issues/459
     ActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserActivityByTypeQuery(user_activity_by_type_query::Payload),
-    UserAddRoleMutation(user_add_role_mutation::Payload),
+    UserAddRoleMutation(user_add_role::Payload),
     UserCreateMutation(user_create_mutation::Payload),
     UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
     UserDeleteRegularUsersMutation(user_delete_regular_users_mutation::Payload),
@@ -161,7 +161,7 @@ pub mod user_activity_by_type_query {
     }
 }
 
-pub mod user_add_role_mutation {
+pub mod user_add_role {
     use super::*;
 
     #[derive(Debug, Deserialize, Serialize)]
@@ -183,9 +183,9 @@ pub mod user_add_role_mutation {
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             match connection {
-                Connection::Pool(pool) => User::add_role_mutation(self, pool).await?,
+                Connection::Pool(pool) => User::add_role(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    User::add_role_mutation(self, transaction).await?
+                    User::add_role(self, transaction).await?
                 }
             };
             Ok(Output { success: true })
@@ -353,9 +353,9 @@ pub mod user_remove_role_mutation {
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             match connection {
-                Connection::Pool(pool) => User::remove_role_mutation(self, pool).await?,
+                Connection::Pool(pool) => User::remove_role(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    User::remove_role_mutation(self, transaction).await?
+                    User::remove_role(self, transaction).await?
                 }
             };
             Ok(Output { success: true })

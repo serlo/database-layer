@@ -108,7 +108,7 @@ impl User {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        
+
         let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
 
         let user_id = sqlx::query!(

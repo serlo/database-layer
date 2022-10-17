@@ -108,21 +108,8 @@ impl User {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-
-        let role_id = sqlx::query!(
-            r#"
-                SELECT id
-                FROM role
-                WHERE name = ?
-            "#,
-            payload.role_name
-        )
-        .fetch_optional(&mut transaction)
-        .await?
-        .ok_or(operation::Error::BadRequest {
-            reason: "This role does not exist.".to_string(),
-        })?
-        .id;
+        
+        let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
 
         let user_id = sqlx::query!(
             r#"
@@ -476,20 +463,7 @@ impl User {
     {
         let mut transaction = executor.begin().await?;
 
-        let role_id = sqlx::query!(
-            r#"
-                SELECT id
-                FROM role
-                WHERE name = ?
-            "#,
-            payload.role_name
-        )
-        .fetch_optional(&mut transaction)
-        .await?
-        .ok_or(operation::Error::BadRequest {
-            reason: "This role does not exist.".to_string(),
-        })?
-        .id;
+        let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
 
         let user_id = sqlx::query!(
             r#"

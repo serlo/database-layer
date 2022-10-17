@@ -184,9 +184,7 @@ pub mod user_add_role {
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             match connection {
                 Connection::Pool(pool) => User::add_role(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    User::add_role(self, transaction).await?
-                }
+                Connection::Transaction(transaction) => User::add_role(self, transaction).await?,
             };
             Ok(Output { success: true })
         }

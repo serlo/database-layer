@@ -2,10 +2,9 @@ use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::operation;
 use crate::user::messages::{
-    potential_spam_users_query, user_activity_by_type_query, user_add_role,
-    user_create_mutation, user_delete_bots_mutation, user_delete_regular_users_mutation,
-    user_remove_role_mutation, user_set_description_mutation, user_set_email_mutation,
-    users_by_role_query,
+    potential_spam_users_query, user_activity_by_type_query, user_add_role, user_create_mutation,
+    user_delete_bots_mutation, user_delete_regular_users_mutation, user_remove_role_mutation,
+    user_set_description_mutation, user_set_email_mutation, users_by_role_query,
 };
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};

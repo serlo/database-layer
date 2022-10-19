@@ -161,7 +161,7 @@ pub mod user_activity_by_type_query {
     }
 }
 
-pub mod user_add_role {
+pub mod user_add_role_mutation {
     use super::*;
 
     #[derive(Debug, Deserialize, Serialize)]

@@ -16,7 +16,7 @@ pub enum UserMessage {
     // See https://github.com/serlo/api.serlo.org/issues/459
     ActivityByTypeQuery(user_activity_by_type_query::Payload),
     UserActivityByTypeQuery(user_activity_by_type_query::Payload),
-    UserAddRoleMutation(user_add_role::Payload),
+    UserAddRoleMutation(user_add_role_mutation::Payload),
     UserCreateMutation(user_create_mutation::Payload),
     UserDeleteBotsMutation(user_delete_bots_mutation::Payload),
     UserDeleteRegularUsersMutation(user_delete_regular_users_mutation::Payload),

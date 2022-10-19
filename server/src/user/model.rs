@@ -100,7 +100,7 @@ impl User {
     }
 
     pub async fn add_role<'a, E>(
-        payload: &user_add_role::Payload,
+        payload: &user_add_role_mutation::Payload,
         executor: E,
     ) -> Result<(), operation::Error>
     where

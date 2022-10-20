@@ -100,7 +100,7 @@ impl User {
         })
     }
 
-    pub async fn add_role_mutation<'a, E>(
+    pub async fn add_role<'a, E>(
         payload: &user_add_role_mutation::Payload,
         executor: E,
     ) -> Result<(), operation::Error>
@@ -109,20 +109,7 @@ impl User {
     {
         let mut transaction = executor.begin().await?;
 
-        let role_id = sqlx::query!(
-            r#"
-                SELECT id
-                FROM role
-                WHERE name = ?
-            "#,
-            payload.role_name
-        )
-        .fetch_optional(&mut transaction)
-        .await?
-        .ok_or(operation::Error::BadRequest {
-            reason: "This role does not exist.".to_string(),
-        })?
-        .id;
+        let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
 
         let user_id = sqlx::query!(
             r#"
@@ -457,17 +444,7 @@ impl User {
         Ok(ids)
     }
 
-    fn now() -> DateTime {
-        // In the development database there are no recent edits so we use an old timestamp.
-        // In production, we use the current time.
-        let environment = env::var("ENV").unwrap();
-        match environment.as_str() {
-            "development" => DateTime::ymd(2014, 1, 1),
-            _ => DateTime::now(),
-        }
-    }
-
-    pub async fn remove_role_mutation<'a, E>(
+    pub async fn remove_role<'a, E>(
         payload: &user_remove_role_mutation::Payload,
         executor: E,
     ) -> Result<(), operation::Error>
@@ -476,20 +453,7 @@ impl User {
     {
         let mut transaction = executor.begin().await?;
 
-        let role_id = sqlx::query!(
-            r#"
-                SELECT id
-                FROM role
-                WHERE name = ?
-            "#,
-            payload.role_name
-        )
-        .fetch_optional(&mut transaction)
-        .await?
-        .ok_or(operation::Error::BadRequest {
-            reason: "This role does not exist.".to_string(),
-        })?
-        .id;
+        let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
 
         let user_id = sqlx::query!(
             r#"
@@ -556,26 +520,6 @@ impl User {
         .collect())
     }
 
-    async fn role_name_to_id<'a>(
-        name: &str,
-        transaction: &mut Transaction<'a, MySql>,
-    ) -> Result<i32, operation::Error> {
-        Ok(sqlx::query!(
-            r#"
-                SELECT id
-                FROM role
-                WHERE name = ?
-            "#,
-            name
-        )
-        .fetch_optional(transaction)
-        .await?
-        .ok_or(operation::Error::BadRequest {
-            reason: "This role does not exist.".to_string(),
-        })?
-        .id)
-    }
-
     pub async fn set_description<'a, E>(
         payload: &user_set_description_mutation::Payload,
         executor: E,
@@ -621,5 +565,35 @@ impl User {
         .await?;
         transaction.commit().await?;
         Ok(username)
+    }
+
+    async fn role_name_to_id<'a>(
+        name: &str,
+        transaction: &mut Transaction<'a, MySql>,
+    ) -> Result<i32, operation::Error> {
+        Ok(sqlx::query!(
+            r#"
+                SELECT id
+                FROM role
+                WHERE name = ?
+            "#,
+            name
+        )
+        .fetch_optional(transaction)
+        .await?
+        .ok_or(operation::Error::BadRequest {
+            reason: "This role does not exist.".to_string(),
+        })?
+        .id)
+    }
+
+    fn now() -> DateTime {
+        // In the development database there are no recent edits so we use an old timestamp.
+        // In production, we use the current time.
+        let environment = env::var("ENV").unwrap();
+        match environment.as_str() {
+            "development" => DateTime::ymd(2014, 1, 1),
+            _ => DateTime::now(),
+        }
     }
 }

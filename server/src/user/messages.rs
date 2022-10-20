@@ -183,10 +183,8 @@ pub mod user_add_role_mutation {
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             match connection {
-                Connection::Pool(pool) => User::add_role_mutation(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    User::add_role_mutation(self, transaction).await?
-                }
+                Connection::Pool(pool) => User::add_role(self, pool).await?,
+                Connection::Transaction(transaction) => User::add_role(self, transaction).await?,
             };
             Ok(Output { success: true })
         }
@@ -353,9 +351,9 @@ pub mod user_remove_role_mutation {
 
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             match connection {
-                Connection::Pool(pool) => User::remove_role_mutation(self, pool).await?,
+                Connection::Pool(pool) => User::remove_role(self, pool).await?,
                 Connection::Transaction(transaction) => {
-                    User::remove_role_mutation(self, transaction).await?
+                    User::remove_role(self, transaction).await?
                 }
             };
             Ok(Output { success: true })

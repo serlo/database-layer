@@ -303,12 +303,15 @@ impl Event {
                 FROM event_log el
                     JOIN event e ON e.id = el.event_id
                     JOIN instance i on i.id = el.instance_id
+                    LEFT JOIN uuid u ON u.id = el.uuid_id
                     LEFT JOIN event_parameter ep ON ep.log_id = el.id
                     LEFT JOIN event_parameter_name epn ON epn.id = ep.name_id
                     LEFT JOIN event_parameter_string eps ON eps.event_parameter_id = ep.id
                     LEFT JOIN event_parameter_uuid epu ON epu.event_parameter_id = ep.id
                 WHERE
-                  (? IS NULL OR el.id < ?)
+                  (e.name != "entity/revision/checkout")
+                  AND (u.discriminator != "pageRevision")
+                  AND (? IS NULL OR el.id < ?)
                   AND (? IS NULL OR el.actor_id = ?)
                   AND (? IS NULL OR el.uuid_id = ? OR epu.uuid_id = ?)
                   AND (? IS NULL OR el.instance_id = ?)

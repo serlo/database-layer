@@ -39,7 +39,7 @@ impl Threads {
 
         let result = sqlx::query!(
             r#"
-                SELECT comment.id
+                SELECT comment.id, comment.date
                 FROM comment
                 JOIN uuid ON uuid.id = comment.id
                 JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id
@@ -50,7 +50,7 @@ impl Threads {
                     AND comment.archived = 0
                     AND (? is null OR instance_id = ?)
                     AND parent_uuid.discriminator != "user"
-                ORDER BY comment.id DESC
+                ORDER BY date DESC
                 LIMIT ?
             "#,
             after.unwrap_or(1_000_000_000),
@@ -198,6 +198,16 @@ impl Threads {
             payload.thread_id,
             payload.user_id,
             thread.instance_id
+        )
+        .execute(&mut transaction)
+        .await?;
+
+        sqlx::query!(
+            r#"
+                UPDATE comment SET date = ? WHERE id = ?
+            "#,
+            DateTime::now(),
+            payload.thread_id,
         )
         .execute(&mut transaction)
         .await?;

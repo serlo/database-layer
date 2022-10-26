@@ -12,6 +12,27 @@ mod all_threads_query {
     }
 
     #[actix_rt::test]
+    async fn orders_threads_by_last_commented() {
+        let mut transaction = begin_transaction().await;
+
+        Message::new(
+            "ThreadCreateCommentMutation",
+            json!({
+                "threadId": 35085,                "userId": 1,                "content": "last comment",                "subscribe": true,                "sendEmail": false,            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok();
+
+        Message::new("AllThreadsQuery", json!({ "first": 5 }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with_body(
+                json!({ "firstCommentIds": [35085, 35435, 35361, 35163, 35090] }),
+            );
+    }
+
+    #[actix_rt::test]
     async fn with_parameter_after() {
         Message::new("AllThreadsQuery", json!({ "first": 3, "after": 35361 }))
             .execute()

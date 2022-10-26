@@ -4,7 +4,7 @@ source scripts/utils.sh
 
 echo "Getting last PR messages..."
 
-MERGED_PRS_BODY_MESSAGES=$(git log $(git describe --tags --abbrev=0)..HEAD | grep 'Merge pull request' -A 10)
+MERGED_PRS_BODY_MESSAGES="$($(git log $(git describe --tags --abbrev=0)..HEAD --pretty=tformat:'%s %b%n') | grep 'Merge pull request')"
 CURRENT_PR_TITLE=$(gh pr view | head -n 1 | sed "s/title://g")
 PRS_BODY_MESSAGES="$MERGED_PRS_BODY_MESSAGES"$'\n'"$CURRENT_PR_TITLE"
 

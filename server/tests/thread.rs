@@ -18,7 +18,12 @@ mod all_threads_query {
         Message::new(
             "ThreadCreateCommentMutation",
             json!({
-                "threadId": 35085,                "userId": 1,                "content": "last comment",                "subscribe": true,                "sendEmail": false,            }),
+                "threadId": 35085,
+                "userId": 1,
+                "content": "last comment",
+                "subscribe": true,
+                "sendEmail": false,
+            }),
         )
         .execute_on(&mut transaction)
         .await

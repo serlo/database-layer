@@ -252,6 +252,11 @@ const content = generateChangelog({
         'Fix alias for page revisions #325',
       ],
     },
+    {
+      tagName: 'v0.3.56',
+      date: '2022-11-02',
+      added: ['Order AllThreadsQuery according to last updated'],
+    },
   ],
 })
 

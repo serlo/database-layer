@@ -42,15 +42,18 @@ impl Threads {
                 SELECT comment.id, comment.date
                 FROM comment
                 JOIN uuid ON uuid.id = comment.id
+                JOIN comment answer ON comment.id = answer.parent_id OR
+                    comment.id = answer.id
                 JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id
                 WHERE
                     comment.uuid_id IS NOT NULL
                     AND comment.id < ?
                     AND uuid.trashed = 0
                     AND comment.archived = 0
-                    AND (? is null OR instance_id = ?)
+                    AND (? is null OR comment.instance_id = ?)
                     AND parent_uuid.discriminator != "user"
-                ORDER BY date DESC
+                GROUP BY comment.id
+                ORDER BY MAX(GREATEST(answer.id, comment.id)) DESC
                 LIMIT ?
             "#,
             after.unwrap_or(1_000_000_000),
@@ -198,16 +201,6 @@ impl Threads {
             payload.thread_id,
             payload.user_id,
             thread.instance_id
-        )
-        .execute(&mut transaction)
-        .await?;
-
-        sqlx::query!(
-            r#"
-                UPDATE comment SET date = ? WHERE id = ?
-            "#,
-            DateTime::now(),
-            payload.thread_id,
         )
         .execute(&mut transaction)
         .await?;

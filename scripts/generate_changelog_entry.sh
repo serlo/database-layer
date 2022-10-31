@@ -4,7 +4,7 @@ source scripts/utils.sh
 
 echo "Getting last PR messages..."
 
-MERGED_PRS_BODY_MESSAGES="$($(git log $(git describe --tags --abbrev=0)..HEAD --pretty=tformat:'%s %b%n') | grep 'Merge pull request')"
+MERGED_PRS_BODY_MESSAGES=$(git log $(git describe --tags --abbrev=0)..HEAD --pretty=tformat:'%s %b%n') | grep 'Merge pull request'
 CURRENT_PR_TITLE=$(gh pr view | head -n 1 | sed "s/title://g")
 PRS_BODY_MESSAGES="$MERGED_PRS_BODY_MESSAGES"$'\n'"$CURRENT_PR_TITLE"
 
@@ -55,7 +55,7 @@ print_header "Changelog entry suggestion"
 echo "BASED ON"
 echo "++++++++"
 echo
-git log "$(git describe --tags --abbrev=0)"..HEAD --oneline
+git --no-pager log "$(git describe --tags --abbrev=0)"..HEAD --oneline
 if [ -n "$CURRENT_PR_TITLE" ]; then
   echo "PR title: $CURRENT_PR_TITLE"
 fi

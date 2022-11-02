@@ -1550,31 +1550,6 @@
     },
     "query": "update blog_post set author_id = ? where author_id = ?"
   },
-  "5fa748b60833e887fcbbf2f1fabc3ec50ac8604d12ca0e11848e37075d0ff30e": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 4
-      }
-    },
-    "query": "\n                SELECT comment.id\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND comment.id < ?\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR instance_id = ?)\n                    AND parent_uuid.discriminator != \"user\"\n                ORDER BY comment.id DESC\n                LIMIT ?\n            "
-  },
   "649f401fd7262aa959e1e5a8f1071d74a7315cce328cdbbce4ad1a4aec849820": {
     "describe": {
       "columns": [],
@@ -2367,6 +2342,44 @@
       }
     },
     "query": "\n                SELECT id\n                FROM role\n                WHERE name = ?\n            "
+  },
+  "8afb346b2d1dec6dcd295102bb8579acc4505f9447f590c36005f5e3423627c6": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "date",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1153
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 4
+      }
+    },
+    "query": "\n                SELECT comment.id, comment.date\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                JOIN comment answer ON comment.id = answer.parent_id OR\n                    comment.id = answer.id\n                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND comment.id < ?\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR comment.instance_id = ?)\n                    AND parent_uuid.discriminator != \"user\"\n                GROUP BY comment.id\n                ORDER BY MAX(GREATEST(answer.id, comment.id)) DESC\n                LIMIT ?\n            "
   },
   "8e3b780df56a34b1f850956fb746d508f89bf9124d64e4b7bbdb8bd7809a404c": {
     "describe": {

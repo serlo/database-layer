@@ -7,7 +7,33 @@ mod all_threads_query {
             .execute()
             .await
             .should_be_ok_with_body(
-                json!({ "firstCommentIds": [35435, 35361, 35163, 35090, 35085] }),
+                json!({ "firstCommentIds": [34546, 35163, 35435, 35361, 34119] }),
+            );
+    }
+
+    #[actix_rt::test]
+    async fn orders_threads_by_last_commented() {
+        let mut transaction = begin_transaction().await;
+
+        Message::new(
+            "ThreadCreateCommentMutation",
+            json!({
+                "threadId": 34119,
+                "userId": 1,
+                "content": "last comment",
+                "subscribe": true,
+                "sendEmail": false,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok();
+
+        Message::new("AllThreadsQuery", json!({ "first": 5 }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with_body(
+                json!({ "firstCommentIds": [34119, 34546, 35163, 35435, 35361] }),
             );
     }
 
@@ -16,7 +42,7 @@ mod all_threads_query {
         Message::new("AllThreadsQuery", json!({ "first": 3, "after": 35361 }))
             .execute()
             .await
-            .should_be_ok_with_body(json!({ "firstCommentIds": [35163, 35090, 35085] }));
+            .should_be_ok_with_body(json!({ "firstCommentIds": [34546, 35163, 34119] }));
     }
 
     #[actix_rt::test]

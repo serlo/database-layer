@@ -32,7 +32,7 @@ impl MessageResponder for ThreadMessage {
             }
             ThreadMessage::ThreadCreateThreadMutation(message) => {
                 message
-                    .handle("ThreadCreateCommentMutation", connection)
+                    .handle("ThreadCreateThreadMutation", connection)
                     .await
             }
             ThreadMessage::ThreadCreateCommentMutation(message) => {

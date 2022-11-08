@@ -200,7 +200,7 @@ impl Vocabulary {
         let output = format!(
             "BASE <{}>\n{}",
             base,
-            String::from_utf8(output)?.replace(&base, "")
+            String::from_utf8(output)?.replace(base, "")
         );
         Ok(output)
     }

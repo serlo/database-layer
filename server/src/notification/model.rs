@@ -22,6 +22,7 @@ pub struct Notification {
     pub id: i32,
     pub unread: bool,
     pub email_sent: bool,
+    pub email: bool,
     pub event_id: i32,
 }
 
@@ -56,7 +57,7 @@ impl Notifications {
     {
         let notifications = sqlx::query!(
             r#"
-                SELECT n.id, n.seen, n.email_sent, e.event_log_id
+                SELECT n.id, n.seen, n.email_sent, n.email, e.event_log_id
                     FROM notification n
                     JOIN notification_event e ON n.id = e.notification_id
                     JOIN event_log on event_log.id = e.event_log_id
@@ -89,6 +90,7 @@ impl Notifications {
                 id: child.id as i32,
                 unread: child.seen == 0,
                 email_sent: child.email_sent == Some(1),
+                email: child.email == Some(1),
                 event_id: child.event_log_id as i32,
             })
             .collect();

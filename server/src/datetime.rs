@@ -48,7 +48,12 @@ impl DateTime {
     }
 
     pub fn ymd(year: i32, month: u32, date: u32) -> Self {
-        DateTime(Utc.ymd(year, month, date).and_hms(0, 0, 0))
+        // TODO: Proper handling of unwrap here...
+        DateTime(
+            Utc.with_ymd_and_hms(year, month, date, 0, 0, 0)
+                .latest()
+                .unwrap(),
+        )
     }
 
     pub fn signed_duration_since(&self, rhs: DateTime) -> Duration {

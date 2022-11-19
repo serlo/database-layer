@@ -12,6 +12,7 @@ use sqlx::encode::IsNull;
 use sqlx::mysql::MySqlTypeInfo;
 use sqlx::MySql;
 
+use crate::operation;
 /// Represents a timestamp in our database.
 ///
 /// # Constructing a `DateTime`
@@ -58,6 +59,15 @@ impl DateTime {
 
     pub fn signed_duration_since(&self, rhs: DateTime) -> Duration {
         self.0.signed_duration_since(rhs.0)
+    }
+
+    pub fn parse_from_rfc3339(string_ref: &String) -> Result<Self, operation::Error> {
+        let date = chrono::DateTime::parse_from_rfc3339(string_ref).map_err(|_| {
+            operation::Error::BadRequest {
+                reason: "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}".to_string(),
+            }
+        })?;
+        Ok(DateTime(chrono::DateTime::<Utc>::from(date)))
     }
 }
 

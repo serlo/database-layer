@@ -23,10 +23,10 @@ pub struct Threads {
 impl Threads {
     pub async fn fetch_all_threads<'a, E>(
         first: i32,
-        after: Option<i32>,
+        after: Option<String>,
         instance: Option<Instance>,
         executor: E,
-    ) -> Result<Self, sqlx::Error>
+    ) -> Result<Self, operation::Error>
     where
         E: Executor<'a>,
     {
@@ -37,9 +37,14 @@ impl Threads {
             None => None,
         };
 
+        let after_parsed = match after.as_ref() {
+            Some(date) => DateTime::parse_from_rfc3339(date)?,
+            None => DateTime::now(),
+        };
+
         let result = sqlx::query!(
             r#"
-                SELECT comment.id, comment.date
+                SELECT comment.id
                 FROM comment
                 JOIN uuid ON uuid.id = comment.id
                 JOIN comment answer ON comment.id = answer.parent_id OR
@@ -47,18 +52,18 @@ impl Threads {
                 JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id
                 WHERE
                     comment.uuid_id IS NOT NULL
-                    AND comment.id < ?
                     AND uuid.trashed = 0
                     AND comment.archived = 0
                     AND (? is null OR comment.instance_id = ?)
                     AND parent_uuid.discriminator != "user"
                 GROUP BY comment.id
-                ORDER BY MAX(GREATEST(answer.id, comment.id)) DESC
+                HAVING MAX(GREATEST(answer.date, comment.date)) < ?
+                ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC
                 LIMIT ?
             "#,
-            after.unwrap_or(1_000_000_000),
             instance_id,
             instance_id,
+            after_parsed,
             first
         )
         .fetch_all(&mut transaction)

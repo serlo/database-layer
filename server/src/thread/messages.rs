@@ -56,7 +56,7 @@ pub mod all_threads_query {
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub first: i32,
-        pub after: Option<i32>,
+        pub after: Option<String>,
         pub instance: Option<Instance>,
     }
 
@@ -67,13 +67,18 @@ pub mod all_threads_query {
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => {
-                    Threads::fetch_all_threads(self.first, self.after, self.instance.clone(), pool)
-                        .await?
+                    Threads::fetch_all_threads(
+                        self.first,
+                        self.after.clone(),
+                        self.instance.clone(),
+                        pool,
+                    )
+                    .await?
                 }
                 Connection::Transaction(transaction) => {
                     Threads::fetch_all_threads(
                         self.first,
-                        self.after,
+                        self.after.clone(),
                         self.instance.clone(),
                         transaction,
                     )

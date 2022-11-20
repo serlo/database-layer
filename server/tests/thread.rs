@@ -1,4 +1,5 @@
 mod all_threads_query {
+    use std::{thread, time::Duration};
     use test_utils::*;
 
     #[actix_rt::test]
@@ -28,6 +29,9 @@ mod all_threads_query {
         .execute_on(&mut transaction)
         .await
         .should_be_ok();
+
+        // it was sometimes not persisting fast enough the mutation above
+        thread::sleep(Duration::from_millis(1000));
 
         Message::new("AllThreadsQuery", json!({ "first": 5 }))
             .execute_on(&mut transaction)

@@ -38,14 +38,30 @@ mod all_threads_query {
     }
 
     #[actix_rt::test]
-    async fn with_parameter_after() {
+    async fn with_parameter_after_maintaining_pagination_order() {
         Message::new(
             "AllThreadsQuery",
-            json!({ "first": 3, "after": "2015-02-26T12:48:59+02:00" }),
+            json!({ "first": 10, "after": "2015-02-26T12:48:59+01:00" }),
         )
         .execute()
         .await
-        .should_be_ok_with_body(json!({ "firstCommentIds": [35163, 35435, 35361] }));
+        .should_be_ok_with_body(json!({ "firstCommentIds": [35163, 35435, 35361, 34119, 35090, 35085, 26976, 35083, 35082, 30251] }));
+
+        Message::new(
+            "AllThreadsQuery",
+            json!({ "first": 10, "after": "2015-02-19T16:47:16+01:00" }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({ "firstCommentIds": [35085, 26976, 35083, 35082, 30251, 35073, 34618, 34793, 34539, 34095] }));
+
+        Message::new(
+            "AllThreadsQuery",
+            json!({ "first": 5, "after": "2015-02-19T15:52:05+01:00" }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({ "firstCommentIds": [35073, 34618, 34793, 34539, 34095] }));
     }
 
     #[actix_rt::test]

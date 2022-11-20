@@ -42,6 +42,7 @@ impl Threads {
             None => DateTime::now(),
         };
 
+        // TODO: use alias for MAX(GREATEST(...)) when sqlx supports it
         let result = sqlx::query!(
             r#"
                 SELECT comment.id

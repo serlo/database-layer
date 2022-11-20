@@ -39,10 +39,13 @@ mod all_threads_query {
 
     #[actix_rt::test]
     async fn with_parameter_after() {
-        Message::new("AllThreadsQuery", json!({ "first": 3, "after": 35361 }))
-            .execute()
-            .await
-            .should_be_ok_with_body(json!({ "firstCommentIds": [34546, 35163, 34119] }));
+        Message::new(
+            "AllThreadsQuery",
+            json!({ "first": 3, "after": "2015-02-26T12:48:59+02:00" }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({ "firstCommentIds": [35163, 35435, 35361] }));
     }
 
     #[actix_rt::test]
@@ -55,10 +58,13 @@ mod all_threads_query {
 
     #[actix_rt::test]
     async fn does_not_return_threads_on_user_page() {
-        Message::new("AllThreadsQuery", json!({ "first": 1, "after": 27054 }))
-            .execute()
-            .await
-            .should_be_ok_with(|body| assert_ne!(body["firstCommentIds"][0], 27053));
+        Message::new(
+            "AllThreadsQuery",
+            json!({ "first": 1, "after": "2014-08-05T16:47:21+01:00" }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with(|body| assert_ne!(body["firstCommentIds"][0], 27053));
     }
 }
 

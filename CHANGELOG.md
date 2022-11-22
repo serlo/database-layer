@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.57](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.56..v0.3.57) - November 22, 2022
+
+### Fixed
+
+- Fix sorting of threads in discussions #345
+
 ## [v0.3.56](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.55..v0.3.56) - November 2, 2022
 
 ### Added

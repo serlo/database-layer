@@ -1,4 +1,5 @@
 mod all_threads_query {
+    use std::{thread, time::Duration};
     use test_utils::*;
 
     #[actix_rt::test]
@@ -29,6 +30,9 @@ mod all_threads_query {
         .await
         .should_be_ok();
 
+        // it was sometimes not persisting fast enough the mutation above
+        thread::sleep(Duration::from_millis(1000));
+
         Message::new("AllThreadsQuery", json!({ "first": 5 }))
             .execute_on(&mut transaction)
             .await
@@ -38,11 +42,30 @@ mod all_threads_query {
     }
 
     #[actix_rt::test]
-    async fn with_parameter_after() {
-        Message::new("AllThreadsQuery", json!({ "first": 3, "after": 35361 }))
-            .execute()
-            .await
-            .should_be_ok_with_body(json!({ "firstCommentIds": [34546, 35163, 34119] }));
+    async fn with_parameter_after_maintaining_pagination_order() {
+        Message::new(
+            "AllThreadsQuery",
+            json!({ "first": 10, "after": "2015-02-26T12:48:59+01:00" }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({ "firstCommentIds": [35163, 35435, 35361, 34119, 35090, 35085, 26976, 35083, 35082, 30251] }));
+
+        Message::new(
+            "AllThreadsQuery",
+            json!({ "first": 10, "after": "2015-02-19T16:47:16+01:00" }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({ "firstCommentIds": [35085, 26976, 35083, 35082, 30251, 35073, 34618, 34793, 34539, 34095] }));
+
+        Message::new(
+            "AllThreadsQuery",
+            json!({ "first": 5, "after": "2015-02-19T15:52:05+01:00" }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({ "firstCommentIds": [35073, 34618, 34793, 34539, 34095] }));
     }
 
     #[actix_rt::test]
@@ -55,10 +78,13 @@ mod all_threads_query {
 
     #[actix_rt::test]
     async fn does_not_return_threads_on_user_page() {
-        Message::new("AllThreadsQuery", json!({ "first": 1, "after": 27054 }))
-            .execute()
-            .await
-            .should_be_ok_with(|body| assert_ne!(body["firstCommentIds"][0], 27053));
+        Message::new(
+            "AllThreadsQuery",
+            json!({ "first": 1, "after": "2014-08-05T16:47:21+01:00" }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with(|body| assert_ne!(body["firstCommentIds"][0], 27053));
     }
 }
 

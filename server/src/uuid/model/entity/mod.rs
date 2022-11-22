@@ -1,6 +1,5 @@
 use crate::uuid::Subject;
 use async_trait::async_trait;
-use chrono_tz::Europe::Berlin;
 use convert_case::{Case, Casing};
 use futures::try_join;
 use serde::Serialize;
@@ -918,19 +917,10 @@ impl Entity {
     where
         E: Executor<'a>,
     {
-        let after_db_time = payload
-            .after
-            .as_ref()
-            .map(|after| {
-                chrono::DateTime::parse_from_rfc3339(after).map_err(|_| {
-                    operation::Error::BadRequest {
-                        reason: "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}"
-                            .to_string(),
-                    }
-                })
-            })
-            .transpose()?
-            .map(|date| date.with_timezone(&Berlin).to_string());
+        let after_db_time = match payload.after.as_ref() {
+            Some(date) => DateTime::parse_from_rfc3339(date)?,
+            None => DateTime::now(),
+        };
 
         Ok(sqlx::query!(
             r#"
@@ -949,7 +939,7 @@ impl Entity {
                 ORDER BY date DESC
                 LIMIT ?
             "#,
-            after_db_time.unwrap_or(DateTime::now().to_string()),
+            after_db_time,
             payload.instance,
             payload.instance,
             payload.first,

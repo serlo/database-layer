@@ -787,7 +787,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pact-foundation/pact-core@npm:^13.12.2":
+"@pact-foundation/pact-core@npm:^13.13.0":
   version: 13.13.0
   resolution: "@pact-foundation/pact-core@npm:13.13.0"
   dependencies:
@@ -819,15 +819,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pact-foundation/pact@npm:^10.3.1":
-  version: 10.3.1
-  resolution: "@pact-foundation/pact@npm:10.3.1"
+"@pact-foundation/pact@npm:^10.4.0":
+  version: 10.4.0
+  resolution: "@pact-foundation/pact@npm:10.4.0"
   dependencies:
-    "@pact-foundation/pact-core": ^13.12.2
-    "@types/bluebird": ^3.5.20
+    "@pact-foundation/pact-core": ^13.13.0
     "@types/express": ^4.17.11
     axios: ^0.27.2
-    bluebird: ~3.5.1
     body-parser: ^1.20.0
     cli-color: ^2.0.1
     express: ^4.18.1
@@ -845,7 +843,7 @@ __metadata:
     pkginfo: ^0.4.1
     ramda: ^0.28.0
     randexp: ^0.5.3
-  checksum: ebcf2dfd282763398499717229e3b3e0860402f52cc65d7e8df0658e4dd3c7384bd82d20de72b2c6737554df9f05fab4fa21e7c873affd701fd8c802f8a51438
+  checksum: 1f99cc0e962bc8a805c3a72a9841fcc065eaf9928fa0595e939c6ee921b0eb4b3aa07078292bdb9d6bf95547b4a7eddc5b7d05275417c520198e1489ebdd8ee3
   languageName: node
   linkType: hard
 
@@ -868,8 +866,8 @@ __metadata:
   resolution: "@serlo/database-layer-actix-workspace@workspace:."
   dependencies:
     "@inyono/changelog": 0.5.2
-    "@pact-foundation/pact": ^10.3.1
-    "@types/node": ^16.18.7
+    "@pact-foundation/pact": ^10.4.0
+    "@types/node": ^16.18.9
     "@types/ramda": ^0.28.20
     "@types/semver": ^7.3.13
     jest: ^29.3.1
@@ -982,13 +980,6 @@ __metadata:
   dependencies:
     "@babel/types": ^7.3.0
   checksum: a797ea09c72307569e3ee08aa3900ca744ce3091114084f2dc59b67a45ee7d01df7865252790dbfa787a7915ce892cdc820c9b920f3683292765fc656b08dc63
-  languageName: node
-  linkType: hard
-
-"@types/bluebird@npm:^3.5.20":
-  version: 3.5.36
-  resolution: "@types/bluebird@npm:3.5.36"
-  checksum: efe7484e1f6c3443c083f052efb7688b461a9f43899b1891c10b1faf92e4932d686265d10c3e02b8c8fe0c8c371774e6a55ff6eec5e79525390a1ddeee7eb41b
   languageName: node
   linkType: hard
 
@@ -1133,10 +1124,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^16.18.7":
-  version: 16.18.7
-  resolution: "@types/node@npm:16.18.7"
-  checksum: a7fbc536d433c08adebcd788c2b2b28b4bec9b4cc493d3ed5fd98097bda7760893bacc06f97f45514a7f013f4fc952cbb3068166b6e9e7eebfe08e8e813f8f1c
+"@types/node@npm:^16.18.9":
+  version: 16.18.9
+  resolution: "@types/node@npm:16.18.9"
+  checksum: 7dc9cb417869592b2ad64233d06cd3eda63b8ae31d72a0811e4f5ac5a2ef01feb4d4c91159481e506c7a56951981359e75069c7fae6f0de90fc0c3c8b69a36cd
   languageName: node
   linkType: hard
 
@@ -1526,13 +1517,6 @@ __metadata:
   dependencies:
     file-uri-to-path: 1.0.0
   checksum: 65b6b48095717c2e6105a021a7da4ea435aa8d3d3cd085cb9e85bcb6e5773cf318c4745c3f7c504412855940b585bdf9b918236612a1c7a7942491de176f1ae7
-  languageName: node
-  linkType: hard
-
-"bluebird@npm:~3.5.1":
-  version: 3.5.5
-  resolution: "bluebird@npm:3.5.5"
-  checksum: 2e53b556a34e38999c5075b6fcec6aa46b2fb9ac2e6e60c406da6c677fb04f64cb2d7c9d0daacebe6a8afc99e65511b49df97d4a65dcb087804659f3b6a70d00
   languageName: node
   linkType: hard
 

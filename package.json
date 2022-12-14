@@ -28,8 +28,8 @@
   },
   "devDependencies": {
     "@inyono/changelog": "0.5.2",
-    "@pact-foundation/pact": "^10.3.1",
-    "@types/node": "^16.18.7",
+    "@pact-foundation/pact": "^10.4.0",
+    "@types/node": "^16.18.9",
     "@types/ramda": "^0.28.20",
     "@types/semver": "^7.3.13",
     "jest": "^29.3.1",

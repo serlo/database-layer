@@ -13,6 +13,7 @@ use sqlx::MySqlPool;
 use super::{AssertExists, ConcreteUuid, Uuid, UuidError, UuidFetcher};
 
 use crate::database::Executor;
+use crate::datetime::DateTime;
 use crate::event::{
     CreateTaxonomyLinkEventPayload, CreateTaxonomyTermEventPayload, RemoveTaxonomyLinkEventPayload,
     SetTaxonomyTermEventPayload,
@@ -318,6 +319,52 @@ impl TaxonomyTerm {
             reason: format!("Taxonomy term with id {} does not exist", term_taxonomy_id),
         })?
         .instance_id as i32)
+    }
+
+    pub async fn deleted_taxonomies<'a, E>(
+        payload: &deleted_taxonomies_query::Payload,
+        executor: E,
+    ) -> Result<Vec<deleted_taxonomies_query::DeletedTaxonomyTerm>, operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        let after_db_time = match payload.after.as_ref() {
+            Some(date) => DateTime::parse_from_rfc3339(date)?,
+            None => DateTime::now(),
+        };
+
+        Ok(sqlx::query!(
+            r#"
+                SELECT term_taxonomy.id, MAX(event_log.date) AS date
+                FROM term_taxonomy
+                JOIN uuid ON term_taxonomy.id = uuid.id
+                JOIN event_log ON term_taxonomy.id = event_log.uuid_id
+                JOIN term ON term_taxonomy.term_id = term.id
+                JOIN instance ON term.instance_id = instance.id
+                WHERE uuid.trashed = 1
+                    AND event_log.date < ?
+                    AND event_log.event_id = 10
+                    AND (? is null OR instance.subdomain = ?)
+                GROUP BY uuid_id
+                ORDER BY date DESC
+                LIMIT ?
+            "#,
+            after_db_time,
+            payload.instance,
+            payload.instance,
+            payload.first,
+        )
+        .fetch_all(executor)
+        .await?
+        .into_iter()
+        .filter_map(|item| {
+            item.date
+                .map(|date| deleted_taxonomies_query::DeletedTaxonomyTerm {
+                    id: item.id as i32,
+                    date_of_deletion: DateTime::from(date).to_string(),
+                })
+        })
+        .collect())
     }
 
     pub async fn set_name_and_description<'a, E>(

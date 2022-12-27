@@ -1688,6 +1688,57 @@
     },
     "query": "update page_revision set author_id = ? where author_id = ?"
   },
+  "6a8ea1e9c280c28438cc0aed8fb2c5c199eb43c3e7102b2832bf372c087315f6": {
+    "describe": {
+      "columns": [
+        {
+          "name": "trashed",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "subdomain",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 40,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "discriminator",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 180,
+            "type": "VarString"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                    SELECT u.trashed, i.subdomain, u.discriminator\n                        FROM uuid u\n                        JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT term_taxonomy.id, instance_id FROM term_taxonomy\n                        JOIN term ON term.id = term_taxonomy.term_id) c ON c.id = u.id\n                        JOIN instance i ON i.id = c.instance_id\n                        WHERE u.id = ?\n                "
+  },
   "6b867595e8308dd97239e5dcba9b9bc26453fac7aaecbc238e00a16a0a32bcc5": {
     "describe": {
       "columns": [
@@ -1937,6 +1988,44 @@
     },
     "query": "\n                INSERT INTO comment (id, date, archived, title, content, uuid_id, parent_id, author_id, instance_id )\n                    VALUES (LAST_INSERT_ID(), ?, 0, NULL, ?, NULL, ?, ?, ?)\n            "
   },
+  "71dcbc302d9b8a65dc13f7bcc02bd457a5b6f94e7a7b4c0ebd159d463dce7ad4": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "date",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 76,
+            "type": "Timestamp"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        true
+      ],
+      "parameters": {
+        "Right": 4
+      }
+    },
+    "query": "\n                SELECT term_taxonomy.id, MAX(event_log.date) AS date\n                FROM term_taxonomy\n                JOIN uuid ON term_taxonomy.id = uuid.id\n                JOIN event_log ON term_taxonomy.id = event_log.uuid_id\n                JOIN term ON term_taxonomy.term_id = term.id\n                JOIN instance ON term.instance_id = instance.id\n                WHERE uuid.trashed = 1\n                    AND event_log.date < ?\n                    AND event_log.event_id = 10\n                    AND (? is null OR instance.subdomain = ?)\n                GROUP BY uuid_id\n                ORDER BY date DESC\n                LIMIT ?\n            "
+  },
   "72988b124c9f33d66c499a89625eef7388b981b0428ab123bba4808b11651b41": {
     "describe": {
       "columns": [],
@@ -1946,57 +2035,6 @@
       }
     },
     "query": "DELETE FROM subscription WHERE uuid_id = ? AND user_id = ?"
-  },
-  "7691e4f0280fd0bb9b0f2cc23d9ac8eeeed4a6c35d1a819d6f6f2c8ac45afcca": {
-    "describe": {
-      "columns": [
-        {
-          "name": "trashed",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "subdomain",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 40,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "discriminator",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 180,
-            "type": "VarString"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                    SELECT u.trashed, i.subdomain, u.discriminator\n                        FROM uuid u\n                        JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT id, instance_id FROM term) c ON c.id = u.id\n                        JOIN instance i ON i.id = c.instance_id\n                        WHERE u.id = ?\n                "
   },
   "769713eded2a80cb23fd93a3767bc1aa4cbc7446e97f4f87d595e922fd143841": {
     "describe": {

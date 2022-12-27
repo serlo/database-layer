@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::TaxonomyTerm;
 use crate::database::Connection;
+use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation, SuccessOutput};
 use crate::uuid::{TaxonomyType, Uuid};
@@ -11,6 +12,7 @@ use crate::uuid::{TaxonomyType, Uuid};
 #[derive(Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum TaxonomyTermMessage {
+    DeletedTaxonomiesQuery(deleted_taxonomies_query::Payload),
     TaxonomyTermSetNameAndDescriptionMutation(
         taxonomy_term_set_name_and_description_mutation::Payload,
     ),
@@ -25,6 +27,9 @@ impl MessageResponder for TaxonomyTermMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
+            TaxonomyTermMessage::DeletedTaxonomiesQuery(payload) => {
+                payload.handle("DeletedTaxonomiesQuery", connection).await
+            }
             TaxonomyTermMessage::TaxonomyTermSetNameAndDescriptionMutation(payload) => {
                 payload
                     .handle("TaxonomyTermSetNameAndDescriptionMutation", connection)
@@ -48,6 +53,51 @@ impl MessageResponder for TaxonomyTermMessage {
             TaxonomyTermMessage::TaxonomySortMutation(payload) => {
                 payload.handle("TaxonomySortMutation", connection).await
             }
+        }
+    }
+}
+
+// It is an almost identical code to deleted_entities_query. See if we want to abstract it
+pub mod deleted_taxonomies_query {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub first: i32,
+        pub after: Option<String>,
+        pub instance: Option<Instance>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct DeletedTaxonomyTerm {
+        pub id: i32,
+        pub date_of_deletion: String,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        success: bool,
+        deleted_taxonomies: Vec<DeletedTaxonomyTerm>,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            let deleted_taxonomies = match connection {
+                Connection::Pool(pool) => TaxonomyTerm::deleted_taxonomies(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    TaxonomyTerm::deleted_taxonomies(self, transaction).await?
+                }
+            };
+            Ok(Output {
+                success: true,
+                deleted_taxonomies,
+            })
         }
     }
 }

@@ -283,7 +283,8 @@ impl Uuid {
                         UNION ALL
                         SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id
                         UNION ALL
-                        SELECT id, instance_id FROM term) c ON c.id = u.id
+                        SELECT term_taxonomy.id, instance_id FROM term_taxonomy
+                        JOIN term ON term.id = term_taxonomy.term_id) c ON c.id = u.id
                         JOIN instance i ON i.id = c.instance_id
                         WHERE u.id = ?
                 "#,

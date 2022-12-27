@@ -1,3 +1,90 @@
+mod deleted_taxonomies_query {
+    use test_utils::*;
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_taxonomies() {
+        Message::new("DeletedTaxonomiesQuery", json!({ "first": 3 }))
+            .execute()
+            .await
+            .should_be_ok_with_body(json!({
+              "success": true,
+              "deletedTaxonomies": [
+                {
+                  "id": 34248,
+                  "dateOfDeletion": "2015-02-20T10:35:33+01:00"
+                },
+                {
+                  "id": 34247,
+                  "dateOfDeletion": "2015-02-20T10:35:30+01:00"
+                },
+                {
+                  "id": 1364,
+                  "dateOfDeletion": "2015-02-19T16:44:48+01:00"
+                }
+              ]
+
+            }));
+    }
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_taxonomies_after_date() {
+        Message::new(
+            "DeletedTaxonomiesQuery",
+            json!({ "first": 3, "after": "2015-02-19T16:44:48+01:00" }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({
+            "success": true,
+            "deletedTaxonomies": [
+                {
+                    "id": 35089,
+                    "dateOfDeletion": "2015-02-19T16:40:21+01:00"
+                },
+                {
+                    "id": 1366,
+                    "dateOfDeletion": "2015-02-19T16:31:43+01:00"
+                },
+                {
+                    "id": 1404,
+                    "dateOfDeletion": "2015-02-19T16:31:13+01:00"
+                }
+            ]
+        }));
+    }
+
+    #[actix_rt::test]
+    async fn gives_back_first_deleted_taxonomies_of_instance() {
+        Message::new(
+            "DeletedTaxonomiesQuery",
+            json!({ "first": 1, "instance": "en" }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({
+          "success": true,
+          "deletedTaxonomies": [
+            {
+              "id": 33143,
+              "dateOfDeletion": "2015-01-21T17:07:57+01:00"
+            }
+          ]
+        }
+        ));
+    }
+
+    #[actix_rt::test]
+    async fn fails_when_date_format_is_wrong() {
+        Message::new(
+            "DeletedTaxonomiesQuery",
+            json!({ "first": 4, "after": "no date" }),
+        )
+        .execute()
+        .await
+        .should_be_bad_request();
+    }
+}
+
 mod set_name_and_description_mutation {
     use test_utils::*;
 

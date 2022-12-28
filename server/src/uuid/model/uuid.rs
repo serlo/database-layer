@@ -294,6 +294,8 @@ impl Uuid {
 
             match result {
                 Ok(uuid) => {
+                    // Actually the query already excludes entity revisions and users.
+                    // But we can leave it as kind of reminder in case the query is wrongly refactored.
                     if uuid.discriminator == "entityRevision" || uuid.discriminator == "user" {
                         return Err(operation::Error::BadRequest {
                             reason: format!(

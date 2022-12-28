@@ -321,8 +321,9 @@ impl Uuid {
                         .await?;
                 }
                 Err(sqlx::Error::RowNotFound) => {
-                    // UUID not found, skip
-                    continue;
+                    return Err(operation::Error::BadRequest {
+                        reason: "Uuid does not exist or cannot be trashed".to_string(),
+                    })
                 }
                 Err(inner) => {
                     return Err(inner.into());

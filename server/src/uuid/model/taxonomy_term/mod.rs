@@ -318,7 +318,7 @@ impl TaxonomyTerm {
         .ok_or(operation::Error::BadRequest {
             reason: format!("Taxonomy term with id {} does not exist", term_taxonomy_id),
         })?
-        .instance_id as i32)
+        .instance_id)
     }
 
     pub async fn deleted_taxonomies<'a, E>(
@@ -479,7 +479,7 @@ impl TaxonomyTerm {
         )
         .fetch_one(&mut transaction)
         .await?
-        .id as i32;
+        .id;
 
         sqlx::query!(
             r#"
@@ -662,7 +662,7 @@ impl TaxonomyTerm {
             )
             .fetch_one(&mut transaction)
             .await?
-            .instance_id as i32;
+            .instance_id;
 
             if taxonomy.instance_id != child_instance_id {
                 return Err(operation::Error::BadRequest {

@@ -58,7 +58,7 @@ impl EventUuidParameters {
     }
 
     pub fn values(&self) -> Vec<i32> {
-        self.0.iter().map(|(_key, value)| *value).collect()
+        self.0.values().copied().collect()
     }
 }
 

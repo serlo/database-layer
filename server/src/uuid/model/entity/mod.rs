@@ -514,7 +514,7 @@ impl Entity {
         )
         .fetch_one(&mut transaction)
         .await?
-        .instance_id as i32;
+        .instance_id;
 
         CreateEntityRevisionEventPayload::new(
             payload.input.entity_id,
@@ -602,7 +602,7 @@ impl Entity {
         let type_id = sqlx::query!(r#"SELECT id FROM type WHERE name = ?"#, payload.entity_type)
             .fetch_one(&mut transaction)
             .await?
-            .id as i32;
+            .id;
 
         let parent_id: i32;
         let instance_id: i32;
@@ -623,7 +623,7 @@ impl Entity {
                 .ok_or(operation::Error::BadRequest {
                     reason: format!("parent entity with id {} does not exist", parent_id),
                 })?
-                .instance_id as i32;
+                .instance_id;
         } else {
             parent_id = payload
                 .input

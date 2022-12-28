@@ -293,7 +293,7 @@ impl Threads {
             payload.object_id
         )
         .fetch_one(&mut transaction)
-        .await?.instance_id as i32;
+        .await?.instance_id;
 
         sqlx::query!(
             r#"

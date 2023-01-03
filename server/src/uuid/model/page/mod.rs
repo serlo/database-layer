@@ -180,7 +180,7 @@ impl Page {
         )
         .fetch_one(&mut transaction)
         .await?
-        .instance_id as i32;
+        .instance_id;
 
         CreateEntityRevisionEventPayload::new(
             payload.page_id,

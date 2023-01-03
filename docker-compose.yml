@@ -9,8 +9,3 @@ services:
       - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     environment:
       - MYSQL_ROOT_PASSWORD=secret
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: '1'
-#          memory: 512M

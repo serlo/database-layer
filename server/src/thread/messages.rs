@@ -17,6 +17,7 @@ pub enum ThreadMessage {
     ThreadCreateThreadMutation(create_thread_mutation::Payload),
     ThreadCreateCommentMutation(create_comment_mutation::Payload),
     ThreadSetThreadArchivedMutation(set_thread_archived_mutation::Payload),
+    ThreadUpdateMutation(update_comment_mutation::Payload),
 }
 
 #[async_trait]
@@ -44,6 +45,9 @@ impl MessageResponder for ThreadMessage {
                 message
                     .handle("ThreadSetThreadArchivedMutation", connection)
                     .await
+            }
+            ThreadMessage::ThreadUpdateMutation(message) => {
+                message.handle("ThreadUpdateMutation", connection).await
             }
         }
     }
@@ -192,6 +196,32 @@ pub mod set_thread_archived_mutation {
                 }
             }
             Ok(())
+        }
+    }
+}
+
+pub mod update_comment_mutation {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: u32, // maybe unnecessary if it doesn't trigger an event
+        pub comment_id: u32,
+        pub content: String,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = operation::SuccessOutput;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(match connection {
+                Connection::Pool(pool) => Threads::update_comment(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Threads::update_comment(self, transaction).await?
+                }
+            })
         }
     }
 }

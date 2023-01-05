@@ -1,5 +1,6 @@
 use super::messages::{
     create_comment_mutation, create_thread_mutation, set_thread_archived_mutation,
+    update_comment_mutation,
 };
 use serde::Serialize;
 use sqlx::MySqlPool;
@@ -349,6 +350,95 @@ impl Threads {
         transaction.commit().await?;
 
         Ok(comment)
+    }
+
+    pub async fn update_comment<'a, E>(
+        payload: &update_comment_mutation::Payload,
+        executor: E,
+    ) -> Result<operation::SuccessOutput, operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        if payload.content.is_empty() {
+            return Err(operation::Error::BadRequest {
+                reason: "content is empty".to_string(),
+            });
+        }
+
+        let mut transaction = executor.begin().await?;
+
+        let is_trashed = match sqlx::query!(
+            r#"
+                SELECT trashed FROM uuid WHERE id = ?
+            "#,
+            payload.comment_id
+        )
+        .fetch_one(&mut transaction)
+        .await
+        {
+            Ok(record) => record.trashed,
+            Err(_) => {
+                return Err(operation::Error::BadRequest {
+                    reason: "given comment_id does not exist".to_string(),
+                })
+            }
+        };
+
+        if is_trashed != 0 {
+            return Err(operation::Error::BadRequest {
+                reason: "trashed comment cannot be edited".to_string(),
+            });
+        }
+
+        let (original_content, author_id, is_archived) = match sqlx::query!(
+            r#"
+                SELECT content, author_id, archived FROM comment WHERE id = ?
+            "#,
+            payload.comment_id
+        )
+        .fetch_one(&mut transaction)
+        .await
+        {
+            Ok(comment) => (comment.content, comment.author_id, comment.archived),
+            Err(_) => {
+                return Err(operation::Error::BadRequest {
+                    reason: "given comment_id does not belong to a comment".to_string(),
+                })
+            }
+        };
+
+        if payload.user_id as i64 != author_id {
+            return Err(operation::Error::BadRequest {
+                reason: "given user is not author of the comment".to_string(),
+            });
+        }
+
+        if is_archived != 0 {
+            return Err(operation::Error::BadRequest {
+                reason: "archived comment cannot be edited".to_string(),
+            });
+        }
+
+        if payload.content != original_content.as_deref().unwrap_or("") {
+            // todo: date of edit?
+            sqlx::query!(
+                r#"
+                    UPDATE comment
+                        SET content = ?
+                        WHERE id = ?
+                "#,
+                payload.content,
+                payload.comment_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+
+            // todo: trigger event?
+        }
+
+        transaction.commit().await?;
+
+        Ok(operation::SuccessOutput { success: true })
     }
 }
 

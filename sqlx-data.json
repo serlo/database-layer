@@ -221,31 +221,6 @@
     },
     "query": "delete from subscription where uuid_id = ?"
   },
-  "0d82eeddb039604d4a10d17aa173e7a3481e05f1f7b0f804757a5c82b0d703d0": {
-    "describe": {
-      "columns": [
-        {
-          "name": "trashed",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                SELECT trashed FROM uuid WHERE id = ?\n            "
-  },
   "0eca65d1eb3fe8686ef46df2f9fad9cfb0fa44f786d09043609fb1a6a411fbf5": {
     "describe": {
       "columns": [
@@ -399,16 +374,6 @@
       }
     },
     "query": "\n                SELECT u.id\n                    FROM user u\n                    JOIN event_log e ON u.id = e.actor_id\n                    WHERE e.event_id = 5 AND e.date > DATE_SUB(?, Interval 90 day)\n                    GROUP BY u.id\n                    HAVING count(e.event_id) > 10\n            "
-  },
-  "10241029ff5026ce401a74b72853282db79a71acd17d7a7fe633ed4a192a5350": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                    UPDATE comment\n                        SET content = ?\n                        WHERE id = ?\n                "
   },
   "12ed467d6c81bc00bddc5a10220b65925488fc0521f1e62a81308d2296a961fe": {
     "describe": {
@@ -1044,6 +1009,70 @@
       }
     },
     "query": "\n                SELECT page_repository.id\n                FROM instance, page_repository\n                JOIN page_revision ON page_repository.id = page_revision.page_repository_id\n                WHERE page_repository.instance_id = instance.id\n                AND (? is null or instance.subdomain = ?)\n                AND page_repository.current_revision_id = page_revision.id\n            "
+  },
+  "3b6098e00bd82ec3f18a1c5e07915e1fc229059e2964da68c03a787fb4ba62a1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "content",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 16
+            },
+            "max_size": 4294967295,
+            "type": "Blob"
+          }
+        },
+        {
+          "name": "author_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "archived",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "trashed",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        }
+      ],
+      "nullable": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT content, author_id, archived, trashed\n                FROM comment JOIN uuid ON uuid.id = comment.id\n                WHERE comment.id = ?\n            "
   },
   "3c53faa4669ab4e83898639d4c51a92a6be3c24b57914864aa0509f75cb61506": {
     "describe": {
@@ -2922,6 +2951,16 @@
     },
     "query": "SELECT id FROM entity WHERE id = ?"
   },
+  "aeb0afb479d2959038ec559914b1f902973ed241339101eec3af0fe124c27526": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                    UPDATE comment SET content = ? WHERE id = ?\n                "
+  },
   "af0db2da7d2e46f2291c6edbe0870004af83d90d464346759ddde2067736a294": {
     "describe": {
       "columns": [],
@@ -4172,57 +4211,6 @@
       }
     },
     "query": "\n                SELECT IFNULL(MAX(tt.weight), 0) AS current_heaviest\n                    FROM term_taxonomy tt\n                    WHERE tt.parent_id = ?\n            "
-  },
-  "f6183efa8c7315bdef2df2e5ad041161a445d5ef88e2803b07c7a822eb549c2f": {
-    "describe": {
-      "columns": [
-        {
-          "name": "content",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 16
-            },
-            "max_size": 4294967295,
-            "type": "Blob"
-          }
-        },
-        {
-          "name": "author_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "archived",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        }
-      ],
-      "nullable": [
-        true,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                SELECT content, author_id, archived FROM comment WHERE id = ?\n            "
   },
   "f6232703fd9b172776710f63c3b6b834d80b2d8d88e56e4c6a8a95e9b6ab0086": {
     "describe": {

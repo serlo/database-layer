@@ -367,65 +367,40 @@ impl Threads {
 
         let mut transaction = executor.begin().await?;
 
-        let is_trashed = match sqlx::query!(
+        let comment = sqlx::query!(
             r#"
-                SELECT trashed FROM uuid WHERE id = ?
+                SELECT content, author_id, archived, trashed
+                FROM comment JOIN uuid ON uuid.id = comment.id
+                WHERE comment.id = ?
             "#,
             payload.comment_id
         )
         .fetch_one(&mut transaction)
-        .await
-        {
-            Ok(record) => record.trashed,
-            Err(_) => {
-                return Err(operation::Error::BadRequest {
-                    reason: "given comment_id does not exist".to_string(),
-                })
-            }
-        };
+        .await?;
 
-        if is_trashed != 0 {
-            return Err(operation::Error::BadRequest {
-                reason: "trashed comment cannot be edited".to_string(),
-            });
-        }
-
-        let (original_content, author_id, is_archived) = match sqlx::query!(
-            r#"
-                SELECT content, author_id, archived FROM comment WHERE id = ?
-            "#,
-            payload.comment_id
-        )
-        .fetch_one(&mut transaction)
-        .await
-        {
-            Ok(comment) => (comment.content, comment.author_id, comment.archived),
-            Err(_) => {
-                return Err(operation::Error::BadRequest {
-                    reason: "given comment_id does not belong to a comment".to_string(),
-                })
-            }
-        };
-
-        if payload.user_id as i64 != author_id {
+        if payload.user_id as i64 != comment.author_id {
             return Err(operation::Error::BadRequest {
                 reason: "given user is not author of the comment".to_string(),
             });
         }
 
-        if is_archived != 0 {
+        if comment.archived != 0 {
             return Err(operation::Error::BadRequest {
                 reason: "archived comment cannot be edited".to_string(),
             });
         }
 
-        if payload.content != original_content.as_deref().unwrap_or("") {
+        if comment.trashed != 0 {
+            return Err(operation::Error::BadRequest {
+                reason: "trashed comment cannot be edited".to_string(),
+            });
+        }
+
+        if payload.content != comment.content.as_deref().unwrap_or("") {
             // todo: date of edit?
             sqlx::query!(
                 r#"
-                    UPDATE comment
-                        SET content = ?
-                        WHERE id = ?
+                    UPDATE comment SET content = ? WHERE id = ?
                 "#,
                 payload.content,
                 payload.comment_id,

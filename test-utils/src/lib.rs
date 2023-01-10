@@ -46,7 +46,7 @@ impl<'a> Message<'a> {
 }
 
 pub struct MessageResult {
-    status: StatusCode,
+    pub status: StatusCode,
     body: Bytes,
 }
 
@@ -76,6 +76,10 @@ impl MessageResult {
 
     pub fn should_be_not_found(self) {
         self.should_be_response(404, Value::Null);
+    }
+
+    pub fn should_be_internal_server_error(self) {
+        assert_eq!(self.status, 500);
     }
 
     pub fn should_be_bad_request(self) {

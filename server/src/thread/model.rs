@@ -180,7 +180,13 @@ impl Threads {
             payload.thread_id
         )
         .fetch_one(&mut transaction)
-        .await?;
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => operation::Error::BadRequest {
+                reason: "thread does not exist".to_string(),
+            },
+            error => error.into(),
+        })?;
 
         if thread.archived != 0 {
             // TODO: test is missing
@@ -294,7 +300,12 @@ impl Threads {
             payload.object_id
         )
         .fetch_one(&mut transaction)
-        .await?.instance_id;
+        .await.map_err(|error| match error {
+            sqlx::Error::RowNotFound => operation::Error::BadRequest{
+                reason: "UUID not found".to_string(),
+            },
+            error => error.into(),})?
+        .instance_id;
 
         sqlx::query!(
             r#"
@@ -397,12 +408,14 @@ impl Threads {
         }
 
         if payload.content != comment.content.as_deref().unwrap_or("") {
-            // todo: update edit_date (after database migration)
             sqlx::query!(
+                // todo: update edit_date (after database migration)
+                // UPDATE comment SET content = ?, edit_date = ? WHERE id = ?
                 r#"
                     UPDATE comment SET content = ? WHERE id = ?
                 "#,
                 payload.content,
+                // DateTime::now(),
                 payload.comment_id,
             )
             .execute(&mut transaction)
@@ -481,27 +494,6 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn start_thread_non_existing_uuid() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        let result = Threads::start_thread(
-            &create_thread_mutation::Payload {
-                title: "title-test".to_string(),
-                content: "content-test".to_string(),
-                object_id: 999999,
-                user_id: 1,
-                subscribe: true,
-                send_email: false,
-            },
-            &mut transaction,
-        )
-        .await;
-
-        assert!(result.is_err())
-    }
-
-    #[actix_rt::test]
     async fn comment_thread() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
@@ -531,26 +523,6 @@ mod tests {
 
         assert_eq!(comment.content, Some("content-test".to_string()));
         assert_eq!(comment.author_id, 1);
-    }
-
-    #[actix_rt::test]
-    async fn comment_thread_non_existing_thread() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        let result = Threads::comment_thread(
-            &create_comment_mutation::Payload {
-                thread_id: 3, //does not exist
-                user_id: 1,
-                content: "content-test".to_string(),
-                subscribe: true,
-                send_email: false,
-            },
-            &mut transaction,
-        )
-        .await;
-
-        assert!(result.is_err())
     }
 
     #[actix_rt::test]

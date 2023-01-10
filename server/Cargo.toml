@@ -27,4 +27,5 @@ sqlx = { version = "0.5.0", features = ["chrono", "offline", "json", "mysql", "r
 thiserror = "1.0.0"
 
 [dev-dependencies]
+rstest = "0.16.0"
 test-utils = { path="../test-utils" }

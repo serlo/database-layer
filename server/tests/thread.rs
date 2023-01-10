@@ -130,3 +130,67 @@ mod create_comment_mutation {
         .should_be_bad_request();
     }
 }
+
+mod edit_comment_mutation {
+    use rstest::*;
+    use test_utils::*;
+
+    #[rstest]
+    // negative cases:
+    // valid payload except content is empty
+    #[case(false, false, 2, 15469, "")]
+    // valid payload except user is not author of the comment
+    #[case(false, false, 1, 15469, "This is new content.")]
+    // valid payload except comment is trashed
+    #[case(false, false, 1, 15468, "This is new content.")]
+    // valid payload except comment is archived
+    #[case(false, false, 10, 16740, "This is new content.")]
+    // positive cases
+    // valid payload with unchanged content
+    #[case(true, false, 2, 15469, "Bitte neu einsortieren :)")]
+    // valid payload with changed content
+    #[case(true, true, 1, 17007, "This is new content.")]
+    #[actix_rt::test]
+    async fn check_response_and_database_modification(
+        #[case] payload_is_valid: bool,
+        #[case] content_should_change: bool,
+        #[case] user_id: i32,
+        #[case] comment_id: i32,
+        #[case] content: &str,
+    ) {
+        let mut transaction = begin_transaction().await;
+
+        let original_content = &Message::new("UuidQuery", json!({ "id": comment_id, }))
+            .execute_on(&mut transaction)
+            .await
+            .get_json()["content"];
+
+        let result = Message::new(
+            "EditCommentMutation",
+            json!({
+                "userId": user_id,
+                "commentId": comment_id,
+                "content": content,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        if payload_is_valid {
+            result.should_be_ok_with_body(json!({ "success": true }));
+        } else {
+            result.should_be_bad_request();
+        }
+
+        Message::new("UuidQuery", json!({ "id": comment_id, }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|comment| {
+                if content_should_change {
+                    assert_ne!(&comment["content"], original_content);
+                } else {
+                    assert_eq!(&comment["content"], original_content);
+                }
+            });
+    }
+}

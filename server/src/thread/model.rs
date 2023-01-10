@@ -1,6 +1,6 @@
 use super::messages::{
-    create_comment_mutation, create_thread_mutation, set_thread_archived_mutation,
-    update_comment_mutation,
+    create_comment_mutation, create_thread_mutation, edit_comment_mutation,
+    set_thread_archived_mutation,
 };
 use serde::Serialize;
 use sqlx::MySqlPool;
@@ -352,8 +352,8 @@ impl Threads {
         Ok(comment)
     }
 
-    pub async fn update_comment<'a, E>(
-        payload: &update_comment_mutation::Payload,
+    pub async fn edit_comment<'a, E>(
+        payload: &edit_comment_mutation::Payload,
         executor: E,
     ) -> Result<operation::SuccessOutput, operation::Error>
     where
@@ -397,7 +397,7 @@ impl Threads {
         }
 
         if payload.content != comment.content.as_deref().unwrap_or("") {
-            // todo: date of edit?
+            // todo: update edit_date (after database migration)
             sqlx::query!(
                 r#"
                     UPDATE comment SET content = ? WHERE id = ?
@@ -407,8 +407,6 @@ impl Threads {
             )
             .execute(&mut transaction)
             .await?;
-
-            // todo: trigger event?
         }
 
         transaction.commit().await?;

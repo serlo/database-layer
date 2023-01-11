@@ -78,10 +78,6 @@ impl MessageResult {
         self.should_be_response(404, Value::Null);
     }
 
-    pub fn should_be_internal_server_error(self) {
-        assert_eq!(self.status, 500);
-    }
-
     pub fn should_be_bad_request(self) {
         assert_eq!(self.status, 400);
 

@@ -139,10 +139,24 @@ mod thread_mutations {
         .await;
 
         assert_eq!(result.status, expected_response);
+
+        if expected_response == StatusCode::OK {
+            Message::new("UuidQuery", json!({ "id": &result.get_json()["id"], }))
+                .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|comment| {
+                    assert_eq!(comment["title"], title);
+                    assert_eq!(comment["content"], content);
+                    assert_eq!(comment["parentId"], object_id);
+                    assert_eq!(comment["authorId"], user_id);
+                });
+        }
     }
 
     #[rstest]
     // positive cases:
+    // valid payload
+    #[case(StatusCode::OK, 17774, 1, "This is content.", true, false)]
     // negative cases:
     // valid payload except content is empty
     #[case(StatusCode::BAD_REQUEST, 17774, 1, "", true, false)]
@@ -173,6 +187,17 @@ mod thread_mutations {
         .await;
 
         assert_eq!(result.status, expected_response);
+
+        if expected_response == StatusCode::OK {
+            Message::new("UuidQuery", json!({ "id": &result.get_json()["id"], }))
+                .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|comment| {
+                    assert_eq!(comment["parentId"], thread_id);
+                    assert_eq!(comment["authorId"], user_id);
+                    assert_eq!(comment["content"], content);
+                });
+        }
     }
 
     #[rstest]

@@ -390,7 +390,7 @@ impl Threads {
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => operation::Error::BadRequest {
-                reason: "No comment with given ID".to_string(),
+                reason: "no comment with given ID".to_string(),
             },
             error => error.into(),
         })?;

@@ -233,7 +233,7 @@ mod thread_mutations {
             .get_json();
 
         let result = Message::new(
-            "EditCommentMutation",
+            "ThreadEditMutation",
             json!({
                 "userId": user_id,
                 "commentId": comment_id,

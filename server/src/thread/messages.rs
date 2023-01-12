@@ -17,7 +17,7 @@ pub enum ThreadMessage {
     ThreadCreateThreadMutation(create_thread_mutation::Payload),
     ThreadCreateCommentMutation(create_comment_mutation::Payload),
     ThreadSetThreadArchivedMutation(set_thread_archived_mutation::Payload),
-    EditCommentMutation(edit_comment_mutation::Payload),
+    ThreadEditMutation(edit_comment_mutation::Payload),
 }
 
 #[async_trait]
@@ -46,8 +46,8 @@ impl MessageResponder for ThreadMessage {
                     .handle("ThreadSetThreadArchivedMutation", connection)
                     .await
             }
-            ThreadMessage::EditCommentMutation(message) => {
-                message.handle("EditCommentMutation", connection).await
+            ThreadMessage::ThreadEditMutation(message) => {
+                message.handle("ThreadEditMutation", connection).await
             }
         }
     }

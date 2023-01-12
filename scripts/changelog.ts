@@ -263,6 +263,13 @@ const content = generateChangelog({
 
       fixed: ['Fix sorting of threads in discussions #345'],
     },
+
+    {
+      tagName: 'v0.3.58',
+      date: '2023-01-04',
+
+      fixed: ['Really trash or restore taxonomy term #350'],
+    },
   ],
 })
 

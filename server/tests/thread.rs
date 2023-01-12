@@ -215,6 +215,8 @@ mod thread_mutations {
     #[case(StatusCode::BAD_REQUEST, false, 1, 15468, "This is new content.")]
     // valid payload except comment is archived
     #[case(StatusCode::BAD_REQUEST, false, 10, 16740, "This is new content.")]
+    // valid payload except UUID is not a comment
+    #[case(StatusCode::BAD_REQUEST, false, 1, 1, "This is new content.")]
     #[actix_rt::test]
     async fn edit_comment(
         #[case] expected_response: StatusCode,

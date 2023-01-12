@@ -387,7 +387,13 @@ impl Threads {
             payload.comment_id
         )
         .fetch_one(&mut transaction)
-        .await?;
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => operation::Error::BadRequest {
+                reason: "No comment with given ID".to_string(),
+            },
+            error => error.into(),
+        })?;
 
         if payload.user_id as i64 != comment.author_id {
             return Err(operation::Error::BadRequest {

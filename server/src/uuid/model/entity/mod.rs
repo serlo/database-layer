@@ -566,7 +566,7 @@ impl Entity {
             .await
             .map_err(|error| match error {
                 sqlx::Error::RowNotFound => operation::Error::BadRequest {
-                    reason: format!("Entity with id {} does not exist", id),
+                    reason: format!("Entity with id {id} does not exist"),
                 },
                 _ => operation::Error::InternalServerError {
                     error: Box::new(error),
@@ -621,7 +621,7 @@ impl Entity {
                 .fetch_optional(&mut transaction)
                 .await?
                 .ok_or(operation::Error::BadRequest {
-                    reason: format!("parent entity with id {} does not exist", parent_id),
+                    reason: format!("parent entity with id {parent_id} does not exist"),
                 })?
                 .instance_id;
         } else {

@@ -25,7 +25,7 @@ impl Vocabulary {
     where
         E: Executor<'a>,
     {
-        let base = format!("{}{}/taxonomy/", BASE, instance);
+        let base = format!("{BASE}{instance}/taxonomy/");
         let title = match instance {
             Instance::De => "de.serlo.org Taxonomie",
             Instance::En => "en.serlo.org Taxonomy",
@@ -76,7 +76,7 @@ impl Vocabulary {
         let mut terms_blocklist: BTreeSet<i64> = terms_blocklist.iter().cloned().collect();
 
         let a_token = Iri::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")?;
-        let lang = format!("{}", instance);
+        let lang = format!("{instance}");
 
         let dct = Namespace::new(DCT)?;
         let skos = Namespace::new(SKOS)?;
@@ -155,25 +155,25 @@ impl Vocabulary {
 
                 if parent_id == root_id {
                     graph.insert(
-                        &Iri::new(format!("{}{}", base, root_id).as_str())?,
+                        &Iri::new(format!("{base}{root_id}").as_str())?,
                         &skos.get("hasTopConcept")?,
                         &Iri::new(format!("{}{}", base, term.id).as_str())?,
                     )?;
                     graph.insert(
                         &Iri::new(format!("{}{}", base, term.id).as_str())?,
                         &skos.get("topConceptOf")?,
-                        &Iri::new(format!("{}{}", base, root_id).as_str())?,
+                        &Iri::new(format!("{base}{root_id}").as_str())?,
                     )?;
                 } else {
                     graph.insert(
-                        &Iri::new(format!("{}{}", base, parent_id).as_str())?,
+                        &Iri::new(format!("{base}{parent_id}").as_str())?,
                         &skos.get("narrower")?,
                         &Iri::new(format!("{}{}", base, term.id).as_str())?,
                     )?;
                     graph.insert(
                         &Iri::new(format!("{}{}", base, term.id).as_str())?,
                         &skos.get("broader")?,
-                        &Iri::new(format!("{}{}", base, parent_id).as_str())?,
+                        &Iri::new(format!("{base}{parent_id}").as_str())?,
                     )?;
                     graph.insert(
                         &Iri::new(format!("{}{}", base, term.id).as_str())?,

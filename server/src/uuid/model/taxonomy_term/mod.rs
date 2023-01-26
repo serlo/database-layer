@@ -315,7 +315,7 @@ impl TaxonomyTerm {
         .fetch_optional(executor)
         .await?
         .ok_or(operation::Error::BadRequest {
-            reason: format!("Taxonomy term with id {} does not exist", term_taxonomy_id),
+            reason: format!("Taxonomy term with id {term_taxonomy_id} does not exist"),
         })?
         .instance_id)
     }
@@ -555,15 +555,14 @@ impl TaxonomyTerm {
             let entity_type = Entity::fetch_entity_type(*child_id, &mut transaction)
                 .await?
                 .ok_or(operation::Error::BadRequest {
-                    reason: format!("entity with id {} does not exist", child_id),
+                    reason: format!("entity with id {child_id} does not exist"),
                 })?;
 
             match entity_type {
                 EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution => {
                     return Err(operation::Error::BadRequest {
                         reason: format!(
-                            "entity with id {} cannot be linked to a taxonomy term",
-                            child_id
+                            "entity with id {child_id} cannot be linked to a taxonomy term"
                         ),
                     })
                 }
@@ -571,8 +570,7 @@ impl TaxonomyTerm {
                     if !taxonomy_is_folder {
                         return Err(operation::Error::BadRequest {
                             reason: format!(
-                                "entity with id {} is an exercise or exercise group and can only be linked to a topic folder",
-                                child_id
+                                "entity with id {child_id} is an exercise or exercise group and can only be linked to a topic folder"
                             )
                         });
                     }
@@ -581,8 +579,7 @@ impl TaxonomyTerm {
                     if taxonomy_is_folder {
                         return Err(operation::Error::BadRequest {
                             reason: format!(
-                                "entity with id {} cannot be linked to a topic folder",
-                                child_id
+                                "entity with id {child_id} cannot be linked to a topic folder"
                             ),
                         });
                     }
@@ -710,8 +707,7 @@ impl TaxonomyTerm {
             {
                 return Err(operation::Error::BadRequest {
                     reason: format!(
-                        "Entity with id {} has to be linked to at least one taxonomy",
-                        child_id
+                        "Entity with id {child_id} has to be linked to at least one taxonomy"
                     ),
                 });
             };

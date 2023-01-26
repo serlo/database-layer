@@ -33,7 +33,7 @@ pub fn format_alias(prefix: Option<&str>, id: i32, suffix: Option<&str>) -> Stri
         .map(|p| format!("/{}", slugify(p)))
         .unwrap_or_else(|| "".to_string());
     let suffix = suffix.map(slugify).unwrap_or_else(|| "".to_string());
-    format!("{}/{}/{}", prefix, id, suffix)
+    format!("{prefix}/{id}/{suffix}")
 }
 
 fn slugify(segment: &str) -> String {

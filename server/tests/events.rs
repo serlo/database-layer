@@ -52,10 +52,10 @@ mod events_query {
             .execute()
             .await
             .should_be_ok_with(|result| {
-                assert_has_length(&result["events"], 12);
+                assert_has_length(&result["events"], 13);
                 assert_eq!(result["hasNextPage"], false);
                 assert_eq!(
-                    result["events"][11],
+                    result["events"][12],
                     json!({
                         "__typename": "CreateCommentNotificationEvent",
                         "id": 37375,
@@ -76,10 +76,10 @@ mod events_query {
             .execute()
             .await
             .should_be_ok_with(|result| {
-                assert_has_length(&result["events"], 18);
+                assert_has_length(&result["events"], 23);
                 assert_eq!(result["hasNextPage"], false);
                 assert_eq!(
-                    result["events"][17],
+                    result["events"][22],
                     json!({
                         "__typename": "SetLicenseNotificationEvent",
                         "id": 472,

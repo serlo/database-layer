@@ -46,7 +46,7 @@ impl UuidFetcher for PageRevision {
         .map(|revision| Uuid {
             id,
             trashed: revision.trashed != 0,
-            alias: format!("/entity/repository/compare/0/{}", id),
+            alias: format!("/entity/repository/compare/0/{id}"),
             concrete_uuid: ConcreteUuid::PageRevision(PageRevision {
                 __typename: "PageRevision".to_string(),
                 title: revision.title,

@@ -79,7 +79,7 @@ impl EntityMetadata {
                     .map(|title| title.to_string());
                 let id = get_iri(result.id as i32);
                 let learning_resource_type = get_learning_resource_type(&result.resource_type);
-                let name = title.clone().unwrap_or_else(|| format!("{}: {}", learning_resource_type, id));
+                let name = title.clone().unwrap_or_else(|| format!("{learning_resource_type}: {id}"));
 
                 EntityMetadata {
                     context: json!([
@@ -122,7 +122,7 @@ impl EntityMetadata {
 }
 
 fn get_iri(id: i32) -> String {
-    format!("https://serlo.org/{}", id)
+    format!("https://serlo.org/{id}")
 }
 
 fn get_learning_resource_type(entity_type: &str) -> String {

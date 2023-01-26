@@ -63,7 +63,7 @@ pub trait Operation {
                 .json(data),
 
             Err(error) => {
-                println!("{}: {}", operation_type, error);
+                println!("{operation_type}: {error}");
 
                 match error {
                     Error::NotFoundError => HttpResponse::NotFound()

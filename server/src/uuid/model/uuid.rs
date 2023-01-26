@@ -101,10 +101,7 @@ pub trait AssertExists: UuidFetcher {
     {
         if let Err(UuidError::NotFound) = Self::fetch_via_transaction(id, executor).await {
             return Err(operation::Error::BadRequest {
-                reason: format!(
-                    "Id {} does not exist or does not correspond to the type",
-                    id
-                ),
+                reason: format!("Id {id} does not exist or does not correspond to the type"),
             });
         }
         Ok(())

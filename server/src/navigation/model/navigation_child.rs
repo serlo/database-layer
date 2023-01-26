@@ -118,7 +118,7 @@ impl TryFrom<(RawNavigationChild, Vec<NavigationChild>)> for NavigationChild {
                     if let Some(id) = raw_navigation_child.parameters.get("params.id") {
                         Ok(NavigationChild::Url(UrlNavigationChild {
                             label,
-                            url: format!("/discussions/{}", id),
+                            url: format!("/discussions/{id}"),
                             children,
                         }))
                     } else {
@@ -175,7 +175,7 @@ impl TryFrom<(RawNavigationChild, Vec<NavigationChild>)> for NavigationChild {
                     if let Some(id) = raw_navigation_child.parameters.get("params.term") {
                         Ok(NavigationChild::Url(UrlNavigationChild {
                             label,
-                            url: format!("/taxonomy/term/organize/{}", id),
+                            url: format!("/taxonomy/term/organize/{id}"),
                             children,
                         }))
                     } else {
@@ -183,7 +183,7 @@ impl TryFrom<(RawNavigationChild, Vec<NavigationChild>)> for NavigationChild {
                     }
                 }
                 route => {
-                    println!("Unhandled route: {}", route);
+                    println!("Unhandled route: {route}");
                     println!("Params: {:?}", raw_navigation_child.parameters);
                     Err(NavigationChildError::InvalidRoute)
                 }

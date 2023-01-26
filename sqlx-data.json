@@ -624,57 +624,6 @@
     },
     "query": "\n                SELECT field, value\n                    FROM entity_revision_field\n                    WHERE entity_revision_id = ?\n            "
   },
-  "2418ca076949cbb5a9a5d33aa9483297b45b5ea33f4da7e8d785dc52c101e597": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "seen",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "event_log_id",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                SELECT n.id, n.seen, e.event_log_id\n                    FROM notification n\n                    JOIN notification_event e ON n.id = e.notification_id\n                    JOIN event_log on event_log.id = e.event_log_id\n                    JOIN uuid uuid1 on uuid1.id = event_log.uuid_id\n                    LEFT JOIN entity entity1 on entity1.id = event_log.uuid_id\n                    LEFT JOIN event_parameter ON event_parameter.log_id = event_log.id\n                    LEFT JOIN event_parameter_uuid ON\n                      event_parameter_uuid.event_parameter_id = event_parameter.id\n                    LEFT JOIN event_parameter_string ON\n                      event_parameter_string.event_parameter_id = event_parameter.id\n                    LEFT JOIN uuid uuid2 on uuid2.id = event_parameter_uuid.uuid_id\n                    LEFT JOIN entity entity2 on entity2.id = event_parameter_uuid.uuid_id\n                    WHERE n.user_id = ?\n                      AND event_parameter_string.value IS NULL\n                      AND uuid1.discriminator NOT IN (\"attachment\", \"blogPost\")\n                      AND (uuid2.discriminator IS NULL OR\n                        uuid2.discriminator NOT IN (\"attachment\", \"blogPost\"))\n                      AND (entity1.type_id IS NULL OR entity1.type_id IN (1,2,3,4,5,6,7,8,49,50))\n                      AND (entity2.type_id IS NULL OR entity2.type_id IN (1,2,3,4,5,6,7,8,49,50))\n                    ORDER BY n.date DESC, n.id DESC\n            "
-  },
   "2594f7eb0db4993eb684ae6fdf173a8999df485653a8544733a6ce29da94842d": {
     "describe": {
       "columns": [
@@ -2580,6 +2529,83 @@
       }
     },
     "query": "select email from user where id = ?"
+  },
+  "9fc7d40b0e6cc18ec82eb84d5c3cac04c38b66623271b229bdf90cbf92a40df0": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "seen",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "email_sent",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "email",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "event_log_id",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT n.id, n.seen, n.email_sent, n.email, e.event_log_id\n                    FROM notification n\n                    JOIN notification_event e ON n.id = e.notification_id\n                    JOIN event_log on event_log.id = e.event_log_id\n                    JOIN uuid uuid1 on uuid1.id = event_log.uuid_id\n                    LEFT JOIN entity entity1 on entity1.id = event_log.uuid_id\n                    LEFT JOIN event_parameter ON event_parameter.log_id = event_log.id\n                    LEFT JOIN event_parameter_uuid ON\n                      event_parameter_uuid.event_parameter_id = event_parameter.id\n                    LEFT JOIN event_parameter_string ON\n                      event_parameter_string.event_parameter_id = event_parameter.id\n                    LEFT JOIN uuid uuid2 on uuid2.id = event_parameter_uuid.uuid_id\n                    LEFT JOIN entity entity2 on entity2.id = event_parameter_uuid.uuid_id\n                    WHERE n.user_id = ?\n                      AND event_parameter_string.value IS NULL\n                      AND uuid1.discriminator NOT IN (\"attachment\", \"blogPost\")\n                      AND (uuid2.discriminator IS NULL OR\n                        uuid2.discriminator NOT IN (\"attachment\", \"blogPost\"))\n                      AND (entity1.type_id IS NULL OR entity1.type_id IN (1,2,3,4,5,6,7,8,49,50))\n                      AND (entity2.type_id IS NULL OR entity2.type_id IN (1,2,3,4,5,6,7,8,49,50))\n                    ORDER BY n.date DESC, n.id DESC\n            "
   },
   "a400f2b325f4baa03878fd49187085fb2b95d0ca886494a2fca05f1ec65b7ed1": {
     "describe": {

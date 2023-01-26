@@ -270,6 +270,14 @@ const content = generateChangelog({
 
       fixed: ['Really trash or restore taxonomy term #350'],
     },
+    {
+      tagName: 'v0.3.59',
+      date: '2023-01-26',
+      added: [
+        'Add ThreadEditMutation, Query also if user subscribed for email and if it was already sent',
+      ],
+      fixed: ['Do not query checkout event of page revision'],
+    },
   ],
 })
 

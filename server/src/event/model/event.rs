@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
+use futures::TryStreamExt;
 use serde::Serialize;
 use sqlx::MySqlPool;
 

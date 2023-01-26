@@ -1126,6 +1126,70 @@
     },
     "query": "\n                SELECT page_repository.id\n                FROM instance, page_repository\n                JOIN page_revision ON page_repository.id = page_revision.page_repository_id\n                WHERE page_repository.instance_id = instance.id\n                AND (? is null or instance.subdomain = ?)\n                AND page_repository.current_revision_id = page_revision.id\n            "
   },
+  "3b6098e00bd82ec3f18a1c5e07915e1fc229059e2964da68c03a787fb4ba62a1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "content",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 16
+            },
+            "max_size": 4294967295,
+            "type": "Blob"
+          }
+        },
+        {
+          "name": "author_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "archived",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "trashed",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        }
+      ],
+      "nullable": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT content, author_id, archived, trashed\n                FROM comment JOIN uuid ON uuid.id = comment.id\n                WHERE comment.id = ?\n            "
+  },
   "3c53faa4669ab4e83898639d4c51a92a6be3c24b57914864aa0509f75cb61506": {
     "describe": {
       "columns": [
@@ -1666,7 +1730,7 @@
     },
     "query": "update blog_post set author_id = ? where author_id = ?"
   },
-  "5fa748b60833e887fcbbf2f1fabc3ec50ac8604d12ca0e11848e37075d0ff30e": {
+  "605be0a0be8cb2149d2b92a36a65a25fab72f341b9ffa53b96f4accbb8dda382": {
     "describe": {
       "columns": [
         {
@@ -1689,7 +1753,7 @@
         "Right": 4
       }
     },
-    "query": "\n                SELECT comment.id\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND comment.id < ?\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR instance_id = ?)\n                    AND parent_uuid.discriminator != \"user\"\n                ORDER BY comment.id DESC\n                LIMIT ?\n            "
+    "query": "\n                SELECT comment.id\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                JOIN comment answer ON comment.id = answer.parent_id OR\n                    comment.id = answer.id\n                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR comment.instance_id = ?)\n                    AND parent_uuid.discriminator != \"user\"\n                GROUP BY comment.id\n                HAVING MAX(GREATEST(answer.date, comment.date)) < ?\n                ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC\n                LIMIT ?\n            "
   },
   "649f401fd7262aa959e1e5a8f1071d74a7315cce328cdbbce4ad1a4aec849820": {
     "describe": {
@@ -2062,57 +2126,6 @@
       }
     },
     "query": "DELETE FROM subscription WHERE uuid_id = ? AND user_id = ?"
-  },
-  "7691e4f0280fd0bb9b0f2cc23d9ac8eeeed4a6c35d1a819d6f6f2c8ac45afcca": {
-    "describe": {
-      "columns": [
-        {
-          "name": "trashed",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "subdomain",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 40,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "discriminator",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 180,
-            "type": "VarString"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                    SELECT u.trashed, i.subdomain, u.discriminator\n                        FROM uuid u\n                        JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT id, instance_id FROM term) c ON c.id = u.id\n                        JOIN instance i ON i.id = c.instance_id\n                        WHERE u.id = ?\n                "
   },
   "769713eded2a80cb23fd93a3767bc1aa4cbc7446e97f4f87d595e922fd143841": {
     "describe": {
@@ -2827,6 +2840,57 @@
     },
     "query": "\n                SELECT events.type AS event_type, count(*) AS counts\n                    FROM (\n                        SELECT CASE\n                            WHEN event_id = 5 THEN \"edits\"\n                            WHEN event_id in (6,11) THEN \"reviews\"\n                            WHEN event_id in (8,9,14,16) THEN \"comments\"\n                            ELSE \"taxonomy\"\n                        END AS type\n                        FROM event_log\n                        WHERE actor_id = ?\n                            AND event_id IN (5,6,11,8,9,14,16,1,2,12,15,17)\n                    ) events\n                GROUP BY events.type;\n            "
   },
+  "aa0083b9f6c80f36b3d3653afc32a9eb0d8ffc0271fbf741ad9037c9fa38284d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "trashed",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "subdomain",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 40,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "discriminator",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 180,
+            "type": "VarString"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                    SELECT u.trashed, i.subdomain, u.discriminator\n                        FROM uuid u\n                        JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT term_taxonomy.id, instance_id FROM term_taxonomy JOIN term ON term.id = term_taxonomy.term_id\n                        ) c ON c.id = u.id\n                        JOIN instance i ON i.id = c.instance_id\n                        WHERE u.id = ?\n                "
+  },
   "aaa83d051b9208a545b713b94a6171f8acfe8c3a82711016853f3eb6b1f2a43a": {
     "describe": {
       "columns": [],
@@ -2886,6 +2950,16 @@
       }
     },
     "query": "SELECT id FROM entity WHERE id = ?"
+  },
+  "aeb0afb479d2959038ec559914b1f902973ed241339101eec3af0fe124c27526": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                    UPDATE comment SET content = ? WHERE id = ?\n                "
   },
   "af0db2da7d2e46f2291c6edbe0870004af83d90d464346759ddde2067736a294": {
     "describe": {

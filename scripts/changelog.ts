@@ -252,6 +252,24 @@ const content = generateChangelog({
         'Fix alias for page revisions #325',
       ],
     },
+    {
+      tagName: 'v0.3.56',
+      date: '2022-11-02',
+      added: ['Order AllThreadsQuery according to last updated'],
+    },
+    {
+      tagName: 'v0.3.57',
+      date: '2022-11-22',
+
+      fixed: ['Fix sorting of threads in discussions #345'],
+    },
+
+    {
+      tagName: 'v0.3.58',
+      date: '2023-01-04',
+
+      fixed: ['Really trash or restore taxonomy term #350'],
+    },
   ],
 })
 

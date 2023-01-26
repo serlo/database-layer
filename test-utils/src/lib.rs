@@ -46,7 +46,7 @@ impl<'a> Message<'a> {
 }
 
 pub struct MessageResult {
-    status: StatusCode,
+    pub status: StatusCode,
     body: Bytes,
 }
 

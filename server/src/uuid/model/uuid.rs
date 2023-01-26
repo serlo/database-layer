@@ -101,10 +101,7 @@ pub trait AssertExists: UuidFetcher {
     {
         if let Err(UuidError::NotFound) = Self::fetch_via_transaction(id, executor).await {
             return Err(operation::Error::BadRequest {
-                reason: format!(
-                    "Id {} does not exist or does not correspond to the type",
-                    id
-                ),
+                reason: format!("Id {id} does not exist or does not correspond to the type"),
             });
         }
         Ok(())
@@ -277,13 +274,12 @@ impl Uuid {
                         UNION ALL
                         SELECT id, instance_id FROM entity
                         UNION ALL
-                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id
-                        UNION ALL
                         SELECT id, instance_id FROM page_repository
                         UNION ALL
                         SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id
                         UNION ALL
-                        SELECT id, instance_id FROM term) c ON c.id = u.id
+                        SELECT term_taxonomy.id, instance_id FROM term_taxonomy JOIN term ON term.id = term_taxonomy.term_id
+                        ) c ON c.id = u.id
                         JOIN instance i ON i.id = c.instance_id
                         WHERE u.id = ?
                 "#,
@@ -291,9 +287,10 @@ impl Uuid {
             )
             .fetch_one(&mut transaction)
             .await;
-
             match result {
                 Ok(uuid) => {
+                    // Actually the query already excludes entity revisions and users.
+                    // But we can leave it as kind of reminder in case the query is wrongly refactored.
                     if uuid.discriminator == "entityRevision" || uuid.discriminator == "user" {
                         return Err(operation::Error::BadRequest {
                             reason: format!(
@@ -321,8 +318,9 @@ impl Uuid {
                         .await?;
                 }
                 Err(sqlx::Error::RowNotFound) => {
-                    // UUID not found, skip
-                    continue;
+                    return Err(operation::Error::BadRequest {
+                        reason: "Uuid does not exist or cannot be trashed".to_string(),
+                    })
                 }
                 Err(inner) => {
                     return Err(inner.into());

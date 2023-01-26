@@ -87,7 +87,7 @@ impl Notifications {
         let mut notifications: Vec<Notification> = notifications
             .iter()
             .map(|child| Notification {
-                id: child.id as i32,
+                id: child.id,
                 unread: child.seen == 0,
                 email_sent: child.email_sent == Some(1),
                 email: child.email == Some(1),

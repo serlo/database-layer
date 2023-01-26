@@ -46,7 +46,7 @@ impl fmt::Display for Instance {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let decoded = serde_json::to_value(self).unwrap();
         let decoded = decoded.as_str().unwrap();
-        write!(f, "{}", decoded)
+        write!(f, "{decoded}")
     }
 }
 
@@ -57,7 +57,7 @@ impl sqlx::Type<MySql> for Instance {
 }
 impl<'q> sqlx::Encode<'q, MySql> for Instance {
     fn encode_by_ref(&self, buf: &mut <MySql as HasArguments<'q>>::ArgumentBuffer) -> IsNull {
-        let decoded = format!("{}", self);
+        let decoded = format!("{self}");
         decoded.encode_by_ref(buf)
     }
 }

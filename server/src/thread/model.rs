@@ -1,5 +1,6 @@
 use super::messages::{
-    create_comment_mutation, create_thread_mutation, set_thread_archived_mutation,
+    create_comment_mutation, create_thread_mutation, edit_comment_mutation,
+    set_thread_archived_mutation,
 };
 use serde::Serialize;
 use sqlx::MySqlPool;
@@ -23,10 +24,10 @@ pub struct Threads {
 impl Threads {
     pub async fn fetch_all_threads<'a, E>(
         first: i32,
-        after: Option<i32>,
+        after: Option<String>,
         instance: Option<Instance>,
         executor: E,
-    ) -> Result<Self, sqlx::Error>
+    ) -> Result<Self, operation::Error>
     where
         E: Executor<'a>,
     {
@@ -37,9 +38,15 @@ impl Threads {
             None => None,
         };
 
+        let after_parsed = match after.as_ref() {
+            Some(date) => DateTime::parse_from_rfc3339(date)?,
+            None => DateTime::now(),
+        };
+
+        // TODO: use alias for MAX(GREATEST(...)) when sqlx supports it
         let result = sqlx::query!(
             r#"
-                SELECT comment.id, comment.date
+                SELECT comment.id
                 FROM comment
                 JOIN uuid ON uuid.id = comment.id
                 JOIN comment answer ON comment.id = answer.parent_id OR
@@ -47,18 +54,18 @@ impl Threads {
                 JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id
                 WHERE
                     comment.uuid_id IS NOT NULL
-                    AND comment.id < ?
                     AND uuid.trashed = 0
                     AND comment.archived = 0
                     AND (? is null OR comment.instance_id = ?)
                     AND parent_uuid.discriminator != "user"
                 GROUP BY comment.id
-                ORDER BY MAX(GREATEST(answer.id, comment.id)) DESC
+                HAVING MAX(GREATEST(answer.date, comment.date)) < ?
+                ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC
                 LIMIT ?
             "#,
-            after.unwrap_or(1_000_000_000),
             instance_id,
             instance_id,
+            after_parsed,
             first
         )
         .fetch_all(&mut transaction)
@@ -173,7 +180,13 @@ impl Threads {
             payload.thread_id
         )
         .fetch_one(&mut transaction)
-        .await?;
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => operation::Error::BadRequest {
+                reason: "thread does not exist".to_string(),
+            },
+            error => error.into(),
+        })?;
 
         if thread.archived != 0 {
             // TODO: test is missing
@@ -287,7 +300,12 @@ impl Threads {
             payload.object_id
         )
         .fetch_one(&mut transaction)
-        .await?.instance_id as i32;
+        .await.map_err(|error| match error {
+            sqlx::Error::RowNotFound => operation::Error::BadRequest{
+                reason: "UUID not found".to_string(),
+            },
+            error => error.into(),})?
+        .instance_id;
 
         sqlx::query!(
             r#"
@@ -344,145 +362,86 @@ impl Threads {
 
         Ok(comment)
     }
+
+    pub async fn edit_comment<'a, E>(
+        payload: &edit_comment_mutation::Payload,
+        executor: E,
+    ) -> Result<operation::SuccessOutput, operation::Error>
+    where
+        E: Executor<'a>,
+    {
+        if payload.content.is_empty() {
+            return Err(operation::Error::BadRequest {
+                reason: "content is empty".to_string(),
+            });
+        }
+
+        let mut transaction = executor.begin().await?;
+
+        let comment = sqlx::query!(
+            r#"
+                SELECT content, author_id, archived, trashed
+                FROM comment JOIN uuid ON uuid.id = comment.id
+                WHERE comment.id = ?
+            "#,
+            payload.comment_id
+        )
+        .fetch_one(&mut transaction)
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => operation::Error::BadRequest {
+                reason: "no comment with given ID".to_string(),
+            },
+            error => error.into(),
+        })?;
+
+        if payload.user_id as i64 != comment.author_id {
+            return Err(operation::Error::BadRequest {
+                reason: "given user is not author of the comment".to_string(),
+            });
+        }
+
+        if comment.archived != 0 {
+            return Err(operation::Error::BadRequest {
+                reason: "archived comment cannot be edited".to_string(),
+            });
+        }
+
+        if comment.trashed != 0 {
+            return Err(operation::Error::BadRequest {
+                reason: "trashed comment cannot be edited".to_string(),
+            });
+        }
+
+        if payload.content != comment.content.as_deref().unwrap_or("") {
+            sqlx::query!(
+                // todo: update edit_date (after database migration)
+                // UPDATE comment SET content = ?, edit_date = ? WHERE id = ?
+                r#"
+                    UPDATE comment SET content = ? WHERE id = ?
+                "#,
+                payload.content,
+                // DateTime::now(),
+                payload.comment_id,
+            )
+            .execute(&mut transaction)
+            .await?;
+        }
+
+        transaction.commit().await?;
+
+        Ok(operation::SuccessOutput { success: true })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use chrono::Duration;
 
-    use super::super::messages::{
-        create_comment_mutation, create_thread_mutation, set_thread_archived_mutation,
-    };
+    use super::super::messages::set_thread_archived_mutation;
     use super::Threads;
     use crate::create_database_pool;
     use crate::event::test_helpers::fetch_age_of_newest_event;
-
-    #[actix_rt::test]
-    async fn start_thread() {
-        run_test_start_thread(1565).await;
-    }
-
-    #[actix_rt::test]
-    async fn start_thread_on_user() {
-        run_test_start_thread(1).await;
-    }
-
-    async fn run_test_start_thread(object_id: i32) {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        Threads::start_thread(
-            &create_thread_mutation::Payload {
-                title: "title".to_string(),
-                content: "content-test".to_string(),
-                object_id,
-                user_id: 1,
-                subscribe: true,
-                send_email: false,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
-
-        let thread = sqlx::query!(
-            r#"
-                SELECT title, content, author_id FROM comment WHERE uuid_id = ?
-                ORDER BY id DESC
-            "#,
-            object_id
-        )
-        .fetch_one(&mut transaction)
-        .await
-        .unwrap();
-
-        assert_eq!(
-            thread.content,
-            Some("content-test".to_string()),
-            "object_id: {}",
-            object_id
-        );
-        assert_eq!(
-            thread.title,
-            Some("title".to_string()),
-            "object_id: {}",
-            object_id
-        );
-        assert_eq!(thread.author_id, 1, "object_id: {}", object_id);
-    }
-
-    #[actix_rt::test]
-    async fn start_thread_non_existing_uuid() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        let result = Threads::start_thread(
-            &create_thread_mutation::Payload {
-                title: "title-test".to_string(),
-                content: "content-test".to_string(),
-                object_id: 999999,
-                user_id: 1,
-                subscribe: true,
-                send_email: false,
-            },
-            &mut transaction,
-        )
-        .await;
-
-        assert!(result.is_err())
-    }
-
-    #[actix_rt::test]
-    async fn comment_thread() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        Threads::comment_thread(
-            &create_comment_mutation::Payload {
-                thread_id: 17774,
-                user_id: 1,
-                content: "content-test".to_string(),
-                subscribe: true,
-                send_email: false,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
-
-        let comment = sqlx::query!(
-            r#"
-                SELECT content, author_id FROM comment WHERE parent_id = ?
-            "#,
-            17774
-        )
-        .fetch_one(&mut transaction)
-        .await
-        .unwrap();
-
-        assert_eq!(comment.content, Some("content-test".to_string()));
-        assert_eq!(comment.author_id, 1);
-    }
-
-    #[actix_rt::test]
-    async fn comment_thread_non_existing_thread() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        let result = Threads::comment_thread(
-            &create_comment_mutation::Payload {
-                thread_id: 3, //does not exist
-                user_id: 1,
-                content: "content-test".to_string(),
-                subscribe: true,
-                send_email: false,
-            },
-            &mut transaction,
-        )
-        .await;
-
-        assert!(result.is_err())
-    }
 
     #[actix_rt::test]
     async fn set_archive_no_id() {

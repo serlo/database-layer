@@ -17,6 +17,7 @@ pub enum ThreadMessage {
     ThreadCreateThreadMutation(create_thread_mutation::Payload),
     ThreadCreateCommentMutation(create_comment_mutation::Payload),
     ThreadSetThreadArchivedMutation(set_thread_archived_mutation::Payload),
+    ThreadEditMutation(edit_comment_mutation::Payload),
 }
 
 #[async_trait]
@@ -45,6 +46,9 @@ impl MessageResponder for ThreadMessage {
                     .handle("ThreadSetThreadArchivedMutation", connection)
                     .await
             }
+            ThreadMessage::ThreadEditMutation(message) => {
+                message.handle("ThreadEditMutation", connection).await
+            }
         }
     }
 }
@@ -56,7 +60,7 @@ pub mod all_threads_query {
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub first: i32,
-        pub after: Option<i32>,
+        pub after: Option<String>,
         pub instance: Option<Instance>,
     }
 
@@ -67,13 +71,18 @@ pub mod all_threads_query {
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => {
-                    Threads::fetch_all_threads(self.first, self.after, self.instance.clone(), pool)
-                        .await?
+                    Threads::fetch_all_threads(
+                        self.first,
+                        self.after.clone(),
+                        self.instance.clone(),
+                        pool,
+                    )
+                    .await?
                 }
                 Connection::Transaction(transaction) => {
                     Threads::fetch_all_threads(
                         self.first,
-                        self.after,
+                        self.after.clone(),
                         self.instance.clone(),
                         transaction,
                     )
@@ -187,6 +196,32 @@ pub mod set_thread_archived_mutation {
                 }
             }
             Ok(())
+        }
+    }
+}
+
+pub mod edit_comment_mutation {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub user_id: u32,
+        pub comment_id: u32,
+        pub content: String,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = operation::SuccessOutput;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            Ok(match connection {
+                Connection::Pool(pool) => Threads::edit_comment(self, pool).await?,
+                Connection::Transaction(transaction) => {
+                    Threads::edit_comment(self, transaction).await?
+                }
+            })
         }
     }
 }

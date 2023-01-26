@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.59](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.58..v0.3.59) - January 26, 2023
+
+### Added
+
+- Add ThreadEditMutation, Query also if user subscribed for email and if it was already sent
+
+### Fixed
+
+- Do not query checkout event of page revision
+
 ## [v0.3.58](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.57..v0.3.58) - January 4, 2023
 
 ### Fixed

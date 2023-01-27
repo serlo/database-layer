@@ -267,4 +267,52 @@ mod thread_mutations {
                 }
             });
     }
+
+    #[rstest]
+    // positive cases:
+    // no ID should be ok but do nothing
+    #[case(StatusCode::OK, false, [].as_slice(), 1, true)]
+    // single ID, should trigger an event for the change
+    #[case(StatusCode::OK, false, [17666].as_slice(), 1, true)]
+    // single ID, but no state change -> should not trigger event
+    #[case(StatusCode::OK, false, [17666].as_slice(), 1, false)]
+    #[actix_rt::test]
+    async fn set_archived(
+        #[case] expected_response: StatusCode,
+        #[case] should_trigger_event: bool,
+        #[case] ids: &[i32],
+        #[case] user_id: i32,
+        #[case] archived: bool,
+    ) {
+        let mut transaction = begin_transaction().await;
+
+        let result = Message::new(
+            "ThreadSetThreadArchivedMutation",
+            json!({
+                "ids": ids,
+                "userId": user_id,
+                "archived": archived,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_eq!(result.status, expected_response);
+
+        for id in ids {
+            Message::new("UuidQuery", json!({ "id": id, }))
+                .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|comment| {
+                    assert_eq!(comment["archived"], archived);
+                });
+
+            Message::new("EventsQuery", json!({ "first": 1, "objectId": id }))
+                .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    // todo: assert that event was (not) triggered as per expectation
+                });
+        }
+    }
 }

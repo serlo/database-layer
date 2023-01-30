@@ -278,8 +278,6 @@ mod thread_mutations {
     #[case(StatusCode::OK, true, [17666].as_slice(), 1, true)]
     // single ID, but no state change -> should not trigger event
     #[case(StatusCode::OK, false, [17666].as_slice(), 1, false)]
-    // multiple IDs, should trigger an event
-    #[case(StatusCode::OK, true, [17666, ].as_slice(), 1, true)]
     #[actix_rt::test]
     async fn set_archived(
         #[case] expected_response: StatusCode,
@@ -303,13 +301,7 @@ mod thread_mutations {
 
         assert_eq!(result.status, expected_response);
 
-        fn get_event_age(value: Value) -> Duration {
-            DateTime::now().signed_duration_since(
-                serde_json::from_value(value["events"][0]["date"].clone()).unwrap(),
-            )
-        }
-
-        for id in ids {
+        for id in ids.iter() {
             Message::new("UuidQuery", json!({ "id": id }))
                 .execute_on(&mut transaction)
                 .await
@@ -317,11 +309,14 @@ mod thread_mutations {
                     assert_eq!(comment["archived"], archived);
                 });
 
-            if should_trigger_event {
-                Message::new("EventsQuery", json!({ "first": 1 }))
-                    .execute_on(&mut transaction)
-                    .await
-                    .should_be_ok_with(|result| {
+            Message::new("EventsQuery", json!({ "first": 1 }))
+                .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    let event_age = DateTime::now().signed_duration_since(
+                        serde_json::from_value(result["events"][0]["date"].clone()).unwrap(),
+                    );
+                    if should_trigger_event {
                         assert_eq!(
                             result["events"][0]["__typename"],
                             "SetThreadStateNotificationEvent"
@@ -330,16 +325,10 @@ mod thread_mutations {
                         assert_eq!(result["events"][0]["threadId"], *id);
                         assert_eq!(result["events"][0]["actorId"], user_id);
                         assert_eq!(result["events"][0]["archived"], archived);
-                        assert!(get_event_age(result) < Duration::minutes(1));
-                    });
-            }
-        }
-        if !should_trigger_event {
-            Message::new("EventsQuery", json!({ "first": 1 }))
-                .execute_on(&mut transaction)
-                .await
-                .should_be_ok_with(|result| {
-                    assert!(get_event_age(result) > Duration::minutes(1));
+                        assert!(event_age < Duration::minutes(1));
+                    } else {
+                        assert!(event_age > Duration::minutes(1));
+                    }
                 });
         }
     }

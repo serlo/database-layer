@@ -90,7 +90,9 @@ mod all_threads_query {
 
 mod thread_mutations {
     use actix_web::http::StatusCode;
+    use chrono::*;
     use rstest::*;
+    use server::datetime::DateTime;
     use test_utils::*;
 
     #[rstest]
@@ -273,9 +275,11 @@ mod thread_mutations {
     // no ID should be ok but do nothing
     #[case(StatusCode::OK, false, [].as_slice(), 1, true)]
     // single ID, should trigger an event for the change
-    #[case(StatusCode::OK, false, [17666].as_slice(), 1, true)]
+    #[case(StatusCode::OK, true, [17666].as_slice(), 1, true)]
     // single ID, but no state change -> should not trigger event
     #[case(StatusCode::OK, false, [17666].as_slice(), 1, false)]
+    // multiple IDs, should trigger an event
+    #[case(StatusCode::OK, true, [17666, ].as_slice(), 1, true)]
     #[actix_rt::test]
     async fn set_archived(
         #[case] expected_response: StatusCode,
@@ -299,19 +303,43 @@ mod thread_mutations {
 
         assert_eq!(result.status, expected_response);
 
+        fn get_event_age(value: Value) -> Duration {
+            DateTime::now().signed_duration_since(
+                serde_json::from_value(value["events"][0]["date"].clone()).unwrap(),
+            )
+        }
+
         for id in ids {
-            Message::new("UuidQuery", json!({ "id": id, }))
+            Message::new("UuidQuery", json!({ "id": id }))
                 .execute_on(&mut transaction)
                 .await
                 .should_be_ok_with(|comment| {
                     assert_eq!(comment["archived"], archived);
                 });
 
-            Message::new("EventsQuery", json!({ "first": 1, "objectId": id }))
+            if should_trigger_event {
+                Message::new("EventsQuery", json!({ "first": 1 }))
+                    .execute_on(&mut transaction)
+                    .await
+                    .should_be_ok_with(|result| {
+                        assert_eq!(
+                            result["events"][0]["__typename"],
+                            "SetThreadStateNotificationEvent"
+                        );
+                        assert_eq!(result["events"][0]["objectId"], *id);
+                        assert_eq!(result["events"][0]["threadId"], *id);
+                        assert_eq!(result["events"][0]["actorId"], user_id);
+                        assert_eq!(result["events"][0]["archived"], archived);
+                        assert!(get_event_age(result) < Duration::minutes(1));
+                    });
+            }
+        }
+        if !should_trigger_event {
+            Message::new("EventsQuery", json!({ "first": 1 }))
                 .execute_on(&mut transaction)
                 .await
                 .should_be_ok_with(|result| {
-                    // todo: assert that event was (not) triggered as per expectation
+                    assert!(get_event_age(result) > Duration::minutes(1));
                 });
         }
     }

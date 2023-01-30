@@ -6,7 +6,7 @@ use std::fmt;
 
 use chrono::{Duration, TimeZone, Utc};
 use chrono_tz::Europe::Berlin;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer};
 use sqlx::database::HasArguments;
 use sqlx::encode::IsNull;
 use sqlx::mysql::MySqlTypeInfo;
@@ -39,7 +39,7 @@ use crate::operation;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Deserialize, Debug, Eq, PartialEq)]
 pub struct DateTime(chrono::DateTime<Utc>);
 
 impl DateTime {

@@ -313,18 +313,19 @@ mod thread_mutations {
                 .execute_on(&mut transaction)
                 .await
                 .should_be_ok_with(|result| {
+                    let latest_event = &result["events"][0];
                     let event_age = DateTime::now().signed_duration_since(
-                        serde_json::from_value(result["events"][0]["date"].clone()).unwrap(),
+                        serde_json::from_value(latest_event["date"].clone()).unwrap(),
                     );
                     if should_trigger_event {
                         assert_eq!(
-                            result["events"][0]["__typename"],
+                            latest_event["__typename"],
                             "SetThreadStateNotificationEvent"
                         );
-                        assert_eq!(result["events"][0]["objectId"], *id);
-                        assert_eq!(result["events"][0]["threadId"], *id);
-                        assert_eq!(result["events"][0]["actorId"], user_id);
-                        assert_eq!(result["events"][0]["archived"], archived);
+                        assert_eq!(latest_event["objectId"], *id);
+                        assert_eq!(latest_event["threadId"], *id);
+                        assert_eq!(latest_event["actorId"], user_id);
+                        assert_eq!(latest_event["archived"], archived);
                         assert!(event_age < Duration::minutes(1));
                     } else {
                         assert!(event_age > Duration::minutes(1));

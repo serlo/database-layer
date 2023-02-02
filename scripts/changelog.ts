@@ -278,6 +278,11 @@ const content = generateChangelog({
       ],
       fixed: ['Do not query checkout event of page revision'],
     },
+    {
+      tagName: 'v0.3.60',
+      date: '2023-02-02',
+      fixed: ['thread: fix name of ThreadEditMutation'],
+    },
   ],
 })
 

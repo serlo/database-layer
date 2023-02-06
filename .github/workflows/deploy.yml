@@ -26,10 +26,10 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16.x
-      - uses: google-github-actions/setup-gcloud@v0
+      - uses: google-github-actions/auth@v1
         with:
-          version: 274.0.0
-          service_account_key: ${{ secrets.GCP_KEY_CONTAINER_REGISTRY }}
+          credentials_json: '${{ secrets.GCP_KEY_CONTAINER_REGISTRY }}'
+      - uses: google-github-actions/setup-gcloud@v1
       - run: gcloud auth configure-docker
       - run: yarn --immutable --immutable-cache
       - run: yarn deploy

@@ -105,7 +105,7 @@ impl Threads {
     {
         let mut transaction = executor.begin().await?;
 
-        for id in payload.ids.clone().into_iter() {
+        for id in payload.ids.iter() {
             let result = sqlx::query!(
                 r#"
                     SELECT archived FROM comment WHERE id = ?
@@ -143,7 +143,7 @@ impl Threads {
             .execute(&mut transaction)
             .await?;
 
-            SetThreadStateEventPayload::new(payload.archived, payload.user_id, id)
+            SetThreadStateEventPayload::new(payload.archived, payload.user_id, *id)
                 .save(&mut transaction)
                 .await
                 .map_err(|error| operation::Error::InternalServerError {

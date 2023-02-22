@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.67.1
           override: true
           profile: minimal
       - run: echo "SQLX_OFFLINE=true" >> $GITHUB_ENV
@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.67.1
           override: true
           profile: minimal
           components: clippy
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.67.1
           override: true
           profile: minimal
           components: rustfmt
@@ -76,7 +76,7 @@ jobs:
       - run: docker-compose up -d
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.67.1
           override: true
           profile: minimal
       - run: ./.github/wait-for-mysql.sh

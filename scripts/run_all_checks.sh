@@ -8,7 +8,7 @@ function init() {
   read_arguments "$@"
 
   print_header "Make sure yarn packages are up to date"
-  yarn install --frozen-lockfile
+  yarn install --immutable --immutable-cache
 
   setup_mysql
 }

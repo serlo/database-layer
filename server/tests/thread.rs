@@ -278,6 +278,8 @@ mod thread_mutations {
     #[case(StatusCode::OK, true, [17666].as_slice(), 1, true)]
     // single ID, but no state change -> should not trigger event
     #[case(StatusCode::OK, false, [17666].as_slice(), 1, false)]
+    // ID is no comment
+    #[case(StatusCode::BAD_REQUEST, false, [1].as_slice(), 1, false)]
     #[actix_rt::test]
     async fn set_archived(
         #[case] expected_response: StatusCode,
@@ -301,13 +303,15 @@ mod thread_mutations {
 
         assert_eq!(result.status, expected_response);
 
-        for id in ids.iter() {
-            Message::new("UuidQuery", json!({ "id": id }))
-                .execute_on(&mut transaction)
-                .await
-                .should_be_ok_with(|comment| {
-                    assert_eq!(comment["archived"], archived);
-                });
+        for id in ids {
+            if expected_response == StatusCode::OK {
+                Message::new("UuidQuery", json!({ "id": id }))
+                    .execute_on(&mut transaction)
+                    .await
+                    .should_be_ok_with(|comment| {
+                        assert_eq!(comment["archived"], archived);
+                    });
+            }
 
             Message::new("EventsQuery", json!({ "first": 1 }))
                 .execute_on(&mut transaction)

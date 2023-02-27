@@ -258,7 +258,7 @@ mod thread_mutations {
     #[case(StatusCode::OK, &[false], &[], 1, true)]
     #[case(StatusCode::OK, &[true], &[17666], 1, true)]
     #[case(StatusCode::OK, &[false], &[17666], 1, false)] // no state change
-    #[case(StatusCode::OK, &[false, true], &[17666, 16740], 1, false)]
+    #[case(StatusCode::OK, &[false, true], &[17666, 16740], 1, false)] // 16740 is archived comment
     #[case(StatusCode::BAD_REQUEST, &[false], &[1], 1, false)] // ID is no comment
     #[case(StatusCode::BAD_REQUEST, &[false, false], &[17666, 1], 1, true)] // 2nd ID's no comment
     #[actix_rt::test]

@@ -96,12 +96,10 @@ mod thread_mutations {
     use test_utils::*;
 
     #[rstest]
-    // positive cases:
     // start thread under user
     #[case(StatusCode::OK, 1, 1, "Title", "This is content.", true, false)]
     // start thread under article
     #[case(StatusCode::OK, 1565, 1, "Title", "This is content.", true, false)]
-    // negative cases:
     // valid payload except content is empty
     #[case(StatusCode::BAD_REQUEST, 17774, 1, "Title", "", true, false)]
     // valid payload except UUID does not exist
@@ -156,14 +154,9 @@ mod thread_mutations {
     }
 
     #[rstest]
-    // positive cases:
-    // valid payload
     #[case(StatusCode::OK, 17774, 1, "This is content.", true, false)]
-    // negative cases:
-    // valid payload except content is empty
-    #[case(StatusCode::BAD_REQUEST, 17774, 1, "", true, false)]
-    // valid payload except thread does not exist
-    #[case(StatusCode::BAD_REQUEST, 3, 1, "This is content", true, false)]
+    #[case(StatusCode::BAD_REQUEST, 17774, 1, "", true, false)] // content empty
+    #[case(StatusCode::BAD_REQUEST, 3, 1, "This is content", true, false)] // thread does not exist
     #[actix_rt::test]
     async fn create_comment(
         #[case] expected_response: StatusCode,
@@ -203,22 +196,13 @@ mod thread_mutations {
     }
 
     #[rstest]
-    // positive cases:
-    // valid payload with unchanged content
-    #[case(StatusCode::OK, false, 2, 15469, "Bitte neu einsortieren :)")]
-    // valid payload with changed content
+    #[case(StatusCode::OK, false, 2, 15469, "Bitte neu einsortieren :)")] // unchanged content
     #[case(StatusCode::OK, true, 2, 15469, "This is new content.")]
-    // negative cases:
-    // valid payload except content is empty
-    #[case(StatusCode::BAD_REQUEST, false, 2, 15469, "")]
-    // valid payload except user is not author of the comment
-    #[case(StatusCode::BAD_REQUEST, false, 1, 15469, "This is new content.")]
-    // valid payload except comment is trashed
-    #[case(StatusCode::BAD_REQUEST, false, 1, 15468, "This is new content.")]
-    // valid payload except comment is archived
-    #[case(StatusCode::BAD_REQUEST, false, 10, 16740, "This is new content.")]
-    // valid payload except UUID is not a comment
-    #[case(StatusCode::BAD_REQUEST, false, 1, 1, "This is new content.")]
+    #[case(StatusCode::BAD_REQUEST, false, 2, 15469, "")] // content is empty
+    #[case(StatusCode::BAD_REQUEST, false, 1, 15469, "This is new content.")] // user is not author
+    #[case(StatusCode::BAD_REQUEST, false, 1, 15468, "This is new content.")] // comment is trashed
+    #[case(StatusCode::BAD_REQUEST, false, 10, 16740, "This is new content.")] // archived comment
+    #[case(StatusCode::BAD_REQUEST, false, 1, 1, "This is new content.")] // not a comment
     #[actix_rt::test]
     async fn edit_comment(
         #[case] expected_response: StatusCode,
@@ -271,15 +255,10 @@ mod thread_mutations {
     }
 
     #[rstest]
-    // positive cases:
-    // no ID should be ok but do nothing
     #[case(StatusCode::OK, false, [].as_slice(), 1, true)]
-    // single ID, should trigger an event for the change
     #[case(StatusCode::OK, true, [17666].as_slice(), 1, true)]
-    // single ID, but no state change -> should not trigger event
-    #[case(StatusCode::OK, false, [17666].as_slice(), 1, false)]
-    // ID is no comment
-    #[case(StatusCode::BAD_REQUEST, false, [1].as_slice(), 1, false)]
+    #[case(StatusCode::OK, false, [17666].as_slice(), 1, false)] // no state change
+    #[case(StatusCode::BAD_REQUEST, false, [1].as_slice(), 1, false)] // ID is no comment
     #[actix_rt::test]
     async fn set_archived(
         #[case] expected_response: StatusCode,

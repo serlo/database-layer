@@ -3,7 +3,7 @@ use super::messages::{
     set_thread_archived_mutation,
 };
 use serde::Serialize;
-use sqlx::MySqlPool;
+use sqlx::{MySqlPool, Row};
 
 use crate::database::Executor;
 use crate::datetime::DateTime;
@@ -105,50 +105,50 @@ impl Threads {
     {
         let mut transaction = executor.begin().await?;
 
+        let number_comments = payload.ids.len();
+        if number_comments == 0 {
+            return Ok(());
+        }
+        let params = format!("?{}", ", ?".repeat(number_comments - 1));
+        let query_str = format!(
+            "SELECT id, archived FROM comment WHERE id IN ( { } )",
+            params
+        );
+        let mut query = sqlx::query(&query_str);
         for id in payload.ids.iter() {
-            let result = sqlx::query!(
-                r#"
-                    SELECT archived FROM comment WHERE id = ?
-                "#,
-                id
-            )
-            .fetch_one(&mut transaction)
-            .await;
+            query = query.bind(id);
+        }
+        let comments = query.fetch_all(&mut transaction).await?;
+        if comments.len() < number_comments {
+            return Err(operation::Error::BadRequest {
+                reason: "not all given ids are comments".to_string(),
+            });
+        }
 
-            match result {
-                Ok(comment) => {
-                    // Comment has already the correct state, skip
-                    if (comment.archived != 0) == payload.archived {
-                        continue;
-                    }
-                }
-                Err(sqlx::Error::RowNotFound) => {
-                    // Comment not found, skip
-                    continue;
-                }
-                Err(inner) => {
-                    return Err(inner.into());
-                }
+        let is_archived_after = payload.archived;
+        for comment in comments {
+            let id: i32 = comment.get("id");
+            let is_archived_before: bool = comment.get("archived");
+            if is_archived_after != is_archived_before {
+                sqlx::query!(
+                    r#"
+                        UPDATE comment
+                            SET archived = ?
+                            WHERE id = ?
+                    "#,
+                    is_archived_after,
+                    id
+                )
+                .execute(&mut transaction)
+                .await?;
+
+                SetThreadStateEventPayload::new(is_archived_after, payload.user_id, id)
+                    .save(&mut transaction)
+                    .await
+                    .map_err(|error| operation::Error::InternalServerError {
+                        error: Box::new(error),
+                    })?;
             }
-
-            sqlx::query!(
-                r#"
-                    UPDATE comment
-                        SET archived = ?
-                        WHERE id = ?
-                "#,
-                payload.archived,
-                id
-            )
-            .execute(&mut transaction)
-            .await?;
-
-            SetThreadStateEventPayload::new(payload.archived, payload.user_id, *id)
-                .save(&mut transaction)
-                .await
-                .map_err(|error| operation::Error::InternalServerError {
-                    error: Box::new(error),
-                })?;
         }
 
         transaction.commit().await?;

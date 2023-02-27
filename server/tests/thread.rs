@@ -255,14 +255,16 @@ mod thread_mutations {
     }
 
     #[rstest]
-    #[case(StatusCode::OK, false, [].as_slice(), 1, true)]
-    #[case(StatusCode::OK, true, [17666].as_slice(), 1, true)]
-    #[case(StatusCode::OK, false, [17666].as_slice(), 1, false)] // no state change
-    #[case(StatusCode::BAD_REQUEST, false, [1].as_slice(), 1, false)] // ID is no comment
+    #[case(StatusCode::OK, &[false], &[], 1, true)]
+    #[case(StatusCode::OK, &[true], &[17666], 1, true)]
+    #[case(StatusCode::OK, &[false], &[17666], 1, false)] // no state change
+    #[case(StatusCode::OK, &[false, true], &[17666, 16740], 1, false)]
+    #[case(StatusCode::BAD_REQUEST, &[false], &[1], 1, false)] // ID is no comment
+    #[case(StatusCode::BAD_REQUEST, &[false, false], &[17666, 1], 1, true)] // 2nd ID's no comment
     #[actix_rt::test]
     async fn set_archived(
         #[case] expected_response: StatusCode,
-        #[case] should_trigger_event: bool,
+        #[case] should_trigger_event: &[bool],
         #[case] ids: &[i32],
         #[case] user_id: i32,
         #[case] archived: bool,
@@ -282,7 +284,8 @@ mod thread_mutations {
 
         assert_eq!(result.status, expected_response);
 
-        for id in ids {
+        // iterate in reverse order because last ID should be most recent event
+        for (index, id) in ids.iter().enumerate().rev() {
             if expected_response == StatusCode::OK {
                 Message::new("UuidQuery", json!({ "id": id }))
                     .execute_on(&mut transaction)
@@ -292,15 +295,15 @@ mod thread_mutations {
                     });
             }
 
-            Message::new("EventsQuery", json!({ "first": 1 }))
+            Message::new("EventsQuery", json!({ "first": ids.len() }))
                 .execute_on(&mut transaction)
                 .await
                 .should_be_ok_with(|result| {
-                    let latest_event = &result["events"][0];
+                    let latest_event = &result["events"][ids.len() - index - 1];
                     let event_age = DateTime::now().signed_duration_since(
                         serde_json::from_value(latest_event["date"].clone()).unwrap(),
                     );
-                    if should_trigger_event {
+                    if should_trigger_event[index] {
                         assert_eq!(
                             latest_event["__typename"],
                             "SetThreadStateNotificationEvent"

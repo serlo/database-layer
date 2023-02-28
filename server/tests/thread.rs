@@ -284,8 +284,7 @@ mod thread_mutations {
 
         assert_eq!(result.status, expected_response);
 
-        // iterate in reverse order because last ID should be most recent event
-        for (index, id) in ids.iter().enumerate().rev() {
+        for (index, id) in ids.iter().enumerate() {
             if expected_response == StatusCode::OK {
                 Message::new("UuidQuery", json!({ "id": id }))
                     .execute_on(&mut transaction)

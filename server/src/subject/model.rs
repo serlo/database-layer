@@ -21,7 +21,7 @@ where
                 WHERE
                     (root.parent_id IS NULL
                       OR root.id = 106081
-                      OR root.id = 268835)
+                      OR root.id = 146728)
                     AND subject_uuid.trashed = 0
                     AND (subject_type.name = "subject" or subject_type.name = "topic")
                 ORDER BY subject.id;

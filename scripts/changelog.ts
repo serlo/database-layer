@@ -288,6 +288,11 @@ const content = generateChangelog({
       date: '2023-03-02',
       added: ['Add serlo.org/268835 "Chancenwerk" as subject'],
     },
+    {
+      tagName: 'v0.3.62',
+      date: '2023-03-02',
+      fixed: ['Make all taxonomies under "Mathematik > Partner" as subjects'],
+    },
   ],
 })
 

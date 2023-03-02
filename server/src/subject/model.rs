@@ -19,7 +19,9 @@ where
                 JOIN term AS subject_term ON subject_term.id = subject.term_id
                 JOIN instance AS subject_instance ON subject_instance.id = subject_term.instance_id
                 WHERE
-                    (root.parent_id IS NULL OR root.id = 106081)
+                    (root.parent_id IS NULL
+                      OR root.id = 106081
+                      OR root.id = 268835)
                     AND subject_uuid.trashed = 0
                     AND (subject_type.name = "subject" or subject_type.name = "topic")
                 ORDER BY subject.id;

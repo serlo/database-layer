@@ -1960,6 +1960,44 @@
     },
     "query": "DELETE FROM subscription WHERE uuid_id = ? AND user_id = ?"
   },
+  "735777274f3004aca7ef224367c7b5c6fea9a1bd42f1681f84b035fe9574fc39": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "instance",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 40,
+            "type": "VarString"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n                SELECT\n                    subject.id,\n                    subject_instance.subdomain as instance\n                FROM term_taxonomy AS subject\n                JOIN term_taxonomy AS root ON root.id = subject.parent_id\n                JOIN uuid as subject_uuid ON subject_uuid.id = subject.id\n                JOIN taxonomy AS subject_taxonomy ON subject_taxonomy.id = subject.taxonomy_id\n                JOIN type AS subject_type ON subject_type.id = subject_taxonomy.type_id\n                JOIN term AS subject_term ON subject_term.id = subject.term_id\n                JOIN instance AS subject_instance ON subject_instance.id = subject_term.instance_id\n                WHERE\n                    (root.parent_id IS NULL\n                      OR root.id = 106081\n                      OR root.id = 268835)\n                    AND subject_uuid.trashed = 0\n                    AND (subject_type.name = \"subject\" or subject_type.name = \"topic\")\n                ORDER BY subject.id;\n\n            "
+  },
   "769713eded2a80cb23fd93a3767bc1aa4cbc7446e97f4f87d595e922fd143841": {
     "describe": {
       "columns": [],
@@ -3423,44 +3461,6 @@
       }
     },
     "query": "\n                            SELECT a.uuid_id FROM url_alias a\n                                JOIN instance i on i.id = a.instance_id\n                                WHERE i.subdomain = ? AND a.alias = ?\n                                ORDER BY a.timestamp DESC\n                        "
-  },
-  "cfca515fb4bf1ec23708898e83d552c620dd9c72afa7301a6df55b08944c1f9d": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "instance",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 40,
-            "type": "VarString"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "\n                SELECT\n                    subject.id,\n                    subject_instance.subdomain as instance\n                FROM term_taxonomy AS subject\n                JOIN term_taxonomy AS root ON root.id = subject.parent_id\n                JOIN uuid as subject_uuid ON subject_uuid.id = subject.id\n                JOIN taxonomy AS subject_taxonomy ON subject_taxonomy.id = subject.taxonomy_id\n                JOIN type AS subject_type ON subject_type.id = subject_taxonomy.type_id\n                JOIN term AS subject_term ON subject_term.id = subject.term_id\n                JOIN instance AS subject_instance ON subject_instance.id = subject_term.instance_id\n                WHERE\n                    (root.parent_id IS NULL OR root.id = 106081)\n                    AND subject_uuid.trashed = 0\n                    AND (subject_type.name = \"subject\" or subject_type.name = \"topic\")\n                ORDER BY subject.id;\n\n            "
   },
   "d00937304e4e8f2ce6834a49203a12933695782368e45f70679f3a945e857d5f": {
     "describe": {

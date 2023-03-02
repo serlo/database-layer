@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.61](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.60..v0.3.61) - March 2, 2023
+
+### Added
+
+- Add serlo.org/268835 "Chancenwerk" as subject
+
 ## [v0.3.60](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.59..v0.3.60) - February 2, 2023
 
 ### Fixed

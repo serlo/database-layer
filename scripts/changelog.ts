@@ -283,6 +283,11 @@ const content = generateChangelog({
       date: '2023-02-02',
       fixed: ['thread: fix name of ThreadEditMutation'],
     },
+    {
+      tagName: 'v0.3.61',
+      date: '2023-03-02',
+      added: ['Add serlo.org/268835 "Chancenwerk" as subject'],
+    },
   ],
 })
 

@@ -6,7 +6,7 @@ The database layer provides a Restful API in front of the database of [Serlo](ht
 
 ## Setup
 
-You need [Docker](https://docs.docker.com/engine/installation/) and [Rust](https://www.rust-lang.org) installed on your system. In order to run the pact tests (= contract test suite we use) you need to install [Node.js](https://nodejs.org/) version `14.x` and [yarn](https://yarnpkg.com/).
+You need [Docker](https://docs.docker.com/engine/installation/) and [Rust](https://www.rust-lang.org) installed on your system. In order to run the pact tests (= contract test suite we use) you need to install [Node.js](https://nodejs.org/) version `16.x` and [yarn](https://yarnpkg.com/).
 
 ### Install sqlx-cli
 
@@ -30,28 +30,11 @@ On Ubuntu you also need [`gcc`](https://gcc.gnu.org/) to run cargo.
 
 ### Database
 
-To get a local database for development, there are two approaches.
+Run `yarn start` to start the database. It will be available under `mysql://root:secret@localhost:3306/serlo` and in it you will see an anonymized dump of our database from 2015. You can use the following commands together with the database:
 
-#### Via serlo.org
-
-You can reuse the same database as a local serlo.org development environment. This is the recommended approach if you want to check whether the database layer has the same behavior as serlo.org.
-
-- Setup [serlo.org](https://github.com/serlo/serlo.org)
-- Add a `docker-compose.override.yml` file with the following content:
-  ```yaml
-  version: '3.4'
-  services:
-    mysql:
-      ports:
-        - '3306:3306'
-  ```
-- Run `yarn start` to start local serlo.org. The database will be available under `mysql://root:secret@localhost:3306/serlo`.
-
-#### Without serlo.org
-
-You can also use the database schema in this repository.
-
-- Run `yarn start` to start the database. It will be available under `mysql://root:secret@localhost:3306/serlo`.
+- `yarn mysql` – Start a shell for the database
+- `yarn mysql:import-anonymous-data` – Import a current and anonymized dump of the Serlo database (normally one day old)
+- `yarn mysql:rollback` – Rollback to the 2015 dump of the database
 
 ## Development
 

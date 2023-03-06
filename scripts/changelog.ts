@@ -293,6 +293,11 @@ const content = generateChangelog({
       date: '2023-03-02',
       fixed: ['Make all taxonomies under "Mathematik > Partner" as subjects'],
     },
+    {
+      tagName: 'v0.3.63',
+      date: '2023-03-06',
+      fixed: ['Make all taxonomies under "Fächer im Aufbau" subjects'],
+    },
   ],
 })
 

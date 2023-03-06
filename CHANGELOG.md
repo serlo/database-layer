@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.63](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.62..v0.3.63) - March 6, 2023
+
+### Fixed
+
+- Make all taxonomies under "Fächer im Aufbau" subjects
+
 ## [v0.3.62](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.61..v0.3.62) - March 2, 2023
 
 ### Fixed

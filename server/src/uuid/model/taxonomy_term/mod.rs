@@ -256,7 +256,8 @@ impl TaxonomyTerm {
                     WHERE
                         (
                             t0.id = 146728 OR
-                            (t0.parent_id IS NULL AND t2.id != 146728)
+                            t0.id = 106081 OR
+                            (t0.parent_id IS NULL AND t2.id != 146728 AND t1.id != 106081)
                         ) AND (
                             t1.id = ? OR t2.id = ? OR t3.id = ? OR t4.id = ? OR t5.id = ? OR
                             t6.id = ? OR t7.id = ? OR t8.id = ? OR t9.id = ? OR t10.id = ? OR

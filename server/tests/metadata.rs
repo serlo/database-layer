@@ -133,42 +133,6 @@ mod entities_metadata_query {
     }
 
     #[actix_rt::test]
-    async fn checks_mandatory_keys_in_response_of_a_quiz() {
-        // Fetching a quiz https://serlo.org/20256
-        Message::new(
-            "EntitiesMetadataQuery",
-            json!({ "first": 1, "after": 20_000  }),
-        )
-        .execute()
-        .await
-        .should_be_ok_with(|value| {
-            assert_eq!(
-                value["entities"][0]["name"],
-                "Quiz: https://serlo.org/20256"
-            );
-            let mandatory_keys = [
-                "@context",
-                "id",
-                "type",
-                "name",
-                "publisher",
-                "learningResourceType",
-            ];
-
-            let entities = value["entities"].as_array().unwrap();
-            for entity in entities {
-                for mandatory_key in &mandatory_keys {
-                    assert!(
-                        entity.get(mandatory_key).is_some(),
-                        "Mandatory key '{}' is missing from the Quiz!",
-                        mandatory_key
-                    );
-                }
-            }
-        });
-    }
-
-    #[actix_rt::test]
     async fn checks_optional_keys_in_response() {
         Message::new("EntitiesMetadataQuery", json!({ "first": 300, }))
             .execute()

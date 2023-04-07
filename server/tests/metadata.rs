@@ -250,6 +250,59 @@ mod entities_metadata_query {
     }
 
     #[actix_rt::test]
+    async fn returns_metadata_for_videos() {
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 18864 }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({
+          "entities": [
+            {
+              "@context": [
+                "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                {
+                  "@language": "de"
+                }
+              ],
+              "id": "https://serlo.org/18865",
+              "type": [
+                "LearningResource",
+                "Video"
+              ],
+              "dateCreated": "2014-03-17T16:18:44+00:00",
+              "dateModified": "2014-05-01T09:22:14+00:00",
+              "description": null,
+              "headline": "Satz des Pythagoras",
+              "identifier": {
+                "propertyID": "UUID",
+                "type": "PropertyValue",
+                "value": 18865
+              },
+              "inLanguage": [
+                "de"
+              ],
+              "isAccessibleForFree": true,
+              "isFamilyFriendly": true,
+              "learningResourceType": "Video",
+              "license": {
+                "id": "https://creativecommons.org/licenses/by-sa/4.0/"
+              },
+              "maintainer": "https://serlo.org/",
+              "name": "Satz des Pythagoras",
+              "publisher": [
+                {
+                  "id": "https://serlo.org/"
+                }
+              ],
+              "version": "https://serlo.org/24383"
+            }
+          ]
+        }));
+    }
+
+    #[actix_rt::test]
     async fn default_value_for_property_name() {
         Message::new(
             "EntitiesMetadataQuery",

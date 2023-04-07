@@ -21,7 +21,7 @@ impl MessageResponder for MetadataMessage {
     async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
         match self {
             MetadataMessage::EntitiesMetadataQuery(payload) => {
-                payload.handle("SubjectsQuery", connection).await
+                payload.handle("EntitiesMetadataQuery", connection).await
             }
         }
     }

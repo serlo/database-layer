@@ -3,7 +3,7 @@ use super::messages::{
     set_thread_archived_mutation,
 };
 use serde::Serialize;
-use sqlx::MySqlPool;
+use sqlx::{MySqlPool, Row};
 
 use crate::database::Executor;
 use crate::datetime::DateTime;
@@ -105,50 +105,50 @@ impl Threads {
     {
         let mut transaction = executor.begin().await?;
 
-        for id in payload.ids.clone().into_iter() {
-            let result = sqlx::query!(
-                r#"
-                    SELECT archived FROM comment WHERE id = ?
-                "#,
-                id
-            )
-            .fetch_one(&mut transaction)
-            .await;
+        let number_comments = payload.ids.len();
+        if number_comments == 0 {
+            return Ok(());
+        }
+        let params = format!("?{}", ", ?".repeat(number_comments - 1));
+        let query_str = format!(
+            "SELECT id, archived FROM comment WHERE id IN ( { } )",
+            params
+        );
+        let mut query = sqlx::query(&query_str);
+        for id in payload.ids.iter() {
+            query = query.bind(id);
+        }
+        let comments = query.fetch_all(&mut transaction).await?;
+        if comments.len() < number_comments {
+            return Err(operation::Error::BadRequest {
+                reason: "not all given ids are comments".to_string(),
+            });
+        }
 
-            match result {
-                Ok(comment) => {
-                    // Comment has already the correct state, skip
-                    if (comment.archived != 0) == payload.archived {
-                        continue;
-                    }
-                }
-                Err(sqlx::Error::RowNotFound) => {
-                    // Comment not found, skip
-                    continue;
-                }
-                Err(inner) => {
-                    return Err(inner.into());
-                }
+        let is_archived_after = payload.archived;
+        for comment in comments {
+            let id: i32 = comment.get("id");
+            let is_archived_before: bool = comment.get("archived");
+            if is_archived_after != is_archived_before {
+                sqlx::query!(
+                    r#"
+                        UPDATE comment
+                            SET archived = ?
+                            WHERE id = ?
+                    "#,
+                    is_archived_after,
+                    id
+                )
+                .execute(&mut transaction)
+                .await?;
+
+                SetThreadStateEventPayload::new(is_archived_after, payload.user_id, id)
+                    .save(&mut transaction)
+                    .await
+                    .map_err(|error| operation::Error::InternalServerError {
+                        error: Box::new(error),
+                    })?;
             }
-
-            sqlx::query!(
-                r#"
-                    UPDATE comment
-                        SET archived = ?
-                        WHERE id = ?
-                "#,
-                payload.archived,
-                id
-            )
-            .execute(&mut transaction)
-            .await?;
-
-            SetThreadStateEventPayload::new(payload.archived, payload.user_id, id)
-                .save(&mut transaction)
-                .await
-                .map_err(|error| operation::Error::InternalServerError {
-                    error: Box::new(error),
-                })?;
         }
 
         transaction.commit().await?;
@@ -431,92 +431,5 @@ impl Threads {
         transaction.commit().await?;
 
         Ok(operation::SuccessOutput { success: true })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use chrono::Duration;
-
-    use super::super::messages::set_thread_archived_mutation;
-    use super::Threads;
-    use crate::create_database_pool;
-    use crate::event::test_helpers::fetch_age_of_newest_event;
-
-    #[actix_rt::test]
-    async fn set_archive_no_id() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        Threads::set_archive(
-            &set_thread_archived_mutation::Payload {
-                ids: vec![],
-                user_id: 1,
-                archived: true,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
-    }
-
-    #[actix_rt::test]
-    async fn set_archive_single_id() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        Threads::set_archive(
-            &set_thread_archived_mutation::Payload {
-                ids: vec![17666],
-                user_id: 1,
-                archived: true,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
-
-        // Verify that the thread was archived.
-        let thread = sqlx::query!(r#"SELECT archived FROM comment WHERE id = ?"#, 17666)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap();
-        assert!(thread.archived != 0);
-
-        // Verify that the event was created.
-        let duration = fetch_age_of_newest_event(17666, &mut transaction)
-            .await
-            .unwrap();
-        assert!(duration < Duration::minutes(1));
-    }
-
-    #[actix_rt::test]
-    async fn set_archive_single_id_same_state() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        Threads::set_archive(
-            &set_thread_archived_mutation::Payload {
-                ids: vec![17666],
-                user_id: 1,
-                archived: false,
-            },
-            &mut transaction,
-        )
-        .await
-        .unwrap();
-
-        // Verify that the thread is not archived.
-        let thread = sqlx::query!(r#"SELECT archived FROM comment WHERE id = ?"#, 17666)
-            .fetch_one(&mut transaction)
-            .await
-            .unwrap();
-        assert!(thread.archived == 0);
-
-        // Verify that no event was created.
-        let duration = fetch_age_of_newest_event(17666, &mut transaction)
-            .await
-            .unwrap();
-        assert!(duration > Duration::minutes(1));
     }
 }

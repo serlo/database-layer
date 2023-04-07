@@ -148,6 +148,16 @@
     },
     "query": "\n                SELECT name, value FROM\n                    (\n                    # Level 1\n                    SELECT k.name, p.value, p.page_id\n                        FROM navigation_parameter p\n                        JOIN navigation_parameter_key k ON k.id = p.key_id\n                        WHERE p.parent_id IS NULL AND value != ''\n                    UNION ALL\n                    # Level 2\n                    SELECT CONCAT(k1.name, '.', k2.name) as name, p2.value, p2.page_id\n                        FROM navigation_parameter p1\n                        JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                        JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                        JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                        WHERE p1.parent_id IS NULL AND p2.value != ''\n                    UNION ALL\n                    # Level 3\n                    SELECT CONCAT(k1.name, '.', k2.name, '.', k3.name) as name, p3.value, p3.page_id\n                        FROM navigation_parameter p1\n                        JOIN navigation_parameter p2 ON p2.parent_id = p1.id\n                        JOIN navigation_parameter p3 ON p3.parent_id = p2.id\n                        JOIN navigation_parameter_key k1 ON k1.id = p1.key_id\n                        JOIN navigation_parameter_key k2 ON k2.id = p2.key_id\n                        JOIN navigation_parameter_key k3 ON k3.id = p3.key_id\n                        WHERE p1.parent_id IS NULL AND p3.value != ''\n                    ) u\n                    WHERE page_id = ?\n            "
   },
+  "078426a1dc666919236049dc4916711c422d20a7feda98ab4213a28481d5f104": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                        UPDATE comment\n                            SET archived = ?\n                            WHERE id = ?\n                    "
+  },
   "0808f2c95236d428e205e0d3e53ca5c31022993e560b6b840811881bc32202bc": {
     "describe": {
       "columns": [
@@ -1977,31 +1987,6 @@
     },
     "query": "\n                    SELECT id FROM term_taxonomy_entity\n                        WHERE entity_id = ?\n                        AND term_taxonomy_id = ?\n                "
   },
-  "82e05bbc646bebf37b97af3f23e8599937749cb7ecf4b03bfd079ec152651862": {
-    "describe": {
-      "columns": [
-        {
-          "name": "archived",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                    SELECT archived FROM comment WHERE id = ?\n                "
-  },
   "86d9154ff359e925b1f73ba4be620d309230f7d3f37c4d710f25f5acffd2527b": {
     "describe": {
       "columns": [
@@ -3242,16 +3227,6 @@
       }
     },
     "query": "\n                SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id, c.uuid_id, p.title as parent_title\n                    FROM comment c\n                    LEFT JOIN comment p ON p.id = c.parent_id\n                    JOIN uuid u ON u.id = c.id\n                    WHERE c.id = ?\n            "
-  },
-  "bfbfcccba2b907995d565789bdd039e9750ee37a435e31df3be4ce7d42c87f51": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                    UPDATE comment\n                        SET archived = ?\n                        WHERE id = ?\n                "
   },
   "c0a1da42bf156d170f8187ec69ead3e4a2f12de338201677b5421d5b291f28be": {
     "describe": {

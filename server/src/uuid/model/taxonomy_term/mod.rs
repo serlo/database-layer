@@ -254,10 +254,15 @@ impl TaxonomyTerm {
                     LEFT JOIN term_taxonomy t20 ON t20.parent_id = t19.id
                     JOIN term t on t1.term_id = t.id
                     WHERE
-                        t0.parent_id IS NULL AND
                         (
-                            t1.id = ? OR t2.id = ? OR t3.id = ? OR t4.id = ? OR t5.id = ? OR t6.id = ? OR t7.id = ? OR t8.id = ? OR t9.id = ? OR t10.id = ? OR
-                            t11.id = ? OR t12.id = ? OR t13.id = ? OR t14.id = ? OR t15.id = ? OR t16.id = ? OR t17.id = ? OR t18.id = ? OR t19.id = ? OR t20.id = ?
+                            t0.id = 146728 OR
+                            t0.id = 106081 OR
+                            (t0.parent_id IS NULL AND t2.id != 146728 AND t1.id != 106081)
+                        ) AND (
+                            t1.id = ? OR t2.id = ? OR t3.id = ? OR t4.id = ? OR t5.id = ? OR
+                            t6.id = ? OR t7.id = ? OR t8.id = ? OR t9.id = ? OR t10.id = ? OR
+                            t11.id = ? OR t12.id = ? OR t13.id = ? OR t14.id = ? OR t15.id = ?
+                            OR t16.id = ? OR t17.id = ? OR t18.id = ? OR t19.id = ? OR t20.id = ?
                         )
             "#,
             id,
@@ -280,7 +285,9 @@ impl TaxonomyTerm {
             id,
             id,
             id
-        ).fetch_one(executor).await;
+        )
+        .fetch_one(executor)
+        .await;
         match subjects {
             Ok(subject) => Ok(Some(Subject {
                 taxonomy_term_id: subject.id as i32,

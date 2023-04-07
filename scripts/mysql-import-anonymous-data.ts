@@ -34,13 +34,13 @@ const container = spawnSync('docker-compose', ['ps', '-q', 'mysql'], {
 spawnSync('unzip', ['-o', `/tmp/${fileName}`, '-d', '/tmp'], {
   stdio: 'inherit',
 })
-spawnSync('docker', ['cp', '/tmp/dump.sql', `${container}:/tmp/dump.sql`], {
+spawnSync('docker', ['cp', '/tmp/mysql.sql', `${container}:/tmp/mysql.sql`], {
   stdio: 'inherit',
 })
 spawnSync('docker', ['cp', '/tmp/user.csv', `${container}:/tmp/user.csv`], {
   stdio: 'inherit',
 })
-await execSql('serlo < /tmp/dump.sql')
+await execSql('serlo < /tmp/mysql.sql')
 console.log('succeeded dump')
 await execSql(
   "-e \"LOAD DATA LOCAL INFILE '/tmp/user.csv' INTO TABLE user FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n' IGNORE 1 ROWS;\" serlo"

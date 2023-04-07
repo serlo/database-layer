@@ -278,6 +278,26 @@ const content = generateChangelog({
       ],
       fixed: ['Do not query checkout event of page revision'],
     },
+    {
+      tagName: 'v0.3.60',
+      date: '2023-02-02',
+      fixed: ['thread: fix name of ThreadEditMutation'],
+    },
+    {
+      tagName: 'v0.3.61',
+      date: '2023-03-02',
+      added: ['Add serlo.org/268835 "Chancenwerk" as subject'],
+    },
+    {
+      tagName: 'v0.3.62',
+      date: '2023-03-02',
+      fixed: ['Make all taxonomies under "Mathematik > Partner" as subjects'],
+    },
+    {
+      tagName: 'v0.3.63',
+      date: '2023-03-06',
+      fixed: ['Make all taxonomies under "Fächer im Aufbau" subjects'],
+    },
   ],
 })
 

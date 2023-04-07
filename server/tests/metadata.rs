@@ -197,6 +197,59 @@ mod entities_metadata_query {
     }
 
     #[actix_rt::test]
+    async fn returns_metadata_for_exercise_groups() {
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 2216 }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({
+          "entities": [
+            {
+              "@context": [
+                "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                {
+                  "@language": "de"
+                }
+              ],
+              "id": "https://serlo.org/2217",
+              "type": [
+                "LearningResource",
+                "Quiz"
+              ],
+              "dateCreated": "2014-03-01T20:54:51+00:00",
+              "dateModified": "2014-03-01T20:54:51+00:00",
+              "description": null,
+              "headline": null,
+              "identifier": {
+                "propertyID": "UUID",
+                "type": "PropertyValue",
+                "value": 2217
+              },
+              "inLanguage": [
+                "de"
+              ],
+              "isAccessibleForFree": true,
+              "isFamilyFriendly": true,
+              "learningResourceType": "Quiz",
+              "license": {
+                "id": "https://creativecommons.org/licenses/by-sa/4.0/"
+              },
+              "maintainer": "https://serlo.org/",
+              "name": "Quiz: https://serlo.org/2217",
+              "publisher": [
+                {
+                  "id": "https://serlo.org/"
+                }
+              ],
+              "version": "https://serlo.org/2218"
+            }
+          ]
+        }));
+    }
+
+    #[actix_rt::test]
     async fn default_value_for_property_name() {
         Message::new(
             "EntitiesMetadataQuery",

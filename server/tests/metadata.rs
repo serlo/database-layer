@@ -91,6 +91,59 @@ mod entities_metadata_query {
     }
 
     #[actix_rt::test]
+    async fn returns_metadata_for_courses() {
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 18274 }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({
+          "entities": [
+            {
+              "@context": [
+                "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                {
+                  "@language": "de"
+                }
+              ],
+              "id": "https://serlo.org/18514",
+              "type": [
+                "LearningResource",
+                "Course"
+              ],
+              "dateCreated": "2014-03-17T12:22:17+00:00",
+              "dateModified": "2014-09-16T07:47:55+00:00",
+              "description": null,
+              "headline": "Überblick zum Satz des Pythagoras",
+              "identifier": {
+                "propertyID": "UUID",
+                "type": "PropertyValue",
+                "value": 18514
+              },
+              "inLanguage": [
+                "de"
+              ],
+              "isAccessibleForFree": true,
+              "isFamilyFriendly": true,
+              "learningResourceType": "Course",
+              "license": {
+                "id": "https://creativecommons.org/licenses/by-sa/4.0/"
+              },
+              "maintainer": "https://serlo.org/",
+              "name": "Überblick zum Satz des Pythagoras",
+              "publisher": [
+                {
+                  "id": "https://serlo.org/"
+                }
+              ],
+              "version": "https://serlo.org/30713"
+            }
+          ]
+        }));
+    }
+
+    #[actix_rt::test]
     async fn default_value_for_property_name() {
         Message::new(
             "EntitiesMetadataQuery",

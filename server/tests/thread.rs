@@ -90,16 +90,16 @@ mod all_threads_query {
 
 mod thread_mutations {
     use actix_web::http::StatusCode;
+    use chrono::*;
     use rstest::*;
+    use server::datetime::DateTime;
     use test_utils::*;
 
     #[rstest]
-    // positive cases:
     // start thread under user
     #[case(StatusCode::OK, 1, 1, "Title", "This is content.", true, false)]
     // start thread under article
     #[case(StatusCode::OK, 1565, 1, "Title", "This is content.", true, false)]
-    // negative cases:
     // valid payload except content is empty
     #[case(StatusCode::BAD_REQUEST, 17774, 1, "Title", "", true, false)]
     // valid payload except UUID does not exist
@@ -154,14 +154,9 @@ mod thread_mutations {
     }
 
     #[rstest]
-    // positive cases:
-    // valid payload
     #[case(StatusCode::OK, 17774, 1, "This is content.", true, false)]
-    // negative cases:
-    // valid payload except content is empty
-    #[case(StatusCode::BAD_REQUEST, 17774, 1, "", true, false)]
-    // valid payload except thread does not exist
-    #[case(StatusCode::BAD_REQUEST, 3, 1, "This is content", true, false)]
+    #[case(StatusCode::BAD_REQUEST, 17774, 1, "", true, false)] // content empty
+    #[case(StatusCode::BAD_REQUEST, 3, 1, "This is content", true, false)] // thread does not exist
     #[actix_rt::test]
     async fn create_comment(
         #[case] expected_response: StatusCode,
@@ -201,22 +196,13 @@ mod thread_mutations {
     }
 
     #[rstest]
-    // positive cases:
-    // valid payload with unchanged content
-    #[case(StatusCode::OK, false, 2, 15469, "Bitte neu einsortieren :)")]
-    // valid payload with changed content
+    #[case(StatusCode::OK, false, 2, 15469, "Bitte neu einsortieren :)")] // unchanged content
     #[case(StatusCode::OK, true, 2, 15469, "This is new content.")]
-    // negative cases:
-    // valid payload except content is empty
-    #[case(StatusCode::BAD_REQUEST, false, 2, 15469, "")]
-    // valid payload except user is not author of the comment
-    #[case(StatusCode::BAD_REQUEST, false, 1, 15469, "This is new content.")]
-    // valid payload except comment is trashed
-    #[case(StatusCode::BAD_REQUEST, false, 1, 15468, "This is new content.")]
-    // valid payload except comment is archived
-    #[case(StatusCode::BAD_REQUEST, false, 10, 16740, "This is new content.")]
-    // valid payload except UUID is not a comment
-    #[case(StatusCode::BAD_REQUEST, false, 1, 1, "This is new content.")]
+    #[case(StatusCode::BAD_REQUEST, false, 2, 15469, "")] // content is empty
+    #[case(StatusCode::BAD_REQUEST, false, 1, 15469, "This is new content.")] // user is not author
+    #[case(StatusCode::BAD_REQUEST, false, 1, 15468, "This is new content.")] // comment is trashed
+    #[case(StatusCode::BAD_REQUEST, false, 10, 16740, "This is new content.")] // archived comment
+    #[case(StatusCode::BAD_REQUEST, false, 1, 1, "This is new content.")] // not a comment
     #[actix_rt::test]
     async fn edit_comment(
         #[case] expected_response: StatusCode,
@@ -266,5 +252,70 @@ mod thread_mutations {
                     // assert_eq!(comment["edit_date"], original_comment["edit_date"]);
                 }
             });
+    }
+
+    #[rstest]
+    #[case(StatusCode::OK, &[false], &[], 1, true)]
+    #[case(StatusCode::OK, &[true], &[17666], 1, true)]
+    #[case(StatusCode::OK, &[false], &[17666], 1, false)] // no state change
+    #[case(StatusCode::OK, &[false, true], &[17666, 16740], 1, false)] // 16740 is archived comment
+    #[case(StatusCode::BAD_REQUEST, &[false], &[1], 1, false)] // ID is no comment
+    #[case(StatusCode::BAD_REQUEST, &[false, false], &[17666, 1], 1, true)] // 2nd ID's no comment
+    #[actix_rt::test]
+    async fn set_archived(
+        #[case] expected_response: StatusCode,
+        #[case] should_trigger_event: &[bool],
+        #[case] ids: &[i32],
+        #[case] user_id: i32,
+        #[case] archived: bool,
+    ) {
+        let mut transaction = begin_transaction().await;
+
+        let result = Message::new(
+            "ThreadSetThreadArchivedMutation",
+            json!({
+                "ids": ids,
+                "userId": user_id,
+                "archived": archived,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_eq!(result.status, expected_response);
+
+        for (index, id) in ids.iter().enumerate() {
+            if expected_response == StatusCode::OK {
+                Message::new("UuidQuery", json!({ "id": id }))
+                    .execute_on(&mut transaction)
+                    .await
+                    .should_be_ok_with(|comment| {
+                        assert_eq!(comment["archived"], archived);
+                    });
+            }
+
+            Message::new("EventsQuery", json!({ "first": ids.len() }))
+                .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|result| {
+                    let latest_event = &result["events"][ids.len() - index - 1];
+                    let event_age = DateTime::now().signed_duration_since(
+                        serde_json::from_value(latest_event["date"].clone()).unwrap(),
+                    );
+                    if should_trigger_event[index] {
+                        assert_eq!(
+                            latest_event["__typename"],
+                            "SetThreadStateNotificationEvent"
+                        );
+                        assert_eq!(latest_event["objectId"], *id);
+                        assert_eq!(latest_event["threadId"], *id);
+                        assert_eq!(latest_event["actorId"], user_id);
+                        assert_eq!(latest_event["archived"], archived);
+                        assert!(event_age < Duration::minutes(1));
+                    } else {
+                        assert!(event_age > Duration::minutes(1));
+                    }
+                });
+        }
     }
 }

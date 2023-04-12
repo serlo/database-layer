@@ -1,35 +1,95 @@
-use crate::database::Executor;
-use serde::Serialize;
+use actix_web::HttpResponse;
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::messages::entities_metadata_query::Payload;
+use crate::database::{Connection, Executor};
+use crate::message::MessageResponder;
+use crate::operation::Error;
+use crate::operation::{self, Operation};
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EntityMetadata {
-    #[serde(rename = "@context")]
-    context: serde_json::Value,
-    id: String,
-    #[serde(rename = "type")]
-    schema_type: Vec<String>,
-    date_created: String,
-    date_modified: String,
-    description: Option<String>,
-    headline: Option<String>,
-    identifier: serde_json::Value,
-    in_language: Vec<String>,
-    is_accessible_for_free: bool,
-    is_family_friendly: bool,
-    learning_resource_type: String,
-    license: serde_json::Value,
-    maintainer: String,
-    name: String,
-    publisher: serde_json::Value,
-    version: String,
+#[derive(Deserialize, Serialize)]
+#[serde(tag = "type", content = "payload")]
+pub enum MetadataMessage {
+    EntitiesMetadataQuery(entities_metadata_query::Payload),
 }
 
-impl EntityMetadata {
-    pub async fn query<'a, E>(
+#[async_trait]
+impl MessageResponder for MetadataMessage {
+    #[allow(clippy::async_yields_async)]
+    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+        match self {
+            MetadataMessage::EntitiesMetadataQuery(payload) => {
+                payload.handle("EntitiesMetadataQuery", connection).await
+            }
+        }
+    }
+}
+
+pub mod entities_metadata_query {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub first: i32,
+        pub after: Option<i32>,
+        pub instance: Option<String>,
+        pub modified_after: Option<DateTime<Utc>>,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Output {
+        entities: Vec<EntityMetadata>,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct EntityMetadata {
+        #[serde(rename = "@context")]
+        context: serde_json::Value,
+        id: String,
+        #[serde(rename = "type")]
+        schema_type: Vec<String>,
+        date_created: String,
+        date_modified: String,
+        description: Option<String>,
+        headline: Option<String>,
+        identifier: serde_json::Value,
+        in_language: Vec<String>,
+        is_accessible_for_free: bool,
+        is_family_friendly: bool,
+        learning_resource_type: String,
+        license: serde_json::Value,
+        maintainer: String,
+        name: String,
+        publisher: serde_json::Value,
+        version: String,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = Output;
+
+        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+            if self.first >= 10_000 {
+                return Err(Error::BadRequest {
+                    reason: "The 'first' value should be less than 10_000".to_string(),
+                });
+            };
+
+            let entities = match connection {
+                Connection::Pool(pool) => query(self, pool).await?,
+                Connection::Transaction(transaction) => query(self, transaction).await?,
+            };
+
+            Ok(Output { entities })
+        }
+    }
+
+    async fn query<'a, E>(
         payload: &Payload,
         executor: E,
     ) -> Result<Vec<EntityMetadata>, sqlx::Error>
@@ -119,19 +179,19 @@ impl EntityMetadata {
             .collect()
         )
     }
-}
 
-fn get_iri(id: i32) -> String {
-    format!("https://serlo.org/{id}")
-}
-
-fn get_learning_resource_type(entity_type: &str) -> String {
-    match entity_type {
-        "article" | "course-page" => "Article",
-        "course" => "Course",
-        "text-exercise-group" | "text-exercise" => "Quiz",
-        "video" => "Video",
-        _ => "",
+    fn get_iri(id: i32) -> String {
+        format!("https://serlo.org/{id}")
     }
-    .to_string()
+
+    fn get_learning_resource_type(entity_type: &str) -> String {
+        match entity_type {
+            "article" | "course-page" => "Article",
+            "course" => "Course",
+            "text-exercise-group" | "text-exercise" => "Quiz",
+            "video" => "Video",
+            _ => "",
+        }
+        .to_string()
+    }
 }

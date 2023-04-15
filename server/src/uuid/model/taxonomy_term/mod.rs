@@ -462,7 +462,7 @@ impl TaxonomyTerm {
                 INSERT INTO term (name, instance_id)
                     VALUES (?, ?)
             "#,
-            payload.name.to_string(),
+            payload.name,
             instance_id,
         )
         .execute(&mut transaction)

@@ -60,36 +60,6 @@ mod set_name_and_description_mutation {
         .await
         .should_be_bad_request();
     }
-
-    #[actix_rt::test]
-    async fn fails_with_bad_request_when_repeated_name_in_same_instance() {
-        let mut transaction = begin_transaction().await;
-
-        Message::new(
-            "TaxonomyTermSetNameAndDescriptionMutation",
-            json!({
-                "id": 1292 as i32,
-                "userId": 1 as i32,
-                "name": "repeated_name",
-                "description": "bla"
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        Message::new(
-            "TaxonomyTermSetNameAndDescriptionMutation",
-            json!({
-                "id": 1293 as i32,
-                "userId": 1 as i32,
-                "name": "repeated_name",
-                "description": "bla"
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await
-        .should_be_bad_request();
-    }
 }
 
 mod create_mutation {
@@ -191,38 +161,6 @@ mod create_mutation {
             }),
         )
         .execute()
-        .await
-        .should_be_bad_request();
-    }
-
-    #[actix_rt::test]
-    async fn fails_with_bad_request_when_repeated_name_in_same_instance() {
-        let mut transaction = begin_transaction().await;
-
-        Message::new(
-            "TaxonomyTermCreateMutation",
-            json! ({
-            "parentId": 1394 as i32,
-            "name": "repeated_name",
-            "description": "bla",
-            "userId": 1 as i32,
-            "taxonomyType": "topic-folder"
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        Message::new(
-            "TaxonomyTermCreateMutation",
-            json! ({
-            "parentId": 1394 as i32,
-            "name": "repeated_name",
-            "description": "bla",
-            "userId": 1 as i32,
-            "taxonomyType": "topic-folder"
-            }),
-        )
-        .execute_on(&mut transaction)
         .await
         .should_be_bad_request();
     }

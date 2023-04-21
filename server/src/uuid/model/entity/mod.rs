@@ -410,8 +410,9 @@ impl Entity {
                 SELECT c.id
                     FROM entity_link l
                     JOIN entity c on c.id = l.child_id
+                    JOIN uuid on uuid.id = c.id
                     JOIN type t ON t.id = c.type_id
-                    WHERE l.parent_id = ? AND t.name = ?
+                    WHERE l.parent_id = ? AND t.name = ? AND uuid.trashed = 0
                     ORDER BY l.order ASC
             "#,
             id,

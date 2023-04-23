@@ -586,6 +586,27 @@ impl Entity {
     {
         let mut transaction = executor.begin().await?;
 
+        if payload.entity_type == EntityType::Solution {
+            if sqlx::query!(
+                "SELECT id FROM entity_link WHERE parent_id = ?",
+                payload
+                    .input
+                    .parent_id
+                    .ok_or(operation::Error::BadRequest {
+                        reason: "parent_id needs to be provided".to_string(),
+                    })?
+            )
+            .fetch_one(&mut transaction)
+            .await
+            .ok()
+            .is_some()
+            {
+                return Err(operation::Error::BadRequest {
+                    reason: "solution already exists".to_string(),
+                });
+            }
+        }
+
         sqlx::query!(
             r#"
                 INSERT INTO uuid (trashed, discriminator)

@@ -2,7 +2,7 @@ mod entities_metadata_query {
     use test_utils::*;
 
     #[actix_rt::test]
-    async fn returns_metadata_of_entities() {
+    async fn returns_metadata_for_articles() {
         Message::new("EntitiesMetadataQuery", json!({ "first": 1 }))
             .execute()
             .await
@@ -48,19 +48,258 @@ mod entities_metadata_query {
     }
 
     #[actix_rt::test]
-    async fn default_value_for_property_name() {
+    async fn returns_metadata_for_applets() {
         Message::new(
             "EntitiesMetadataQuery",
-            json!({ "first": 1, "after": 20_000 }),
+            json!({ "first": 1, "after": 35595 }),
         )
         .execute()
         .await
-        .should_be_ok_with(|value| {
-            assert_eq!(
-                value["entities"][0]["name"],
-                "Quiz: https://serlo.org/20256"
-            )
-        });
+        .should_be_ok_with_body(json!({
+            "entities": [
+              {
+                "@context": [
+                  "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                  { "@language": "en" }
+                ],
+                "id": "https://serlo.org/35596",
+                "type": [
+                  "LearningResource",
+                  ""
+                ],
+                "dateCreated": "2020-01-29T17:47:19+00:00",
+                "dateModified": "2020-01-29T17:48:54+00:00",
+                "description": "",
+                "headline": "Example applet",
+                "identifier": {
+                  "propertyID": "UUID",
+                  "type": "PropertyValue",
+                  "value": 35596
+                },
+                "inLanguage": [ "en" ],
+                "isAccessibleForFree": true,
+                "isFamilyFriendly": true,
+                "learningResourceType": "",
+                "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
+                "maintainer": "https://serlo.org/",
+                "name": "Example applet",
+                "publisher": [{ "id": "https://serlo.org/" }],
+                "version": "https://serlo.org/35597"
+              }
+            ]
+        }));
+    }
+
+    #[actix_rt::test]
+    async fn returns_metadata_for_courses() {
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 18274 }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({
+          "entities": [
+            {
+              "@context": [
+                "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                {
+                  "@language": "de"
+                }
+              ],
+              "id": "https://serlo.org/18514",
+              "type": [
+                "LearningResource",
+                "Course"
+              ],
+              "dateCreated": "2014-03-17T12:22:17+00:00",
+              "dateModified": "2014-09-16T07:47:55+00:00",
+              "description": null,
+              "headline": "Überblick zum Satz des Pythagoras",
+              "identifier": {
+                "propertyID": "UUID",
+                "type": "PropertyValue",
+                "value": 18514
+              },
+              "inLanguage": [
+                "de"
+              ],
+              "isAccessibleForFree": true,
+              "isFamilyFriendly": true,
+              "learningResourceType": "Course",
+              "license": {
+                "id": "https://creativecommons.org/licenses/by-sa/4.0/"
+              },
+              "maintainer": "https://serlo.org/",
+              "name": "Überblick zum Satz des Pythagoras",
+              "publisher": [
+                {
+                  "id": "https://serlo.org/"
+                }
+              ],
+              "version": "https://serlo.org/30713"
+            }
+          ]
+        }));
+    }
+
+    #[actix_rt::test]
+    async fn returns_metadata_for_exercises() {
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 2327 }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({
+          "entities": [
+            {
+              "@context": [
+                "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                {
+                  "@language": "de"
+                }
+              ],
+              "id": "https://serlo.org/2331",
+              "type": [
+                "LearningResource",
+                "Quiz"
+              ],
+              "dateCreated": "2014-03-01T20:55:29+00:00",
+              "dateModified": "2014-03-10T14:33:05+00:00",
+              "description": null,
+              "headline": null,
+              "identifier": {
+                "propertyID": "UUID",
+                "type": "PropertyValue",
+                "value": 2331
+              },
+              "inLanguage": [
+                "de"
+              ],
+              "isAccessibleForFree": true,
+              "isFamilyFriendly": true,
+              "learningResourceType": "Quiz",
+              "license": {
+                "id": "https://creativecommons.org/licenses/by-sa/4.0/"
+              },
+              "maintainer": "https://serlo.org/",
+              "name": "Quiz: https://serlo.org/2331",
+              "publisher": [
+                {
+                  "id": "https://serlo.org/"
+                }
+              ],
+              "version": "https://serlo.org/16573"
+            }
+          ]
+        }));
+    }
+
+    #[actix_rt::test]
+    async fn returns_metadata_for_exercise_groups() {
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 2216 }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({
+          "entities": [
+            {
+              "@context": [
+                "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                {
+                  "@language": "de"
+                }
+              ],
+              "id": "https://serlo.org/2217",
+              "type": [
+                "LearningResource",
+                "Quiz"
+              ],
+              "dateCreated": "2014-03-01T20:54:51+00:00",
+              "dateModified": "2014-03-01T20:54:51+00:00",
+              "description": null,
+              "headline": null,
+              "identifier": {
+                "propertyID": "UUID",
+                "type": "PropertyValue",
+                "value": 2217
+              },
+              "inLanguage": [
+                "de"
+              ],
+              "isAccessibleForFree": true,
+              "isFamilyFriendly": true,
+              "learningResourceType": "Quiz",
+              "license": {
+                "id": "https://creativecommons.org/licenses/by-sa/4.0/"
+              },
+              "maintainer": "https://serlo.org/",
+              "name": "Quiz: https://serlo.org/2217",
+              "publisher": [
+                {
+                  "id": "https://serlo.org/"
+                }
+              ],
+              "version": "https://serlo.org/2218"
+            }
+          ]
+        }));
+    }
+
+    #[actix_rt::test]
+    async fn returns_metadata_for_videos() {
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 18864 }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with_body(json!({
+          "entities": [
+            {
+              "@context": [
+                "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                {
+                  "@language": "de"
+                }
+              ],
+              "id": "https://serlo.org/18865",
+              "type": [
+                "LearningResource",
+                "Video"
+              ],
+              "dateCreated": "2014-03-17T16:18:44+00:00",
+              "dateModified": "2014-05-01T09:22:14+00:00",
+              "description": null,
+              "headline": "Satz des Pythagoras",
+              "identifier": {
+                "propertyID": "UUID",
+                "type": "PropertyValue",
+                "value": 18865
+              },
+              "inLanguage": [
+                "de"
+              ],
+              "isAccessibleForFree": true,
+              "isFamilyFriendly": true,
+              "learningResourceType": "Video",
+              "license": {
+                "id": "https://creativecommons.org/licenses/by-sa/4.0/"
+              },
+              "maintainer": "https://serlo.org/",
+              "name": "Satz des Pythagoras",
+              "publisher": [
+                {
+                  "id": "https://serlo.org/"
+                }
+              ],
+              "version": "https://serlo.org/24383"
+            }
+          ]
+        }));
     }
 
     #[actix_rt::test]

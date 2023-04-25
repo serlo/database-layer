@@ -110,10 +110,7 @@ impl Threads {
             return Ok(());
         }
         let params = format!("?{}", ", ?".repeat(number_comments - 1));
-        let query_str = format!(
-            "SELECT id, archived FROM comment WHERE id IN ( { } )",
-            params
-        );
+        let query_str = format!("SELECT id, archived FROM comment WHERE id IN ( {params} )");
         let mut query = sqlx::query(&query_str);
         for id in payload.ids.iter() {
             query = query.bind(id);

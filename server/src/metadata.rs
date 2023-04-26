@@ -61,12 +61,18 @@ pub mod entities_metadata_query {
         in_language: Vec<String>,
         is_accessible_for_free: bool,
         is_family_friendly: bool,
-        learning_resource_type: String,
+        learning_resource_type: Vec<LearningResourceType>,
         license: serde_json::Value,
         maintainer: String,
         name: String,
         publisher: serde_json::Value,
         version: String,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct LearningResourceType {
+        id: String,
     }
 
     #[async_trait]
@@ -139,18 +145,16 @@ pub mod entities_metadata_query {
                     .and_then(|title| title.as_str())
                     .map(|title| title.to_string());
                 let id = get_iri(result.id as i32);
-                let learning_resource_type = get_learning_resource_type(&result.resource_type);
-                let name = title.clone().unwrap_or_else(|| format!("{learning_resource_type}: {id}"));
+                let schema_type =
+                        get_schema_type(&result.resource_type);
+                let name = title.clone().unwrap_or_else(|| format!("{schema_type}: {id}"));
 
                 EntityMetadata {
                     context: json!([
                         "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
                         { "@language": result.instance }
                     ]),
-                    schema_type: vec![
-                        "LearningResource".to_string(),
-                        get_learning_resource_type(&result.resource_type)
-                    ],
+                    schema_type: vec!["LearningResource".to_string(), schema_type],
                     description: result.params.as_ref()
                         .and_then(|params| params.get("meta_description"))
                         .and_then(|title| title.as_str())
@@ -167,7 +171,7 @@ pub mod entities_metadata_query {
                     in_language: vec![result.instance],
                     is_accessible_for_free: true,
                     is_family_friendly: true,
-                    learning_resource_type,
+                    learning_resource_type: get_learning_resource_type(&result.resource_type),
                     license: json!({"id": result.license_url}),
                     maintainer: "https://serlo.org/".to_string(),
                     name,
@@ -185,9 +189,9 @@ pub mod entities_metadata_query {
         format!("https://serlo.org/{id}")
     }
 
-    fn get_learning_resource_type(entity_type: &str) -> String {
+    fn get_schema_type(entity_type: &str) -> String {
         match entity_type {
-            "article" | "course-page" => "Article",
+            "article" => "Article",
             "course" => "Course",
             "text-exercise-group" | "text-exercise" => "Quiz",
             "video" => "Video",
@@ -195,5 +199,27 @@ pub mod entities_metadata_query {
             _ => entity_type,
         }
         .to_string()
+    }
+
+    fn get_learning_resource_type(entity_type: &str) -> Vec<LearningResourceType> {
+        match entity_type {
+            "article" => vec!["text", "worksheet", "course", "web_page", "wiki"],
+            "course" => vec!["course", "exploration", "web_page", "wiki"],
+            "text-exercise-group" | "text-exercise" => {
+                vec!["drill_and_practice", "assessment", "web_page", "wiki"]
+            }
+            "video" => vec!["video", "audiovisual_medium"],
+            "applet" => vec!["application", "demonstration"],
+            _ => vec![],
+        }
+        .into_iter()
+        .map(|vocab| {
+            format!(
+                "http://w3id.org/openeduhub/vocabs/learningResourceType/{}",
+                vocab
+            )
+        })
+        .map(|id| LearningResourceType { id })
+        .collect()
     }
 }

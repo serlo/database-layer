@@ -313,16 +313,12 @@ mod entities_metadata_query {
             .await
             .should_be_ok();
 
-        let end = now();
+        let duration = now() - start;
 
         // Querying 10.000 elements should be faster than 2 seconds, so that querying all entities
         // will take less than 30 seconds (At April 2023 we had ~50.000 entities so even if we add
         // taxonomies in the future it will be less than 150.000 objects).
-        assert!(
-            end - start < 2000,
-            "Duration of {:}ms is too high",
-            end - start
-        );
+        assert!(duration < 2000, "Duration of {:}ms is too high", duration);
     }
 
     #[actix_rt::test]

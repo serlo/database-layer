@@ -32,7 +32,13 @@ mod entities_metadata_query {
                   "isAccessibleForFree": true,
                   "isFamilyFriendly": true,
                   "inLanguage": [ "de" ],
-                  "learningResourceType": "Article",
+                  "learningResourceType": [
+                    { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/text" },
+                    { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/worksheet" },
+                    { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/course" },
+                    { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
+                    { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
+                  ],
                   "license": {
                     "id": "https://creativecommons.org/licenses/by-sa/4.0/"
                   },
@@ -79,7 +85,10 @@ mod entities_metadata_query {
                 "inLanguage": [ "en" ],
                 "isAccessibleForFree": true,
                 "isFamilyFriendly": true,
-                "learningResourceType": "WebApplication",
+                "learningResourceType": [
+                  { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/application" },
+                  { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/demonstration" },
+                ],
                 "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
                 "maintainer": "https://serlo.org/",
                 "name": "Example applet",
@@ -126,7 +135,12 @@ mod entities_metadata_query {
               ],
               "isAccessibleForFree": true,
               "isFamilyFriendly": true,
-              "learningResourceType": "Course",
+              "learningResourceType": [
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/course" },
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/exploration" },
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
+              ],
               "license": {
                 "id": "https://creativecommons.org/licenses/by-sa/4.0/"
               },
@@ -179,7 +193,12 @@ mod entities_metadata_query {
               ],
               "isAccessibleForFree": true,
               "isFamilyFriendly": true,
-              "learningResourceType": "Quiz",
+              "learningResourceType": [
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
+              ],
               "license": {
                 "id": "https://creativecommons.org/licenses/by-sa/4.0/"
               },
@@ -232,7 +251,12 @@ mod entities_metadata_query {
               ],
               "isAccessibleForFree": true,
               "isFamilyFriendly": true,
-              "learningResourceType": "Quiz",
+              "learningResourceType": [
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
+              ],
               "license": {
                 "id": "https://creativecommons.org/licenses/by-sa/4.0/"
               },
@@ -285,7 +309,10 @@ mod entities_metadata_query {
               ],
               "isAccessibleForFree": true,
               "isFamilyFriendly": true,
-              "learningResourceType": "Video",
+              "learningResourceType": [
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/video" },
+                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/audiovisual_medium" },
+              ],
               "license": {
                 "id": "https://creativecommons.org/licenses/by-sa/4.0/"
               },

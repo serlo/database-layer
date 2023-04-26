@@ -1,6 +1,6 @@
 mod uuid_query {
     use actix_web::{test, App, HttpResponse};
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     use server::{configure_app, create_database_pool};
 

@@ -217,7 +217,7 @@ mod entities_metadata_query {
                 "id": "https://creativecommons.org/licenses/by-sa/4.0/"
               },
               "maintainer": "https://serlo.org/",
-              "name": "Quiz: https://serlo.org/2331",
+              "name": "Aufgabengruppe#2331 in \"Stammfunktion finden\"",
               "isPartOf": [{ "id": "https://serlo.org/1308" }],
               "publisher": [
                 {
@@ -276,7 +276,7 @@ mod entities_metadata_query {
                 "id": "https://creativecommons.org/licenses/by-sa/4.0/"
               },
               "maintainer": "https://serlo.org/",
-              "name": "Quiz: https://serlo.org/2217",
+              "name": "Aufgabengruppe#2217 in \"Sachaufgaben\"",
               "isPartOf": [
                 { "id": "https://serlo.org/21804" },
                 { "id": "https://serlo.org/25726" },

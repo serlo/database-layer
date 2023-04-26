@@ -117,7 +117,8 @@ pub mod entities_metadata_query {
                     entity.current_revision_id AS version,
                     license.url AS license_url,
                     instance.subdomain AS instance,
-                    JSON_ARRAYAGG(term_taxonomy.id) as taxonomy_term_ids
+                    JSON_ARRAYAGG(term_taxonomy.id) AS taxonomy_term_ids,
+                    JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names
                 FROM entity
                 JOIN uuid ON uuid.id = entity.id
                 JOIN instance ON entity.instance_id = instance.id
@@ -148,6 +149,7 @@ pub mod entities_metadata_query {
             .await?
             .into_iter()
             .map(|result| {
+                let identifier = result.id as i32;
                 let title: Option<String> = result.params.as_ref()
                     .and_then(|params| params.get("title"))
                     .and_then(|title| title.as_str())
@@ -155,7 +157,51 @@ pub mod entities_metadata_query {
                 let id = get_iri(result.id as i32);
                 let schema_type =
                         get_schema_type(&result.resource_type);
-                let name = title.clone().unwrap_or_else(|| format!("{schema_type}: {id}"));
+                let name = title.clone().unwrap_or_else(|| {
+                    let schema_type_i18n = match result.instance.as_str() {
+                        "de" => {
+                            match result.resource_type.as_str() {
+                                "article" => "Artikel",
+                                "course" => "Kurs",
+                                "text-exercise" => "Aufgabe",
+                                "text-exercise-group" => "Aufgabengruppe",
+                                "video" => "Video",
+                                "applet" => "Applet",
+                                _ => "Inhalt",
+                            }
+                        },
+                        _ => {
+                            match result.resource_type.as_str() {
+                                "article" => "Article",
+                                "course" => "Course",
+                                "text-exercise" => "Exercise",
+                                "text-exercise-group" => "Exercise group",
+                                "video" => "Video",
+                                "applet" => "Applet",
+                                _ => "Content",
+                            }
+                        }
+                    };
+                    // Here we select the term name of the taxonomy term with the smallest ID
+                    // assuming that this is the taxonomy term of the main taxonomy (hopefully)
+                    let term_name = result.term_names
+                        .and_then(|value| {
+                            value.as_object().and_then(|map| {
+                                map.keys()
+                                    .filter_map(|key| key.parse::<i64>().ok())
+                                    .min()
+                                    .map(|key| key.to_string())
+                                    .and_then(|key| map.get(&key))
+                                    .and_then(|value| value.as_str())
+                                    .map(|name| String::from(name))
+                            })
+                        })
+                        // Since we have a left join on term_taxonomy_entity we whould never hit
+                        // this case (and thus avoid entites not being in a taxonomy)
+                        .unwrap_or("<unknown>".to_string());
+
+                    format!("{schema_type_i18n}#{identifier} in \"{term_name}\"")
+                });
                 let is_part_of: Vec<LinkedNode> = result.taxonomy_term_ids.as_ref()
                     .and_then(|value| value.as_array())
                     .map(|ids| {
@@ -189,7 +235,7 @@ pub mod entities_metadata_query {
                     identifier: json!({
                         "type": "PropertyValue",
                         "propertyID": "UUID",
-                        "value": result.id as i32,
+                        "value": identifier,
                     }),
                     in_language: vec![result.instance],
                     is_accessible_for_free: true,

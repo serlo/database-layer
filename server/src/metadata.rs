@@ -66,10 +66,10 @@ pub mod entities_metadata_query {
         is_family_friendly: bool,
         is_part_of: Vec<LinkedNode>,
         learning_resource_type: Vec<LinkedNode>,
-        license: serde_json::Value,
+        license: LinkedNode,
         maintainer: String,
         name: String,
-        publisher: serde_json::Value,
+        publisher: Vec<LinkedNode>,
         version: String,
     }
 
@@ -194,12 +194,10 @@ pub mod entities_metadata_query {
                     is_accessible_for_free: true,
                     is_family_friendly: true,
                     learning_resource_type: get_learning_resource_type(&result.resource_type),
-                    license: json!({"id": result.license_url}),
+                    license: LinkedNode { id: result.license_url},
                     maintainer: "https://serlo.org/".to_string(),
                     name,
-                    publisher: json!([
-                        { "id": "https://serlo.org/".to_string() }
-                    ]),
+                    publisher: vec![ LinkedNode { id: "https://serlo.org/".to_string() }],
                     is_part_of,
                     version: get_iri(result.version.unwrap())
                 }

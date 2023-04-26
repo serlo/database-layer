@@ -305,7 +305,7 @@ mod entities_metadata_query {
     }
 
     #[actix_rt::test]
-    async fn query_is_fast_enough() {
+    async fn assert_that_query_is_faster_then_2000ms() {
         let start = now();
 
         Message::new("EntitiesMetadataQuery", json!({ "first": 10_000 }))
@@ -318,7 +318,11 @@ mod entities_metadata_query {
         // Querying 10.000 elements should be faster than 2 seconds, so that querying all entities
         // will take less than 30 seconds (At April 2023 we had ~50.000 entities so even if we add
         // taxonomies in the future it will be less than 150.000 objects).
-        assert!(end - start < 2000, "duration {:}", end - start);
+        assert!(
+            end - start < 2000,
+            "Duration of {:}ms is too high",
+            end - start
+        );
     }
 
     #[actix_rt::test]

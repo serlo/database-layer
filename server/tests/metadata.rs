@@ -306,20 +306,14 @@ mod entities_metadata_query {
 
     #[actix_rt::test]
     async fn query_is_fast_enough() {
-        let start = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
+        let start = now();
 
         Message::new("EntitiesMetadataQuery", json!({ "first": 10_000 }))
             .execute()
             .await
             .should_be_ok();
 
-        let end = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
+        let end = now();
 
         // Querying 10.000 elements should be faster than 2 seconds, so that querying all entities
         // will take less than 30 seconds (At April 2023 we had ~50.000 entities so even if we add
@@ -366,5 +360,12 @@ mod entities_metadata_query {
             .execute()
             .await
             .should_be_bad_request();
+    }
+
+    fn now() -> u128 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis()
     }
 }

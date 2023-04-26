@@ -187,7 +187,7 @@ pub mod entities_metadata_query {
 
     fn get_learning_resource_type(entity_type: &str) -> String {
         match entity_type {
-            "article" | "course-page" => "Article",
+            "article" => "Article",
             "course" => "Course",
             "text-exercise-group" | "text-exercise" => "Quiz",
             "video" => "Video",

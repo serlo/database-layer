@@ -28,6 +28,9 @@ impl MessageResponder for MetadataMessage {
 }
 
 pub mod entities_metadata_query {
+    use itertools::Itertools;
+    use std::collections::HashSet;
+
     use super::*;
 
     #[derive(Deserialize, Serialize)]
@@ -61,6 +64,7 @@ pub mod entities_metadata_query {
         in_language: Vec<String>,
         is_accessible_for_free: bool,
         is_family_friendly: bool,
+        is_part_of: Vec<TaxonomyTerm>,
         learning_resource_type: Vec<LearningResourceType>,
         license: serde_json::Value,
         maintainer: String,
@@ -72,6 +76,12 @@ pub mod entities_metadata_query {
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
     struct LearningResourceType {
+        id: String,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct TaxonomyTerm {
         id: String,
     }
 
@@ -112,7 +122,8 @@ pub mod entities_metadata_query {
                     entity_revision.date AS date_modified,
                     entity.current_revision_id AS version,
                     license.url AS license_url,
-                    instance.subdomain AS instance
+                    instance.subdomain AS instance,
+                    JSON_ARRAYAGG(term_taxonomy.id) as taxonomy_term_ids
                 FROM entity
                 JOIN uuid ON uuid.id = entity.id
                 JOIN instance ON entity.instance_id = instance.id
@@ -120,6 +131,9 @@ pub mod entities_metadata_query {
                 JOIN license on license.id = entity.license_id
                 JOIN entity_revision ON entity.current_revision_id = entity_revision.id
                 JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id
+                JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id
+                JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id
+                JOIN term on term_taxonomy.term_id = term.id
                 WHERE entity.id > ?
                     AND (? is NULL OR instance.subdomain = ?)
                     AND (? is NULL OR entity_revision.date > ?)
@@ -148,6 +162,20 @@ pub mod entities_metadata_query {
                 let schema_type =
                         get_schema_type(&result.resource_type);
                 let name = title.clone().unwrap_or_else(|| format!("{schema_type}: {id}"));
+                let is_part_of: Vec<TaxonomyTerm> = result.taxonomy_term_ids.as_ref()
+                    .and_then(|value| value.as_array())
+                    .map(|ids| {
+                        ids.into_iter()
+                           .filter_map(|element| element.as_i64())
+                           // Since the query returns the same taxonomy term id for each parameter
+                           // in `entity_revision_field` we need to remove duplicates from the list
+                           .collect::<HashSet<i64>>()
+                           .into_iter()
+                           .sorted()
+                           .map(|id| TaxonomyTerm { id: get_iri(id as i32) })
+                           .collect()
+                    })
+                    .unwrap_or(Vec::new());
 
                 EntityMetadata {
                     context: json!([
@@ -178,6 +206,7 @@ pub mod entities_metadata_query {
                     publisher: json!([
                         { "id": "https://serlo.org/".to_string() }
                     ]),
+                    is_part_of,
                     version: get_iri(result.version.unwrap())
                 }
             })

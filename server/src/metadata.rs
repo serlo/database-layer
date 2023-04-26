@@ -170,6 +170,7 @@ pub mod entities_metadata_query {
                            .collect()
                     })
                     .unwrap_or(Vec::new());
+                let publisher_id = "https://serlo.org/".to_string();
 
                 EntityMetadata {
                     context: json!([
@@ -195,9 +196,9 @@ pub mod entities_metadata_query {
                     is_family_friendly: true,
                     learning_resource_type: get_learning_resource_type(&result.resource_type),
                     license: LinkedNode { id: result.license_url},
-                    maintainer: "https://serlo.org/".to_string(),
+                    maintainer: publisher_id.clone(),
                     name,
-                    publisher: vec![ LinkedNode { id: "https://serlo.org/".to_string() }],
+                    publisher: vec![ LinkedNode { id: publisher_id.clone() }],
                     is_part_of,
                     version: get_iri(result.version.unwrap())
                 }

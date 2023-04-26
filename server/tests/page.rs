@@ -1,7 +1,7 @@
 #![recursion_limit = "256"]
 
 mod add_revision_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn adds_revision() {
@@ -34,7 +34,7 @@ mod add_revision_mutation {
 
 mod create_mutation {
     use serde_json::Value::Null;
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn creates_page() {

@@ -1,5 +1,5 @@
 mod entities_metadata_query {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn returns_metadata_for_articles() {

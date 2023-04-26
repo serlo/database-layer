@@ -93,7 +93,7 @@ mod thread_mutations {
     use chrono::*;
     use rstest::*;
     use server::datetime::DateTime;
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[rstest]
     // start thread under user

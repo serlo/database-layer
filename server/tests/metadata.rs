@@ -311,7 +311,7 @@ mod entities_metadata_query {
             .unwrap()
             .as_millis();
 
-        Message::new("EntitiesMetadataQuery", json!({ "first": 9999 }))
+        Message::new("EntitiesMetadataQuery", json!({ "first": 10_000 }))
             .execute()
             .await
             .should_be_ok();

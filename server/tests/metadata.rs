@@ -65,7 +65,7 @@ mod entities_metadata_query {
                 "id": "https://serlo.org/35596",
                 "type": [
                   "LearningResource",
-                  ""
+                  "WebApplication"
                 ],
                 "dateCreated": "2020-01-29T17:47:19+00:00",
                 "dateModified": "2020-01-29T17:48:54+00:00",
@@ -79,7 +79,7 @@ mod entities_metadata_query {
                 "inLanguage": [ "en" ],
                 "isAccessibleForFree": true,
                 "isFamilyFriendly": true,
-                "learningResourceType": "",
+                "learningResourceType": "WebApplication",
                 "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
                 "maintainer": "https://serlo.org/",
                 "name": "Example applet",

@@ -1,4 +1,6 @@
 mod entities_metadata_query {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
     use test_utils::*;
 
     #[actix_rt::test]
@@ -300,6 +302,29 @@ mod entities_metadata_query {
             }
           ]
         }));
+    }
+
+    #[actix_rt::test]
+    async fn query_is_fast_enough() {
+        let start = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
+
+        Message::new("EntitiesMetadataQuery", json!({ "first": 9999 }))
+            .execute()
+            .await
+            .should_be_ok();
+
+        let end = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
+
+        // Querying 10.000 elements should be faster than 1 second, so that querying all entities
+        // will take less than 10 seconds (At April 2023 we had ~50.000 entities so even if we add
+        // taxonomies in the future it will be less than 100.000 objects).
+        assert!(end - start < 1000, "duration {:}", end - start);
     }
 
     #[actix_rt::test]

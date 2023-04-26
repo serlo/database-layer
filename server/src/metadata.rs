@@ -190,7 +190,8 @@ pub mod entities_metadata_query {
             "course" => "Course",
             "text-exercise-group" | "text-exercise" => "Quiz",
             "video" => "Video",
-            _ => "",
+            "applet" => "WebApplication",
+            _ => entity_type,
         }
         .to_string()
     }

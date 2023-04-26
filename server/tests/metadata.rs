@@ -305,7 +305,7 @@ mod entities_metadata_query {
     }
 
     #[actix_rt::test]
-    async fn assert_that_query_is_faster_then_2000ms() {
+    async fn assert_query_is_faster_than_3000ms() {
         let start = now();
 
         Message::new("EntitiesMetadataQuery", json!({ "first": 10_000 }))

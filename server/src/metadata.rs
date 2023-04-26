@@ -76,7 +76,7 @@ pub mod entities_metadata_query {
         async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
             if self.first > 10_000 {
                 return Err(Error::BadRequest {
-                    reason: "The 'first' value should be less than  or equal 10_000".to_string(),
+                    reason: "The 'first' value should be less than or equal 10_000".to_string(),
                 });
             };
 

@@ -118,7 +118,8 @@ pub mod entities_metadata_query {
                     AND (? is NULL OR instance.subdomain = ?)
                     AND (? is NULL OR entity_revision.date > ?)
                     AND uuid.trashed = 0
-                    AND entity.type_id IN (48, 3, 7, 1, 4, 6)
+                    AND type.name IN ("applet", "article", "course", "text-exercise",
+                                      "text-exercise-group", "video")
                 GROUP BY entity.id
                 ORDER BY entity.id
                 LIMIT ?
@@ -190,7 +191,8 @@ pub mod entities_metadata_query {
             "course" => "Course",
             "text-exercise-group" | "text-exercise" => "Quiz",
             "video" => "Video",
-            _ => "",
+            "applet" => "WebApplication",
+            _ => entity_type,
         }
         .to_string()
     }

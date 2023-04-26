@@ -462,6 +462,122 @@
     },
     "query": "\n                SELECT u.trashed, i.subdomain, p.current_revision_id, p.license_id, r.title\n                    FROM page_repository p\n                    JOIN uuid u ON u.id = p.id\n                    JOIN instance i ON i.id = p.instance_id\n                    LEFT JOIN page_revision r ON r.id = p.current_revision_id\n                    WHERE p.id = ?\n            "
   },
+  "14b1bf687fb7f8d4f964c3dfc8c8cf7b6a580c4be6454e19c9cb993d844d0a82": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "resource_type",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "params",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 16777216,
+            "type": "Json"
+          }
+        },
+        {
+          "name": "date_created",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1153
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        },
+        {
+          "name": "date_modified",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1153
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        },
+        {
+          "name": "version",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "license_url",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "instance",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 40,
+            "type": "VarString"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "\n                SELECT\n                    entity.id,\n                    type.name AS resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND type.name IN (\"applet\", \"article\", \"course\", \"text-exercise\",\n                                      \"text-exercise-group\", \"video\")\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
+  },
   "1d29fa3ec059188475b89dd62c131002f744586b21ee747a9fbac8a705b218f7": {
     "describe": {
       "columns": [],
@@ -4033,122 +4149,6 @@
       }
     },
     "query": "\n                SELECT n.name, u.uuid_id\n                    FROM event_parameter p\n                    JOIN event_parameter_name n ON n.id = p.name_id\n                    JOIN event_parameter_uuid u ON u.event_parameter_id = p.id\n                    WHERE p.name_id = n.id AND p.log_id = ?\n            "
-  },
-  "f30e91f1ffb74b58820db4cef8b7f3f38ba4a9ff30e48958e4fdeaf0603439bd": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "resource_type",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4101
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "params",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 128
-            },
-            "max_size": 16777216,
-            "type": "Json"
-          }
-        },
-        {
-          "name": "date_created",
-          "ordinal": 3,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1153
-            },
-            "max_size": 19,
-            "type": "Timestamp"
-          }
-        },
-        {
-          "name": "date_modified",
-          "ordinal": 4,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1153
-            },
-            "max_size": 19,
-            "type": "Timestamp"
-          }
-        },
-        {
-          "name": "version",
-          "ordinal": 5,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 0
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "license_url",
-          "ordinal": 6,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "instance",
-          "ordinal": 7,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 40,
-            "type": "VarString"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true,
-        false,
-        false,
-        true,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 6
-      }
-    },
-    "query": "\n                SELECT\n                    entity.id,\n                    type.name AS resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND entity.type_id IN (48, 3, 7, 1, 4, 6)\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
   },
   "f4c0ed10e768ab3538997268981783d7d8348ad4e51c52db9d660be1d099a426": {
     "describe": {

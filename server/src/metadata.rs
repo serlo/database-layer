@@ -64,8 +64,8 @@ pub mod entities_metadata_query {
         in_language: Vec<String>,
         is_accessible_for_free: bool,
         is_family_friendly: bool,
-        is_part_of: Vec<TaxonomyTerm>,
-        learning_resource_type: Vec<LearningResourceType>,
+        is_part_of: Vec<LinkedNode>,
+        learning_resource_type: Vec<LinkedNode>,
         license: serde_json::Value,
         maintainer: String,
         name: String,
@@ -75,13 +75,7 @@ pub mod entities_metadata_query {
 
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
-    struct LearningResourceType {
-        id: String,
-    }
-
-    #[derive(Serialize)]
-    #[serde(rename_all = "camelCase")]
-    struct TaxonomyTerm {
+    struct LinkedNode {
         id: String,
     }
 
@@ -162,7 +156,7 @@ pub mod entities_metadata_query {
                 let schema_type =
                         get_schema_type(&result.resource_type);
                 let name = title.clone().unwrap_or_else(|| format!("{schema_type}: {id}"));
-                let is_part_of: Vec<TaxonomyTerm> = result.taxonomy_term_ids.as_ref()
+                let is_part_of: Vec<LinkedNode> = result.taxonomy_term_ids.as_ref()
                     .and_then(|value| value.as_array())
                     .map(|ids| {
                         ids.into_iter()
@@ -172,7 +166,7 @@ pub mod entities_metadata_query {
                            .collect::<HashSet<i64>>()
                            .into_iter()
                            .sorted()
-                           .map(|id| TaxonomyTerm { id: get_iri(id as i32) })
+                           .map(|id| LinkedNode { id: get_iri(id as i32) })
                            .collect()
                     })
                     .unwrap_or(Vec::new());
@@ -230,7 +224,7 @@ pub mod entities_metadata_query {
         .to_string()
     }
 
-    fn get_learning_resource_type(entity_type: &str) -> Vec<LearningResourceType> {
+    fn get_learning_resource_type(entity_type: &str) -> Vec<LinkedNode> {
         match entity_type {
             "article" => vec!["text", "worksheet", "course", "web_page", "wiki"],
             "course" => vec!["course", "exploration", "web_page", "wiki"],
@@ -248,7 +242,7 @@ pub mod entities_metadata_query {
                 vocab
             )
         })
-        .map(|id| LearningResourceType { id })
+        .map(|id| LinkedNode { id })
         .collect()
     }
 }

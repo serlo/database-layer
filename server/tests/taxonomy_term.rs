@@ -1,5 +1,5 @@
 mod set_name_and_description_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn sets_name_and_description() {
@@ -63,7 +63,7 @@ mod set_name_and_description_mutation {
 }
 
 mod create_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn creates_new_taxonomy_term() {
@@ -167,7 +167,7 @@ mod create_mutation {
 }
 
 mod create_entity_link_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn creates_entity_link() {
@@ -405,7 +405,7 @@ mod delete_entity_links_mutation {
 }
 
 mod sort_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn sorts_children() {

@@ -4,6 +4,7 @@ use actix_web::web::Bytes;
 use actix_web::HttpResponse;
 pub use assert_json_diff::assert_json_include;
 use convert_case::{Case, Casing};
+pub use pretty_assertions::assert_eq;
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::{from_slice, from_value};
 pub use serde_json::{json, to_value, Value};

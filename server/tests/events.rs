@@ -1,5 +1,5 @@
 mod events_query {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn without_after_parameter() {

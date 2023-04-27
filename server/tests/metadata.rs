@@ -13,7 +13,10 @@ mod entities_metadata_query {
                   "@context": [
                     "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
                     {
-                      "@language": "de"
+                      "@language": "de",
+                      "@vocab": "http://schema.org/",
+                      "type": "@type",
+                      "id": "@id"
                     }
                   ],
                   "id": "https://serlo.org/1495",
@@ -75,7 +78,12 @@ mod entities_metadata_query {
               {
                 "@context": [
                   "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
-                  { "@language": "en" }
+                  {
+                    "@language": "en",
+                    "@vocab": "http://schema.org/",
+                    "type": "@type",
+                    "id": "@id"
+                  }
                 ],
                 "id": "https://serlo.org/35596",
                 "type": [
@@ -123,7 +131,10 @@ mod entities_metadata_query {
               "@context": [
                 "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
                 {
-                  "@language": "de"
+                  "@language": "de",
+                  "@vocab": "http://schema.org/",
+                  "type": "@type",
+                  "id": "@id"
                 }
               ],
               "id": "https://serlo.org/18514",
@@ -185,7 +196,10 @@ mod entities_metadata_query {
               "@context": [
                 "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
                 {
-                  "@language": "de"
+                  "@language": "de",
+                  "@vocab": "http://schema.org/",
+                  "type": "@type",
+                  "id": "@id"
                 }
               ],
               "id": "https://serlo.org/2823",
@@ -256,7 +270,10 @@ mod entities_metadata_query {
               "@context": [
                 "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
                 {
-                  "@language": "de"
+                  "@language": "de",
+                  "@vocab": "http://schema.org/",
+                  "type": "@type",
+                  "id": "@id"
                 }
               ],
               "id": "https://serlo.org/2217",
@@ -318,7 +335,10 @@ mod entities_metadata_query {
               "@context": [
                 "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
                 {
-                  "@language": "de"
+                  "@language": "de",
+                  "@vocab": "http://schema.org/",
+                  "type": "@type",
+                  "id": "@id"
                 }
               ],
               "id": "https://serlo.org/18865",

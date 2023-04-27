@@ -175,7 +175,12 @@ pub mod entities_metadata_query {
                 EntityMetadata {
                     context: json!([
                         "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
-                        { "@language": result.instance }
+                        {
+                            "@language": result.instance,
+                            "@vocab": "http://schema.org/",
+                            "type": "@type",
+                            "id": "@id"
+                        }
                     ]),
                     schema_type: vec!["LearningResource".to_string(), schema_type],
                     description: result.params.as_ref()

@@ -45,6 +45,14 @@ mod entities_metadata_query {
                   },
                   "maintainer": "https://serlo.org/",
                   "name": "Addition",
+                  "isPartOf": [
+                    { "id": "https://serlo.org/1292" },
+                    { "id": "https://serlo.org/16072" },
+                    { "id": "https://serlo.org/16174" },
+                    { "id": "https://serlo.org/33119" },
+                    { "id": "https://serlo.org/34743" },
+                    { "id": "https://serlo.org/34744" },
+                  ],
                   "publisher": [{
                       "id": "https://serlo.org/"
                   }],
@@ -94,6 +102,7 @@ mod entities_metadata_query {
                 "maintainer": "https://serlo.org/",
                 "name": "Example applet",
                 "publisher": [{ "id": "https://serlo.org/" }],
+                "isPartOf": [{ "id": "https://serlo.org/35560" }],
                 "version": "https://serlo.org/35597"
               }
             ]
@@ -147,6 +156,10 @@ mod entities_metadata_query {
               },
               "maintainer": "https://serlo.org/",
               "name": "Überblick zum Satz des Pythagoras",
+              "isPartOf": [
+                { "id": "https://serlo.org/1381" },
+                { "id": "https://serlo.org/16526" },
+              ],
               "publisher": [
                 {
                   "id": "https://serlo.org/"
@@ -205,6 +218,7 @@ mod entities_metadata_query {
               },
               "maintainer": "https://serlo.org/",
               "name": "Quiz: https://serlo.org/2331",
+              "isPartOf": [{ "id": "https://serlo.org/1308" }],
               "publisher": [
                 {
                   "id": "https://serlo.org/"
@@ -263,6 +277,10 @@ mod entities_metadata_query {
               },
               "maintainer": "https://serlo.org/",
               "name": "Quiz: https://serlo.org/2217",
+              "isPartOf": [
+                { "id": "https://serlo.org/21804" },
+                { "id": "https://serlo.org/25726" },
+              ],
               "publisher": [
                 {
                   "id": "https://serlo.org/"
@@ -319,6 +337,10 @@ mod entities_metadata_query {
               },
               "maintainer": "https://serlo.org/",
               "name": "Satz des Pythagoras",
+              "isPartOf": [
+                { "id": "https://serlo.org/1381" },
+                { "id": "https://serlo.org/16214" },
+              ],
               "publisher": [
                 {
                   "id": "https://serlo.org/"

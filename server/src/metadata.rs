@@ -28,6 +28,9 @@ impl MessageResponder for MetadataMessage {
 }
 
 pub mod entities_metadata_query {
+    use itertools::Itertools;
+    use std::collections::HashSet;
+
     use super::*;
 
     #[derive(Deserialize, Serialize)]
@@ -61,17 +64,18 @@ pub mod entities_metadata_query {
         in_language: Vec<String>,
         is_accessible_for_free: bool,
         is_family_friendly: bool,
-        learning_resource_type: Vec<LearningResourceType>,
-        license: serde_json::Value,
+        is_part_of: Vec<LinkedNode>,
+        learning_resource_type: Vec<LinkedNode>,
+        license: LinkedNode,
         maintainer: String,
         name: String,
-        publisher: serde_json::Value,
+        publisher: Vec<LinkedNode>,
         version: String,
     }
 
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
-    struct LearningResourceType {
+    struct LinkedNode {
         id: String,
     }
 
@@ -112,7 +116,8 @@ pub mod entities_metadata_query {
                     entity_revision.date AS date_modified,
                     entity.current_revision_id AS version,
                     license.url AS license_url,
-                    instance.subdomain AS instance
+                    instance.subdomain AS instance,
+                    JSON_ARRAYAGG(term_taxonomy.id) as taxonomy_term_ids
                 FROM entity
                 JOIN uuid ON uuid.id = entity.id
                 JOIN instance ON entity.instance_id = instance.id
@@ -120,6 +125,9 @@ pub mod entities_metadata_query {
                 JOIN license on license.id = entity.license_id
                 JOIN entity_revision ON entity.current_revision_id = entity_revision.id
                 JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id
+                JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id
+                JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id
+                JOIN term on term_taxonomy.term_id = term.id
                 WHERE entity.id > ?
                     AND (? is NULL OR instance.subdomain = ?)
                     AND (? is NULL OR entity_revision.date > ?)
@@ -148,6 +156,21 @@ pub mod entities_metadata_query {
                 let schema_type =
                         get_schema_type(&result.resource_type);
                 let name = title.clone().unwrap_or_else(|| format!("{schema_type}: {id}"));
+                let is_part_of: Vec<LinkedNode> = result.taxonomy_term_ids.as_ref()
+                    .and_then(|value| value.as_array())
+                    .map(|ids| {
+                        ids.iter()
+                           .filter_map(|element| element.as_i64())
+                           // Since the query returns the same taxonomy term id for each parameter
+                           // in `entity_revision_field` we need to remove duplicates from the list
+                           .collect::<HashSet<i64>>()
+                           .into_iter()
+                           .sorted()
+                           .map(|id| LinkedNode { id: get_iri(id as i32) })
+                           .collect()
+                    })
+                    .unwrap_or(Vec::new());
+                let publisher_id = "https://serlo.org/".to_string();
 
                 EntityMetadata {
                     context: json!([
@@ -172,12 +195,11 @@ pub mod entities_metadata_query {
                     is_accessible_for_free: true,
                     is_family_friendly: true,
                     learning_resource_type: get_learning_resource_type(&result.resource_type),
-                    license: json!({"id": result.license_url}),
-                    maintainer: "https://serlo.org/".to_string(),
+                    license: LinkedNode { id: result.license_url},
+                    maintainer: publisher_id.clone(),
                     name,
-                    publisher: json!([
-                        { "id": "https://serlo.org/".to_string() }
-                    ]),
+                    publisher: vec![ LinkedNode { id: publisher_id }],
+                    is_part_of,
                     version: get_iri(result.version.unwrap())
                 }
             })
@@ -201,7 +223,7 @@ pub mod entities_metadata_query {
         .to_string()
     }
 
-    fn get_learning_resource_type(entity_type: &str) -> Vec<LearningResourceType> {
+    fn get_learning_resource_type(entity_type: &str) -> Vec<LinkedNode> {
         match entity_type {
             "article" => vec!["text", "worksheet", "course", "web_page", "wiki"],
             "course" => vec!["course", "exploration", "web_page", "wiki"],
@@ -219,7 +241,7 @@ pub mod entities_metadata_query {
                 vocab
             )
         })
-        .map(|id| LearningResourceType { id })
+        .map(|id| LinkedNode { id })
         .collect()
     }
 }

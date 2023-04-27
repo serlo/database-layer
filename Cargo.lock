@@ -1996,6 +1996,7 @@ dependencies = [
  "convert_case 0.5.0",
  "dotenv",
  "futures",
+ "itertools",
  "md5",
  "rand",
  "regex",

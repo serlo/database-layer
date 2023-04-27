@@ -385,31 +385,6 @@
     },
     "query": "\n                SELECT u.id\n                    FROM user u\n                    JOIN event_log e ON u.id = e.actor_id\n                    WHERE e.event_id = 5 AND e.date > DATE_SUB(?, Interval 90 day)\n                    GROUP BY u.id\n                    HAVING count(e.event_id) > 10\n            "
   },
-  "12aaac08ca467cb635a913bd5c73532a4ca90bd2189018f257b7b7a345490c29": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "select id from uuid where discriminator = ? and trashed = false"
-  },
   "12ed467d6c81bc00bddc5a10220b65925488fc0521f1e62a81308d2296a961fe": {
     "describe": {
       "columns": [
@@ -486,83 +461,6 @@
       }
     },
     "query": "\n                SELECT u.trashed, i.subdomain, p.current_revision_id, p.license_id, r.title\n                    FROM page_repository p\n                    JOIN uuid u ON u.id = p.id\n                    JOIN instance i ON i.id = p.instance_id\n                    LEFT JOIN page_revision r ON r.id = p.current_revision_id\n                    WHERE p.id = ?\n            "
-  },
-  "18dd2dba8447816e2fecdd24c52202a0bcaef67f09e6be7334da1641d81d466c": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "uuid_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "user_id",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "notify_mailman",
-          "ordinal": 3,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "date",
-          "ordinal": 4,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1153
-            },
-            "max_size": 19,
-            "type": "Timestamp"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select * from subscription where uuid_id = 10"
   },
   "1d29fa3ec059188475b89dd62c131002f744586b21ee747a9fbac8a705b218f7": {
     "describe": {
@@ -735,121 +633,6 @@
       }
     },
     "query": "\n                SELECT field, value\n                    FROM entity_revision_field\n                    WHERE entity_revision_id = ?\n            "
-  },
-  "22215aab81ee80f2c8d2c638d3b3b461ec9b6bfa46a7fac8eae6a53b966933b3": {
-    "describe": {
-      "columns": [
-        {
-          "name": "author_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select author_id from page_revision where id = 16283"
-  },
-  "235f4824809dd6cc6623d86fc56b64514778fcf9f53a96d4966329b2b38e4422": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "user_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "seen",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "date",
-          "ordinal": 3,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1153
-            },
-            "max_size": 19,
-            "type": "Timestamp"
-          }
-        },
-        {
-          "name": "email",
-          "ordinal": 4,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 0
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "email_sent",
-          "ordinal": 5,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 0
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        true,
-        true
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select * from notification where user_id = 10"
   },
   "2594f7eb0db4993eb684ae6fdf173a8999df485653a8544733a6ce29da94842d": {
     "describe": {
@@ -1033,31 +816,6 @@
     },
     "query": "select child_id from entity_link where parent_id = ? order by entity_link.order"
   },
-  "2ccde343c63ef7ec8dbd3246b444ea97e17039d6802500fe97ea72689280ad7b": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "SELECT id FROM uuid WHERE discriminator = ?"
-  },
   "2cfe0f4498a487a637ea1cb30708575d034c365423432ae23a167bc33ca248a0": {
     "describe": {
       "columns": [],
@@ -1172,57 +930,6 @@
       }
     },
     "query": "\n                SELECT page_repository.id\n                FROM instance, page_repository\n                JOIN page_revision ON page_repository.id = page_revision.page_repository_id\n                WHERE page_repository.instance_id = instance.id\n                AND (? is null or instance.subdomain = ?)\n                AND page_repository.current_revision_id = page_revision.id\n            "
-  },
-  "3a8a906f0cb615c5f0841f6ad1a19ca46db6df6006b586ffe90f1bca04950677": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "trashed",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "discriminator",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 180,
-            "type": "VarString"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select * from uuid where id = 10"
   },
   "3b6098e00bd82ec3f18a1c5e07915e1fc229059e2964da68c03a787fb4ba62a1": {
     "describe": {
@@ -1378,16 +1085,6 @@
     },
     "query": "\n                SELECT l.id, l.actor_id, l.uuid_id, l.date, i.subdomain, e.name\n                    FROM event_log l\n                    LEFT JOIN event_parameter p ON l.id = p.log_id\n                    JOIN instance i ON l.instance_id = i.id\n                    JOIN event e ON l.event_id = e.id\n                    WHERE l.id = ?\n            "
   },
-  "3d851e069d05f7dfa2cb6c8628905361908a70fc144088534f20455053e94ffd": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "DELETE FROM notification_event WHERE event_log_id = ?"
-  },
   "3e4fa9b47ad5337aaf2fba3c28ccd1f98ed6c3e499994aaab7f0fd5aa2c59361": {
     "describe": {
       "columns": [
@@ -1412,70 +1109,6 @@
       }
     },
     "query": "SELECT id FROM type WHERE name = ?"
-  },
-  "3ed6b9abce7193b00b8c5d4abb520ef20a20d7e68373a9c9816263d98378332e": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "comment_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "user_id",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "vote",
-          "ordinal": 3,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 4,
-            "type": "Tiny"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select * from comment_vote where user_id = 10"
   },
   "3fc71f9de3677a7918e018e0138d2f3a453c7b58a2b10341e7dc42f8a1063467": {
     "describe": {
@@ -1526,56 +1159,6 @@
       }
     },
     "query": "\n                    SELECT IFNULL(MAX(et.order), 0) AS current_last\n                        FROM entity_link et\n                        WHERE et.parent_id = ?\n                "
-  },
-  "412fa53b16e7de1e02fb92e35839eb121b4ba5e3fb0d2eccef6cc3d21105c7de": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 161
-            },
-            "max_size": 21,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "\n                SELECT LAST_INSERT_ID() AS id\n                FROM uuid;\n            "
-  },
-  "41c75ae1d6f5834cc7ffc81c19d0832cc042ddc13c449cdd30a892b635450e94": {
-    "describe": {
-      "columns": [
-        {
-          "name": "actor_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select actor_id from event_log where id = 38383"
   },
   "436603084c0bc754c6d6baa29d1eb0d64f1ee26047a4b905585949e5ea544b15": {
     "describe": {
@@ -1714,31 +1297,6 @@
     },
     "query": "select instance_id from entity where id = ?"
   },
-  "4ff63f76ea7d416562360d4bfa79c7e8d3d2c60c03ee2bb484eb15b9b8a77c9f": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "select id from uuid where discriminator = ?"
-  },
   "508767770b236602aac9db46038e1824848d78dd973825946f3ef15711e7ebbd": {
     "describe": {
       "columns": [
@@ -1764,16 +1322,6 @@
     },
     "query": "\n                SELECT role_id\n                FROM role_user\n                WHERE user_id = ? AND role_id = ?\n            "
   },
-  "508a2f3e2ce7a39552697b35e101ccd865c36e898c3e2fdb2068b970afecf7b4": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                INSERT INTO role_user (user_id, role_id)\n                VALUES (?, 3)\n            "
-  },
   "5117c47bc2b16c9fce93c9c8d4e46f5e587c72d1528abebf33621fef487890fd": {
     "describe": {
       "columns": [
@@ -1798,31 +1346,6 @@
       }
     },
     "query": "\n                SELECT id\n                FROM user\n                WHERE username = ?\n            "
-  },
-  "512bb0b5d80faaaf4173a79864b8a86f45488dc103fa828988e358a60c7e52af": {
-    "describe": {
-      "columns": [
-        {
-          "name": "author_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select author_id from ad where id = 1"
   },
   "544017b3c945f404442a6aacf8519449608b8b1cfacb8cf07b3495b313be09da": {
     "describe": {
@@ -1921,31 +1444,6 @@
       }
     },
     "query": "\n                SELECT i.id as instance_id\n                    FROM uuid\n                    JOIN (\n                        SELECT id, instance_id FROM attachment_container\n                        UNION ALL\n                        SELECT id, instance_id FROM blog_post\n                        UNION ALL\n                        SELECT id, instance_id FROM comment\n                        UNION ALL\n                        SELECT id, instance_id FROM entity\n                        UNION ALL\n                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                        UNION ALL\n                        SELECT id, instance_id FROM page_repository\n                        UNION ALL\n                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                        UNION ALL\n                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id\n                        UNION ALL\n                        SELECT user.id, 1 FROM user) u\n                    JOIN instance i ON i.id = u.instance_id\n                    WHERE u.id = ?\n            "
-  },
-  "5be1b0c6007de2020535d1b8a5171b8a57d642741844bc30149444a119fa2922": {
-    "describe": {
-      "columns": [
-        {
-          "name": "author_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select author_id from blog_post where id = 1199"
   },
   "5c60c4c7ebcdf3fd09d7b4a0064575e23855b488542e83f15032e65a03956dfe": {
     "describe": {
@@ -2316,31 +1814,6 @@
       }
     },
     "query": "update page_revision set author_id = ? where author_id = ?"
-  },
-  "6b5b1fba90404d87ad22b29ae345e50122467b1a27c6ffebcc31980ba2407891": {
-    "describe": {
-      "columns": [
-        {
-          "name": "user_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                SELECT user_id\n                FROM role_user\n                WHERE user_id = ?\n                and role_id = ?\n            "
   },
   "6b867595e8308dd97239e5dcba9b9bc26453fac7aaecbc238e00a16a0a32bcc5": {
     "describe": {
@@ -2830,41 +2303,6 @@
     },
     "query": "\n                SELECT id\n                FROM role\n                WHERE name = ?\n            "
   },
-  "8c6254d3b848f9b5a7a3e63dcef728d4149f5cbf0148a32d0c6bc3cdbb027da2": {
-    "describe": {
-      "columns": [
-        {
-          "name": "seen",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "SELECT seen FROM notification WHERE id = ?"
-  },
-  "8cf6e268974803a0476021c072ed7c72285e6387c9099152c162b5a8b22d8a54": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                INSERT INTO subscription (uuid_id, user_id, notify_mailman)\n                VALUES (?, ?, 1)\n            "
-  },
   "8dd3fc6942998b7d2a7ad952f1955d94200c059334920a22ff5746302b550ffd": {
     "describe": {
       "columns": [
@@ -3016,57 +2454,6 @@
     },
     "query": "\n                SELECT instance_id\n                    FROM entity\n                    WHERE id = ?\n            "
   },
-  "900e9873093aaed1342fd71fa8731b616ae89a1f996bdd6bc9fce7a215a2a1ce": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "notification_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "event_log_id",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "SELECT * FROM notification_event WHERE event_log_id = ?"
-  },
   "90fe2d478f34ef1f204e73a838cf0bc91ff02af35cfd45544ce119cbb68c0edd": {
     "describe": {
       "columns": [],
@@ -3101,31 +2488,6 @@
       }
     },
     "query": "\n                SELECT uuid_id as id\n                    FROM (\n                        SELECT id, uuid_id FROM comment c\n                        UNION ALL\n                        SELECT c.id, p.uuid_id FROM comment p LEFT JOIN comment c ON c.parent_id = p.id\n                    ) t\n                    WHERE id = ? AND uuid_id IS NOT NULL\n            "
-  },
-  "91ce107af22b160e4299945e9c58ae52b96efaa5164f9a5d5635920fa3b487a0": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "SELECT id FROM entity WHERE type_id = 43"
   },
   "93081abb88a7b64f755224129e49c32f58f91648d7e1b59bcb8d65d643c47d5b": {
     "describe": {
@@ -3206,83 +2568,6 @@
       }
     },
     "query": "UPDATE uuid SET trashed = ? WHERE id = ?"
-  },
-  "9824e5b8b5ee1006b351ba8eaf3ec6031600c604a2a967d6acee451689045aa4": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "uuid_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "user_id",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "notify_mailman",
-          "ordinal": 3,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "date",
-          "ordinal": 4,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1153
-            },
-            "max_size": 19,
-            "type": "Timestamp"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select * from subscription where user_id = 10"
   },
   "9bd4c7f005e7e5f56c58e3efe7fbe64ba6a51ca405228bca0af0df42f2ebef71": {
     "describe": {
@@ -3410,44 +2695,6 @@
       }
     },
     "query": "\n                SELECT n.id, n.seen, n.email_sent, n.email, e.event_log_id\n                    FROM notification n\n                    JOIN notification_event e ON n.id = e.notification_id\n                    JOIN event_log on event_log.id = e.event_log_id\n                    JOIN uuid uuid1 on uuid1.id = event_log.uuid_id\n                    LEFT JOIN entity entity1 on entity1.id = event_log.uuid_id\n                    LEFT JOIN event_parameter ON event_parameter.log_id = event_log.id\n                    LEFT JOIN event_parameter_uuid ON\n                      event_parameter_uuid.event_parameter_id = event_parameter.id\n                    LEFT JOIN event_parameter_string ON\n                      event_parameter_string.event_parameter_id = event_parameter.id\n                    LEFT JOIN uuid uuid2 on uuid2.id = event_parameter_uuid.uuid_id\n                    LEFT JOIN entity entity2 on entity2.id = event_parameter_uuid.uuid_id\n                    WHERE n.user_id = ?\n                      AND event_parameter_string.value IS NULL\n                      AND uuid1.discriminator NOT IN (\"attachment\", \"blogPost\")\n                      AND (uuid2.discriminator IS NULL OR\n                        uuid2.discriminator NOT IN (\"attachment\", \"blogPost\"))\n                      AND (entity1.type_id IS NULL OR entity1.type_id IN (1,2,3,4,5,6,7,8,49,50))\n                      AND (entity2.type_id IS NULL OR entity2.type_id IN (1,2,3,4,5,6,7,8,49,50))\n                    ORDER BY n.date DESC, n.id DESC\n            "
-  },
-  "9fe06476626afaff762ce692f92fa6b908437637ad929824c69d385f728f9c60": {
-    "describe": {
-      "columns": [
-        {
-          "name": "user_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "role_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                SELECT *\n                FROM role_user\n                WHERE user_id = ?\n                and role_id = ?\n            "
   },
   "a400f2b325f4baa03878fd49187085fb2b95d0ca886494a2fca05f1ec65b7ed1": {
     "describe": {
@@ -3589,44 +2836,6 @@
       }
     },
     "query": "\n                SELECT t.name, u.trashed, i.subdomain, e.date, e.current_revision_id, e.license_id, f1.value as title, f2.value as fallback_title\n                    FROM entity e\n                    JOIN uuid u ON u.id = e.id\n                    JOIN instance i ON i.id = e.instance_id\n                    JOIN type t ON t.id = e.type_id\n                    LEFT JOIN entity_revision_field f1 ON f1.entity_revision_id = e.current_revision_id AND f1.field = 'title'\n                    LEFT JOIN entity_revision_field f2 on f2.entity_revision_id = (SELECT id FROM entity_revision WHERE repository_id = ? LIMIT 1) AND f2.field = 'title'\n                    WHERE e.id = ?\n            "
-  },
-  "a732f205b621147cd338a5408e09806947c66bb490b0d6652e4be9706e1f6ee6": {
-    "describe": {
-      "columns": [
-        {
-          "name": "math_puzzle_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "revision_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "\n                select\n                    entity.id as math_puzzle_id,\n                    entity_revision.id as revision_id\n                from entity\n                join entity_revision on entity_revision.repository_id = entity.id\n                where type_id = 39\n            "
   },
   "a855db2b12648ed014504f521d21e37620ad3519df0dedc6e36dc03fb1cc431c": {
     "describe": {
@@ -3857,44 +3066,6 @@
     },
     "query": "SELECT id FROM entity WHERE id = ?"
   },
-  "ae9b2c26d6739811e7afca6ae3b1d264912819f48fdd60fa3a5065bc3d755327": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "seen",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                    SELECT id, seen\n                        FROM notification\n                        WHERE id = ?\n                "
-  },
   "aeb0afb479d2959038ec559914b1f902973ed241339101eec3af0fe124c27526": {
     "describe": {
       "columns": [],
@@ -3945,31 +3116,6 @@
     },
     "query": "\n                INSERT INTO taxonomy (type_id, instance_id)\n                    VALUES (?, ?)\n            "
   },
-  "b5facc1506df077b491ec45dc560a1a5b8b7f930ec6d2483fd6e0f57551f9865": {
-    "describe": {
-      "columns": [
-        {
-          "name": "author_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select author_id from comment where id = 16740"
-  },
   "b67a6cd1168e030043fc309da009c241d88b7543ce11598b7e183086dd2f5077": {
     "describe": {
       "columns": [
@@ -3994,31 +3140,6 @@
       }
     },
     "query": "\n                SELECT entity_id\n                    FROM term_taxonomy_entity\n                    WHERE term_taxonomy_id = ?\n                    ORDER BY position ASC\n            "
-  },
-  "b74d0670cdaaf1f324c8af8b7e0a3fcdcfbdd7b84f2af263cbbb1e2ff0c84fa8": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "SELECT id FROM event_log WHERE uuid_id = ? ORDER BY date DESC"
   },
   "b8d50d5ea3e6db122c2aca9c330da136526eb6e65a41d02a03e3dfd2504c9d92": {
     "describe": {
@@ -4119,134 +3240,6 @@
       }
     },
     "query": "\n                    INSERT INTO term_taxonomy_entity (entity_id, term_taxonomy_id, position)\n                    VALUES (?, ?, ?)\n                "
-  },
-  "bdf0cbf7b426f12c0e8caba18ce8ec6dbc52c2f7492ad0d1157b190afb6faea8": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "uuid_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "type_id",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "reporter_id",
-          "ordinal": 3,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "instance_id",
-          "ordinal": 4,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "content",
-          "ordinal": 5,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4113
-            },
-            "max_size": 262140,
-            "type": "Blob"
-          }
-        },
-        {
-          "name": "timestamp",
-          "ordinal": 6,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1153
-            },
-            "max_size": 19,
-            "type": "Timestamp"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select * from flag where reporter_id = 10"
-  },
-  "be2ec9977c322c7baff512b985e031d2574bbcb31cd86e62bcca6cc86de5b81d": {
-    "describe": {
-      "columns": [
-        {
-          "name": "trashed",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "SELECT trashed FROM uuid WHERE id = ?"
   },
   "befb2d78ae7737e9d6e6a667301a984576cd5c451682394635e9e6c61b1b9669": {
     "describe": {
@@ -4548,44 +3541,6 @@
     },
     "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            "
   },
-  "d21452aeafa147bc93b7dbee0da967f9730ed27514c84cc3f8cf06d8a8a4041e": {
-    "describe": {
-      "columns": [
-        {
-          "name": "user_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "role_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select * from role_user where user_id = 10"
-  },
   "d346efc6bdd45568794b701a17c463cbf692e5666cfffd9cef144057a2c4d4e5": {
     "describe": {
       "columns": [],
@@ -4783,160 +3738,6 @@
       }
     },
     "query": "\n                SELECT term_taxonomy_id as id\n                    FROM (\n                        SELECT term_taxonomy_id, entity_id FROM term_taxonomy_entity\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l ON t.entity_id = l.parent_id\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l2.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l1 ON t.entity_id = l1.parent_id\n                            JOIN entity_link l2 ON l2.parent_id = l1.child_id\n                    ) u\n                    WHERE entity_id = ?\n            "
-  },
-  "de9d749207eee333597bc3ac995f042974a8d92e42d852f53f6087c0e97c10cd": {
-    "describe": {
-      "columns": [
-        {
-          "name": "author_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "select author_id from entity_revision where id = 16114"
-  },
-  "e012c104d8a19c81b7c8e88b978daff613816ce7041938e05bd13e39aa033e69": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "resource_type",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4101
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "params",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 128
-            },
-            "max_size": 16777216,
-            "type": "Json"
-          }
-        },
-        {
-          "name": "date_created",
-          "ordinal": 3,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1153
-            },
-            "max_size": 19,
-            "type": "Timestamp"
-          }
-        },
-        {
-          "name": "date_modified",
-          "ordinal": 4,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1153
-            },
-            "max_size": 19,
-            "type": "Timestamp"
-          }
-        },
-        {
-          "name": "version",
-          "ordinal": 5,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 0
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "license_url",
-          "ordinal": 6,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "instance",
-          "ordinal": 7,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 40,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "taxonomy_term_ids",
-          "ordinal": 8,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 128
-            },
-            "max_size": 16777216,
-            "type": "Json"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true,
-        false,
-        false,
-        true,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Right": 6
-      }
-    },
-    "query": "\n                SELECT\n                    entity.id,\n                    type.name AS resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance,\n                    JSON_ARRAYAGG(term_taxonomy.id) as taxonomy_term_ids\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id\n                JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id\n                JOIN term on term_taxonomy.term_id = term.id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND type.name IN (\"applet\", \"article\", \"course\", \"text-exercise\",\n                                      \"text-exercise-group\", \"video\")\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
   },
   "e14024e5584079e74f13206f1cea5284f06572386a8ee1aecb54348fd4afda13": {
     "describe": {

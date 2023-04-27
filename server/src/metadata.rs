@@ -193,7 +193,7 @@ pub mod entities_metadata_query {
                                     .map(|key| key.to_string())
                                     .and_then(|key| map.get(&key))
                                     .and_then(|value| value.as_str())
-                                    .map(|name| String::from(name))
+                                    .map(String::from)
                             })
                         })
                         // Since we have a left join on term_taxonomy_entity we whould never hit
@@ -205,7 +205,7 @@ pub mod entities_metadata_query {
                 let is_part_of: Vec<LinkedNode> = result.taxonomy_term_ids.as_ref()
                     .and_then(|value| value.as_array())
                     .map(|ids| {
-                        ids.into_iter()
+                        ids.iter()
                            .filter_map(|element| element.as_i64())
                            // Since the query returns the same taxonomy term id for each parameter
                            // in `entity_revision_field` we need to remove duplicates from the list
@@ -244,7 +244,7 @@ pub mod entities_metadata_query {
                     license: LinkedNode { id: result.license_url},
                     maintainer: publisher_id.clone(),
                     name,
-                    publisher: vec![ LinkedNode { id: publisher_id.clone() }],
+                    publisher: vec![ LinkedNode { id: publisher_id }],
                     is_part_of,
                     version: get_iri(result.version.unwrap())
                 }

@@ -186,7 +186,7 @@ mod entities_metadata_query {
     async fn returns_metadata_for_exercises() {
         Message::new(
             "EntitiesMetadataQuery",
-            json!({ "first": 1, "after": 2327 }),
+            json!({ "first": 1, "after": 2822 }),
         )
         .execute()
         .await
@@ -202,43 +202,55 @@ mod entities_metadata_query {
                   "id": "@id"
                 }
               ],
-              "id": "https://serlo.org/2331",
+              "id": "https://serlo.org/2823",
               "type": [
                 "LearningResource",
                 "Quiz"
               ],
-              "dateCreated": "2014-03-01T20:55:29+00:00",
-              "dateModified": "2014-03-10T14:33:05+00:00",
+              "dateCreated": "2014-03-01T21:02:56+00:00",
+              "dateModified": "2014-03-01T21:02:56+00:00",
               "description": null,
               "headline": null,
               "identifier": {
                 "propertyID": "UUID",
                 "type": "PropertyValue",
-                "value": 2331
+                "value": 2823
               },
               "inLanguage": [
                 "de"
               ],
               "isAccessibleForFree": true,
               "isFamilyFriendly": true,
+              "isPartOf": [
+                {
+                  "id": "https://serlo.org/25614"
+                }
+              ],
               "learningResourceType": [
-                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
-                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
-                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
-                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
+                {
+                  "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice"
+                },
+                {
+                  "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment"
+                },
+                {
+                  "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page"
+                },
+                {
+                  "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki"
+                }
               ],
               "license": {
                 "id": "https://creativecommons.org/licenses/by-sa/4.0/"
               },
               "maintainer": "https://serlo.org/",
-              "name": "Quiz: https://serlo.org/2331",
-              "isPartOf": [{ "id": "https://serlo.org/1308" }],
+              "name": "Aufgabe#2823 in \"Aufgaben zum Thema Ergebnisraum oder Ergebnismenge\"",
               "publisher": [
                 {
                   "id": "https://serlo.org/"
                 }
               ],
-              "version": "https://serlo.org/16573"
+              "version": "https://serlo.org/2824"
             }
           ]
         }));
@@ -293,7 +305,7 @@ mod entities_metadata_query {
                 "id": "https://creativecommons.org/licenses/by-sa/4.0/"
               },
               "maintainer": "https://serlo.org/",
-              "name": "Quiz: https://serlo.org/2217",
+              "name": "Aufgabengruppe#2217 in \"Sachaufgaben\"",
               "isPartOf": [
                 { "id": "https://serlo.org/21804" },
                 { "id": "https://serlo.org/25726" },

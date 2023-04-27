@@ -224,7 +224,7 @@ mod create_mutation {
                         from_value_to_entity_type(result["__typename"].clone()),
                         entity.typename
                     );
-                    assert_eq!(result["licenseId"], 1 as i32);
+                    assert_eq!(result["licenseId"], 1_i32);
                     assert_eq!(result["instance"], "de");
                 });
 
@@ -382,7 +382,7 @@ mod create_mutation {
                         "content": "content",
                     },
                 },
-                "userId": 1 as i32,
+                "userId": 1_i32,
             }),
         )
         .execute()
@@ -410,7 +410,7 @@ mod create_mutation {
                         "metaDescription": "metaDescription"
                     },
                 },
-                "userId": 1 as i32,
+                "userId": 1_i32,
             }),
         )
         .execute()
@@ -538,7 +538,7 @@ mod set_license_mutation {
 
         Message::new(
             "EventsQuery",
-            json!({ "first": 1 as usize, "objectId": entity_id as usize}),
+            json!({ "first": 1_usize, "objectId": entity_id as usize}),
         )
         .execute_on(&mut transaction)
         .await
@@ -592,7 +592,7 @@ mod set_license_mutation {
 
         Message::new(
             "EventsQuery",
-            json!({ "first": 1 as usize, "objectId": entity_id as usize}),
+            json!({ "first": 1_usize, "objectId": entity_id as usize}),
         )
         .execute_on(&mut transaction)
         .await

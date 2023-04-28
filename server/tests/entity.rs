@@ -194,6 +194,12 @@ mod create_mutation {
         for entity in EntityTestWrapper::all().iter() {
             let mut transaction = begin_transaction().await;
 
+            let parent_id = if entity.typename == EntityType::Solution {
+                // cannot create solution for parent_id that already has solution
+                Some(4827)
+            } else {
+                entity.parent_id
+            };
             let new_entity_id = Message::new(
                 "EntityCreateMutation",
                 json!({
@@ -204,7 +210,7 @@ mod create_mutation {
                         "subscribeThisByEmail": false,
                         "licenseId": 1,
                         "taxonomyTermId": entity.taxonomy_term_id,
-                        "parentId": entity.parent_id,
+                        "parentId": parent_id,
                         "needsReview": false,
                         "fields": entity.fields(),
                     },
@@ -243,7 +249,7 @@ mod create_mutation {
                     ),
                     None => (
                         "CreateEntityLinkNotificationEvent",
-                        entity.parent_id.unwrap(),
+                        parent_id.unwrap(),
                         new_entity_id.as_i64().unwrap() as i32,
                     ),
                 };

@@ -290,6 +290,99 @@ mod create_mutation {
     }
 
     #[actix_rt::test]
+    async fn creates_no_second_solution_for_same_exercise() {
+        let mut transaction = begin_transaction().await;
+
+        let id_new_exercise = Message::new(
+            "EntityCreateMutation",
+            json!({
+                    "entityType": EntityType::Exercise,
+                    "input": {
+                        "changes": "Creating a new exercise",
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "licenseId": 1,
+                        "taxonomyTermId": Some(7),
+                        "parentId": Option::<i32>::None,
+                        "needsReview": false,
+                        "fields": std::collections::HashMap::from([
+                ("content", "I am a new exercise!"),
+                ("description", "test description"),
+                ("metaDescription", "test metaDescription"),
+                ("metaTitle", "test metaTitle"),
+                ("title", "test title"),
+                ("url", "test url"),
+                ("cohesive", "true"),
+            ]),
+                    },
+                    "userId": 1,
+                }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .get_json()["id"]
+            .clone();
+
+        Message::new(
+            "EntityCreateMutation",
+            json!({
+                    "entityType": EntityType::Solution,
+                    "input": {
+                        "changes": "Creating a solution",
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "licenseId": 1,
+                        "taxonomyTermId": Option::<i32>::None,
+                        "parentId": id_new_exercise,
+                        "needsReview": false,
+                        "fields": std::collections::HashMap::from([
+                ("content", "I am a new solution!"),
+                ("description", "test description"),
+                ("metaDescription", "test metaDescription"),
+                ("metaTitle", "test metaTitle"),
+                ("title", "test title"),
+                ("url", "test url"),
+                ("cohesive", "true"),
+            ]),
+                    },
+                    "userId": 1,
+                }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok();
+
+        Message::new(
+            "EntityCreateMutation",
+            json!({
+                    "entityType": EntityType::Solution,
+                    "input": {
+                        "changes": "Creating another solution for the same exercise",
+                        "subscribeThis": false,
+                        "subscribeThisByEmail": false,
+                        "licenseId": 1,
+                        "taxonomyTermId": Option::<i32>::None,
+                        "parentId": id_new_exercise,
+                        "needsReview": false,
+                        "fields": std::collections::HashMap::from([
+                ("content", "I am another solution!"),
+                ("description", "test description"),
+                ("metaDescription", "test metaDescription"),
+                ("metaTitle", "test metaTitle"),
+                ("title", "test title"),
+                ("url", "test url"),
+                ("cohesive", "true"),
+            ]),
+                    },
+                    "userId": 1,
+                }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
     async fn puts_newly_created_entity_as_last_sibling() {
         for entity in EntityTestWrapper::all().iter() {
             let mut transaction = begin_transaction().await;

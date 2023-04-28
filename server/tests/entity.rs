@@ -186,113 +186,129 @@ mod add_revision_mutation {
 }
 
 mod create_mutation {
+    use rstest::*;
     use server::uuid::EntityType;
     use test_utils::*;
 
+    #[rstest]
+    #[case(EntityType::Applet, Some(7), Option::<i32>::None)]
+    #[case(EntityType::Article, Some(7), Option::<i32>::None)]
+    #[case(EntityType::Course, Some(7), Option::<i32>::None)]
+    #[case(EntityType::CoursePage, Option::<i32>::None, Some(18514))]
+    #[case(EntityType::Event, Some(7), Option::<i32>::None)]
+    #[case(EntityType::Exercise, Some(7), Option::<i32>::None)]
+    #[case(EntityType::ExerciseGroup, Some(7), Option::<i32>::None)]
+    #[case(EntityType::GroupedExercise, Option::<i32>::None, Some(2217))]
+    #[case(EntityType::Solution, Option::<i32>::None, Some(4827))]
+    #[case(EntityType::Video, Some(7), Option::<i32>::None)]
     #[actix_rt::test]
-    async fn creates_entity() {
-        for entity in EntityTestWrapper::all().iter() {
-            let mut transaction = begin_transaction().await;
+    async fn creates_entity(
+        #[case] entity_type: EntityType,
+        #[case] taxonomy_term_id: Option<i32>,
+        #[case] parent_id: Option<i32>,
+    ) {
+        let mut transaction = begin_transaction().await;
 
-            let parent_id = if entity.typename == EntityType::Solution {
-                // cannot create solution for parent_id that already has solution
-                Some(4827)
-            } else {
-                entity.parent_id
-            };
-            let new_entity_id = Message::new(
-                "EntityCreateMutation",
-                json!({
-                    "entityType": entity.typename,
-                    "input": {
-                        "changes": "test changes",
-                        "subscribeThis": false,
-                        "subscribeThisByEmail": false,
-                        "licenseId": 1,
-                        "taxonomyTermId": entity.taxonomy_term_id,
-                        "parentId": parent_id,
-                        "needsReview": false,
-                        "fields": entity.fields(),
-                    },
-                    "userId": 1,
-                }),
-            )
-            .execute_on(&mut transaction)
-            .await
-            .get_json()["id"]
-                .clone();
+        let new_entity_id = Message::new(
+            "EntityCreateMutation",
+            json!({
+                            "entityType": entity_type,
+                            "input": {
+                                "changes": "test changes",
+                                "subscribeThis": false,
+                                "subscribeThisByEmail": false,
+                                "licenseId": 1,
+                                "taxonomyTermId": taxonomy_term_id,
+                                "parentId": parent_id,
+                                "needsReview": false,
+                                "fields": std::collections::HashMap::from([
+                            ("content", "I am a new exercise!"),
+                            ("description", "test description"),
+                            ("metaDescription", "test metaDescription"),
+                            ("metaTitle", "test metaTitle"),
+                            ("title", "test title"),
+                            ("url", "test url"),
+                            ("cohesive", "true"),
+            ]),
+                            },
+                            "userId": 1,
+                        }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .get_json()["id"]
+            .clone();
 
-            Message::new("UuidQuery", json!({ "id": new_entity_id }))
-                .execute_on(&mut transaction)
-                .await
-                .should_be_ok_with(|result| {
-                    assert_eq!(
-                        from_value_to_entity_type(result["__typename"].clone()),
-                        entity.typename
-                    );
-                    assert_eq!(result["licenseId"], 1_i32);
-                    assert_eq!(result["instance"], "de");
-                });
-
-            Message::new(
-                "EventsQuery",
-                json!({ "first": 4, "objectId": new_entity_id }),
-            )
+        Message::new("UuidQuery", json!({ "id": new_entity_id }))
             .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
-                let (parent_event_name, parent_id, object_id) = match entity.taxonomy_term_id {
-                    Some(taxonomy_term_id) => (
-                        "CreateTaxonomyLinkNotificationEvent",
-                        taxonomy_term_id,
-                        taxonomy_term_id,
-                    ),
-                    None => (
-                        "CreateEntityLinkNotificationEvent",
-                        parent_id.unwrap(),
-                        new_entity_id.as_i64().unwrap() as i32,
-                    ),
-                };
-                assert_json_include!(
-                    actual: &result["events"][0],
-                    expected: json!({
-                        "__typename": "CheckoutRevisionNotificationEvent",
-                        "instance": "de",
-                        "actorId": 1,
-                        "repositoryId": new_entity_id
-                    })
+                assert_eq!(
+                    from_value_to_entity_type(result["__typename"].clone()),
+                    entity_type
                 );
-                assert_json_include!(
-                    actual: &result["events"][1],
-                    expected: json!({
-                        "__typename": "CreateEntityRevisionNotificationEvent",
-                        "instance": "de",
-                        "actorId": 1,
-                        "entityId": new_entity_id
-                    })
-                );
-                assert_json_include!(
-                    actual: &result["events"][2],
-                    expected: json!({
-                        "__typename": "CreateEntityNotificationEvent",
-                        "instance": "de",
-                        "actorId": 1,
-                        "entityId": new_entity_id
-                    })
-                );
-                assert_json_include!(
-                    actual: &result["events"][3],
-                    expected: json!({
-                        "__typename": parent_event_name,
-                        "instance": "de",
-                        "actorId": 1,
-                        "objectId": object_id,
-                        "parentId": parent_id,
-                        "childId": new_entity_id
-                    })
-                );
+                assert_eq!(result["licenseId"], 1_i32);
+                assert_eq!(result["instance"], "de");
             });
-        }
+
+        Message::new(
+            "EventsQuery",
+            json!({ "first": 4, "objectId": new_entity_id }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with(|result| {
+            let (parent_event_name, parent_id, object_id) = match taxonomy_term_id {
+                Some(taxonomy_term_id) => (
+                    "CreateTaxonomyLinkNotificationEvent",
+                    taxonomy_term_id,
+                    taxonomy_term_id,
+                ),
+                None => (
+                    "CreateEntityLinkNotificationEvent",
+                    parent_id.unwrap(),
+                    new_entity_id.as_i64().unwrap() as i32,
+                ),
+            };
+            assert_json_include!(
+                actual: &result["events"][0],
+                expected: json!({
+                    "__typename": "CheckoutRevisionNotificationEvent",
+                    "instance": "de",
+                    "actorId": 1,
+                    "repositoryId": new_entity_id
+                })
+            );
+            assert_json_include!(
+                actual: &result["events"][1],
+                expected: json!({
+                    "__typename": "CreateEntityRevisionNotificationEvent",
+                    "instance": "de",
+                    "actorId": 1,
+                    "entityId": new_entity_id
+                })
+            );
+            assert_json_include!(
+                actual: &result["events"][2],
+                expected: json!({
+                    "__typename": "CreateEntityNotificationEvent",
+                    "instance": "de",
+                    "actorId": 1,
+                    "entityId": new_entity_id
+                })
+            );
+            assert_json_include!(
+                actual: &result["events"][3],
+                expected: json!({
+                    "__typename": parent_event_name,
+                    "instance": "de",
+                    "actorId": 1,
+                    "objectId": object_id,
+                    "parentId": parent_id,
+                    "childId": new_entity_id
+                })
+            );
+        });
     }
 
     #[actix_rt::test]

@@ -1673,6 +1673,31 @@
     },
     "query": "update page_revision set author_id = ? where author_id = ?"
   },
+  "6a9056fc9d69c25c1bb3f87526464568662533c708175822fd8c6ed93cd9d1b3": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT uuid.id \n                 FROM entity_link JOIN uuid ON uuid.id = entity_link.id \n                 WHERE uuid.trashed = 0 AND parent_id = ?"
+  },
   "6b867595e8308dd97239e5dcba9b9bc26453fac7aaecbc238e00a16a0a32bcc5": {
     "describe": {
       "columns": [
@@ -2161,6 +2186,31 @@
     },
     "query": "\n                SELECT id\n                FROM role\n                WHERE name = ?\n            "
   },
+  "8dac116cbf86950cf2a505bae21847b2253934a97aebcbd3097be3f790a29795": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                SELECT c.id\n                    FROM entity_link l\n                    JOIN entity c on c.id = l.child_id\n                    JOIN uuid on uuid.id = c.id\n                    JOIN type t ON t.id = c.type_id\n                    WHERE l.parent_id = ? AND t.name = ? AND uuid.trashed = 0\n                    ORDER BY l.order ASC\n            "
+  },
   "8dd3fc6942998b7d2a7ad952f1955d94200c059334920a22ff5746302b550ffd": {
     "describe": {
       "columns": [
@@ -2356,31 +2406,6 @@
       }
     },
     "query": "\n                        UPDATE page_repository\n                            SET current_revision_id = ?\n                            WHERE id = ?\n                    "
-  },
-  "946cb29201730400fa27ad703aab47a0268fadb1d6a4fe37e92789fef15eed02": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                SELECT c.id\n                    FROM entity_link l\n                    JOIN entity c on c.id = l.child_id\n                    JOIN type t ON t.id = c.type_id\n                    WHERE l.parent_id = ? AND t.name = ?\n                    ORDER BY l.order ASC\n            "
   },
   "94c2ed2ebecab18a1e77b2e02f2aa629296f21d012fdfb6dd0e0b7916ea9c9d8": {
     "describe": {
@@ -3702,7 +3727,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4105
+              "bits": 4097
             },
             "max_size": 1020,
             "type": "VarString"
@@ -3800,7 +3825,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4105
+              "bits": 4097
             },
             "max_size": 1020,
             "type": "VarString"
@@ -4254,7 +4279,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4105
+              "bits": 4097
             },
             "max_size": 1020,
             "type": "VarString"

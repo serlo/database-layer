@@ -588,7 +588,9 @@ impl Entity {
 
         if payload.entity_type == EntityType::Solution
             && sqlx::query!(
-                "SELECT id FROM entity_link WHERE parent_id = ?",
+                "SELECT uuid.id 
+                 FROM entity_link JOIN uuid ON uuid.id = entity_link.id 
+                 WHERE uuid.trashed = 0 AND parent_id = ?",
                 payload
                     .input
                     .parent_id

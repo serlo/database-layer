@@ -75,6 +75,31 @@
     },
     "query": "\n                    SELECT count(*) AS quantity FROM term_taxonomy_entity\n                        WHERE entity_id = ?\n                "
   },
+  "0450d413feb24d5c285f016ff504d889c14a280eb2628bd6b6ff2a0cf3a1c722": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 515
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT uuid.id \n                 FROM entity_link JOIN uuid ON uuid.id = entity_link.child_id\n                 WHERE uuid.trashed = 0 AND parent_id = ?"
+  },
   "04912efa922c870efb5268ef2a98a82dfa657b084a50c91b89031388c514de65": {
     "describe": {
       "columns": [
@@ -1672,31 +1697,6 @@
       }
     },
     "query": "update page_revision set author_id = ? where author_id = ?"
-  },
-  "6a9056fc9d69c25c1bb3f87526464568662533c708175822fd8c6ed93cd9d1b3": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 515
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "SELECT uuid.id \n                 FROM entity_link JOIN uuid ON uuid.id = entity_link.id \n                 WHERE uuid.trashed = 0 AND parent_id = ?"
   },
   "6b867595e8308dd97239e5dcba9b9bc26453fac7aaecbc238e00a16a0a32bcc5": {
     "describe": {

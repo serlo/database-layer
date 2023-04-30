@@ -441,8 +441,8 @@ impl Entity {
         E: Executor<'a>,
     {
         let children = Self::find_children_by_id_and_type(id, child_type, executor).await?;
-        let non_trashed_children = children.iter().filter(|(id_, trashed)| !trashed);
-        let first_non_trashed_child = non_trashed_children.map(|(id, trashed_)| *id).next();
+        let non_trashed_children = children.iter().filter(|(_id, trashed)| !trashed);
+        let first_non_trashed_child = non_trashed_children.map(|(id, _trashed)| *id).next();
         Ok(first_non_trashed_child)
     }
 }

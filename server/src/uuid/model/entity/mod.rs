@@ -1118,7 +1118,7 @@ mod tests {
     use crate::{create_database_pool, operation};
 
     #[actix_rt::test]
-    async fn no_trashed_returned_by_find_children_by_id_and_type() {
+    async fn no_trashed_returned_by_find_child_by_id_and_type() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
     }

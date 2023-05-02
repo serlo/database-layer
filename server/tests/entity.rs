@@ -311,8 +311,8 @@ mod create_mutation {
         });
     }
 
-    #[actix_rt::test]
-    async fn creates_no_second_solution_for_same_exercise() {
+    #[fixture]
+    async fn exercise_with_solution<'a>() -> (sqlx::Transaction<'a, sqlx::MySql>, Value, Value) {
         let mut transaction = begin_transaction().await;
 
         let id_new_exercise = Message::new(
@@ -345,7 +345,7 @@ mod create_mutation {
         .get_json()["id"]
             .clone();
 
-        Message::new(
+        let id_solution = Message::new(
             "EntityCreateMutation",
             json!({
                 "entityType": EntityType::Solution,
@@ -372,7 +372,18 @@ mod create_mutation {
         )
         .execute_on(&mut transaction)
         .await
-        .should_be_ok();
+        .get_json()["id"]
+            .clone();
+
+        (transaction, id_new_exercise, id_solution)
+    }
+
+    #[rstest]
+    #[actix_rt::test]
+    async fn creates_no_second_solution_for_same_exercise<'a>(
+        #[future] exercise_with_solution: (sqlx::Transaction<'a, sqlx::MySql>, Value, Value),
+    ) {
+        let (mut transaction, id_new_exercise, _) = exercise_with_solution.await;
 
         Message::new(
             "EntityCreateMutation",
@@ -404,69 +415,12 @@ mod create_mutation {
         .should_be_bad_request();
     }
 
+    #[rstest]
     #[actix_rt::test]
-    async fn creates_new_solution_for_exercise_if_existing_solution_is_trashed() {
-        let mut transaction = begin_transaction().await;
-
-        let id_new_exercise = Message::new(
-            "EntityCreateMutation",
-            json!({
-                "entityType": EntityType::Exercise,
-                "input": {
-                    "changes": "Creating a new exercise",
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "licenseId": 1,
-                    "taxonomyTermId": Some(7),
-                    "parentId": Option::<i32>::None,
-                    "needsReview": false,
-                    "fields": std::collections::HashMap::from([
-                        ("content", "I am a new exercise!"),
-                        ("description", "test description"),
-                        ("metaDescription", "test metaDescription"),
-                        ("metaTitle", "test metaTitle"),
-                        ("title", "test title"),
-                        ("url", "test url"),
-                        ("cohesive", "true"),
-                    ]),
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await
-        .get_json()["id"]
-            .clone();
-
-        let id_first_solution = Message::new(
-            "EntityCreateMutation",
-            json!({
-                "entityType": EntityType::Solution,
-                "input": {
-                    "changes": "Creating a solution",
-                    "subscribeThis": false,
-                    "subscribeThisByEmail": false,
-                    "licenseId": 1,
-                    "taxonomyTermId": Option::<i32>::None,
-                    "parentId": id_new_exercise,
-                    "needsReview": false,
-                    "fields": std::collections::HashMap::from([
-                        ("content", "I am a new solution!"),
-                        ("description", "test description"),
-                        ("metaDescription", "test metaDescription"),
-                        ("metaTitle", "test metaTitle"),
-                        ("title", "test title"),
-                        ("url", "test url"),
-                        ("cohesive", "true"),
-                    ]),
-                },
-                "userId": 1,
-            }),
-        )
-        .execute_on(&mut transaction)
-        .await
-        .get_json()["id"]
-            .clone();
+    async fn creates_new_solution_for_exercise_if_existing_solution_is_trashed<'a>(
+        #[future] exercise_with_solution: (sqlx::Transaction<'a, sqlx::MySql>, Value, Value),
+    ) {
+        let (mut transaction, id_new_exercise, id_first_solution) = exercise_with_solution.await;
 
         Message::new(
             "UuidSetStateMutation",

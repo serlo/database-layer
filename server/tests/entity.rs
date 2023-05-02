@@ -405,7 +405,7 @@ mod create_mutation {
     }
 
     #[actix_rt::test]
-    async fn creates_new_solution_for_exercise_if_existing_exercise_is_trashed() {
+    async fn creates_new_solution_for_exercise_if_existing_solution_is_trashed() {
         let mut transaction = begin_transaction().await;
 
         let id_new_exercise = Message::new(
@@ -468,14 +468,12 @@ mod create_mutation {
         .get_json()["id"]
             .clone();
 
-        let revision_id_first_solution = 1; // TODO: get using id_first_solution
-
         Message::new(
-            "EntityRejectRevisionMutation",
+            "UuidSetStateMutation",
             json!({
-                "revisionId": revision_id_first_solution,
+                "ids": [id_first_solution],
                 "userId": 1,
-                "reason": "We need the first solution trashed for the test"
+                "trashed": true
             }),
         )
         .execute_on(&mut transaction)

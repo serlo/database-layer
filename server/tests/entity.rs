@@ -318,27 +318,27 @@ mod create_mutation {
         let id_new_exercise = Message::new(
             "EntityCreateMutation",
             json!({
-                    "entityType": EntityType::Exercise,
-                    "input": {
-                        "changes": "Creating a new exercise",
-                        "subscribeThis": false,
-                        "subscribeThisByEmail": false,
-                        "licenseId": 1,
-                        "taxonomyTermId": Some(7),
-                        "parentId": Option::<i32>::None,
-                        "needsReview": false,
-                        "fields": std::collections::HashMap::from([
-                ("content", "I am a new exercise!"),
-                ("description", "test description"),
-                ("metaDescription", "test metaDescription"),
-                ("metaTitle", "test metaTitle"),
-                ("title", "test title"),
-                ("url", "test url"),
-                ("cohesive", "true"),
-            ]),
-                    },
-                    "userId": 1,
-                }),
+                "entityType": EntityType::Exercise,
+                "input": {
+                    "changes": "Creating a new exercise",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "taxonomyTermId": Some(7),
+                    "parentId": Option::<i32>::None,
+                    "needsReview": false,
+                    "fields": std::collections::HashMap::from([
+                        ("content", "I am a new exercise!"),
+                        ("description", "test description"),
+                        ("metaDescription", "test metaDescription"),
+                        ("metaTitle", "test metaTitle"),
+                        ("title", "test title"),
+                        ("url", "test url"),
+                        ("cohesive", "true"),
+                    ]),
+                },
+                "userId": 1,
+            }),
         )
         .execute_on(&mut transaction)
         .await
@@ -348,27 +348,27 @@ mod create_mutation {
         Message::new(
             "EntityCreateMutation",
             json!({
-                    "entityType": EntityType::Solution,
-                    "input": {
-                        "changes": "Creating a solution",
-                        "subscribeThis": false,
-                        "subscribeThisByEmail": false,
-                        "licenseId": 1,
-                        "taxonomyTermId": Option::<i32>::None,
-                        "parentId": id_new_exercise,
-                        "needsReview": false,
-                        "fields": std::collections::HashMap::from([
-                ("content", "I am a new solution!"),
-                ("description", "test description"),
-                ("metaDescription", "test metaDescription"),
-                ("metaTitle", "test metaTitle"),
-                ("title", "test title"),
-                ("url", "test url"),
-                ("cohesive", "true"),
-            ]),
-                    },
-                    "userId": 1,
-                }),
+                "entityType": EntityType::Solution,
+                "input": {
+                    "changes": "Creating a solution",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "taxonomyTermId": Option::<i32>::None,
+                    "parentId": id_new_exercise,
+                    "needsReview": false,
+                    "fields": std::collections::HashMap::from([
+                        ("content", "I am a new solution!"),
+                        ("description", "test description"),
+                        ("metaDescription", "test metaDescription"),
+                        ("metaTitle", "test metaTitle"),
+                        ("title", "test title"),
+                        ("url", "test url"),
+                        ("cohesive", "true"),
+                    ]),
+                },
+                "userId": 1,
+            }),
         )
         .execute_on(&mut transaction)
         .await
@@ -377,31 +377,139 @@ mod create_mutation {
         Message::new(
             "EntityCreateMutation",
             json!({
-                    "entityType": EntityType::Solution,
-                    "input": {
-                        "changes": "Creating another solution for the same exercise",
-                        "subscribeThis": false,
-                        "subscribeThisByEmail": false,
-                        "licenseId": 1,
-                        "taxonomyTermId": Option::<i32>::None,
-                        "parentId": id_new_exercise,
-                        "needsReview": false,
-                        "fields": std::collections::HashMap::from([
-                ("content", "I am another solution!"),
-                ("description", "test description"),
-                ("metaDescription", "test metaDescription"),
-                ("metaTitle", "test metaTitle"),
-                ("title", "test title"),
-                ("url", "test url"),
-                ("cohesive", "true"),
-            ]),
-                    },
-                    "userId": 1,
-                }),
+                "entityType": EntityType::Solution,
+                "input": {
+                    "changes": "Creating another solution for the same exercise",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "taxonomyTermId": Option::<i32>::None,
+                    "parentId": id_new_exercise,
+                    "needsReview": false,
+                    "fields": std::collections::HashMap::from([
+                        ("content", "I am another solution!"),
+                        ("description", "test description"),
+                        ("metaDescription", "test metaDescription"),
+                        ("metaTitle", "test metaTitle"),
+                        ("title", "test title"),
+                        ("url", "test url"),
+                        ("cohesive", "true"),
+                    ]),
+                },
+                "userId": 1,
+            }),
         )
         .execute_on(&mut transaction)
         .await
         .should_be_bad_request();
+    }
+
+    #[actix_rt::test]
+    async fn creates_new_solution_for_exercise_if_existing_exercise_is_trashed() {
+        let mut transaction = begin_transaction().await;
+
+        let id_new_exercise = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": EntityType::Exercise,
+                "input": {
+                    "changes": "Creating a new exercise",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "taxonomyTermId": Some(7),
+                    "parentId": Option::<i32>::None,
+                    "needsReview": false,
+                    "fields": std::collections::HashMap::from([
+                        ("content", "I am a new exercise!"),
+                        ("description", "test description"),
+                        ("metaDescription", "test metaDescription"),
+                        ("metaTitle", "test metaTitle"),
+                        ("title", "test title"),
+                        ("url", "test url"),
+                        ("cohesive", "true"),
+                    ]),
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .get_json()["id"]
+            .clone();
+
+        let id_first_solution = Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": EntityType::Solution,
+                "input": {
+                    "changes": "Creating a solution",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "taxonomyTermId": Option::<i32>::None,
+                    "parentId": id_new_exercise,
+                    "needsReview": false,
+                    "fields": std::collections::HashMap::from([
+                        ("content", "I am a new solution!"),
+                        ("description", "test description"),
+                        ("metaDescription", "test metaDescription"),
+                        ("metaTitle", "test metaTitle"),
+                        ("title", "test title"),
+                        ("url", "test url"),
+                        ("cohesive", "true"),
+                    ]),
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .get_json()["id"]
+            .clone();
+
+        let revision_id_first_solution = 1; // TODO: get using id_first_solution
+
+        Message::new(
+            "EntityRejectRevisionMutation",
+            json!({
+                "revisionId": revision_id_first_solution,
+                "userId": 1,
+                "reason": "We need the first solution trashed for the test"
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok();
+
+        Message::new(
+            "EntityCreateMutation",
+            json!({
+                "entityType": EntityType::Solution,
+                "input": {
+                    "changes": "Creating another solution for the same exercise",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "taxonomyTermId": Option::<i32>::None,
+                    "parentId": id_new_exercise,
+                    "needsReview": false,
+                    "fields": std::collections::HashMap::from([
+                        ("content", "I am another solution!"),
+                        ("description", "test description"),
+                        ("metaDescription", "test metaDescription"),
+                        ("metaTitle", "test metaTitle"),
+                        ("title", "test title"),
+                        ("url", "test url"),
+                        ("cohesive", "true"),
+                    ]),
+                },
+                "userId": 1,
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok();
     }
 
     #[actix_rt::test]

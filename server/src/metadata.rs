@@ -58,6 +58,7 @@ pub mod entities_metadata_query {
         schema_type: Vec<String>,
         date_created: String,
         date_modified: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
         description: Option<String>,
         headline: Option<String>,
         identifier: serde_json::Value,
@@ -233,7 +234,12 @@ pub mod entities_metadata_query {
                     description: result.params.as_ref()
                         .and_then(|params| params.get("meta_description"))
                         .and_then(|title| title.as_str())
-                        .map(|title| title.to_string()),
+                        .and_then(|title| {
+                            match title {
+                                "" => None,
+                                _ => Some(title.to_string())
+                            }
+                        }),
                     date_created: result.date_created.to_rfc3339(),
                     date_modified: result.date_modified.to_rfc3339(),
                     headline: title,

@@ -1118,12 +1118,6 @@ mod tests {
     use crate::{create_database_pool, operation};
 
     #[actix_rt::test]
-    async fn no_trashed_returned_by_find_child_by_id_and_type() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-    }
-
-    #[actix_rt::test]
     async fn check_entity_exists_throws_bad_request_error() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();

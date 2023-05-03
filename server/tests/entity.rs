@@ -212,27 +212,27 @@ mod create_mutation {
         let new_entity_id = Message::new(
             "EntityCreateMutation",
             json!({
-                            "entityType": entity_type,
-                            "input": {
-                                "changes": "test changes",
-                                "subscribeThis": false,
-                                "subscribeThisByEmail": false,
-                                "licenseId": 1,
-                                "taxonomyTermId": taxonomy_term_id,
-                                "parentId": parent_id,
-                                "needsReview": false,
-                                "fields": std::collections::HashMap::from([
-                            ("content", "I am a new exercise!"),
-                            ("description", "test description"),
-                            ("metaDescription", "test metaDescription"),
-                            ("metaTitle", "test metaTitle"),
-                            ("title", "test title"),
-                            ("url", "test url"),
-                            ("cohesive", "true"),
-            ]),
-                            },
-                            "userId": 1,
-                        }),
+               "entityType": entity_type,
+               "input": {
+                   "changes": "test changes",
+                    "subscribeThis": false,
+                    "subscribeThisByEmail": false,
+                    "licenseId": 1,
+                    "taxonomyTermId": taxonomy_term_id,
+                    "parentId": parent_id,
+                    "needsReview": false,
+                    "fields": std::collections::HashMap::from([
+                        ("content", "I am a new exercise!"),
+                        ("description", "test description"),
+                        ("metaDescription", "test metaDescription"),
+                        ("metaTitle", "test metaTitle"),
+                        ("title", "test title"),
+                        ("url", "test url"),
+                        ("cohesive", "true"),
+                   ]),
+                },
+                "userId": 1,
+            }),
         )
         .execute_on(&mut transaction)
         .await

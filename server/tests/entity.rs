@@ -13,7 +13,7 @@ mod unrevised_entities_query {
 }
 
 mod add_revision_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn adds_revision() {
@@ -188,7 +188,7 @@ mod add_revision_mutation {
 mod create_mutation {
     use rstest::*;
     use server::uuid::EntityType;
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[rstest]
     #[case(EntityType::Applet, Some(7), Option::<i32>::None)]
@@ -643,7 +643,7 @@ mod create_mutation {
 }
 
 mod deleted_entities_query {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn gives_back_first_deleted_entities() {
@@ -736,7 +736,7 @@ mod deleted_entities_query {
 }
 
 mod set_license_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn sets_license_and_creates_new_event() {
@@ -831,7 +831,7 @@ mod set_license_mutation {
 }
 
 mod sort_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn sorts_children() {

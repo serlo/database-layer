@@ -13,7 +13,7 @@ mod user_activity_by_type_query {
 }
 
 mod user_add_role_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn adds_role_to_user() {
@@ -106,7 +106,7 @@ mod user_add_role_mutation {
 }
 
 mod user_create_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn creates_an_user() {
@@ -203,7 +203,7 @@ mod user_delete_bots_mutation {
 }
 
 mod user_delete_regular_users_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn deletes_a_user_permanently() {
@@ -616,7 +616,7 @@ mod user_by_role_query {
 }
 
 mod user_set_description_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn updates_user_description() {
@@ -655,7 +655,7 @@ mod user_set_description_mutation {
 }
 
 mod user_set_email_mutation {
-    use test_utils::*;
+    use test_utils::{assert_eq, *};
 
     #[actix_rt::test]
     async fn updates_user_email() {

@@ -383,7 +383,7 @@ mod create_mutation {
     async fn creates_no_second_solution_for_same_exercise<'a>(
         #[future] exercise_with_solution: (sqlx::Transaction<'a, sqlx::MySql>, Value, Value),
     ) {
-        let (mut transaction, id_new_exercise, _) = exercise_with_solution.await;
+        let (mut transaction, id_new_exercise, _id_first_solution) = exercise_with_solution.await;
 
         Message::new(
             "EntityCreateMutation",
@@ -462,6 +462,54 @@ mod create_mutation {
         .execute_on(&mut transaction)
         .await
         .should_be_ok();
+    }
+
+    #[rstest]
+    #[actix_rt::test]
+    async fn trashed_solution_is_not_returned_with_exercise<'a>(
+        #[future] exercise_with_solution: (sqlx::Transaction<'a, sqlx::MySql>, Value, Value),
+    ) {
+        let (mut transaction, id_exercise, id_solution) = exercise_with_solution.await;
+
+        Message::new(
+            "UuidSetStateMutation",
+            json!({
+                "ids": [id_solution],
+                "userId": 1,
+                "trashed": true
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok();
+
+        Message::new("UuidQuery", json!({ "id": id_exercise }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(
+                    result["solutionIds"],
+                    to_value(serde_json::Value::Null).unwrap()
+                );
+            });
+    }
+
+    #[rstest]
+    #[actix_rt::test]
+    async fn non_trashed_solution_is_returned_with_exercise<'a>(
+        #[future] exercise_with_solution: (sqlx::Transaction<'a, sqlx::MySql>, Value, Value),
+    ) {
+        let (mut transaction, id_exercise, id_solution) = exercise_with_solution.await;
+
+        Message::new("UuidQuery", json!({ "id": id_exercise }))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with(|result| {
+                assert_eq!(
+                    result["solutionIds"],
+                    to_value(id_solution.as_array()).unwrap()
+                );
+            });
     }
 
     #[actix_rt::test]

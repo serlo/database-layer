@@ -388,7 +388,10 @@ mod entities_metadata_query {
     async fn shows_description_if_not_empty_nor_null() {
         let mut transaction = begin_transaction().await;
 
-        sqlx::query!(r#"update entity_revision_field set value = "description for entity 2153" where id = 41509;"#)
+        sqlx::query!(r#"
+            update entity_revision_field set value = "description for entity 2153"
+            where id = 41509 and field = "meta_description";
+        "#)
         .execute(&mut transaction)
         .await
         .unwrap();

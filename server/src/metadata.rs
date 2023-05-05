@@ -234,12 +234,8 @@ pub mod entities_metadata_query {
                     description: result.params.as_ref()
                         .and_then(|params| params.get("meta_description"))
                         .and_then(|title| title.as_str())
-                        .and_then(|title| {
-                            match title {
-                                "" => None,
-                                _ => Some(title.to_string())
-                            }
-                        }),
+                        .filter(|title| !title.is_empty())
+                        .map(|title| title.to_string()),
                     date_created: result.date_created.to_rfc3339(),
                     date_modified: result.date_modified.to_rfc3339(),
                     headline: title,

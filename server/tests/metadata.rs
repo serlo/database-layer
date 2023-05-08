@@ -217,7 +217,6 @@ mod entities_metadata_query {
                   ],
                   "dateCreated": "2014-03-17T12:22:17+00:00",
                   "dateModified": "2014-09-16T07:47:55+00:00",
-                  "description": null,
                   "headline": "Überblick zum Satz des Pythagoras",
                   "identifier": {
                     "propertyID": "UUID",

@@ -42,7 +42,6 @@ mod entities_metadata_query {
                   ],
                   "dateCreated": "2014-03-01T20:36:44+00:00",
                   "dateModified": "2014-10-31T15:56:50+00:00",
-                  "description": null,
                   "headline": "Addition",
                   "identifier": {
                     "type": "PropertyValue",
@@ -136,7 +135,6 @@ mod entities_metadata_query {
                 ],
                 "dateCreated": "2020-01-29T17:47:19+00:00",
                 "dateModified": "2020-01-29T17:48:54+00:00",
-                "description": "",
                 "headline": "Example applet",
                 "identifier": {
                   "propertyID": "UUID",
@@ -313,7 +311,6 @@ mod entities_metadata_query {
               ],
               "dateCreated": "2014-03-01T21:02:56+00:00",
               "dateModified": "2014-03-01T21:02:56+00:00",
-              "description": null,
               "headline": null,
               "identifier": {
                 "propertyID": "UUID",
@@ -416,7 +413,6 @@ mod entities_metadata_query {
               ],
               "dateCreated": "2014-03-01T20:54:51+00:00",
               "dateModified": "2014-03-01T20:54:51+00:00",
-              "description": null,
               "headline": null,
               "identifier": {
                 "propertyID": "UUID",
@@ -510,7 +506,6 @@ mod entities_metadata_query {
               ],
               "dateCreated": "2014-03-17T16:18:44+00:00",
               "dateModified": "2014-05-01T09:22:14+00:00",
-              "description": null,
               "headline": "Satz des Pythagoras",
               "identifier": {
                 "propertyID": "UUID",
@@ -558,6 +553,37 @@ mod entities_metadata_query {
 
         assert_eq!(expected_response, actual_response);
       });
+    }
+
+    #[actix_rt::test]
+    async fn shows_description_if_not_empty_nor_null() {
+        let mut transaction = begin_transaction().await;
+
+        sqlx::query!(
+            r#"
+            update entity_revision_field set value = "description for entity 2153"
+            where id = 41509 and field = "meta_description";
+        "#
+        )
+        .execute(&mut transaction)
+        .await
+        .unwrap();
+
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 2152 }),
+        )
+        .execute_on(&mut transaction)
+        .await
+        .should_be_ok_with(|result| {
+            assert_json_include!(
+              actual: &result["entities"][0],
+              expected: json!({
+                  "id": "https://serlo.org/2153",
+                  "description": "description for entity 2153"
+              })
+            )
+        });
     }
 
     #[actix_rt::test]

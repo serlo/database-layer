@@ -1,4 +1,5 @@
 mod entities_metadata_query {
+    use chrono::{DateTime, Duration, Utc};
     use std::time::{SystemTime, UNIX_EPOCH};
     use test_utils::{assert_eq, *};
 
@@ -7,7 +8,22 @@ mod entities_metadata_query {
         Message::new("EntitiesMetadataQuery", json!({ "first": 1 }))
             .execute()
             .await
-            .should_be_ok_with_body(json!({
+            .should_be_ok_with(|actual_response| {
+        let actual_date_created = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_created + Duration::seconds(1));
+
+        let actual_date_modified = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
+
+        let expected_response = json!({
               "entities": [
                 {
                   "@context": [
@@ -47,6 +63,16 @@ mod entities_metadata_query {
                   "license": {
                     "id": "https://creativecommons.org/licenses/by-sa/4.0/"
                   },
+                 "mainEntityOfPage": {
+                        "id": "https://serlo.org/metadata-api",
+                        "provide": {
+                            "id": "https://serlo.org",
+                            "type": "Organization",
+                            "name": "Serlo Education e. V."
+                        },
+                        "dateCreated": actual_date_created,
+                        "dateModified": actual_date_modified,
+                    },
                   "maintainer": "https://serlo.org/",
                   "name": "Addition",
                   "isPartOf": [
@@ -63,7 +89,9 @@ mod entities_metadata_query {
                   "version": "https://serlo.org/32614"
                 }
               ]
-            }));
+            });
+        assert_eq!(expected_response, actual_response);
+      });
     }
 
     #[actix_rt::test]

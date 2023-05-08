@@ -1,4 +1,5 @@
 mod entities_metadata_query {
+    use chrono::{DateTime, Duration, Utc};
     use std::time::{SystemTime, UNIX_EPOCH};
     use test_utils::{assert_eq, *};
 
@@ -7,7 +8,22 @@ mod entities_metadata_query {
         Message::new("EntitiesMetadataQuery", json!({ "first": 1 }))
             .execute()
             .await
-            .should_be_ok_with_body(json!({
+            .should_be_ok_with(|actual_response| {
+        let actual_date_created = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_created + Duration::seconds(1));
+
+        let actual_date_modified = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
+
+        let expected_response = json!({
               "entities": [
                 {
                   "@context": [
@@ -46,6 +62,16 @@ mod entities_metadata_query {
                   "license": {
                     "id": "https://creativecommons.org/licenses/by-sa/4.0/"
                   },
+                 "mainEntityOfPage": {
+                        "id": "https://serlo.org/metadata-api",
+                        "provider": {
+                            "id": "https://serlo.org",
+                            "type": "Organization",
+                            "name": "Serlo Education e. V."
+                        },
+                        "dateCreated": actual_date_created,
+                        "dateModified": actual_date_modified,
+                    },
                   "maintainer": "https://serlo.org/",
                   "name": "Addition",
                   "isPartOf": [
@@ -62,7 +88,9 @@ mod entities_metadata_query {
                   "version": "https://serlo.org/32614"
                 }
               ]
-            }));
+            });
+        assert_eq!(expected_response, actual_response);
+      });
     }
 
     #[actix_rt::test]
@@ -73,7 +101,22 @@ mod entities_metadata_query {
         )
         .execute()
         .await
-        .should_be_ok_with_body(json!({
+        .should_be_ok_with(|actual_response| {
+        let actual_date_created = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_created + Duration::seconds(1));
+
+        let actual_date_modified = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
+
+        let expected_response = json!({
             "entities": [
               {
                 "@context": [
@@ -107,6 +150,16 @@ mod entities_metadata_query {
                   { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/demonstration" },
                 ],
                 "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
+                 "mainEntityOfPage": {
+                        "id": "https://serlo.org/metadata-api",
+                        "provider": {
+                            "id": "https://serlo.org",
+                            "type": "Organization",
+                            "name": "Serlo Education e. V."
+                        },
+                        "dateCreated": actual_date_created,
+                        "dateModified": actual_date_modified,
+                    },
                 "maintainer": "https://serlo.org/",
                 "name": "Example applet",
                 "publisher": [{ "id": "https://serlo.org/" }],
@@ -114,7 +167,10 @@ mod entities_metadata_query {
                 "version": "https://serlo.org/35597"
               }
             ]
-        }));
+        });
+
+        assert_eq!(expected_response, actual_response);
+      });
     }
 
     #[actix_rt::test]
@@ -125,61 +181,91 @@ mod entities_metadata_query {
         )
         .execute()
         .await
-        .should_be_ok_with_body(json!({
-          "entities": [
-            {
-              "@context": [
-                "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+        .should_be_ok_with(|actual_response| {
+            let actual_date_created = DateTime::parse_from_rfc3339(
+                &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+                    .as_str()
+                    .unwrap(),
+            )
+            .unwrap();
+            assert!(Utc::now() < actual_date_created + Duration::seconds(1));
+
+            let actual_date_modified = DateTime::parse_from_rfc3339(
+                &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+                    .as_str()
+                    .unwrap(),
+            )
+            .unwrap();
+            assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
+
+            let expected_response = json!({
+              "entities": [
                 {
-                  "@language": "de",
-                  "@vocab": "http://schema.org/",
-                  "type": "@type",
-                  "id": "@id"
+                  "@context": [
+                    "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                    {
+                      "@language": "de",
+                      "@vocab": "http://schema.org/",
+                      "type": "@type",
+                      "id": "@id"
+                    }
+                  ],
+                  "id": "https://serlo.org/18514",
+                  "type": [
+                    "LearningResource",
+                    "Course"
+                  ],
+                  "dateCreated": "2014-03-17T12:22:17+00:00",
+                  "dateModified": "2014-09-16T07:47:55+00:00",
+                  "headline": "Überblick zum Satz des Pythagoras",
+                  "identifier": {
+                    "propertyID": "UUID",
+                    "type": "PropertyValue",
+                    "value": 18514
+                  },
+                  "inLanguage": [
+                    "de"
+                  ],
+                  "interactivityType": "active",
+                  "isAccessibleForFree": true,
+                  "isFamilyFriendly": true,
+                  "learningResourceType": [
+                    { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/course" },
+                    { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/exploration" },
+                    { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
+                    { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
+                  ],
+                  "license": {
+                    "id": "https://creativecommons.org/licenses/by-sa/4.0/"
+                  },
+                     "mainEntityOfPage": {
+                            "id": "https://serlo.org/metadata-api",
+                            "provider": {
+                                "id": "https://serlo.org",
+                                "type": "Organization",
+                                "name": "Serlo Education e. V."
+                            },
+                            "dateCreated": actual_date_created,
+                            "dateModified": actual_date_modified,
+                        },
+                  "maintainer": "https://serlo.org/",
+                  "name": "Überblick zum Satz des Pythagoras",
+                  "isPartOf": [
+                    { "id": "https://serlo.org/1381" },
+                    { "id": "https://serlo.org/16526" },
+                  ],
+                  "publisher": [
+                    {
+                      "id": "https://serlo.org/"
+                    }
+                  ],
+                  "version": "https://serlo.org/30713"
                 }
-              ],
-              "id": "https://serlo.org/18514",
-              "type": [
-                "LearningResource",
-                "Course"
-              ],
-              "dateCreated": "2014-03-17T12:22:17+00:00",
-              "dateModified": "2014-09-16T07:47:55+00:00",
-              "headline": "Überblick zum Satz des Pythagoras",
-              "identifier": {
-                "propertyID": "UUID",
-                "type": "PropertyValue",
-                "value": 18514
-              },
-              "inLanguage": [
-                "de"
-              ],
-              "interactivityType": "active",
-              "isAccessibleForFree": true,
-              "isFamilyFriendly": true,
-              "learningResourceType": [
-                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/course" },
-                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/exploration" },
-                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
-                { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
-              ],
-              "license": {
-                "id": "https://creativecommons.org/licenses/by-sa/4.0/"
-              },
-              "maintainer": "https://serlo.org/",
-              "name": "Überblick zum Satz des Pythagoras",
-              "isPartOf": [
-                { "id": "https://serlo.org/1381" },
-                { "id": "https://serlo.org/16526" },
-              ],
-              "publisher": [
-                {
-                  "id": "https://serlo.org/"
-                }
-              ],
-              "version": "https://serlo.org/30713"
-            }
-          ]
-        }));
+              ]
+            });
+
+            assert_eq!(expected_response, actual_response);
+        });
     }
 
     #[actix_rt::test]
@@ -190,7 +276,22 @@ mod entities_metadata_query {
         )
         .execute()
         .await
-        .should_be_ok_with_body(json!({
+        .should_be_ok_with(|actual_response| {
+        let actual_date_created = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_created + Duration::seconds(1));
+
+        let actual_date_modified = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
+
+        let expected_response = json!({
           "entities": [
             {
               "@context": [
@@ -243,6 +344,16 @@ mod entities_metadata_query {
               "license": {
                 "id": "https://creativecommons.org/licenses/by-sa/4.0/"
               },
+                 "mainEntityOfPage": {
+                        "id": "https://serlo.org/metadata-api",
+                        "provider": {
+                            "id": "https://serlo.org",
+                            "type": "Organization",
+                            "name": "Serlo Education e. V."
+                        },
+                        "dateCreated": actual_date_created,
+                        "dateModified": actual_date_modified,
+                    },
               "maintainer": "https://serlo.org/",
               "name": "Aufgabe#2823 in \"Aufgaben zum Thema Ergebnisraum oder Ergebnismenge\"",
               "publisher": [
@@ -253,7 +364,10 @@ mod entities_metadata_query {
               "version": "https://serlo.org/2824"
             }
           ]
-        }));
+        });
+
+        assert_eq!(expected_response, actual_response);
+      });
     }
 
     #[actix_rt::test]
@@ -264,7 +378,22 @@ mod entities_metadata_query {
         )
         .execute()
         .await
-        .should_be_ok_with_body(json!({
+        .should_be_ok_with(|actual_response| {
+        let actual_date_created = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_created + Duration::seconds(1));
+
+        let actual_date_modified = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
+
+        let expected_response = json!({
           "entities": [
             {
               "@context": [
@@ -304,6 +433,16 @@ mod entities_metadata_query {
               "license": {
                 "id": "https://creativecommons.org/licenses/by-sa/4.0/"
               },
+                 "mainEntityOfPage": {
+                        "id": "https://serlo.org/metadata-api",
+                        "provider": {
+                            "id": "https://serlo.org",
+                            "type": "Organization",
+                            "name": "Serlo Education e. V."
+                        },
+                        "dateCreated": actual_date_created,
+                        "dateModified": actual_date_modified,
+                    },
               "maintainer": "https://serlo.org/",
               "name": "Aufgabengruppe#2217 in \"Sachaufgaben\"",
               "isPartOf": [
@@ -318,7 +457,10 @@ mod entities_metadata_query {
               "version": "https://serlo.org/2218"
             }
           ]
-        }));
+        });
+
+        assert_eq!(expected_response, actual_response);
+      });
     }
 
     #[actix_rt::test]
@@ -329,7 +471,22 @@ mod entities_metadata_query {
         )
         .execute()
         .await
-        .should_be_ok_with_body(json!({
+        .should_be_ok_with(|actual_response| {
+        let actual_date_created = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_created + Duration::seconds(1));
+
+        let actual_date_modified = DateTime::parse_from_rfc3339(
+          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
+            .as_str()
+            .unwrap()
+        ).unwrap();
+        assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
+
+        let expected_response = json!({
           "entities": [
             {
               "@context": [
@@ -367,6 +524,16 @@ mod entities_metadata_query {
               "license": {
                 "id": "https://creativecommons.org/licenses/by-sa/4.0/"
               },
+                 "mainEntityOfPage": {
+                        "id": "https://serlo.org/metadata-api",
+                        "provider": {
+                            "id": "https://serlo.org",
+                            "type": "Organization",
+                            "name": "Serlo Education e. V."
+                        },
+                        "dateCreated": actual_date_created,
+                        "dateModified": actual_date_modified,
+                    },
               "maintainer": "https://serlo.org/",
               "name": "Satz des Pythagoras",
               "isPartOf": [
@@ -381,7 +548,10 @@ mod entities_metadata_query {
               "version": "https://serlo.org/24383"
             }
           ]
-        }));
+        });
+
+        assert_eq!(expected_response, actual_response);
+      });
     }
 
     #[actix_rt::test]

@@ -1,7 +1,29 @@
 mod entities_metadata_query {
     use chrono::{DateTime, Duration, Utc};
+    use itertools::Itertools;
     use std::time::{SystemTime, UNIX_EPOCH};
     use test_utils::{assert_eq, *};
+
+    fn check_and_get_dates(
+        json_response: &serde_json::Value,
+    ) -> (DateTime<chrono::FixedOffset>, DateTime<chrono::FixedOffset>) {
+        ["dateCreated", "dateModified"]
+            .into_iter()
+            .map(|key| {
+                DateTime::parse_from_rfc3339(
+                    &json_response["entities"][0]["mainEntityOfPage"][key]
+                        .as_str()
+                        .unwrap(),
+                )
+                .unwrap()
+            })
+            .map(|date_from_response| {
+                assert!(Utc::now() < date_from_response + Duration::seconds(1));
+                date_from_response
+            })
+            .collect_tuple()
+            .unwrap()
+    }
 
     #[actix_rt::test]
     async fn returns_metadata_for_articles() {
@@ -9,20 +31,7 @@ mod entities_metadata_query {
             .execute()
             .await
             .should_be_ok_with(|actual_response| {
-        let actual_date_created = DateTime::parse_from_rfc3339(
-          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-            .as_str()
-            .unwrap()
-        ).unwrap();
-        assert!(Utc::now() < actual_date_created + Duration::seconds(1));
-
-        let actual_date_modified = DateTime::parse_from_rfc3339(
-          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-            .as_str()
-            .unwrap()
-        ).unwrap();
-        assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
-
+        let (actual_date_created, actual_date_modified) = check_and_get_dates(&actual_response);
         let expected_response = json!({
               "entities": [
                 {
@@ -102,20 +111,7 @@ mod entities_metadata_query {
         .execute()
         .await
         .should_be_ok_with(|actual_response| {
-        let actual_date_created = DateTime::parse_from_rfc3339(
-          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-            .as_str()
-            .unwrap()
-        ).unwrap();
-        assert!(Utc::now() < actual_date_created + Duration::seconds(1));
-
-        let actual_date_modified = DateTime::parse_from_rfc3339(
-          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-            .as_str()
-            .unwrap()
-        ).unwrap();
-        assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
-
+        let (actual_date_created, actual_date_modified) = check_and_get_dates(&actual_response);
         let expected_response = json!({
             "entities": [
               {
@@ -182,22 +178,7 @@ mod entities_metadata_query {
         .execute()
         .await
         .should_be_ok_with(|actual_response| {
-            let actual_date_created = DateTime::parse_from_rfc3339(
-                &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-                    .as_str()
-                    .unwrap(),
-            )
-            .unwrap();
-            assert!(Utc::now() < actual_date_created + Duration::seconds(1));
-
-            let actual_date_modified = DateTime::parse_from_rfc3339(
-                &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-                    .as_str()
-                    .unwrap(),
-            )
-            .unwrap();
-            assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
-
+            let (actual_date_created, actual_date_modified) = check_and_get_dates(&actual_response);
             let expected_response = json!({
               "entities": [
                 {
@@ -277,20 +258,7 @@ mod entities_metadata_query {
         .execute()
         .await
         .should_be_ok_with(|actual_response| {
-        let actual_date_created = DateTime::parse_from_rfc3339(
-          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-            .as_str()
-            .unwrap()
-        ).unwrap();
-        assert!(Utc::now() < actual_date_created + Duration::seconds(1));
-
-        let actual_date_modified = DateTime::parse_from_rfc3339(
-          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-            .as_str()
-            .unwrap()
-        ).unwrap();
-        assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
-
+        let (actual_date_created, actual_date_modified) = check_and_get_dates(&actual_response);
         let expected_response = json!({
           "entities": [
             {
@@ -379,20 +347,7 @@ mod entities_metadata_query {
         .execute()
         .await
         .should_be_ok_with(|actual_response| {
-        let actual_date_created = DateTime::parse_from_rfc3339(
-          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-            .as_str()
-            .unwrap()
-        ).unwrap();
-        assert!(Utc::now() < actual_date_created + Duration::seconds(1));
-
-        let actual_date_modified = DateTime::parse_from_rfc3339(
-          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-            .as_str()
-            .unwrap()
-        ).unwrap();
-        assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
-
+        let (actual_date_created, actual_date_modified) = check_and_get_dates(&actual_response);
         let expected_response = json!({
           "entities": [
             {
@@ -472,20 +427,7 @@ mod entities_metadata_query {
         .execute()
         .await
         .should_be_ok_with(|actual_response| {
-        let actual_date_created = DateTime::parse_from_rfc3339(
-          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-            .as_str()
-            .unwrap()
-        ).unwrap();
-        assert!(Utc::now() < actual_date_created + Duration::seconds(1));
-
-        let actual_date_modified = DateTime::parse_from_rfc3339(
-          &actual_response["entities"][0]["mainEntityOfPage"]["dateCreated"]
-            .as_str()
-            .unwrap()
-        ).unwrap();
-        assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
-
+        let (actual_date_created, actual_date_modified) = check_and_get_dates(&actual_response);
         let expected_response = json!({
           "entities": [
             {

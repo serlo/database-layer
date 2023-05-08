@@ -255,7 +255,7 @@ pub mod entities_metadata_query {
                     license: LinkedNode { id: result.license_url},
                     main_entity_of_page: json!({
                         "id": "https://serlo.org/metadata-api",
-                        "provide": {
+                        "provider": {
                             "id": "https://serlo.org",
                             "type": "Organization",
                             "name": "Serlo Education e. V."

@@ -64,7 +64,7 @@ mod entities_metadata_query {
                   },
                  "mainEntityOfPage": {
                         "id": "https://serlo.org/metadata-api",
-                        "provide": {
+                        "provider": {
                             "id": "https://serlo.org",
                             "type": "Organization",
                             "name": "Serlo Education e. V."
@@ -152,7 +152,7 @@ mod entities_metadata_query {
                 "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
                  "mainEntityOfPage": {
                         "id": "https://serlo.org/metadata-api",
-                        "provide": {
+                        "provider": {
                             "id": "https://serlo.org",
                             "type": "Organization",
                             "name": "Serlo Education e. V."
@@ -240,7 +240,7 @@ mod entities_metadata_query {
                   },
                      "mainEntityOfPage": {
                             "id": "https://serlo.org/metadata-api",
-                            "provide": {
+                            "provider": {
                                 "id": "https://serlo.org",
                                 "type": "Organization",
                                 "name": "Serlo Education e. V."
@@ -346,7 +346,7 @@ mod entities_metadata_query {
               },
                  "mainEntityOfPage": {
                         "id": "https://serlo.org/metadata-api",
-                        "provide": {
+                        "provider": {
                             "id": "https://serlo.org",
                             "type": "Organization",
                             "name": "Serlo Education e. V."
@@ -435,7 +435,7 @@ mod entities_metadata_query {
               },
                  "mainEntityOfPage": {
                         "id": "https://serlo.org/metadata-api",
-                        "provide": {
+                        "provider": {
                             "id": "https://serlo.org",
                             "type": "Organization",
                             "name": "Serlo Education e. V."
@@ -526,7 +526,7 @@ mod entities_metadata_query {
               },
                  "mainEntityOfPage": {
                         "id": "https://serlo.org/metadata-api",
-                        "provide": {
+                        "provider": {
                             "id": "https://serlo.org",
                             "type": "Organization",
                             "name": "Serlo Education e. V."

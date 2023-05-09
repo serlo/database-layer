@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.64](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.63..v0.3.64) - May 9, 2023
+
+### Added
+
+- metadata: add fields mainentityofpage, interactivityType and isPartOf; compute better name for exercises, and Update `learningResourceType`
+
+### Fixed
+
+- metadata: comply to amb regarding field description, change `@context` to that it complies with schema.org, fix `type` for applets
+
+- entity: prevent creation of two solutions for the same exercise
+
+- thread: handle state change of many comments, not only of the first one
+
 ## [v0.3.63](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.62..v0.3.63) - March 6, 2023
 
 ### Fixed

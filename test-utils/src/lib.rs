@@ -61,7 +61,7 @@ impl MessageResult {
 
     pub fn should_be_ok_with<F>(self, assert_func: F)
     where
-        F: Fn(Value),
+        F: FnOnce(Value),
     {
         assert_eq!(self.status, 200);
         assert_func(self.get_json());

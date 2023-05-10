@@ -5,7 +5,9 @@ use actix_web::HttpResponse;
 pub use assert_json_diff::assert_json_include;
 use convert_case::{Case, Casing};
 pub use pretty_assertions::assert_eq;
+use rand::rngs::StdRng;
 use rand::{distributions::Alphanumeric, Rng};
+use rand_seeder::Seeder;
 use serde_json::{from_slice, from_value};
 pub use serde_json::{json, to_value, Value};
 use std::collections::HashMap;
@@ -125,16 +127,18 @@ where
         .await?
         .id as i32;
 
+    let mut rng: StdRng = Seeder::from(SEED).make_rng();
+
     sqlx::query!(
         r#"
                 INSERT INTO user (id, username, email, password, token)
                 VALUES (?, ?, ?, ?, ?)
             "#,
         new_user_id,
-        random_string(10),
-        random_string(10),
+        random_string(&mut rng, 10),
+        random_string(&mut rng, 10),
         "",
-        random_string(10)
+        random_string(&mut rng, 10)
     )
     .execute(&mut transaction)
     .await?;
@@ -411,10 +415,11 @@ where
     .count as i32
 }
 
-fn random_string(nr: usize) -> String {
-    rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(nr)
+const SEED: &str = "YOLOBIRD";
+
+fn random_string(rng: &mut StdRng, length: usize) -> String {
+    rng.sample_iter(&Alphanumeric)
+        .take(length)
         .map(char::from)
         .collect()
 }

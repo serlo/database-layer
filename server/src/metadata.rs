@@ -29,7 +29,7 @@ impl MessageResponder for MetadataMessage {
 
 pub mod entities_metadata_query {
     use itertools::Itertools;
-    use std::collections::HashSet;
+    use std::collections::{HashMap, HashSet};
 
     use super::*;
 
@@ -49,6 +49,26 @@ pub mod entities_metadata_query {
     }
 
     #[derive(Serialize)]
+    enum CreatorType {
+        Person,
+        // Should we support this type too?
+        // Organization,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Creator {
+        #[serde(rename = "type")]
+        creator_type: CreatorType,
+        id: Option<String>,
+        name: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        affiliation: Option<serde_json::Value>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        honorific_prefix: Option<String>,
+    }
+
+    #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
     struct EntityMetadata {
         #[serde(rename = "@context")]
@@ -58,6 +78,8 @@ pub mod entities_metadata_query {
         schema_type: Vec<String>,
         date_created: String,
         date_modified: String,
+        // The authors of the resource
+        creator: Vec<Creator>,
         description: Option<String>,
         headline: Option<String>,
         identifier: serde_json::Value,
@@ -118,7 +140,8 @@ pub mod entities_metadata_query {
                     license.url AS license_url,
                     instance.subdomain AS instance,
                     JSON_ARRAYAGG(term_taxonomy.id) AS taxonomy_term_ids,
-                    JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names
+                    JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names,
+                    JSON_OBJECTAGG(user.id, user.username) AS authors
                 FROM entity
                 JOIN uuid ON uuid.id = entity.id
                 JOIN instance ON entity.instance_id = instance.id
@@ -129,6 +152,8 @@ pub mod entities_metadata_query {
                 JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id
                 JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id
                 JOIN term on term_taxonomy.term_id = term.id
+                JOIN entity_revision all_revisions_of_entity ON all_revisions_of_entity.repository_id = entity.id
+                JOIN user ON all_revisions_of_entity.author_id = user.id
                 WHERE entity.id > ?
                     AND (? is NULL OR instance.subdomain = ?)
                     AND (? is NULL OR entity_revision.date > ?)
@@ -155,6 +180,24 @@ pub mod entities_metadata_query {
                     .and_then(|title| title.as_str())
                     .map(|title| title.to_string());
                 let id = get_iri(result.id as i32);
+
+
+                let authors_map: HashMap<String, String> = serde_json::from_value(result.authors.unwrap_or_default())
+                        .unwrap_or_default();
+
+                let creators: Vec<Creator> = authors_map.iter()
+                    .map(|(id, username)| Creator {
+                        creator_type: CreatorType::Person,
+                        // Id is a url that links to our authors. It looks like
+                        // the following
+                        // https://serlo.org/user/:userId/:username e.g
+                        // https://serlo.org/user/240298/felix_eccardt
+                        id: Some(format!("https://serlo.org/user/{}/{}", id, username)),
+                        name: username.to_string(),
+                        affiliation: None,
+                        honorific_prefix: None,
+                    })
+                    .collect();
                 let schema_type =
                         get_schema_type(&result.resource_type);
                 let name = title.clone().unwrap_or_else(|| {
@@ -236,6 +279,7 @@ pub mod entities_metadata_query {
                     date_created: result.date_created.to_rfc3339(),
                     date_modified: result.date_modified.to_rfc3339(),
                     headline: title,
+                    creator: creators,
                     id,
                     identifier: json!({
                         "type": "PropertyValue",

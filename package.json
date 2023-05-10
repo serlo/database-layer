@@ -24,6 +24,7 @@
     "pacts": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config-pacts.js",
     "sqlx:prepare": "cargo sqlx prepare --merged",
     "start": "docker-compose up --detach",
+    "test": "cargo test",
     "update-version": "./scripts/update_server_version.sh"
   },
   "devDependencies": {

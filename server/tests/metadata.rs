@@ -24,6 +24,53 @@ mod entities_metadata_query {
                     "LearningResource",
                     "Article"
                   ],
+                  "creator": [
+                    {
+                      "id": "https://serlo.org/user/15478/125f467c",
+                      "name": "125f467c",
+                      "type": "Person",
+                    },
+                    {
+                      "id": "https://serlo.org/user/677/124902c9",
+                      "name": "124902c9",
+                      "type": "Person",
+                    },
+                    {
+                      "id": "https://serlo.org/user/22573/12600e93",
+                      "name": "12600e93",
+                      "type": "Person",
+                    },
+                    {
+                      "id": "https://serlo.org/user/6/12297c72",
+                      "name": "12297c72",
+                      "type": "Person",
+                    },
+                    {
+                      "id": "https://serlo.org/user/324/122d486a",
+                      "name": "125f4a84",
+                      "type": "Person",
+                    },
+                    {
+                      "id": "https://serlo.org/user/27689/1268a3e2",
+                      "name": "1268a3e2",
+                      "type": "Person",
+                    },
+                    {
+                      "id": "https://serlo.org/user/1/admin",
+                      "name": "admin",
+                      "type": "Person",
+                    },
+                    {
+                      "id": "https://serlo.org/user/15491/125f4a84",
+                      "name": "125f4a84",
+                      "type": "Person",
+                    },
+                    {
+                      "id": "https://serlo.org/user/15473/125f3e12",
+                      "name": "125f3e12",
+                      "type": "Person",
+                    },
+                  ],
                   "dateCreated": "2014-03-01T20:36:44+00:00",
                   "dateModified": "2014-10-31T15:56:50+00:00",
                   "description": null,
@@ -90,6 +137,13 @@ mod entities_metadata_query {
                   "LearningResource",
                   "WebApplication"
                 ],
+                "creator": [
+                  {
+                    "id": "https://serlo.org/user/1/admin",
+                    "name": "admin",
+                    "type": "Person",
+                  },
+                ],
                 "dateCreated": "2020-01-29T17:47:19+00:00",
                 "dateModified": "2020-01-29T17:48:54+00:00",
                 "description": "",
@@ -141,6 +195,18 @@ mod entities_metadata_query {
               "type": [
                 "LearningResource",
                 "Course"
+              ],
+              "creator": [
+                {
+                  "id": "https://serlo.org/user/1/admin",
+                  "name": "admin",
+                  "type": "Person",
+                },
+                {
+                  "id": "https://serlo.org/user/324/122d486a",
+                  "name": "122d486a",
+                  "type": "Person",
+                },
               ],
               "dateCreated": "2014-03-17T12:22:17+00:00",
               "dateModified": "2014-09-16T07:47:55+00:00",
@@ -206,6 +272,13 @@ mod entities_metadata_query {
               "type": [
                 "LearningResource",
                 "Quiz"
+              ],
+              "creator": [
+                {
+                  "id": "https://serlo.org/user/6/12297c72",
+                  "name": "12297c72",
+                  "type": "Person",
+                },
               ],
               "dateCreated": "2014-03-01T21:02:56+00:00",
               "dateModified": "2014-03-01T21:02:56+00:00",
@@ -281,6 +354,14 @@ mod entities_metadata_query {
                 "LearningResource",
                 "Quiz"
               ],
+              "creator": [
+                {
+                  "id": "https://serlo.org/user/6/12297c72",
+                  "name": "12297c72",
+                  "type": "Person",
+                },
+
+              ],
               "dateCreated": "2014-03-01T20:54:51+00:00",
               "dateModified": "2014-03-01T20:54:51+00:00",
               "description": null,
@@ -345,6 +426,23 @@ mod entities_metadata_query {
               "type": [
                 "LearningResource",
                 "Video"
+              ],
+              "creator": [
+                {
+                  "id": "https://serlo.org/user/22573/12600e93",
+                  "name": "12600e93",
+                  "type": "Person",
+                },
+                {
+                  "id": "https://serlo.org/user/15491/125f4a84",
+                  "name": "125f4a84",
+                  "type": "Person",
+                },
+                {
+                  "id": "https://serlo.org/user/15478/125f467c",
+                  "name": "125f467c",
+                  "type": "Person",
+                },
               ],
               "dateCreated": "2014-03-17T16:18:44+00:00",
               "dateModified": "2014-05-01T09:22:14+00:00",

@@ -1638,6 +1638,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rand_seeder"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf2890aaef0aa82719a50e808de264f9484b74b442e1a3a0e5ee38243ac40bdb"
+dependencies = [
+ "rand_core",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2372,6 +2381,7 @@ dependencies = [
  "convert_case 0.5.0",
  "pretty_assertions",
  "rand",
+ "rand_seeder",
  "serde_json",
  "server",
  "sqlx",

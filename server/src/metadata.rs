@@ -49,26 +49,6 @@ pub mod entities_metadata_query {
     }
 
     #[derive(Serialize)]
-    enum CreatorType {
-        Person,
-        // Should we support this type too?
-        // Organization,
-    }
-
-    #[derive(Serialize)]
-    #[serde(rename_all = "camelCase")]
-    struct Creator {
-        #[serde(rename = "type")]
-        creator_type: CreatorType,
-        id: Option<String>,
-        name: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        affiliation: Option<serde_json::Value>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        honorific_prefix: Option<String>,
-    }
-
-    #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
     struct EntityMetadata {
         #[serde(rename = "@context")]
@@ -93,6 +73,21 @@ pub mod entities_metadata_query {
         name: String,
         publisher: Vec<LinkedNode>,
         version: String,
+    }
+
+    #[derive(Serialize)]
+    enum CreatorType {
+        Person,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Creator {
+        #[serde(rename = "type")]
+        creator_type: CreatorType,
+        id: String,
+        name: String,
+        affiliation: String,
     }
 
     #[derive(Serialize)]
@@ -182,20 +177,22 @@ pub mod entities_metadata_query {
                 let id = get_iri(result.id as i32);
 
 
-                let authors_map: HashMap<String, String> = serde_json::from_value(result.authors.unwrap_or_default())
-                        .unwrap_or_default();
+                let authors_map: HashMap<i32, String> = result.authors
+                    .map_or_else(|| HashMap::new(), |authors| serde_json::from_value(authors).unwrap_or_default());
+
 
                 let creators: Vec<Creator> = authors_map.iter()
-                    .map(|(id, username)| Creator {
+                    .sorted_by_key(|(id, _)| *id)
+                    .map(|(id,username)| Creator {
                         creator_type: CreatorType::Person,
-                        // Id is a url that links to our authors. It looks like
+                        // Id is a url that links to our authors. It can look like
                         // the following
-                        // https://serlo.org/user/:userId/:username e.g
-                        // https://serlo.org/user/240298/felix_eccardt
-                        id: Some(format!("https://serlo.org/user/{}/{}", id, username)),
+                        // https://serlo.org/user/:userId/:username
+                        // or simplified as here
+                        // https://serlo.org/:userId
+                        id: get_iri(*id),
                         name: username.to_string(),
-                        affiliation: None,
-                        honorific_prefix: None,
+                        affiliation: "Serlo Education e.V.".to_string()
                     })
                     .collect();
                 let schema_type =

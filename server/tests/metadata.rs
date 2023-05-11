@@ -26,49 +26,58 @@ mod entities_metadata_query {
                   ],
                   "creator": [
                     {
-                      "id": "https://serlo.org/user/15478/125f467c",
-                      "name": "125f467c",
-                      "type": "Person",
-                    },
-                    {
-                      "id": "https://serlo.org/user/677/124902c9",
-                      "name": "124902c9",
-                      "type": "Person",
-                    },
-                    {
-                      "id": "https://serlo.org/user/22573/12600e93",
-                      "name": "12600e93",
-                      "type": "Person",
-                    },
-                    {
-                      "id": "https://serlo.org/user/6/12297c72",
-                      "name": "12297c72",
-                      "type": "Person",
-                    },
-                    {
-                      "id": "https://serlo.org/user/324/122d486a",
-                      "name": "125f4a84",
-                      "type": "Person",
-                    },
-                    {
-                      "id": "https://serlo.org/user/27689/1268a3e2",
-                      "name": "1268a3e2",
-                      "type": "Person",
-                    },
-                    {
-                      "id": "https://serlo.org/user/1/admin",
+                      "id": "https://serlo.org/1",
                       "name": "admin",
                       "type": "Person",
+                      "affiliation": "Serlo Education e.V.",
                     },
                     {
-                      "id": "https://serlo.org/user/15491/125f4a84",
-                      "name": "125f4a84",
+                      "id": "https://serlo.org/6",
+                      "name": "12297c72",
                       "type": "Person",
+                      "affiliation": "Serlo Education e.V.",
                     },
                     {
-                      "id": "https://serlo.org/user/15473/125f3e12",
+                      "id": "https://serlo.org/324",
+                      "name": "122d486a",
+                      "type": "Person",
+                      "affiliation": "Serlo Education e.V.",
+                    },
+                    {
+                      "id": "https://serlo.org/677",
+                      "name": "124902c9",
+                      "type": "Person",
+                      "affiliation": "Serlo Education e.V.",
+                    },
+                    {
+                      "id": "https://serlo.org/15473",
                       "name": "125f3e12",
                       "type": "Person",
+                      "affiliation": "Serlo Education e.V.",
+                    },
+                    {
+                      "id": "https://serlo.org/15478",
+                      "name": "125f467c",
+                      "type": "Person",
+                      "affiliation": "Serlo Education e.V.",
+                    },
+                    {
+                      "id": "https://serlo.org/15491",
+                      "name": "125f4a84",
+                      "type": "Person",
+                      "affiliation": "Serlo Education e.V.",
+                    },
+                    {
+                      "id": "https://serlo.org/22573",
+                      "name": "12600e93",
+                      "type": "Person",
+                      "affiliation": "Serlo Education e.V.",
+                    },
+                    {
+                      "id": "https://serlo.org/27689",
+                      "name": "1268a3e2",
+                      "type": "Person",
+                      "affiliation": "Serlo Education e.V.",
                     },
                   ],
                   "dateCreated": "2014-03-01T20:36:44+00:00",
@@ -139,9 +148,10 @@ mod entities_metadata_query {
                 ],
                 "creator": [
                   {
-                    "id": "https://serlo.org/user/1/admin",
+                    "id": "https://serlo.org/1",
                     "name": "admin",
                     "type": "Person",
+                    "affiliation": "Serlo Education e.V.",
                   },
                 ],
                 "dateCreated": "2020-01-29T17:47:19+00:00",
@@ -198,14 +208,16 @@ mod entities_metadata_query {
               ],
               "creator": [
                 {
-                  "id": "https://serlo.org/user/1/admin",
+                  "id": "https://serlo.org/1",
                   "name": "admin",
                   "type": "Person",
+                  "affiliation": "Serlo Education e.V.",
                 },
                 {
-                  "id": "https://serlo.org/user/324/122d486a",
+                  "id": "https://serlo.org/324",
                   "name": "122d486a",
                   "type": "Person",
+                  "affiliation": "Serlo Education e.V.",
                 },
               ],
               "dateCreated": "2014-03-17T12:22:17+00:00",
@@ -275,9 +287,10 @@ mod entities_metadata_query {
               ],
               "creator": [
                 {
-                  "id": "https://serlo.org/user/6/12297c72",
+                  "id": "https://serlo.org/6",
                   "name": "12297c72",
                   "type": "Person",
+                  "affiliation": "Serlo Education e.V.",
                 },
               ],
               "dateCreated": "2014-03-01T21:02:56+00:00",
@@ -356,9 +369,10 @@ mod entities_metadata_query {
               ],
               "creator": [
                 {
-                  "id": "https://serlo.org/user/6/12297c72",
+                  "id": "https://serlo.org/6",
                   "name": "12297c72",
                   "type": "Person",
+                  "affiliation": "Serlo Education e.V.",
                 },
 
               ],
@@ -429,19 +443,22 @@ mod entities_metadata_query {
               ],
               "creator": [
                 {
-                  "id": "https://serlo.org/user/22573/12600e93",
-                  "name": "12600e93",
-                  "type": "Person",
-                },
-                {
-                  "id": "https://serlo.org/user/15491/125f4a84",
-                  "name": "125f4a84",
-                  "type": "Person",
-                },
-                {
-                  "id": "https://serlo.org/user/15478/125f467c",
+                  "id": "https://serlo.org/15478",
                   "name": "125f467c",
                   "type": "Person",
+                  "affiliation": "Serlo Education e.V.",
+                },
+                {
+                  "id": "https://serlo.org/15491",
+                  "name": "125f4a84",
+                  "type": "Person",
+                  "affiliation": "Serlo Education e.V.",
+                },
+                {
+                  "id": "https://serlo.org/22573",
+                  "name": "12600e93",
+                  "type": "Person",
+                  "affiliation": "Serlo Education e.V.",
                 },
               ],
               "dateCreated": "2014-03-17T16:18:44+00:00",

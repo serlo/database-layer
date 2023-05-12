@@ -256,7 +256,7 @@ pub mod entities_metadata_query {
                     main_entity_of_page: json!({
                         "id": "https://serlo.org/metadata-api",
                         "provider": {
-                            "id": organization_id.clone(),
+                            "id": organization_id,
                             "type": "Organization",
                             "name": "Serlo Education e. V."
                         },

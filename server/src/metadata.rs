@@ -219,7 +219,7 @@ pub mod entities_metadata_query {
                            .collect()
                     })
                     .unwrap_or(Vec::new());
-                let publisher_id = "https://serlo.org/".to_string();
+                let organization_id = "https://serlo.org/#organization".to_string();
                 let current_date = Utc::now().to_rfc3339();
 
                 EntityMetadata {
@@ -256,16 +256,16 @@ pub mod entities_metadata_query {
                     main_entity_of_page: json!({
                         "id": "https://serlo.org/metadata-api",
                         "provider": {
-                            "id": "https://serlo.org",
+                            "id": organization_id.clone(),
                             "type": "Organization",
                             "name": "Serlo Education e. V."
                         },
                         "dateCreated": current_date,
                         "dateModified": current_date,
                     }),
-                    maintainer: publisher_id.clone(),
+                    maintainer: organization_id.clone(),
                     name,
-                    publisher: vec![ LinkedNode { id: publisher_id }],
+                    publisher: vec![ LinkedNode { id: organization_id }],
                     is_part_of,
                     version: get_iri(result.version.unwrap())
                 }

@@ -41,12 +41,12 @@ mod entities_metadata_query {
           "mainEntityOfPage": {
             "id": "https://serlo.org/metadata-api",
             "provider": {
-               "id": "https://serlo.org",
+               "id": "https://serlo.org/#organization",
                "type": "Organization",
                "name": "Serlo Education e. V."
             },
           },
-          "maintainer": "https://serlo.org/",
+          "maintainer": "https://serlo.org/#organization",
           "name": "Addition",
           "isPartOf": [
             { "id": "https://serlo.org/1292" },
@@ -56,7 +56,7 @@ mod entities_metadata_query {
             { "id": "https://serlo.org/34743" },
             { "id": "https://serlo.org/34744" },
           ],
-          "publisher": [{ "id": "https://serlo.org/" }],
+          "publisher": [{ "id": "https://serlo.org/#organization" }],
           "version": "https://serlo.org/32614"
         }))
         .await;
@@ -96,14 +96,14 @@ mod entities_metadata_query {
             "mainEntityOfPage": {
               "id": "https://serlo.org/metadata-api",
               "provider": {
-                "id": "https://serlo.org",
+                "id": "https://serlo.org/#organization",
                 "type": "Organization",
                 "name": "Serlo Education e. V."
               },
             },
-            "maintainer": "https://serlo.org/",
+            "maintainer": "https://serlo.org/#organization",
             "name": "Example applet",
-            "publisher": [{ "id": "https://serlo.org/" }],
+            "publisher": [{ "id": "https://serlo.org/#organization" }],
             "isPartOf": [{ "id": "https://serlo.org/35560" }],
             "version": "https://serlo.org/35597"
         }))
@@ -148,18 +148,18 @@ mod entities_metadata_query {
           "mainEntityOfPage": {
             "id": "https://serlo.org/metadata-api",
             "provider": {
-              "id": "https://serlo.org",
+              "id": "https://serlo.org/#organization",
               "type": "Organization",
               "name": "Serlo Education e. V."
             },
           },
-          "maintainer": "https://serlo.org/",
+          "maintainer": "https://serlo.org/#organization",
           "name": "Überblick zum Satz des Pythagoras",
           "isPartOf": [
             { "id": "https://serlo.org/1381" },
             { "id": "https://serlo.org/16526" },
           ],
-          "publisher": [{ "id": "https://serlo.org/" }],
+          "publisher": [{ "id": "https://serlo.org/#organization" }],
           "version": "https://serlo.org/30713"
         }))
         .await;
@@ -202,14 +202,14 @@ mod entities_metadata_query {
           "mainEntityOfPage": {
             "id": "https://serlo.org/metadata-api",
             "provider": {
-              "id": "https://serlo.org",
+              "id": "https://serlo.org/#organization",
               "type": "Organization",
               "name": "Serlo Education e. V."
             },
           },
-          "maintainer": "https://serlo.org/",
+          "maintainer": "https://serlo.org/#organization",
           "name": "Aufgabe#2823 in \"Aufgaben zum Thema Ergebnisraum oder Ergebnismenge\"",
-          "publisher": [{ "id": "https://serlo.org/" }],
+          "publisher": [{ "id": "https://serlo.org/#organization" }],
           "version": "https://serlo.org/2824"
         }))
         .await;
@@ -251,18 +251,18 @@ mod entities_metadata_query {
           "mainEntityOfPage": {
             "id": "https://serlo.org/metadata-api",
             "provider": {
-              "id": "https://serlo.org",
+              "id": "https://serlo.org/#organization",
               "type": "Organization",
               "name": "Serlo Education e. V."
             },
           },
-          "maintainer": "https://serlo.org/",
+          "maintainer": "https://serlo.org/#organization",
           "name": "Aufgabengruppe#2217 in \"Sachaufgaben\"",
           "isPartOf": [
             { "id": "https://serlo.org/21804" },
             { "id": "https://serlo.org/25726" },
           ],
-          "publisher": [{ "id": "https://serlo.org/" }],
+          "publisher": [{ "id": "https://serlo.org/#organization" }],
           "version": "https://serlo.org/2218"
         }))
         .await;
@@ -302,18 +302,18 @@ mod entities_metadata_query {
           "mainEntityOfPage": {
             "id": "https://serlo.org/metadata-api",
             "provider": {
-              "id": "https://serlo.org",
+              "id": "https://serlo.org/#organization",
               "type": "Organization",
               "name": "Serlo Education e. V."
             },
           },
-          "maintainer": "https://serlo.org/",
+          "maintainer": "https://serlo.org/#organization",
           "name": "Satz des Pythagoras",
           "isPartOf": [
             { "id": "https://serlo.org/1381" },
             { "id": "https://serlo.org/16214" },
           ],
-          "publisher": [{ "id": "https://serlo.org/" }],
+          "publisher": [{ "id": "https://serlo.org/#organization" }],
           "version": "https://serlo.org/24383"
         }))
         .await;

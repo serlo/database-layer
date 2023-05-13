@@ -125,8 +125,6 @@ where
         .await?
         .id as i32;
 
-    // let mut rng: StdRng = Seeder::from(SEED).make_rng();
-
     sqlx::query!(
         r#"
                 INSERT INTO user (id, username, email, password, token)

@@ -60,15 +60,18 @@ pub mod entities_metadata_query {
         date_modified: String,
         // The authors of the resource
         creator: Vec<Creator>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         description: Option<String>,
         headline: Option<String>,
         identifier: serde_json::Value,
         in_language: Vec<String>,
+        interactivity_type: String,
         is_accessible_for_free: bool,
         is_family_friendly: bool,
         is_part_of: Vec<LinkedNode>,
         learning_resource_type: Vec<LinkedNode>,
         license: LinkedNode,
+        main_entity_of_page: serde_json::Value,
         maintainer: String,
         name: String,
         publisher: Vec<LinkedNode>,
@@ -268,6 +271,7 @@ pub mod entities_metadata_query {
                     })
                     .unwrap_or(Vec::new());
                 let publisher_id = "https://serlo.org/".to_string();
+                let current_date = Utc::now().to_rfc3339();
 
                 EntityMetadata {
                     context: json!([
@@ -283,6 +287,7 @@ pub mod entities_metadata_query {
                     description: result.params.as_ref()
                         .and_then(|params| params.get("meta_description"))
                         .and_then(|title| title.as_str())
+                        .filter(|title| !title.is_empty())
                         .map(|title| title.to_string()),
                     date_created: result.date_created.to_rfc3339(),
                     date_modified: result.date_modified.to_rfc3339(),
@@ -295,10 +300,21 @@ pub mod entities_metadata_query {
                         "value": identifier,
                     }),
                     in_language: vec![result.instance],
+                    interactivity_type: "active".to_string(),
                     is_accessible_for_free: true,
                     is_family_friendly: true,
                     learning_resource_type: get_learning_resource_type(&result.resource_type),
                     license: LinkedNode { id: result.license_url},
+                    main_entity_of_page: json!({
+                        "id": "https://serlo.org/metadata-api",
+                        "provider": {
+                            "id": "https://serlo.org",
+                            "type": "Organization",
+                            "name": "Serlo Education e. V."
+                        },
+                        "dateCreated": current_date,
+                        "dateModified": current_date,
+                    }),
                     maintainer: publisher_id.clone(),
                     name,
                     publisher: vec![ LinkedNode { id: publisher_id }],

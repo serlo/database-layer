@@ -157,7 +157,10 @@ macro_rules! to_entity {
             EntityType::Course => {
                 let page_ids =
                     Entity::find_children_by_id_and_type($id, EntityType::CoursePage, $executor)
-                        .await?;
+                        .await?
+                        .into_iter()
+                        .map(|(id, _)| id)
+                        .collect();
 
                 ConcreteEntity::Course(Course { page_ids })
             }
@@ -172,7 +175,10 @@ macro_rules! to_entity {
                     EntityType::GroupedExercise,
                     $executor,
                 )
-                .await?;
+                .await?
+                .into_iter()
+                .map(|(id, _)| id)
+                .collect();
 
                 ConcreteEntity::ExerciseGroup(ExerciseGroup { exercise_ids })
             }
@@ -401,15 +407,16 @@ impl Entity {
         id: i32,
         child_type: EntityType,
         executor: E,
-    ) -> Result<Vec<i32>, UuidError>
+    ) -> Result<Vec<(i32, bool)>, UuidError>
     where
         E: Executor<'a>,
     {
         let children = sqlx::query!(
             r#"
-                SELECT c.id
+                SELECT c.id, uuid.trashed
                     FROM entity_link l
                     JOIN entity c on c.id = l.child_id
+                    JOIN uuid on uuid.id = c.id
                     JOIN type t ON t.id = c.type_id
                     WHERE l.parent_id = ? AND t.name = ?
                     ORDER BY l.order ASC
@@ -419,7 +426,10 @@ impl Entity {
         )
         .fetch_all(executor)
         .await?;
-        Ok(children.iter().map(|child| child.id as i32).collect())
+        Ok(children
+            .iter()
+            .map(|child| (child.id as i32, child.trashed != 0))
+            .collect())
     }
 
     async fn find_child_by_id_and_type<'a, E>(
@@ -430,9 +440,12 @@ impl Entity {
     where
         E: Executor<'a>,
     {
-        Self::find_children_by_id_and_type(id, child_type, executor)
-            .await
-            .map(|children| children.first().cloned())
+        Ok(Self::find_children_by_id_and_type(id, child_type, executor)
+            .await?
+            .iter()
+            .filter(|(_id, trashed)| !trashed)
+            .map(|(id, _trashed)| *id)
+            .next())
     }
 }
 
@@ -584,6 +597,28 @@ impl Entity {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
+
+        if payload.entity_type == EntityType::Solution
+            && sqlx::query!(
+                "SELECT uuid.id 
+                 FROM entity_link JOIN uuid ON uuid.id = entity_link.child_id
+                 WHERE uuid.trashed = 0 AND parent_id = ?",
+                payload
+                    .input
+                    .parent_id
+                    .ok_or(operation::Error::BadRequest {
+                        reason: "parent_id needs to be provided".to_string(),
+                    })?
+            )
+            .fetch_one(&mut transaction)
+            .await
+            .ok()
+            .is_some()
+        {
+            return Err(operation::Error::BadRequest {
+                reason: "solution already exists".to_string(),
+            });
+        }
 
         sqlx::query!(
             r#"

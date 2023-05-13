@@ -1994,7 +1994,7 @@ dependencies = [
 
 [[package]]
 name = "server"
-version = "0.3.63"
+version = "0.3.64"
 dependencies = [
  "actix-rt",
  "actix-service",

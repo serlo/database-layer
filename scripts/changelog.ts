@@ -298,6 +298,18 @@ const content = generateChangelog({
       date: '2023-03-06',
       fixed: ['Make all taxonomies under "Fächer im Aufbau" subjects'],
     },
+    {
+      tagName: 'v0.3.64',
+      date: '2023-05-09',
+      added: [
+        'metadata: add fields mainentityofpage, interactivityType and isPartOf; compute better name for exercises, and Update `learningResourceType`',
+      ],
+      fixed: [
+        'metadata: comply to amb regarding field description, change `@context` to that it complies with schema.org, fix `type` for applets',
+        'entity: prevent creation of two solutions for the same exercise',
+        'thread: handle state change of many comments, not only of the first one',
+      ],
+    },
   ],
 })
 

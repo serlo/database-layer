@@ -1,6 +1,5 @@
 mod entities_metadata_query {
     use chrono::{DateTime, Duration, Utc};
-    use itertools::Itertools;
     use std::time::{SystemTime, UNIX_EPOCH};
     use test_utils::{assert_eq, *};
 
@@ -18,6 +17,63 @@ mod entities_metadata_query {
           ],
           "id": "https://serlo.org/1495",
           "type": [ "LearningResource", "Article" ],
+          "creator": [
+            {
+              "id": "https://serlo.org/324",
+              "name": "122d486a",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+            {
+              "id": "https://serlo.org/15491",
+              "name": "125f4a84",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+            {
+              "id": "https://serlo.org/22573",
+              "name": "12600e93",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+            {
+              "id": "https://serlo.org/1",
+              "name": "admin",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+            {
+              "id": "https://serlo.org/6",
+              "name": "12297c72",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+            {
+              "id": "https://serlo.org/677",
+              "name": "124902c9",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+            {
+              "id": "https://serlo.org/15473",
+              "name": "125f3e12",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+            {
+              "id": "https://serlo.org/15478",
+              "name": "125f467c",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+
+            {
+              "id": "https://serlo.org/27689",
+              "name": "1268a3e2",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+          ],
           "dateCreated": "2014-03-01T20:36:44+00:00",
           "dateModified": "2014-10-31T15:56:50+00:00",
           "headline": "Addition",
@@ -63,6 +119,82 @@ mod entities_metadata_query {
     }
 
     #[actix_rt::test]
+    async fn returns_metadata_for_entities_and_sorts_creators_on_edit_count() {
+        assert_metadata(json!({
+          "@context": [
+            "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+            {
+              "@language": "de",
+              "@vocab": "http://schema.org/",
+              "type": "@type",
+              "id": "@id"
+            }
+          ],
+          "id": "https://serlo.org/9067",
+          "type": [
+            "LearningResource",
+            "Quiz"
+          ],
+          "creator": [
+            // There are two edits from user with id 15491 which is why they
+            // should be listed first
+            {
+              "affiliation": "Serlo Education e.V.",
+              "id": "https://serlo.org/15491",
+              "name": "125f4a84",
+              "type": "Person"
+            },
+            {
+              "affiliation": "Serlo Education e.V.",
+              "id": "https://serlo.org/6",
+              "name": "12297c72",
+              "type": "Person"
+            },
+          ],
+          "dateCreated": "2014-03-01T21:34:16+00:00",
+          "dateModified": "2014-03-13T15:33:27+00:00",
+          "headline": null,
+          "identifier": {
+            "type": "PropertyValue",
+            "propertyID": "UUID",
+            "value": 9067
+          },
+          "isAccessibleForFree": true,
+          "isFamilyFriendly": true,
+          "inLanguage": [ "de" ],
+          "interactivityType": "active",
+          "learningResourceType": [
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" }
+          ],
+          "license": {
+            "id": "https://creativecommons.org/licenses/by-sa/4.0/"
+          },
+          "mainEntityOfPage": {
+            "id": "https://serlo.org/metadata-api",
+            "provider": {
+              "id": "https://serlo.org/#organization",
+              "type": "Organization",
+              "name": "Serlo Education e. V."
+            },
+          },
+          "maintainer": "https://serlo.org/#organization",
+          "name": "Aufgabe#9067 in \"Integrale\"",
+          "isPartOf": [
+            { "id": "https://serlo.org/1323" },
+            { "id": "https://serlo.org/16147" }
+          ],
+          "publisher": [{
+              "id": "https://serlo.org/#organization"
+          }],
+          "version": "https://serlo.org/17665"
+        }))
+        .await
+    }
+
+    #[actix_rt::test]
     async fn returns_metadata_for_applets() {
         assert_metadata(json!({
             "@context": [
@@ -76,6 +208,14 @@ mod entities_metadata_query {
             ],
             "id": "https://serlo.org/35596",
             "type": [ "LearningResource", "WebApplication" ],
+            "creator": [
+              {
+                "id": "https://serlo.org/1",
+                "name": "admin",
+                "type": "Person",
+                "affiliation": "Serlo Education e.V.",
+              },
+            ],
             "dateCreated": "2020-01-29T17:47:19+00:00",
             "dateModified": "2020-01-29T17:48:54+00:00",
             "headline": "Example applet",
@@ -124,6 +264,20 @@ mod entities_metadata_query {
           ],
           "id": "https://serlo.org/18514",
           "type": [ "LearningResource", "Course" ],
+          "creator": [
+            {
+              "id": "https://serlo.org/324",
+              "name": "122d486a",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+            {
+              "id": "https://serlo.org/1",
+              "name": "admin",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+          ],
           "dateCreated": "2014-03-17T12:22:17+00:00",
           "dateModified": "2014-09-16T07:47:55+00:00",
           "headline": "Überblick zum Satz des Pythagoras",
@@ -179,6 +333,14 @@ mod entities_metadata_query {
           ],
           "id": "https://serlo.org/2823",
           "type": [ "LearningResource", "Quiz" ],
+          "creator": [
+            {
+              "id": "https://serlo.org/6",
+              "name": "12297c72",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+          ],
           "dateCreated": "2014-03-01T21:02:56+00:00",
           "dateModified": "2014-03-01T21:02:56+00:00",
           "headline": null,
@@ -229,6 +391,14 @@ mod entities_metadata_query {
           ],
           "id": "https://serlo.org/2217",
           "type": [ "LearningResource", "Quiz" ],
+          "creator": [
+            {
+              "id": "https://serlo.org/6",
+              "name": "12297c72",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+          ],
           "dateCreated": "2014-03-01T20:54:51+00:00",
           "dateModified": "2014-03-01T20:54:51+00:00",
           "headline": null,
@@ -282,6 +452,26 @@ mod entities_metadata_query {
           ],
           "id": "https://serlo.org/18865",
           "type": [ "LearningResource", "Video" ],
+          "creator": [
+            {
+              "id": "https://serlo.org/22573",
+              "name": "12600e93",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+            {
+              "id": "https://serlo.org/15478",
+              "name": "125f467c",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            },
+            {
+              "id": "https://serlo.org/15491",
+              "name": "125f4a84",
+              "type": "Person",
+              "affiliation": "Serlo Education e.V.",
+            }
+          ],
           "dateCreated": "2014-03-17T16:18:44+00:00",
           "dateModified": "2014-05-01T09:22:14+00:00",
           "headline": "Satz des Pythagoras",

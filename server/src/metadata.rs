@@ -181,7 +181,9 @@ pub mod entities_metadata_query {
                 let id = get_iri(result.id as i32);
 
                 let authors_map: HashMap<i32, String> = result.authors
-                    .map_or_else(|| HashMap::new(), |authors| serde_json::from_value(authors).unwrap_or_default());
+                    .map_or_else(HashMap::new, |authors| {
+                        serde_json::from_value(authors).unwrap_or_default()
+                    });
 
                 let edit_counts: HashMap<i32, usize> = result.author_edits
                     .as_ref()

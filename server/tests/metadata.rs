@@ -473,27 +473,17 @@ mod entities_metadata_query {
         .execute()
         .await
         .should_be_ok_with(|result| {
-            assert_json_include!(
-              actual: &result["entities"][0],
-              expected: json!({
-                  "creator": [
-                    // There are two edits from user with id 15491 which is why they
-                    // should be listed first
-                    {
-                      "affiliation": "Serlo Education e.V.",
-                      "id": "https://serlo.org/15491",
-                      "name": "125f4a84",
-                      "type": "Person"
-                    },
-                    {
-                      "affiliation": "Serlo Education e.V.",
-                      "id": "https://serlo.org/6",
-                      "name": "12297c72",
-                      "type": "Person"
-                    },
-                  ],
-              })
-            )
+            let creator_urls: Vec<&str> = result["entities"][0]["creator"]
+                .as_array()
+                .map(|array| array.into_iter().filter_map(|x| x["id"].as_str()).collect())
+                .unwrap();
+
+            // There are two edits from user with id 15491 which is why they
+            // should be listed first
+            assert_eq!(
+                creator_urls,
+                vec!["https://serlo.org/15491", "https://serlo.org/6"]
+            );
         });
     }
 

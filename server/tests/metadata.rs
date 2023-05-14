@@ -175,19 +175,19 @@ mod entities_metadata_query {
           "mainEntityOfPage": {
             "id": "https://serlo.org/metadata-api",
             "provider": {
-              "id": "https://serlo.org",
+              "id": "https://serlo.org/#organization",
               "type": "Organization",
               "name": "Serlo Education e. V."
             },
           },
-          "maintainer": "https://serlo.org/",
+          "maintainer": "https://serlo.org/#organization",
           "name": "Aufgabe#9067 in \"Integrale\"",
           "isPartOf": [
             { "id": "https://serlo.org/1323" },
             { "id": "https://serlo.org/16147" }
           ],
           "publisher": [{
-              "id": "https://serlo.org/"
+              "id": "https://serlo.org/#organization"
           }],
           "version": "https://serlo.org/17665"
         }))

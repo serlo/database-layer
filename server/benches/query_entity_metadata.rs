@@ -5,7 +5,6 @@ use criterion::{
 };
 use server::{create_database_pool, database::Connection, message::*, metadata::*};
 use std::future::Future;
-use std::ops::{Deref, DerefMut};
 
 pub struct MyRuntime(actix_rt::Runtime);
 
@@ -14,20 +13,6 @@ impl AsyncExecutor for MyRuntime {
         self.0.block_on(future)
     }
 }
-/*
-impl Deref for MyRuntime {
-    type Target = actix_rt::Runtime;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for MyRuntime {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}*/
 
 async fn query_metadata(number_entities: i32) -> HttpResponse {
     let metadata_message =

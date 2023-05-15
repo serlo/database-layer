@@ -593,6 +593,7 @@ dependencies = [
  "ciborium",
  "clap",
  "criterion-plot",
+ "futures",
  "itertools",
  "lazy_static",
  "num-traits",

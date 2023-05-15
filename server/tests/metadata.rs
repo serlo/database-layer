@@ -121,7 +121,7 @@ mod entities_metadata_query {
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
           "inLanguage": [ "de" ],
-          "interactivityType": "active",
+          "interactivityType": { "id": "http://purl.org/dcx/lrmi-vocabs/interactivityType/active" },
           "learningResourceType": [
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/text" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/worksheet" },
@@ -216,7 +216,7 @@ mod entities_metadata_query {
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
           "inLanguage": [ "de" ],
-          "interactivityType": "active",
+          "interactivityType": { "id": "http://purl.org/dcx/lrmi-vocabs/interactivityType/active" },
           "learningResourceType": [
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
@@ -289,7 +289,9 @@ mod entities_metadata_query {
               "value": 35596
             },
             "inLanguage": [ "en" ],
-            "interactivityType": "active",
+            "interactivityType": {
+              "id": "http://purl.org/dcx/lrmi-vocabs/interactivityType/active"
+            },
             "isAccessibleForFree": true,
             "isFamilyFriendly": true,
             "learningResourceType": [
@@ -369,7 +371,7 @@ mod entities_metadata_query {
             "value": 18514
           },
           "inLanguage": [ "de" ],
-          "interactivityType": "active",
+          "interactivityType": { "id": "http://purl.org/dcx/lrmi-vocabs/interactivityType/active" },
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
           "learningResourceType": [
@@ -446,7 +448,7 @@ mod entities_metadata_query {
             "value": 2823
           },
           "inLanguage": [ "de" ],
-          "interactivityType": "active",
+          "interactivityType": { "id": "http://purl.org/dcx/lrmi-vocabs/interactivityType/active" },
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
           "isPartOf": [{ "id": "https://serlo.org/25614" }],
@@ -518,7 +520,7 @@ mod entities_metadata_query {
             "value": 2217
           },
           "inLanguage": [ "de" ],
-          "interactivityType": "active",
+          "interactivityType": { "id": "http://purl.org/dcx/lrmi-vocabs/interactivityType/active" },
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
           "learningResourceType": [
@@ -613,7 +615,7 @@ mod entities_metadata_query {
             "value": 18865
           },
           "inLanguage": [ "de" ],
-          "interactivityType": "active",
+          "interactivityType": { "id": "http://purl.org/dcx/lrmi-vocabs/interactivityType/active" },
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
           "learningResourceType": [

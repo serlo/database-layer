@@ -7,12 +7,20 @@ use server::{create_database_pool, database::Connection, message::*, metadata::*
 use std::future::Future;
 use std::time::Duration;
 
-pub struct MyRuntime(actix_rt::Runtime);
+criterion_main!(entity_metadata_benches);
 
-impl AsyncExecutor for MyRuntime {
-    fn block_on<T>(&self, future: impl Future<Output = T>) -> T {
-        self.0.block_on(future)
-    }
+criterion_group! {
+    name = entity_metadata_benches;
+    config = Criterion::default().sample_size(10).measurement_time(Duration::from_secs(10));
+    targets = criterion_benchmark
+}
+
+fn criterion_benchmark(criterion: &mut Criterion) {
+    criterion.bench_function("query entity metadata", |bencher| {
+        bencher
+            .to_async(MyRuntime(actix_rt::Runtime::new().unwrap()))
+            .iter(|| query_metadata(black_box(10000)))
+    });
 }
 
 async fn query_metadata(number_entities: i32) -> HttpResponse {
@@ -30,17 +38,10 @@ async fn query_metadata(number_entities: i32) -> HttpResponse {
         .await
 }
 
-fn criterion_benchmark(criterion: &mut Criterion) {
-    criterion.bench_function("query entity metadata", |bencher| {
-        bencher
-            .to_async(MyRuntime(actix_rt::Runtime::new().unwrap()))
-            .iter(|| query_metadata(black_box(10000)))
-    });
+impl AsyncExecutor for MyRuntime {
+    fn block_on<T>(&self, future: impl Future<Output = T>) -> T {
+        self.0.block_on(future)
+    }
 }
 
-criterion_group! {
-    name = entity_metadata_benches;
-    config = Criterion::default().sample_size(10).measurement_time(Duration::from_secs(10));
-    targets = criterion_benchmark
-}
-criterion_main!(entity_metadata_benches);
+pub struct MyRuntime(actix_rt::Runtime);

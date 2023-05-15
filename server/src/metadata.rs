@@ -72,9 +72,9 @@ pub mod entities_metadata_query {
         learning_resource_type: Vec<LinkedNode>,
         license: LinkedNode,
         main_entity_of_page: serde_json::Value,
-        maintainer: String,
+        maintainer: serde_json::Value,
         name: String,
-        publisher: Vec<LinkedNode>,
+        publisher: Vec<serde_json::Value>,
         version: String,
     }
 
@@ -85,7 +85,7 @@ pub mod entities_metadata_query {
         creator_type: CreatorType,
         id: String,
         name: String,
-        affiliation: String,
+        affiliation: serde_json::Value,
     }
 
     #[derive(Serialize)]
@@ -210,7 +210,7 @@ pub mod entities_metadata_query {
                         // https://serlo.org/:userId
                         id: get_iri(*id),
                         name: username.to_string(),
-                        affiliation: "Serlo Education e.V.".to_string()
+                        affiliation: get_serlo_organzation_metadata()
                     })
                     .collect();
                 let schema_type =
@@ -274,7 +274,6 @@ pub mod entities_metadata_query {
                            .collect()
                     })
                     .unwrap_or(Vec::new());
-                let organization_id = "https://serlo.org/#organization".to_string();
                 let current_date = Utc::now().to_rfc3339();
 
                 EntityMetadata {
@@ -313,17 +312,13 @@ pub mod entities_metadata_query {
                     license: LinkedNode { id: result.license_url},
                     main_entity_of_page: json!({
                         "id": "https://serlo.org/metadata-api",
-                        "provider": {
-                            "id": organization_id,
-                            "type": "Organization",
-                            "name": "Serlo Education e. V."
-                        },
+                        "provider": get_serlo_organzation_metadata(),
                         "dateCreated": current_date,
                         "dateModified": current_date,
                     }),
-                    maintainer: organization_id.clone(),
+                    maintainer: get_serlo_organzation_metadata(),
                     name,
-                    publisher: vec![ LinkedNode { id: organization_id }],
+                    publisher: vec![get_serlo_organzation_metadata()],
                     is_part_of,
                     version: get_iri(result.version.unwrap())
                 }
@@ -368,5 +363,13 @@ pub mod entities_metadata_query {
         })
         .map(|id| LinkedNode { id })
         .collect()
+    }
+
+    fn get_serlo_organzation_metadata() -> serde_json::Value {
+        json!({
+            "id": "https://serlo.org/#organization",
+            "type": "Organization",
+            "name": "Serlo Education e.V."
+        })
     }
 }

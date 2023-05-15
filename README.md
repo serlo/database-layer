@@ -96,6 +96,7 @@ PACT_FILE=../api.serlo.org/pacts/api.serlo.org-serlo.org-database-layer.json ./s
 ### Other helpful commands
 
 - `cargo test` – Run all tests (see https://doc.rust-lang.org/book/ch11-01-writing-tests.html )
+- `cargo bench` - Run performance benchmarks to test for example how changing a query affects its performance
 - `cargo clippy` – Lint the whole codebase (see https://github.com/rust-lang/rust-clippy )
 - `yarn mysql` – Start a MySQL shell for the local mysql server.
 - `yarn format` – Format all local source files.

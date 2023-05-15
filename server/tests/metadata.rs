@@ -185,13 +185,21 @@ mod entities_metadata_query {
             // There are two edits from user with id 15491 which is why they
             // should be listed first
             {
-              "affiliation": "Serlo Education e.V.",
+              "affiliation":  {
+                  "id": "https://serlo.org/#organization",
+                  "name": "Serlo Education e.V.",
+                  "type": "Organization",
+              },
               "id": "https://serlo.org/15491",
               "name": "125f4a84",
               "type": "Person"
             },
             {
-              "affiliation": "Serlo Education e.V.",
+              "affiliation": {
+                "id": "https://serlo.org/#organization",
+                "name": "Serlo Education e.V.",
+                "type": "Organization",
+              },
               "id": "https://serlo.org/6",
               "name": "12297c72",
               "type": "Person"
@@ -223,17 +231,23 @@ mod entities_metadata_query {
             "provider": {
               "id": "https://serlo.org/#organization",
               "type": "Organization",
-              "name": "Serlo Education e. V."
+              "name": "Serlo Education e.V."
             },
           },
-          "maintainer": "https://serlo.org/#organization",
+          "maintainer": {
+            "id": "https://serlo.org/#organization",
+            "name": "Serlo Education e.V.",
+            "type": "Organization",
+          },
           "name": "Aufgabe#9067 in \"Integrale\"",
           "isPartOf": [
             { "id": "https://serlo.org/1323" },
             { "id": "https://serlo.org/16147" }
           ],
           "publisher": [{
-              "id": "https://serlo.org/#organization"
+            "id": "https://serlo.org/#organization",
+            "name": "Serlo Education e.V.",
+            "type": "Organization",
           }],
           "version": "https://serlo.org/17665"
         }))

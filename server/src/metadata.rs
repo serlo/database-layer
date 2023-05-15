@@ -29,7 +29,7 @@ impl MessageResponder for MetadataMessage {
 
 pub mod entities_metadata_query {
     use itertools::Itertools;
-    use std::collections::HashSet;
+    use std::collections::{HashMap, HashSet};
 
     use super::*;
 
@@ -58,12 +58,14 @@ pub mod entities_metadata_query {
         schema_type: Vec<String>,
         date_created: String,
         date_modified: String,
+        // The authors of the resource
+        creator: Vec<Creator>,
         #[serde(skip_serializing_if = "Option::is_none")]
         description: Option<String>,
         headline: Option<String>,
         identifier: serde_json::Value,
         in_language: Vec<String>,
-        interactivity_type: String,
+        interactivity_type: LinkedNode,
         is_accessible_for_free: bool,
         is_family_friendly: bool,
         is_part_of: Vec<LinkedNode>,
@@ -74,6 +76,21 @@ pub mod entities_metadata_query {
         name: String,
         publisher: Vec<LinkedNode>,
         version: String,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Creator {
+        #[serde(rename = "type")]
+        creator_type: CreatorType,
+        id: String,
+        name: String,
+        affiliation: String,
+    }
+
+    #[derive(Serialize)]
+    enum CreatorType {
+        Person,
     }
 
     #[derive(Serialize)]
@@ -121,7 +138,9 @@ pub mod entities_metadata_query {
                     license.url AS license_url,
                     instance.subdomain AS instance,
                     JSON_ARRAYAGG(term_taxonomy.id) AS taxonomy_term_ids,
-                    JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names
+                    JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names,
+                    JSON_OBJECTAGG(user.id, user.username) AS authors,
+                    JSON_OBJECTAGG(all_revisions_of_entity.id, user.id) AS author_edits
                 FROM entity
                 JOIN uuid ON uuid.id = entity.id
                 JOIN instance ON entity.instance_id = instance.id
@@ -132,6 +151,8 @@ pub mod entities_metadata_query {
                 JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id
                 JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id
                 JOIN term on term_taxonomy.term_id = term.id
+                JOIN entity_revision all_revisions_of_entity ON all_revisions_of_entity.repository_id = entity.id
+                JOIN user ON all_revisions_of_entity.author_id = user.id
                 WHERE entity.id > ?
                     AND (? is NULL OR instance.subdomain = ?)
                     AND (? is NULL OR entity_revision.date > ?)
@@ -158,6 +179,40 @@ pub mod entities_metadata_query {
                     .and_then(|title| title.as_str())
                     .map(|title| title.to_string());
                 let id = get_iri(result.id as i32);
+
+                let authors_map: HashMap<i32, String> = result.authors
+                    .and_then(|x| serde_json::from_value(x).ok())
+                    .unwrap_or_default();
+
+                let edit_counts: HashMap<i32, usize> = result.author_edits
+                    .as_ref()
+                    .and_then(|edits| edits.as_object())
+                    .map(|edits| edits.values()
+                        .filter_map(|author_id| author_id.as_i64())
+                        .fold(HashMap::new(), |mut acc, author_id| {
+                            *acc.entry(author_id as i32).or_insert(0) += 1;
+                            acc
+                        })
+                    )
+                    .unwrap_or_default();
+
+                let creators: Vec<Creator> = authors_map.iter()
+                    .map(|(id, username)| (id, username, edit_counts.get(id).unwrap_or(&0)))
+                    .sorted_by(|(id1, _, count1), (id2, _, count2)| {
+                        count2.cmp(count1).then(id1.cmp(id2))
+                    })
+                    .map(|(id,username, _)| Creator {
+                        creator_type: CreatorType::Person,
+                        // Id is a url that links to our authors. It can look like
+                        // the following
+                        // https://serlo.org/user/:userId/:username
+                        // or simplified as here
+                        // https://serlo.org/:userId
+                        id: get_iri(*id),
+                        name: username.to_string(),
+                        affiliation: "Serlo Education e.V.".to_string()
+                    })
+                    .collect();
                 let schema_type =
                         get_schema_type(&result.resource_type);
                 let name = title.clone().unwrap_or_else(|| {
@@ -219,7 +274,7 @@ pub mod entities_metadata_query {
                            .collect()
                     })
                     .unwrap_or(Vec::new());
-                let publisher_id = "https://serlo.org/".to_string();
+                let organization_id = "https://serlo.org/#organization".to_string();
                 let current_date = Utc::now().to_rfc3339();
 
                 EntityMetadata {
@@ -241,6 +296,7 @@ pub mod entities_metadata_query {
                     date_created: result.date_created.to_rfc3339(),
                     date_modified: result.date_modified.to_rfc3339(),
                     headline: title,
+                    creator: creators,
                     id,
                     identifier: json!({
                         "type": "PropertyValue",
@@ -248,7 +304,9 @@ pub mod entities_metadata_query {
                         "value": identifier,
                     }),
                     in_language: vec![result.instance],
-                    interactivity_type: "active".to_string(),
+                    interactivity_type: LinkedNode {
+                        id: "http://purl.org/dcx/lrmi-vocabs/interactivityType/active".to_string(),
+                    },
                     is_accessible_for_free: true,
                     is_family_friendly: true,
                     learning_resource_type: get_learning_resource_type(&result.resource_type),
@@ -256,16 +314,16 @@ pub mod entities_metadata_query {
                     main_entity_of_page: json!({
                         "id": "https://serlo.org/metadata-api",
                         "provider": {
-                            "id": "https://serlo.org",
+                            "id": organization_id,
                             "type": "Organization",
                             "name": "Serlo Education e. V."
                         },
                         "dateCreated": current_date,
                         "dateModified": current_date,
                     }),
-                    maintainer: publisher_id.clone(),
+                    maintainer: organization_id.clone(),
                     name,
-                    publisher: vec![ LinkedNode { id: publisher_id }],
+                    publisher: vec![ LinkedNode { id: organization_id }],
                     is_part_of,
                     version: get_iri(result.version.unwrap())
                 }

@@ -31,11 +31,13 @@ async fn query_metadata(number_entities: i32) -> HttpResponse {
             instance: None,
             modified_after: None,
         });
-    metadata_message
-        .handle(Connection::Transaction(
-            &mut create_database_pool().await.unwrap().begin().await.unwrap(),
-        ))
-        .await
+    black_box(
+        metadata_message
+            .handle(Connection::Transaction(
+                &mut create_database_pool().await.unwrap().begin().await.unwrap(),
+            ))
+            .await,
+    )
 }
 
 impl AsyncExecutor for MyRuntime {

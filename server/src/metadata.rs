@@ -186,24 +186,26 @@ pub mod entities_metadata_query {
                 let id = get_iri(result.id as i32);
 
                 let authors_map: HashMap<i32, String> = result.authors
-                    .map_or_else(HashMap::new, |authors| {
-                        serde_json::from_value(authors).unwrap_or_default()
-                    });
+                    .and_then(|x| serde_json::from_value(x).ok())
+                    .unwrap_or_default();
 
                 let edit_counts: HashMap<i32, usize> = result.author_edits
                     .as_ref()
                     .and_then(|edits| edits.as_object())
                     .map(|edits| edits.values()
-                        .filter_map(|author_id| author_id.as_i64().map(|id| id as i32))
+                        .filter_map(|author_id| author_id.as_i64())
                         .fold(HashMap::new(), |mut acc, author_id| {
-                            *acc.entry(author_id).or_insert(0) += 1;
+                            *acc.entry(author_id as i32).or_insert(0) += 1;
                             acc
-                        }))
+                        })
+                    )
                     .unwrap_or_default();
 
                 let creators: Vec<Creator> = authors_map.iter()
-                    .map(|(id, username)| (id, username, *edit_counts.get(id).unwrap_or(&0)))
-                    .sorted_by(|(id1, _, count1), (id2, _, count2)| count2.cmp(count1).then(id1.cmp(id2)))
+                    .map(|(id, username)| (id, username, edit_counts.get(id).unwrap_or(&0)))
+                    .sorted_by(|(id1, _, count1), (id2, _, count2)| {
+                        count2.cmp(count1).then(id1.cmp(id2))
+                    })
                     .map(|(id,username, _)| Creator {
                         creator_type: CreatorType::Person,
                         // Id is a url that links to our authors. It can look like

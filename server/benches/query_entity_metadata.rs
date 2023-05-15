@@ -5,6 +5,7 @@ use criterion::{
 };
 use server::{create_database_pool, database::Connection, message::*, metadata::*};
 use std::future::Future;
+use std::time::Duration;
 
 pub struct MyRuntime(actix_rt::Runtime);
 
@@ -37,5 +38,9 @@ fn criterion_benchmark(criterion: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, criterion_benchmark);
-criterion_main!(benches);
+criterion_group! {
+    name = entity_metadata_benches;
+    config = Criterion::default().sample_size(10).measurement_time(Duration::from_secs(10));
+    targets = criterion_benchmark
+}
+criterion_main!(entity_metadata_benches);

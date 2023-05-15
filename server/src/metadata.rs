@@ -1,8 +1,7 @@
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use serde::ser::SerializeMap;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::database::{Connection, Executor};
@@ -73,9 +72,9 @@ pub mod entities_metadata_query {
         learning_resource_type: Vec<LinkedNode>,
         license: LinkedNode,
         main_entity_of_page: serde_json::Value,
-        maintainer: Organization,
+        maintainer: serde_json::Value,
         name: String,
-        publisher: Vec<Organization>,
+        publisher: Vec<serde_json::Value>,
         version: String,
     }
 
@@ -86,7 +85,7 @@ pub mod entities_metadata_query {
         creator_type: CreatorType,
         id: String,
         name: String,
-        affiliation: Organization,
+        affiliation: serde_json::Value,
     }
 
     #[derive(Serialize)]
@@ -98,10 +97,6 @@ pub mod entities_metadata_query {
     #[serde(rename_all = "camelCase")]
     struct LinkedNode {
         id: String,
-    }
-
-    enum Organization {
-        SerloEducation,
     }
 
     #[async_trait]
@@ -215,7 +210,7 @@ pub mod entities_metadata_query {
                         // https://serlo.org/:userId
                         id: get_iri(*id),
                         name: username.to_string(),
-                        affiliation: Organization::SerloEducation
+                        affiliation: get_serlo_organzation_metadata()
                     })
                     .collect();
                 let schema_type =
@@ -317,13 +312,13 @@ pub mod entities_metadata_query {
                     license: LinkedNode { id: result.license_url},
                     main_entity_of_page: json!({
                         "id": "https://serlo.org/metadata-api",
-                        "provider": Organization::SerloEducation,
+                        "provider": get_serlo_organzation_metadata(),
                         "dateCreated": current_date,
                         "dateModified": current_date,
                     }),
-                    maintainer: Organization::SerloEducation,
+                    maintainer: get_serlo_organzation_metadata(),
                     name,
-                    publisher: vec![Organization::SerloEducation],
+                    publisher: vec![get_serlo_organzation_metadata()],
                     is_part_of,
                     version: get_iri(result.version.unwrap())
                 }
@@ -370,18 +365,11 @@ pub mod entities_metadata_query {
         .collect()
     }
 
-    impl Serialize for Organization {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-        {
-            let mut map = serializer.serialize_map(Some(3))?;
-
-            map.serialize_entry("id", "https://serlo.org/#organization")?;
-            map.serialize_entry("type", "Organization")?;
-            map.serialize_entry("name", "Serlo Education e.V.")?;
-
-            map.end()
-        }
+    fn get_serlo_organzation_metadata() -> serde_json::Value {
+        json!({
+            "id": "https://serlo.org/#organization",
+            "type": "Organization",
+            "name": "Serlo Education e.V."
+        })
     }
 }

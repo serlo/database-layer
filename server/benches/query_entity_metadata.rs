@@ -19,7 +19,7 @@ fn criterion_benchmark(criterion: &mut Criterion) {
     criterion.bench_function("query entity metadata", |bencher| {
         bencher
             .to_async(MyRuntime(actix_rt::Runtime::new().unwrap()))
-            .iter(|| query_metadata(black_box(10000)))
+            .iter(|| query_metadata(10000))
     });
 }
 

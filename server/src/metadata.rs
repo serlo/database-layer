@@ -27,6 +27,9 @@ impl MessageResponder for MetadataMessage {
     }
 }
 
+// See https://github.com/serlo/private-issues-sso-metadata-wallet/issues/37
+pub static METADATA_API_LAST_CHANGES_DATE: &str = "2023-05-16T00:00:00Z";
+
 pub mod entities_metadata_query {
     use itertools::Itertools;
     use std::collections::{HashMap, HashSet};
@@ -122,10 +125,25 @@ pub mod entities_metadata_query {
     async fn query<'a, E>(
         payload: &Payload,
         executor: E,
-    ) -> Result<Vec<EntityMetadata>, sqlx::Error>
+    ) -> Result<Vec<EntityMetadata>, operation::Error>
     where
         E: Executor<'a>,
     {
+        let metadata_api_last_changes_date: DateTime<Utc> =
+            DateTime::parse_from_rfc3339(METADATA_API_LAST_CHANGES_DATE)
+                .or_else(|_| {
+                    Err(operation::Error::InternalServerError {
+                        error: "Error while parsing METADATA_API_LAST_CHANGES_DATE".into(),
+                    })
+                })?
+                .with_timezone(&Utc);
+
+        let modified_after = if payload.modified_after >= Some(metadata_api_last_changes_date) {
+            payload.modified_after
+        } else {
+            Option::None
+        };
+
         Ok(sqlx::query!(
             r#"
                 SELECT
@@ -166,8 +184,8 @@ pub mod entities_metadata_query {
             payload.after.unwrap_or(0),
             payload.instance,
             payload.instance,
-            payload.modified_after,
-            payload.modified_after,
+            modified_after,
+            modified_after,
             payload.first
         ).fetch_all(executor)
             .await?

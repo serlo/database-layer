@@ -228,7 +228,7 @@ pub mod entities_metadata_query {
                         // https://serlo.org/:userId
                         id: get_iri(*id),
                         name: username.to_string(),
-                        affiliation: get_serlo_organzation_metadata()
+                        affiliation: get_serlo_organization_metadata()
                     })
                     .collect();
                 let schema_type =
@@ -330,13 +330,13 @@ pub mod entities_metadata_query {
                     license: LinkedNode { id: result.license_url},
                     main_entity_of_page: json!({
                         "id": "https://serlo.org/metadata-api",
-                        "provider": get_serlo_organzation_metadata(),
+                        "provider": get_serlo_organization_metadata(),
                         "dateCreated": current_date,
                         "dateModified": current_date,
                     }),
-                    maintainer: get_serlo_organzation_metadata(),
+                    maintainer: get_serlo_organization_metadata(),
                     name,
-                    publisher: vec![get_serlo_organzation_metadata()],
+                    publisher: vec![get_serlo_organization_metadata()],
                     is_part_of,
                     version: get_iri(result.version.unwrap())
                 }
@@ -383,7 +383,7 @@ pub mod entities_metadata_query {
         .collect()
     }
 
-    fn get_serlo_organzation_metadata() -> serde_json::Value {
+    fn get_serlo_organization_metadata() -> serde_json::Value {
         json!({
             "id": "https://serlo.org/#organization",
             "type": "Organization",

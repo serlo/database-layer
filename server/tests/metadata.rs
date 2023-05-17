@@ -1,5 +1,6 @@
 mod entities_metadata_query {
     use chrono::{DateTime, Duration, Utc};
+    use std::env;
     use std::time::{SystemTime, UNIX_EPOCH};
     use test_utils::{assert_eq, *};
 
@@ -656,6 +657,7 @@ mod entities_metadata_query {
 
     #[actix_rt::test]
     async fn with_modified_after_parameter() {
+        env::set_var("METADATA_API_LAST_CHANGES_DATE", "2014-12-30T00:00:00Z");
         Message::new(
             "EntitiesMetadataQuery",
             json!({ "first": 1, "modifiedAfter": "2015-01-01T00:00:00Z" }),
@@ -663,6 +665,15 @@ mod entities_metadata_query {
         .execute()
         .await
         .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 1647));
+
+        env::set_var("METADATA_API_LAST_CHANGES_DATE", "2015-01-01T00:00:01Z");
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "modifiedAfter": "2015-01-01T00:00:00Z" }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 1495));
     }
 
     #[actix_rt::test]

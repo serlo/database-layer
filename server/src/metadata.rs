@@ -296,9 +296,7 @@ pub mod entities_metadata_query {
                     date_created: result.date_created.to_rfc3339(),
                     date_modified: result.date_modified.to_rfc3339(),
                     headline: title
-                        .filter (|t| !t.is_empty())
-                        .map(|t| Some(t))
-                        .unwrap_or_else(|| None),
+                        .filter (|t| !t.is_empty()),
                     creator: creators,
                     id,
                     identifier: json!({

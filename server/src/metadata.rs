@@ -62,6 +62,7 @@ pub mod entities_metadata_query {
         creator: Vec<Creator>,
         #[serde(skip_serializing_if = "Option::is_none")]
         description: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         headline: Option<String>,
         identifier: serde_json::Value,
         in_language: Vec<String>,
@@ -294,7 +295,10 @@ pub mod entities_metadata_query {
                         .map(|title| title.to_string()),
                     date_created: result.date_created.to_rfc3339(),
                     date_modified: result.date_modified.to_rfc3339(),
-                    headline: title,
+                    headline: title
+                        .filter (|t| !t.is_empty())
+                        .map(|t| Some(t))
+                        .unwrap_or_else(|| None),
                     creator: creators,
                     id,
                     identifier: json!({

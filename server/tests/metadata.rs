@@ -351,7 +351,6 @@ mod entities_metadata_query {
           ],
           "dateCreated": "2014-03-01T21:02:56+00:00",
           "dateModified": "2014-03-01T21:02:56+00:00",
-          "headline": null,
           "identifier": {
             "propertyID": "UUID",
             "type": "PropertyValue",
@@ -423,7 +422,6 @@ mod entities_metadata_query {
           ],
           "dateCreated": "2014-03-01T20:54:51+00:00",
           "dateModified": "2014-03-01T20:54:51+00:00",
-          "headline": null,
           "identifier": {
             "propertyID": "UUID",
             "type": "PropertyValue",

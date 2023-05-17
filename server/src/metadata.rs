@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::env;
 
 use crate::database::{Connection, Executor};
 use crate::message::MessageResponder;
@@ -28,7 +29,6 @@ impl MessageResponder for MetadataMessage {
 }
 
 // See https://github.com/serlo/private-issues-sso-metadata-wallet/issues/37
-pub static METADATA_API_LAST_CHANGES_DATE: &str = "2023-05-16T00:00:00Z";
 
 pub mod entities_metadata_query {
     use itertools::Itertools;
@@ -129,16 +129,16 @@ pub mod entities_metadata_query {
     where
         E: Executor<'a>,
     {
-        let metadata_api_last_changes_date: DateTime<Utc> =
-            DateTime::parse_from_rfc3339(METADATA_API_LAST_CHANGES_DATE)
-                .or_else(|_| {
-                    Err(operation::Error::InternalServerError {
-                        error: "Error while parsing METADATA_API_LAST_CHANGES_DATE".into(),
-                    })
-                })?
-                .with_timezone(&Utc);
+        let metadata_api_last_changes_date: DateTime<Utc> = DateTime::parse_from_rfc3339(
+            &env::var("METADATA_API_LAST_CHANGES_DATE")
+                .expect("METADATA_API_LAST_CHANGES_DATE is not set."),
+        )
+        .map_err(|_| operation::Error::InternalServerError {
+            error: "Error while parsing METADATA_API_LAST_CHANGES_DATE".into(),
+        })?
+        .with_timezone(&Utc);
 
-        let modified_after = if payload.modified_after >= Some(metadata_api_last_changes_date) {
+        let modified_after = if payload.modified_after > Some(metadata_api_last_changes_date) {
             payload.modified_after
         } else {
             Option::None

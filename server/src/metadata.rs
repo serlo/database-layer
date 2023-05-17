@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::env;
 
 use crate::database::{Connection, Executor};
 use crate::message::MessageResponder;
@@ -122,10 +123,26 @@ pub mod entities_metadata_query {
     async fn query<'a, E>(
         payload: &Payload,
         executor: E,
-    ) -> Result<Vec<EntityMetadata>, sqlx::Error>
+    ) -> Result<Vec<EntityMetadata>, operation::Error>
     where
         E: Executor<'a>,
     {
+        // See https://github.com/serlo/private-issues-sso-metadata-wallet/issues/37
+        let metadata_api_last_changes_date: DateTime<Utc> = DateTime::parse_from_rfc3339(
+            &env::var("METADATA_API_LAST_CHANGES_DATE")
+                .expect("METADATA_API_LAST_CHANGES_DATE is not set."),
+        )
+        .map_err(|_| operation::Error::InternalServerError {
+            error: "Error while parsing METADATA_API_LAST_CHANGES_DATE".into(),
+        })?
+        .with_timezone(&Utc);
+
+        let modified_after = if payload.modified_after > Some(metadata_api_last_changes_date) {
+            payload.modified_after
+        } else {
+            Option::None
+        };
+
         Ok(sqlx::query!(
             r#"
                 SELECT
@@ -166,8 +183,8 @@ pub mod entities_metadata_query {
             payload.after.unwrap_or(0),
             payload.instance,
             payload.instance,
-            payload.modified_after,
-            payload.modified_after,
+            modified_after,
+            modified_after,
             payload.first
         ).fetch_all(executor)
             .await?
@@ -210,7 +227,7 @@ pub mod entities_metadata_query {
                         // https://serlo.org/:userId
                         id: get_iri(*id),
                         name: username.to_string(),
-                        affiliation: get_serlo_organzation_metadata()
+                        affiliation: get_serlo_organization_metadata()
                     })
                     .collect();
                 let schema_type =
@@ -312,13 +329,13 @@ pub mod entities_metadata_query {
                     license: LinkedNode { id: result.license_url},
                     main_entity_of_page: json!({
                         "id": "https://serlo.org/metadata-api",
-                        "provider": get_serlo_organzation_metadata(),
+                        "provider": get_serlo_organization_metadata(),
                         "dateCreated": current_date,
                         "dateModified": current_date,
                     }),
-                    maintainer: get_serlo_organzation_metadata(),
+                    maintainer: get_serlo_organization_metadata(),
                     name,
-                    publisher: vec![get_serlo_organzation_metadata()],
+                    publisher: vec![get_serlo_organization_metadata()],
                     is_part_of,
                     version: get_iri(result.version.unwrap())
                 }
@@ -365,7 +382,7 @@ pub mod entities_metadata_query {
         .collect()
     }
 
-    fn get_serlo_organzation_metadata() -> serde_json::Value {
+    fn get_serlo_organization_metadata() -> serde_json::Value {
         json!({
             "id": "https://serlo.org/#organization",
             "type": "Organization",

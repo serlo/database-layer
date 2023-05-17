@@ -28,8 +28,6 @@ impl MessageResponder for MetadataMessage {
     }
 }
 
-// See https://github.com/serlo/private-issues-sso-metadata-wallet/issues/37
-
 pub mod entities_metadata_query {
     use itertools::Itertools;
     use std::collections::{HashMap, HashSet};
@@ -129,6 +127,7 @@ pub mod entities_metadata_query {
     where
         E: Executor<'a>,
     {
+        // See https://github.com/serlo/private-issues-sso-metadata-wallet/issues/37
         let metadata_api_last_changes_date: DateTime<Utc> = DateTime::parse_from_rfc3339(
             &env::var("METADATA_API_LAST_CHANGES_DATE")
                 .expect("METADATA_API_LAST_CHANGES_DATE is not set."),

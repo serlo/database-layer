@@ -8,7 +8,7 @@ mod entities_metadata_query {
     async fn returns_metadata_for_articles() {
         assert_metadata(json!({
           "@context": [
-            "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+            "https://w3id.org/kim/amb/context.jsonld",
             {
               "@language": "de",
               "@vocab": "http://schema.org/",
@@ -169,7 +169,7 @@ mod entities_metadata_query {
     async fn returns_metadata_for_applets() {
         assert_metadata(json!({
             "@context": [
-              "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+              "https://w3id.org/kim/amb/context.jsonld",
               {
                 "@language": "en",
                 "@vocab": "http://schema.org/",
@@ -241,7 +241,7 @@ mod entities_metadata_query {
     async fn returns_metadata_for_courses() {
         assert_metadata(json!({
           "@context": [
-            "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+            "https://w3id.org/kim/amb/context.jsonld",
             {
               "@language": "de",
               "@vocab": "http://schema.org/",
@@ -328,7 +328,7 @@ mod entities_metadata_query {
     async fn returns_metadata_for_exercises() {
         assert_metadata(json!({
           "@context": [
-            "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+            "https://w3id.org/kim/amb/context.jsonld",
             {
               "@language": "de",
               "@vocab": "http://schema.org/",
@@ -399,7 +399,7 @@ mod entities_metadata_query {
     async fn returns_metadata_for_exercise_groups() {
         assert_metadata(json!({
           "@context": [
-            "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+            "https://w3id.org/kim/amb/context.jsonld",
             {
               "@language": "de",
               "@vocab": "http://schema.org/",
@@ -473,7 +473,7 @@ mod entities_metadata_query {
     async fn returns_metadata_for_videos() {
         assert_metadata(json!({
           "@context": [
-            "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+            "https://w3id.org/kim/amb/context.jsonld",
             {
               "@language": "de",
               "@vocab": "http://schema.org/",

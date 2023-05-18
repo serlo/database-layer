@@ -168,71 +168,71 @@ mod entities_metadata_query {
     #[actix_rt::test]
     async fn returns_metadata_for_applets() {
         assert_metadata(json!({
-            "@context": [
-              "https://w3id.org/kim/amb/context.jsonld",
-              {
-                "@language": "en",
-                "@vocab": "http://schema.org/",
-                "type": "@type",
-                "id": "@id"
-              }
-            ],
-            "id": "https://serlo.org/35596",
-            "type": [ "LearningResource", "WebApplication" ],
-            "creator": [
-              {
-                "id": "https://serlo.org/1",
-                "name": "admin",
-                "type": "Person",
-                "affiliation": {
-                  "id": "https://serlo.org/#organization",
-                  "type": "Organization",
-                  "name": "Serlo Education e.V.",
-                },
-              },
-            ],
-            "dateCreated": "2020-01-29T17:47:19+00:00",
-            "dateModified": "2020-01-29T17:48:54+00:00",
-            "headline": "Example applet",
-            "identifier": {
-              "propertyID": "UUID",
-              "type": "PropertyValue",
-              "value": 35596
-            },
-            "inLanguage": [ "en" ],
-            "interactivityType": {
-              "id": "http://purl.org/dcx/lrmi-vocabs/interactivityType/active"
-            },
-            "isAccessibleForFree": true,
-            "isFamilyFriendly": true,
-            "learningResourceType": [
-              { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/application" },
-              { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/demonstration" },
-            ],
-            "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
-            "mainEntityOfPage": [{
-              "id": "https://serlo.org/metadata-api",
-              "provider": {
-                "id": "https://serlo.org/#organization",
-                "type": "Organization",
-                "name": "Serlo Education e.V."
-              },
-            }],
-            "maintainer": {
-              "id": "https://serlo.org/#organization",
-              "type": "Organization",
-              "name": "Serlo Education e.V.",
-            },
-            "name": "Example applet",
-            "publisher": [
-              {
+          "@context": [
+            "https://w3id.org/kim/amb/context.jsonld",
+            {
+              "@language": "en",
+              "@vocab": "http://schema.org/",
+              "type": "@type",
+              "id": "@id"
+            }
+          ],
+          "id": "https://serlo.org/35596",
+          "type": [ "LearningResource", "WebApplication" ],
+          "creator": [
+            {
+              "id": "https://serlo.org/1",
+              "name": "admin",
+              "type": "Person",
+              "affiliation": {
                 "id": "https://serlo.org/#organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               },
-            ],
-            "isPartOf": [{ "id": "https://serlo.org/35560" }],
-            "version": "https://serlo.org/35597"
+            },
+          ],
+          "dateCreated": "2020-01-29T17:47:19+00:00",
+          "dateModified": "2020-01-29T17:48:54+00:00",
+          "headline": "Example applet",
+          "identifier": {
+            "propertyID": "UUID",
+            "type": "PropertyValue",
+            "value": 35596
+          },
+          "inLanguage": [ "en" ],
+          "interactivityType": {
+            "id": "http://purl.org/dcx/lrmi-vocabs/interactivityType/active"
+          },
+          "isAccessibleForFree": true,
+          "isFamilyFriendly": true,
+          "learningResourceType": [
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/application" },
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/demonstration" },
+          ],
+          "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
+          "mainEntityOfPage": [{
+            "id": "https://serlo.org/metadata-api",
+            "provider": {
+              "id": "https://serlo.org/#organization",
+              "type": "Organization",
+              "name": "Serlo Education e.V."
+            },
+          }],
+          "maintainer": {
+            "id": "https://serlo.org/#organization",
+            "type": "Organization",
+            "name": "Serlo Education e.V.",
+          },
+          "name": "Example applet",
+          "publisher": [
+            {
+              "id": "https://serlo.org/#organization",
+              "type": "Organization",
+              "name": "Serlo Education e.V.",
+            },
+          ],
+          "isPartOf": [{ "id": "https://serlo.org/35560" }],
+          "version": "https://serlo.org/35597"
         }))
         .await;
     }

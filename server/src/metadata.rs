@@ -329,12 +329,14 @@ pub mod entities_metadata_query {
                     is_family_friendly: true,
                     learning_resource_type: get_learning_resource_type(&result.resource_type),
                     license: LinkedNode { id: result.license_url},
-                    main_entity_of_page: json!({
-                        "id": "https://serlo.org/metadata-api",
-                        "provider": get_serlo_organization_metadata(),
-                        "dateCreated": current_date,
-                        "dateModified": current_date,
-                    }),
+                    main_entity_of_page: json!([
+                        {
+                            "id": "https://serlo.org/metadata-api",
+                            "provider": get_serlo_organization_metadata(),
+                            "dateCreated": current_date,
+                            "dateModified": current_date,
+                        }
+                    ]),
                     maintainer: get_serlo_organization_metadata(),
                     name,
                     publisher: vec![get_serlo_organization_metadata()],

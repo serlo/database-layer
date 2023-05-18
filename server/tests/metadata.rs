@@ -131,14 +131,14 @@ mod entities_metadata_query {
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
           ],
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
-          "mainEntityOfPage": {
+          "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata-api",
             "provider": {
                "id": "https://serlo.org/#organization",
                "type": "Organization",
                "name": "Serlo Education e.V."
             },
-          },
+          }],
           "maintainer": {
             "id": "https://serlo.org/#organization",
             "type": "Organization",
@@ -210,14 +210,14 @@ mod entities_metadata_query {
               { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/demonstration" },
             ],
             "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
-            "mainEntityOfPage": {
+            "mainEntityOfPage": [{
               "id": "https://serlo.org/metadata-api",
               "provider": {
                 "id": "https://serlo.org/#organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V."
               },
-            },
+            }],
             "maintainer": {
               "id": "https://serlo.org/#organization",
               "type": "Organization",
@@ -294,14 +294,14 @@ mod entities_metadata_query {
           "license": {
             "id": "https://creativecommons.org/licenses/by-sa/4.0/"
           },
-          "mainEntityOfPage": {
+          "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata-api",
             "provider": {
               "id": "https://serlo.org/#organization",
               "type": "Organization",
               "name": "Serlo Education e.V."
             },
-          },
+          }],
           "maintainer": {
             "id": "https://serlo.org/#organization",
             "type": "Organization",
@@ -369,14 +369,14 @@ mod entities_metadata_query {
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" }
           ],
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
-          "mainEntityOfPage": {
+          "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata-api",
             "provider": {
               "id": "https://serlo.org/#organization",
               "type": "Organization",
               "name": "Serlo Education e.V."
             },
-          },
+          }],
           "maintainer": {
             "id": "https://serlo.org/#organization",
             "type": "Organization",
@@ -439,14 +439,14 @@ mod entities_metadata_query {
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
           ],
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
-          "mainEntityOfPage": {
+          "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata-api",
             "provider": {
               "id": "https://serlo.org/#organization",
               "type": "Organization",
               "name": "Serlo Education e.V."
             },
-          },
+          }],
           "maintainer": {
             "id": "https://serlo.org/#organization",
             "type": "Organization",
@@ -532,14 +532,14 @@ mod entities_metadata_query {
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/audiovisual_medium" },
           ],
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
-          "mainEntityOfPage": {
+          "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata-api",
             "provider": {
               "id": "https://serlo.org/#organization",
               "type": "Organization",
               "name": "Serlo Education e.V."
             },
-          },
+          }],
           "maintainer": {
             "id": "https://serlo.org/#organization",
             "type": "Organization",
@@ -703,7 +703,7 @@ mod entities_metadata_query {
         .should_be_ok_with(|actual_response: Value| {
             let parse_date = |property: &str| {
                 DateTime::parse_from_rfc3339(
-                    &actual_response["entities"][0]["mainEntityOfPage"][property]
+                    &actual_response["entities"][0]["mainEntityOfPage"][0][property]
                         .as_str()
                         .unwrap(),
                 )
@@ -715,8 +715,8 @@ mod entities_metadata_query {
             assert!(Utc::now() < actual_date_created + Duration::seconds(1));
             assert!(Utc::now() < actual_date_modified + Duration::seconds(1));
 
-            expected_metadata["mainEntityOfPage"]["dateCreated"] = json!(actual_date_created);
-            expected_metadata["mainEntityOfPage"]["dateModified"] = json!(actual_date_modified);
+            expected_metadata["mainEntityOfPage"][0]["dateCreated"] = json!(actual_date_created);
+            expected_metadata["mainEntityOfPage"][0]["dateModified"] = json!(actual_date_modified);
 
             let expected_response = json!({ "entities": [expected_metadata] });
 

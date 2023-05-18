@@ -239,8 +239,7 @@ pub mod entities_metadata_query {
                             match result.resource_type.as_str() {
                                 "article" => "Artikel",
                                 "course" => "Kurs",
-                                "text-exercise" => "Aufgabe",
-                                "text-exercise-group" => "Aufgabe",
+                                "text-exercise" | "text-exercise-group" => "Aufgabe",
                                 "video" => "Video",
                                 "applet" => "Applet",
                                 _ => "Inhalt",
@@ -250,8 +249,7 @@ pub mod entities_metadata_query {
                             match result.resource_type.as_str() {
                                 "article" => "Article",
                                 "course" => "Course",
-                                "text-exercise" => "Exercise",
-                                "text-exercise-group" => "Exercise",
+                                "text-exercise" | "text-exercise-group" => "Exercise",
                                 "video" => "Video",
                                 "applet" => "Applet",
                                 _ => "Content",

@@ -296,7 +296,7 @@ pub mod entities_metadata_query {
 
                 EntityMetadata {
                     context: json!([
-                        "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                        "https://w3id.org/kim/amb/context.jsonld",
                         {
                             "@language": result.instance,
                             "@vocab": "http://schema.org/",

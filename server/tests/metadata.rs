@@ -382,7 +382,7 @@ mod entities_metadata_query {
             "type": "Organization",
             "name": "Serlo Education e.V.",
           },
-          "name": "Aufgabe#2823 in \"Aufgaben zum Thema Ergebnisraum oder Ergebnismenge\"",
+          "name": "Aufgabe aus \"Aufgaben zum Thema Ergebnisraum oder Ergebnismenge\"",
           "publisher": [
             {
               "id": "https://serlo.org/#organization",
@@ -452,7 +452,7 @@ mod entities_metadata_query {
             "type": "Organization",
             "name": "Serlo Education e.V.",
           },
-          "name": "Aufgabengruppe#2217 in \"Sachaufgaben\"",
+          "name": "Aufgabe aus \"Sachaufgaben\"",
           "isPartOf": [
             { "id": "https://serlo.org/21804" },
             { "id": "https://serlo.org/25726" },

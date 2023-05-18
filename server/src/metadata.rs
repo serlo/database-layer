@@ -240,7 +240,7 @@ pub mod entities_metadata_query {
                                 "article" => "Artikel",
                                 "course" => "Kurs",
                                 "text-exercise" => "Aufgabe",
-                                "text-exercise-group" => "Aufgabengruppe",
+                                "text-exercise-group" => "Aufgabe",
                                 "video" => "Video",
                                 "applet" => "Applet",
                                 _ => "Inhalt",
@@ -251,7 +251,7 @@ pub mod entities_metadata_query {
                                 "article" => "Article",
                                 "course" => "Course",
                                 "text-exercise" => "Exercise",
-                                "text-exercise-group" => "Exercise group",
+                                "text-exercise-group" => "Exercise",
                                 "video" => "Video",
                                 "applet" => "Applet",
                                 _ => "Content",
@@ -275,8 +275,9 @@ pub mod entities_metadata_query {
                         // Since we have a left join on term_taxonomy_entity we whould never hit
                         // this case (and thus avoid entites not being in a taxonomy)
                         .unwrap_or("<unknown>".to_string());
+                    let from_i18n = if result.instance == "de" { "aus" } else { "from" };
 
-                    format!("{schema_type_i18n}#{identifier} in \"{term_name}\"")
+                    format!("{schema_type_i18n} {from_i18n} \"{term_name}\"")
                 });
                 let is_part_of: Vec<LinkedNode> = result.taxonomy_term_ids.as_ref()
                     .and_then(|value| value.as_array())

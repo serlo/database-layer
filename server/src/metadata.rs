@@ -67,7 +67,6 @@ pub mod entities_metadata_query {
         headline: Option<String>,
         identifier: serde_json::Value,
         in_language: Vec<String>,
-        interactivity_type: LinkedNode,
         is_accessible_for_free: bool,
         is_family_friendly: bool,
         is_part_of: Vec<LinkedNode>,
@@ -321,9 +320,6 @@ pub mod entities_metadata_query {
                         "value": identifier,
                     }),
                     in_language: vec![result.instance],
-                    interactivity_type: LinkedNode {
-                        id: "http://purl.org/dcx/lrmi-vocabs/interactivityType/active".to_string(),
-                    },
                     is_accessible_for_free: true,
                     is_family_friendly: true,
                     learning_resource_type: get_learning_resource_type(&result.resource_type),

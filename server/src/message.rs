@@ -9,6 +9,7 @@ use crate::metadata::MetadataMessage;
 use crate::navigation::NavigationMessage;
 use crate::notification::NotificationMessage;
 use crate::subject::SubjectsMessage;
+use crate::subject::TempSubjectMessage;
 use crate::subscription::SubscriptionMessage;
 use crate::thread::ThreadMessage;
 use crate::user::UserMessage;
@@ -34,6 +35,7 @@ pub enum Message {
     SubjectsMessage(SubjectsMessage),
     SubscriptionMessage(SubscriptionMessage),
     TaxonomyTermMessage(TaxonomyTermMessage),
+    TempSubjectMessage(TempSubjectMessage),
     ThreadMessage(ThreadMessage),
     UserMessage(UserMessage),
     UuidMessage(UuidMessage),
@@ -55,6 +57,7 @@ impl MessageResponder for Message {
             Message::SubjectsMessage(message) => message.handle(connection).await,
             Message::SubscriptionMessage(message) => message.handle(connection).await,
             Message::TaxonomyTermMessage(message) => message.handle(connection).await,
+            Message::TempSubjectMessage(message) => message.execute(connection).await,
             Message::ThreadMessage(message) => message.handle(connection).await,
             Message::UserMessage(message) => message.handle(connection).await,
             Message::UuidMessage(message) => message.handle(connection).await,

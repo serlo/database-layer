@@ -78,7 +78,7 @@ pub mod all_threads_query {
                         self.first,
                         self.after.clone(),
                         self.instance.clone(),
-                        self.subject_id.clone(),
+                        self.subject_id,
                         pool,
                     )
                     .await?
@@ -88,7 +88,7 @@ pub mod all_threads_query {
                         self.first,
                         self.after.clone(),
                         self.instance.clone(),
-                        self.subject_id.clone(),
+                        self.subject_id,
                         transaction,
                     )
                     .await?

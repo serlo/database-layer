@@ -12,12 +12,6 @@ pub enum SubjectsMessage {
     SubjectsQuery(Option<serde_json::Value>),
 }
 
-#[derive(Deserialize, Serialize)]
-#[serde(tag = "type", content = "payload")]
-pub enum TempSubjectMessage {
-    TempSubjectQuery(temp_subject_query::Payload),
-}
-
 #[async_trait]
 impl MessageResponder for SubjectsMessage {
     #[allow(clippy::async_yields_async)]
@@ -100,65 +94,5 @@ pub mod subjects_query {
         .collect();
 
         Ok(subjects_query::Output { subjects })
-    }
-}
-
-
-pub mod temp_subject_query {
-    use super::*;
-
-    #[derive(Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Payload {
-        pub taxonomy_id: i32,
-    }
-
-    #[derive(Serialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Output {
-        pub subject_id: i32,
-    }
-
-    #[async_trait]
-    impl Operation for Payload {
-        type Output = Output;
-
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => fetch_subject(pool, self.taxonomy_id.clone()).await?,
-                Connection::Transaction(transaction) => fetch_subject(transaction, self.taxonomy_id.clone()).await?,
-            })
-        }
-    }
-
-    async fn fetch_subject<'a, E>(executor: E, taxonomy_id: i32,) -> Result<Output, sqlx::Error>
-        where
-            E: Executor<'a>,
-    {
-        let subject_id = sqlx::query!(
-            r#"
-                WITH RECURSIVE ancestors AS (
-                      SELECT id, parent_id
-                      FROM term_taxonomy
-                      WHERE id = ?
-
-                      UNION ALL
-
-                      SELECT tt.id, tt.parent_id
-                      FROM term_taxonomy tt
-                      JOIN ancestors a ON tt.id = a.parent_id
-                )
-                SELECT id
-                FROM ancestors
-                WHERE parent_id is NULL
-                    OR id = 106081
-                    OR id = 146728
-            "#,
-            taxonomy_id
-        )
-            .fetch_one(executor)
-            .await?;
-
-        Ok(Output { subject_id })
     }
 }

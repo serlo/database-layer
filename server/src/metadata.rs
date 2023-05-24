@@ -52,6 +52,7 @@ pub mod entities_metadata_query {
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
     struct EntityMetadata {
+        about: serde_json::Value,
         #[serde(rename = "@context")]
         context: serde_json::Value,
         id: String,
@@ -145,8 +146,19 @@ pub mod entities_metadata_query {
 
         Ok(sqlx::query!(
             r#"
+                WITH RECURSIVE ancestors AS (
+                      SELECT id, parent_id, id AS origin_id, id as subject_id
+                      FROM term_taxonomy
+
+                      UNION ALL
+
+                      SELECT tt.id, tt.parent_id,  a.origin_id, a.id
+                      FROM term_taxonomy tt
+                      JOIN ancestors a ON tt.id = a.parent_id
+                )
                 SELECT
                     entity.id,
+                    JSON_ARRAYAGG(ancestors.subject_id) AS subject_ids,
                     type.name AS resource_type,
                     JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,
                     entity.date AS date_created,
@@ -170,12 +182,14 @@ pub mod entities_metadata_query {
                 JOIN term on term_taxonomy.term_id = term.id
                 JOIN entity_revision all_revisions_of_entity ON all_revisions_of_entity.repository_id = entity.id
                 JOIN user ON all_revisions_of_entity.author_id = user.id
+                JOIN ancestors on ancestors.origin_id = term_taxonomy_entity.term_taxonomy_id
                 WHERE entity.id > ?
                     AND (? is NULL OR instance.subdomain = ?)
                     AND (? is NULL OR entity_revision.date > ?)
                     AND uuid.trashed = 0
                     AND type.name IN ("applet", "article", "course", "text-exercise",
                                       "text-exercise-group", "video")
+                    AND (ancestors.parent_id is NULL OR ancestors.id = 106081 OR ancestors.id = 146728)
                 GROUP BY entity.id
                 ORDER BY entity.id
                 LIMIT ?
@@ -293,6 +307,7 @@ pub mod entities_metadata_query {
                 let current_date = Utc::now().to_rfc3339();
 
                 EntityMetadata {
+                    about: result.subject_ids.unwrap(),
                     context: json!([
                         "https://w3id.org/kim/amb/context.jsonld",
                         {

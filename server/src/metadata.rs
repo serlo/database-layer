@@ -52,7 +52,7 @@ pub mod entities_metadata_query {
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
     struct EntityMetadata {
-        about: serde_json::Value,
+        about: Vec<i32>,
         #[serde(rename = "@context")]
         context: serde_json::Value,
         id: String,
@@ -305,9 +305,20 @@ pub mod entities_metadata_query {
                     })
                     .unwrap_or(Vec::new());
                 let current_date = Utc::now().to_rfc3339();
+                let subject_ids: Vec<i32> = result.subject_ids.as_ref()
+                    .and_then(|value| value.as_array())
+                    .map(|ids| {
+                        ids.iter()
+                            .filter_map(|element| element.as_i64())
+                            .collect::<HashSet<i64>>()
+                            .into_iter()
+                            .map(|id| id as i32)
+                            .collect()
+                    })
+                    .unwrap_or(Vec::new());
 
                 EntityMetadata {
-                    about: result.subject_ids.unwrap(),
+                    about: subject_ids,
                     context: json!([
                         "https://w3id.org/kim/amb/context.jsonld",
                         {

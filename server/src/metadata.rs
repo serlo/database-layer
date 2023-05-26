@@ -31,6 +31,7 @@ impl MessageResponder for MetadataMessage {
 pub mod entities_metadata_query {
     use itertools::Itertools;
     use std::collections::{HashMap, HashSet};
+    use crate::instance::Instance;
 
     use super::*;
 
@@ -413,5 +414,31 @@ pub mod entities_metadata_query {
             "type": "Organization",
             "name": "Serlo Education e.V."
         })
+    }
+
+    struct SubjectMetadata {
+        r#type: string,
+        id: string,
+        in_scheme: Scheme,
+        pref_label: Instance,
+    }
+
+    struct Scheme {
+        id: string
+    }
+
+    fn lookup_subject_metadata(id: i32) -> string {
+        return match id {
+            5 => "Mathematik",
+            17744 => "Nature Conservation",
+            18230 => "Chemie",
+            23362 => "Biologie",
+            25979 => "Englisch",
+            33894 => "Latein",
+            41107 => "Physik",
+            47899 => "Informatik",
+            79159 => "Politik",
+            _ => "",
+        }
     }
 }

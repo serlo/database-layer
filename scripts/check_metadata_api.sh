@@ -24,7 +24,9 @@ function init() {
 }
 
 function main() {
-  check_metadata 1495
+  for ID in 1495 35596 18514 2823 2217 18865; do
+    check_metadata $ID
+  done
 }
 
 function check_metadata() {

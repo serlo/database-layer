@@ -31,7 +31,6 @@ impl MessageResponder for MetadataMessage {
 pub mod entities_metadata_query {
     use itertools::Itertools;
     use std::collections::{HashMap, HashSet};
-    use crate::instance::Instance;
 
     use super::*;
 
@@ -53,7 +52,8 @@ pub mod entities_metadata_query {
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
     struct EntityMetadata {
-        about: Vec<i32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        about: Option<Vec<SubjectMetadata>>,
         #[serde(rename = "@context")]
         context: serde_json::Value,
         id: String,
@@ -317,9 +317,19 @@ pub mod entities_metadata_query {
                             .collect()
                     })
                     .unwrap_or(Vec::new());
+                let subject_metadata: Option<Vec<SubjectMetadata>> = subject_ids.iter().map(|id| {
+                    let raw_subject_metadata = lookup_subject_metadata(*id);
+                    return if let Some(ref meta) = raw_subject_metadata {
+                        Some(SubjectMetadata {
+                            r#type: "Concept".to_string(),
+                            id: raw_subject_metadata.as_ref().unwrap().in_scheme.to_id_string() + &raw_subject_metadata.as_ref().unwrap().id,
+                            in_scheme: raw_subject_metadata.unwrap().in_scheme.to_scheme_string(),
+                        })
+                    } else { None }
+                }).collect();
 
                 EntityMetadata {
-                    about: subject_ids,
+                    about: subject_metadata,
                     context: json!([
                         "https://w3id.org/kim/amb/context.jsonld",
                         {
@@ -416,29 +426,64 @@ pub mod entities_metadata_query {
         })
     }
 
+    enum SchemeId {
+        UniversitySubject,
+        SchoolSubject,
+    }
+
+    impl SchemeId {
+        fn to_scheme_string(&self) -> String {
+            match *self {
+                SchemeId::UniversitySubject => "https://w3id.org/kim/hochschulfaechersystematik/scheme".to_string(),
+                SchemeId::SchoolSubject => "http://w3id.org/kim/schulfaecher/".to_string(),
+            }
+        }
+        fn to_id_string(&self) -> String {
+            match *self {
+                SchemeId::UniversitySubject => "https://w3id.org/kim/hochschulfaechersystematik/n".to_string(),
+                SchemeId::SchoolSubject => "http://w3id.org/kim/schulfaecher/s".to_string(),
+            }
+        }
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
     struct SubjectMetadata {
-        r#type: string,
-        id: string,
-        in_scheme: Scheme,
-        pref_label: Instance,
+        r#type: String,
+        id: String,
+        in_scheme: String,
     }
 
-    struct Scheme {
-        id: string
+    struct RawSubjectMetadata {
+        name: String,
+        id: String,
+        in_scheme: SchemeId,
     }
 
-    fn lookup_subject_metadata(id: i32) -> string {
+    fn lookup_subject_metadata(id: i32) -> Option<RawSubjectMetadata> {
         return match id {
-            5 => "Mathematik",
-            17744 => "Nature Conservation",
-            18230 => "Chemie",
-            23362 => "Biologie",
-            25979 => "Englisch",
-            33894 => "Latein",
-            41107 => "Physik",
-            47899 => "Informatik",
-            79159 => "Politik",
-            _ => "",
+            5 => Some(RawSubjectMetadata {name: "Mathematik".to_string(), id: "1017".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            17744 => Some(RawSubjectMetadata{name: "Nature Conservation".to_string(), id: "064".to_string(), in_scheme: SchemeId::UniversitySubject,}),
+            18230 => Some(RawSubjectMetadata{name: "Chemie".to_string(), id: "1002".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            23362 => Some(RawSubjectMetadata{name: "Biologie".to_string(), id: "1001".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            25979 | 107557 | 113127 => Some(RawSubjectMetadata{name: "Englisch".to_string(), id: "1007".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            33894 | 106085 => Some(RawSubjectMetadata{name: "Latein".to_string(), id: "1016".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            41107 => Some(RawSubjectMetadata{name: "Physik".to_string(), id: "1022".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            47899 => Some(RawSubjectMetadata{name: "Informatik".to_string(), id: "1013".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            79159 | 107556 => Some(RawSubjectMetadata{name: "Politik".to_string(), id: "1023".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            106083 => Some(RawSubjectMetadata{name: "Medienbildung".to_string(), id: "1046".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            106084 => Some(RawSubjectMetadata{name: "Geografie".to_string(), id: "1010".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            106086 => Some(RawSubjectMetadata{name: "Psychologie".to_string(), id: "1043".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            112723 => Some(RawSubjectMetadata{name: "Deutsch als Zweitsprache".to_string(), id: "1006".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            136362 => Some(RawSubjectMetadata{name: "Geschichte".to_string(), id: "1011".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            137757 => Some(RawSubjectMetadata{name: "Wirtschaftskunde".to_string(), id: "1033".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            167849 => Some(RawSubjectMetadata{name: "Musik".to_string(), id: "1020".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            190109 => Some(RawSubjectMetadata{name: "Spanisch".to_string(), id: "1030".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            198076 => Some(RawSubjectMetadata{name: "Italienisch".to_string(), id: "1014".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            208736 => Some(RawSubjectMetadata{name: "Ethik".to_string(), id: "1008".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            210462 => Some(RawSubjectMetadata{name: "Deutsch".to_string(), id: "1005".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            227992 => Some(RawSubjectMetadata{name: "Französisch".to_string(), id: "1009".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            _ => None,
         }
     }
 }

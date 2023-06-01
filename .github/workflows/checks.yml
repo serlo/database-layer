@@ -81,7 +81,7 @@ jobs:
           toolchain: stable
           override: true
           profile: minimal
-      - run: ./scripts/check_metadata.sh
+      - run: ./scripts/check_metadata_api.sh
 
   test:
     runs-on: ubuntu-latest

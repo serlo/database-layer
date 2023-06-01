@@ -81,6 +81,7 @@ jobs:
           toolchain: stable
           override: true
           profile: minimal
+      - run: cargo build
       - run: ./scripts/check_metadata_api.sh
 
   test:

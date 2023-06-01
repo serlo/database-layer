@@ -69,6 +69,20 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
+
+  metadata:
+    name: Check compatbility of metadata API with AMB
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: docker-compose up -d
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+      - run: ./scripts/check_metadata.sh
+
   test:
     runs-on: ubuntu-latest
     steps:

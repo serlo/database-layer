@@ -352,7 +352,7 @@ pub mod entities_metadata_query {
             "article" => "Article",
             "course" => "Course",
             "text-exercise-group" | "text-exercise" => "Quiz",
-            "video" => "Video",
+            "video" => "VideoObject",
             "applet" => "WebApplication",
             _ => entity_type,
         }

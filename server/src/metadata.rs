@@ -148,14 +148,14 @@ pub mod entities_metadata_query {
         Ok(sqlx::query!(
             r#"
                 WITH RECURSIVE ancestors AS (
-                      SELECT id, parent_id, id AS origin_id, id as subject_id
-                      FROM term_taxonomy
+                    SELECT id, parent_id, id AS origin_id, id as subject_id
+                    FROM term_taxonomy
 
-                      UNION ALL
+                    UNION ALL
 
-                      SELECT tt.id, tt.parent_id,  a.origin_id, a.id
-                      FROM term_taxonomy tt
-                      JOIN ancestors a ON tt.id = a.parent_id
+                    SELECT tt.id, tt.parent_id,  a.origin_id, a.id
+                    FROM term_taxonomy tt
+                    JOIN ancestors a ON tt.id = a.parent_id
                 )
                 SELECT
                     entity.id,
@@ -319,7 +319,7 @@ pub mod entities_metadata_query {
                     .unwrap_or(Vec::new());
                 let subject_metadata: Option<Vec<SubjectMetadata>> = subject_ids.iter().map(|id| {
                     let raw_subject_metadata = lookup_subject_metadata(*id);
-                    return if let Some(ref meta) = raw_subject_metadata {
+                    return if let Some(ref _meta) = raw_subject_metadata {
                         Some(SubjectMetadata {
                             r#type: "Concept".to_string(),
                             id: raw_subject_metadata.as_ref().unwrap().in_scheme.to_id_string() + &raw_subject_metadata.as_ref().unwrap().id,

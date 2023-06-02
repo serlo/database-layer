@@ -89,8 +89,8 @@ impl Notifications {
             .map(|child| Notification {
                 id: child.id,
                 unread: child.seen == 0,
-                email_sent: child.email_sent == 1,
-                email: child.email == 1,
+                email_sent: child.email_sent == Some(1),
+                email: child.email == Some(1),
                 event_id: child.event_log_id as i32,
             })
             .collect();

@@ -1598,6 +1598,31 @@
     },
     "query": "update blog_post set author_id = ? where author_id = ?"
   },
+  "639c90bfcde6b91959eb028d57694d7e1a101f4e5937b1be76980425363cd946": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "\n                WITH RECURSIVE descendants AS (\n                    SELECT id, parent_id\n                    FROM term_taxonomy\n                    WHERE (? is null OR id = ?)\n\n                    UNION\n\n                    SELECT tt.id, tt.parent_id\n                    FROM term_taxonomy tt\n                    JOIN descendants d ON tt.parent_id = d.id\n                ), subject_entities AS (\n                SELECT tte.entity_id\n                FROM descendants\n                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id\n\n                UNION\n\n                SELECT entity_link.child_id\n                FROM descendants\n                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id\n                JOIN entity_link ON entity_link.parent_id = tte.entity_id\n                )\n                SELECT comment.id\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                JOIN comment answer ON comment.id = answer.parent_id OR\n                    comment.id = answer.id\n                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id\n                JOIN subject_entities ON subject_entities.entity_id = comment.uuid_id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR comment.instance_id = ?)\n                    AND parent_uuid.discriminator != \"user\"\n                GROUP BY comment.id\n                HAVING MAX(GREATEST(answer.date, comment.date)) < ?\n                ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC\n                LIMIT ?;\n            "
+  },
   "649f401fd7262aa959e1e5a8f1071d74a7315cce328cdbbce4ad1a4aec849820": {
     "describe": {
       "columns": [],
@@ -3692,31 +3717,6 @@
       }
     },
     "query": "delete from role_user where user_id = ?"
-  },
-  "d8c2852c1d975c48ba5a19aa8a6e1e99fe430b64c6cc70ad398301227d25904c": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 6
-      }
-    },
-    "query": "\n                WITH RECURSIVE descendants AS (\n                  SELECT id, parent_id\n                  FROM term_taxonomy\n                  WHERE (? is null OR id = ?)\n\n                  UNION ALL\n\n                  SELECT tt.id, tt.parent_id\n                  FROM term_taxonomy tt\n                  INNER JOIN descendants d ON tt.parent_id = d.id\n                )\n                SELECT comment.id\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                JOIN comment answer ON comment.id = answer.parent_id OR\n                    comment.id = answer.id\n                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id\n                JOIN descendants ON descendants.id = comment.uuid_id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR comment.instance_id = ?)\n                    AND parent_uuid.discriminator != \"user\"\n                GROUP BY comment.id\n                HAVING MAX(GREATEST(answer.date, comment.date)) < ?\n                ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC\n                LIMIT ?\n            "
   },
   "d96a45d0d014aece234428d2b3deeb6740e956e7c1d0f380d2bdbc258180d5aa": {
     "describe": {

@@ -434,13 +434,17 @@ pub mod entities_metadata_query {
     impl SchemeId {
         fn to_scheme_string(&self) -> String {
             match *self {
-                SchemeId::UniversitySubject => "https://w3id.org/kim/hochschulfaechersystematik/scheme".to_string(),
+                SchemeId::UniversitySubject => {
+                    "https://w3id.org/kim/hochschulfaechersystematik/scheme".to_string()
+                }
                 SchemeId::SchoolSubject => "http://w3id.org/kim/schulfaecher/".to_string(),
             }
         }
         fn to_id_string(&self) -> String {
             match *self {
-                SchemeId::UniversitySubject => "https://w3id.org/kim/hochschulfaechersystematik/n".to_string(),
+                SchemeId::UniversitySubject => {
+                    "https://w3id.org/kim/hochschulfaechersystematik/n".to_string()
+                }
                 SchemeId::SchoolSubject => "http://w3id.org/kim/schulfaecher/s".to_string(),
             }
         }
@@ -462,28 +466,112 @@ pub mod entities_metadata_query {
 
     fn lookup_subject_metadata(id: i32) -> Option<RawSubjectMetadata> {
         return match id {
-            5 => Some(RawSubjectMetadata {name: "Mathematik".to_string(), id: "1017".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            17744 => Some(RawSubjectMetadata{name: "Nature Conservation".to_string(), id: "064".to_string(), in_scheme: SchemeId::UniversitySubject,}),
-            18230 => Some(RawSubjectMetadata{name: "Chemie".to_string(), id: "1002".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            23362 => Some(RawSubjectMetadata{name: "Biologie".to_string(), id: "1001".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            25979 | 107557 | 113127 => Some(RawSubjectMetadata{name: "Englisch".to_string(), id: "1007".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            33894 | 106085 => Some(RawSubjectMetadata{name: "Latein".to_string(), id: "1016".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            41107 => Some(RawSubjectMetadata{name: "Physik".to_string(), id: "1022".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            47899 => Some(RawSubjectMetadata{name: "Informatik".to_string(), id: "1013".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            79159 | 107556 => Some(RawSubjectMetadata{name: "Politik".to_string(), id: "1023".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            106083 => Some(RawSubjectMetadata{name: "Medienbildung".to_string(), id: "1046".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            106084 => Some(RawSubjectMetadata{name: "Geografie".to_string(), id: "1010".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            106086 => Some(RawSubjectMetadata{name: "Psychologie".to_string(), id: "1043".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            112723 => Some(RawSubjectMetadata{name: "Deutsch als Zweitsprache".to_string(), id: "1006".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            136362 => Some(RawSubjectMetadata{name: "Geschichte".to_string(), id: "1011".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            137757 => Some(RawSubjectMetadata{name: "Wirtschaftskunde".to_string(), id: "1033".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            167849 => Some(RawSubjectMetadata{name: "Musik".to_string(), id: "1020".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            190109 => Some(RawSubjectMetadata{name: "Spanisch".to_string(), id: "1030".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            198076 => Some(RawSubjectMetadata{name: "Italienisch".to_string(), id: "1014".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            208736 => Some(RawSubjectMetadata{name: "Ethik".to_string(), id: "1008".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            210462 => Some(RawSubjectMetadata{name: "Deutsch".to_string(), id: "1005".to_string(), in_scheme: SchemeId::SchoolSubject,}),
-            227992 => Some(RawSubjectMetadata{name: "Französisch".to_string(), id: "1009".to_string(), in_scheme: SchemeId::SchoolSubject,}),
+            5 => Some(RawSubjectMetadata {
+                name: "Mathematik".to_string(),
+                id: "1017".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            17744 => Some(RawSubjectMetadata {
+                name: "Nature Conservation".to_string(),
+                id: "064".to_string(),
+                in_scheme: SchemeId::UniversitySubject,
+            }),
+            18230 => Some(RawSubjectMetadata {
+                name: "Chemie".to_string(),
+                id: "1002".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            23362 => Some(RawSubjectMetadata {
+                name: "Biologie".to_string(),
+                id: "1001".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            25979 | 107557 | 113127 => Some(RawSubjectMetadata {
+                name: "Englisch".to_string(),
+                id: "1007".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            33894 | 106085 => Some(RawSubjectMetadata {
+                name: "Latein".to_string(),
+                id: "1016".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            41107 => Some(RawSubjectMetadata {
+                name: "Physik".to_string(),
+                id: "1022".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            47899 => Some(RawSubjectMetadata {
+                name: "Informatik".to_string(),
+                id: "1013".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            79159 | 107556 => Some(RawSubjectMetadata {
+                name: "Politik".to_string(),
+                id: "1023".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            106083 => Some(RawSubjectMetadata {
+                name: "Medienbildung".to_string(),
+                id: "1046".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            106084 => Some(RawSubjectMetadata {
+                name: "Geografie".to_string(),
+                id: "1010".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            106086 => Some(RawSubjectMetadata {
+                name: "Psychologie".to_string(),
+                id: "1043".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            112723 => Some(RawSubjectMetadata {
+                name: "Deutsch als Zweitsprache".to_string(),
+                id: "1006".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            136362 => Some(RawSubjectMetadata {
+                name: "Geschichte".to_string(),
+                id: "1011".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            137757 => Some(RawSubjectMetadata {
+                name: "Wirtschaftskunde".to_string(),
+                id: "1033".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            167849 => Some(RawSubjectMetadata {
+                name: "Musik".to_string(),
+                id: "1020".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            190109 => Some(RawSubjectMetadata {
+                name: "Spanisch".to_string(),
+                id: "1030".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            198076 => Some(RawSubjectMetadata {
+                name: "Italienisch".to_string(),
+                id: "1014".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            208736 => Some(RawSubjectMetadata {
+                name: "Ethik".to_string(),
+                id: "1008".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            210462 => Some(RawSubjectMetadata {
+                name: "Deutsch".to_string(),
+                id: "1005".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            227992 => Some(RawSubjectMetadata {
+                name: "Französisch".to_string(),
+                id: "1009".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
             _ => None,
-        }
+        };
     }
 }

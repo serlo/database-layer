@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::env;
 
 use crate::database::{Connection, Executor};
 use crate::message::MessageResponder;
@@ -62,10 +63,10 @@ pub mod entities_metadata_query {
         creator: Vec<Creator>,
         #[serde(skip_serializing_if = "Option::is_none")]
         description: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         headline: Option<String>,
         identifier: serde_json::Value,
         in_language: Vec<String>,
-        interactivity_type: LinkedNode,
         is_accessible_for_free: bool,
         is_family_friendly: bool,
         is_part_of: Vec<LinkedNode>,
@@ -122,10 +123,26 @@ pub mod entities_metadata_query {
     async fn query<'a, E>(
         payload: &Payload,
         executor: E,
-    ) -> Result<Vec<EntityMetadata>, sqlx::Error>
+    ) -> Result<Vec<EntityMetadata>, operation::Error>
     where
         E: Executor<'a>,
     {
+        // See https://github.com/serlo/private-issues-sso-metadata-wallet/issues/37
+        let metadata_api_last_changes_date: DateTime<Utc> = DateTime::parse_from_rfc3339(
+            &env::var("METADATA_API_LAST_CHANGES_DATE")
+                .expect("METADATA_API_LAST_CHANGES_DATE is not set."),
+        )
+        .map_err(|_| operation::Error::InternalServerError {
+            error: "Error while parsing METADATA_API_LAST_CHANGES_DATE".into(),
+        })?
+        .with_timezone(&Utc);
+
+        let modified_after = if payload.modified_after > Some(metadata_api_last_changes_date) {
+            payload.modified_after
+        } else {
+            Option::None
+        };
+
         Ok(sqlx::query!(
             r#"
                 SELECT
@@ -166,8 +183,8 @@ pub mod entities_metadata_query {
             payload.after.unwrap_or(0),
             payload.instance,
             payload.instance,
-            payload.modified_after,
-            payload.modified_after,
+            modified_after,
+            modified_after,
             payload.first
         ).fetch_all(executor)
             .await?
@@ -210,7 +227,7 @@ pub mod entities_metadata_query {
                         // https://serlo.org/:userId
                         id: get_iri(*id),
                         name: username.to_string(),
-                        affiliation: get_serlo_organzation_metadata()
+                        affiliation: get_serlo_organization_metadata()
                     })
                     .collect();
                 let schema_type =
@@ -221,8 +238,7 @@ pub mod entities_metadata_query {
                             match result.resource_type.as_str() {
                                 "article" => "Artikel",
                                 "course" => "Kurs",
-                                "text-exercise" => "Aufgabe",
-                                "text-exercise-group" => "Aufgabengruppe",
+                                "text-exercise" | "text-exercise-group" => "Aufgabe",
                                 "video" => "Video",
                                 "applet" => "Applet",
                                 _ => "Inhalt",
@@ -232,8 +248,7 @@ pub mod entities_metadata_query {
                             match result.resource_type.as_str() {
                                 "article" => "Article",
                                 "course" => "Course",
-                                "text-exercise" => "Exercise",
-                                "text-exercise-group" => "Exercise group",
+                                "text-exercise" | "text-exercise-group" => "Exercise",
                                 "video" => "Video",
                                 "applet" => "Applet",
                                 _ => "Content",
@@ -257,8 +272,9 @@ pub mod entities_metadata_query {
                         // Since we have a left join on term_taxonomy_entity we whould never hit
                         // this case (and thus avoid entites not being in a taxonomy)
                         .unwrap_or("<unknown>".to_string());
+                    let from_i18n = if result.instance == "de" { "aus" } else { "from" };
 
-                    format!("{schema_type_i18n}#{identifier} in \"{term_name}\"")
+                    format!("{schema_type_i18n} {from_i18n} \"{term_name}\"")
                 });
                 let is_part_of: Vec<LinkedNode> = result.taxonomy_term_ids.as_ref()
                     .and_then(|value| value.as_array())
@@ -278,7 +294,7 @@ pub mod entities_metadata_query {
 
                 EntityMetadata {
                     context: json!([
-                        "https://w3id.org/kim/lrmi-profile/draft/context.jsonld",
+                        "https://w3id.org/kim/amb/context.jsonld",
                         {
                             "@language": result.instance,
                             "@vocab": "http://schema.org/",
@@ -294,7 +310,8 @@ pub mod entities_metadata_query {
                         .map(|title| title.to_string()),
                     date_created: result.date_created.to_rfc3339(),
                     date_modified: result.date_modified.to_rfc3339(),
-                    headline: title,
+                    headline: title
+                        .filter (|t| !t.is_empty()),
                     creator: creators,
                     id,
                     identifier: json!({
@@ -303,22 +320,21 @@ pub mod entities_metadata_query {
                         "value": identifier,
                     }),
                     in_language: vec![result.instance],
-                    interactivity_type: LinkedNode {
-                        id: "http://purl.org/dcx/lrmi-vocabs/interactivityType/active".to_string(),
-                    },
                     is_accessible_for_free: true,
                     is_family_friendly: true,
                     learning_resource_type: get_learning_resource_type(&result.resource_type),
                     license: LinkedNode { id: result.license_url},
-                    main_entity_of_page: json!({
-                        "id": "https://serlo.org/metadata-api",
-                        "provider": get_serlo_organzation_metadata(),
-                        "dateCreated": current_date,
-                        "dateModified": current_date,
-                    }),
-                    maintainer: get_serlo_organzation_metadata(),
+                    main_entity_of_page: json!([
+                        {
+                            "id": "https://serlo.org/metadata-api",
+                            "provider": get_serlo_organization_metadata(),
+                            "dateCreated": current_date,
+                            "dateModified": current_date,
+                        }
+                    ]),
+                    maintainer: get_serlo_organization_metadata(),
                     name,
-                    publisher: vec![get_serlo_organzation_metadata()],
+                    publisher: vec![get_serlo_organization_metadata()],
                     is_part_of,
                     version: get_iri(result.version.unwrap())
                 }
@@ -365,9 +381,9 @@ pub mod entities_metadata_query {
         .collect()
     }
 
-    fn get_serlo_organzation_metadata() -> serde_json::Value {
+    fn get_serlo_organization_metadata() -> serde_json::Value {
         json!({
-            "id": "https://serlo.org/#organization",
+            "id": "https://serlo.org/organization",
             "type": "Organization",
             "name": "Serlo Education e.V."
         })

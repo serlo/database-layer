@@ -82,6 +82,10 @@ jobs:
           override: true
           profile: minimal
       - run: cargo build
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+      - run: yarn  --immutable --immutable-cache
       - run: ./scripts/check_metadata_api.sh
 
   test:

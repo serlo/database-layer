@@ -383,7 +383,7 @@ pub mod entities_metadata_query {
 
     fn get_serlo_organization_metadata() -> serde_json::Value {
         json!({
-            "id": "https://serlo.org/#organization",
+            "id": "https://serlo.org/organization",
             "type": "Organization",
             "name": "Serlo Education e.V."
         })

@@ -24,7 +24,7 @@ mod entities_metadata_query {
               "name": "122d486a",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               }
@@ -34,7 +34,7 @@ mod entities_metadata_query {
               "name": "125f4a84",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               }
@@ -44,7 +44,7 @@ mod entities_metadata_query {
               "name": "12600e93",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               }
@@ -54,7 +54,7 @@ mod entities_metadata_query {
               "name": "admin",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               }
@@ -64,7 +64,7 @@ mod entities_metadata_query {
               "name": "12297c72",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               }
@@ -74,7 +74,7 @@ mod entities_metadata_query {
               "name": "124902c9",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               }
@@ -84,7 +84,7 @@ mod entities_metadata_query {
               "name": "125f3e12",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               }
@@ -94,7 +94,7 @@ mod entities_metadata_query {
               "name": "125f467c",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               }
@@ -105,7 +105,7 @@ mod entities_metadata_query {
               "name": "1268a3e2",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               }
@@ -133,13 +133,13 @@ mod entities_metadata_query {
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata-api",
             "provider": {
-               "id": "https://serlo.org/#organization",
+               "id": "https://serlo.org/organization",
                "type": "Organization",
                "name": "Serlo Education e.V."
             },
           }],
           "maintainer": {
-            "id": "https://serlo.org/#organization",
+            "id": "https://serlo.org/organization",
             "type": "Organization",
             "name": "Serlo Education e.V.",
           },
@@ -154,7 +154,7 @@ mod entities_metadata_query {
           ],
           "publisher": [
             {
-              "id": "https://serlo.org/#organization",
+              "id": "https://serlo.org/organization",
               "type": "Organization",
               "name": "Serlo Education e.V.",
             }
@@ -184,7 +184,7 @@ mod entities_metadata_query {
               "name": "admin",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               },
@@ -209,20 +209,20 @@ mod entities_metadata_query {
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata-api",
             "provider": {
-              "id": "https://serlo.org/#organization",
+              "id": "https://serlo.org/organization",
               "type": "Organization",
               "name": "Serlo Education e.V."
             },
           }],
           "maintainer": {
-            "id": "https://serlo.org/#organization",
+            "id": "https://serlo.org/organization",
             "type": "Organization",
             "name": "Serlo Education e.V.",
           },
           "name": "Example applet",
           "publisher": [
             {
-              "id": "https://serlo.org/#organization",
+              "id": "https://serlo.org/organization",
               "type": "Organization",
               "name": "Serlo Education e.V.",
             },
@@ -253,7 +253,7 @@ mod entities_metadata_query {
               "name": "122d486a",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               },
@@ -263,7 +263,7 @@ mod entities_metadata_query {
               "name": "admin",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               },
@@ -292,13 +292,13 @@ mod entities_metadata_query {
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata-api",
             "provider": {
-              "id": "https://serlo.org/#organization",
+              "id": "https://serlo.org/organization",
               "type": "Organization",
               "name": "Serlo Education e.V."
             },
           }],
           "maintainer": {
-            "id": "https://serlo.org/#organization",
+            "id": "https://serlo.org/organization",
             "type": "Organization",
             "name": "Serlo Education e.V.",
           },
@@ -309,7 +309,7 @@ mod entities_metadata_query {
           ],
           "publisher": [
             {
-              "id": "https://serlo.org/#organization",
+              "id": "https://serlo.org/organization",
               "type": "Organization",
               "name": "Serlo Education e.V.",
             },
@@ -339,7 +339,7 @@ mod entities_metadata_query {
               "name": "12297c72",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               },
@@ -366,20 +366,20 @@ mod entities_metadata_query {
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata-api",
             "provider": {
-              "id": "https://serlo.org/#organization",
+              "id": "https://serlo.org/organization",
               "type": "Organization",
               "name": "Serlo Education e.V."
             },
           }],
           "maintainer": {
-            "id": "https://serlo.org/#organization",
+            "id": "https://serlo.org/organization",
             "type": "Organization",
             "name": "Serlo Education e.V.",
           },
           "name": "Aufgabe aus \"Aufgaben zum Thema Ergebnisraum oder Ergebnismenge\"",
           "publisher": [
             {
-              "id": "https://serlo.org/#organization",
+              "id": "https://serlo.org/organization",
               "type": "Organization",
               "name": "Serlo Education e.V.",
             },
@@ -409,7 +409,7 @@ mod entities_metadata_query {
               "name": "12297c72",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               },
@@ -435,13 +435,13 @@ mod entities_metadata_query {
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata-api",
             "provider": {
-              "id": "https://serlo.org/#organization",
+              "id": "https://serlo.org/organization",
               "type": "Organization",
               "name": "Serlo Education e.V."
             },
           }],
           "maintainer": {
-            "id": "https://serlo.org/#organization",
+            "id": "https://serlo.org/organization",
             "type": "Organization",
             "name": "Serlo Education e.V.",
           },
@@ -452,7 +452,7 @@ mod entities_metadata_query {
           ],
           "publisher": [
             {
-              "id": "https://serlo.org/#organization",
+              "id": "https://serlo.org/organization",
               "type": "Organization",
               "name": "Serlo Education e.V.",
             },
@@ -482,7 +482,7 @@ mod entities_metadata_query {
               "name": "12600e93",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               },
@@ -492,7 +492,7 @@ mod entities_metadata_query {
               "name": "125f467c",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               },
@@ -502,7 +502,7 @@ mod entities_metadata_query {
               "name": "125f4a84",
               "type": "Person",
               "affiliation": {
-                "id": "https://serlo.org/#organization",
+                "id": "https://serlo.org/organization",
                 "type": "Organization",
                 "name": "Serlo Education e.V.",
               },
@@ -527,13 +527,13 @@ mod entities_metadata_query {
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata-api",
             "provider": {
-              "id": "https://serlo.org/#organization",
+              "id": "https://serlo.org/organization",
               "type": "Organization",
               "name": "Serlo Education e.V."
             },
           }],
           "maintainer": {
-            "id": "https://serlo.org/#organization",
+            "id": "https://serlo.org/organization",
             "type": "Organization",
             "name": "Serlo Education e.V.",
           },
@@ -544,7 +544,7 @@ mod entities_metadata_query {
           ],
           "publisher": [
             {
-              "id": "https://serlo.org/#organization",
+              "id": "https://serlo.org/organization",
               "type": "Organization",
               "name": "Serlo Education e.V.",
             },

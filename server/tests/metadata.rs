@@ -475,7 +475,7 @@ mod entities_metadata_query {
             }
           ],
           "id": "https://serlo.org/18865",
-          "type": [ "LearningResource", "Video" ],
+          "type": [ "LearningResource", "VideoObject" ],
           "creator": [
             {
               "id": "https://serlo.org/22573",

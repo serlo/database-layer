@@ -76,7 +76,7 @@ pub mod entities_metadata_query {
         maintainer: serde_json::Value,
         name: String,
         publisher: Vec<serde_json::Value>,
-        version: String,
+        version: LinkedNode,
     }
 
     #[derive(Serialize)]
@@ -323,7 +323,7 @@ pub mod entities_metadata_query {
                     is_accessible_for_free: true,
                     is_family_friendly: true,
                     learning_resource_type: get_learning_resource_type(&result.resource_type),
-                    license: LinkedNode { id: result.license_url},
+                    license: LinkedNode { id: result.license_url },
                     main_entity_of_page: json!([
                         {
                             "id": "https://serlo.org/metadata-api",
@@ -336,7 +336,7 @@ pub mod entities_metadata_query {
                     name,
                     publisher: vec![get_serlo_organization_metadata()],
                     is_part_of,
-                    version: get_iri(result.version.unwrap())
+                    version: LinkedNode { id: get_iri(result.version.unwrap()) }
                 }
             })
             .collect()

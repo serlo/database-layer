@@ -159,7 +159,7 @@ mod entities_metadata_query {
               "name": "Serlo Education e.V.",
             }
           ],
-          "version": "https://serlo.org/32614"
+          "version": { "id": "https://serlo.org/32614" },
         }))
         .await;
     }
@@ -228,7 +228,7 @@ mod entities_metadata_query {
             },
           ],
           "isPartOf": [{ "id": "https://serlo.org/35560" }],
-          "version": "https://serlo.org/35597"
+          "version": { "id": "https://serlo.org/35597" },
         }))
         .await;
     }
@@ -314,7 +314,7 @@ mod entities_metadata_query {
               "name": "Serlo Education e.V.",
             },
           ],
-          "version": "https://serlo.org/30713"
+          "version": { "id": "https://serlo.org/30713" },
         }))
         .await;
     }
@@ -384,7 +384,7 @@ mod entities_metadata_query {
               "name": "Serlo Education e.V.",
             },
           ],
-          "version": "https://serlo.org/2824"
+          "version": { "id": "https://serlo.org/2824" },
         }))
         .await;
     }
@@ -457,7 +457,7 @@ mod entities_metadata_query {
               "name": "Serlo Education e.V.",
             },
           ],
-          "version": "https://serlo.org/2218"
+          "version": { "id": "https://serlo.org/2218" },
         }))
         .await;
     }
@@ -549,7 +549,7 @@ mod entities_metadata_query {
               "name": "Serlo Education e.V.",
             },
           ],
-          "version": "https://serlo.org/24383"
+          "version": { "id": "https://serlo.org/24383" },
         }))
         .await;
     }

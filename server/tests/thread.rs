@@ -8,7 +8,7 @@ mod all_threads_query {
             .execute()
             .await
             .should_be_ok_with_body(
-                json!({ "firstCommentIds": [34546, 35163, 35435, 35361, 34119] }),
+                json!({ "firstCommentIds": [35163, 35090, 26976, 35082, 34793] }),
             );
     }
 
@@ -37,7 +37,7 @@ mod all_threads_query {
             .execute_on(&mut transaction)
             .await
             .should_be_ok_with_body(
-                json!({ "firstCommentIds": [34119, 34546, 35163, 35435, 35361] }),
+                json!({ "firstCommentIds": [35163, 35090, 26976, 35082, 34793] }),
             );
     }
 
@@ -49,7 +49,7 @@ mod all_threads_query {
         )
         .execute()
         .await
-        .should_be_ok_with_body(json!({ "firstCommentIds": [35163, 35435, 35361, 34119, 35090, 35085, 26976, 35083, 35082, 30251] }));
+        .should_be_ok_with_body(json!({ "firstCommentIds": [35163, 35090, 26976, 35082, 34793, 34161, 34156, 34117, 34034, 33950] }));
 
         Message::new(
             "AllThreadsQuery",
@@ -57,7 +57,7 @@ mod all_threads_query {
         )
         .execute()
         .await
-        .should_be_ok_with_body(json!({ "firstCommentIds": [35085, 26976, 35083, 35082, 30251, 35073, 34618, 34793, 34539, 34095] }));
+        .should_be_ok_with_body(json!({ "firstCommentIds": [26976, 35082, 34793, 34161 ,34156 ,34117 ,34034 ,33950 ,33951 ,33952] }));
 
         Message::new(
             "AllThreadsQuery",
@@ -65,7 +65,7 @@ mod all_threads_query {
         )
         .execute()
         .await
-        .should_be_ok_with_body(json!({ "firstCommentIds": [35073, 34618, 34793, 34539, 34095] }));
+        .should_be_ok_with_body(json!({ "firstCommentIds": [34793, 34161, 34156, 34117, 34034] }));
     }
 
     #[actix_rt::test]

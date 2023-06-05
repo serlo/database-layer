@@ -19,7 +19,7 @@ function main() {
 
   log "INFO: Fetch with data $(echo "$DATA" | jq)"
 
-  RESULT=$(mktemp -t database-layer-fetch.XXXXXXXXXX)
+  RESULT=$(mktemp -t serlo-database-layer-fetch.XXXXXXXXXX)
 
   # See https://stackoverflow.com/a/22508743
   STATUS=$(curl --header "Content-Type: application/json" \

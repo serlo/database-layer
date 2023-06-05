@@ -78,10 +78,7 @@ mod all_threads_query {
 
     #[actix_rt::test]
     async fn fetches_threads_by_subject() {
-        Message::new(
-            "AllThreadsQuery",
-            json!({ "first": 10, "subjectId": 17744}),
-        )
+        Message::new("AllThreadsQuery", json!({ "first": 10, "subjectId": 17744}))
             .execute()
             .await
             .should_be_ok_with_body(json!({ "firstCommentIds": [34161, 25555, 25511] }));

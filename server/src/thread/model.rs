@@ -68,6 +68,14 @@ impl Threads {
                 FROM descendants
                 JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id
                 JOIN entity_link ON entity_link.parent_id = tte.entity_id
+
+                UNION
+
+                SELECT entity_link.child_id
+                FROM descendants
+                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id
+                JOIN entity_link parent_link ON parent_link.parent_id = tte.entity_id
+                JOIN entity_link ON entity_link.parent_id = parent_link.child_id
                 )
                 SELECT comment.id
                 FROM comment

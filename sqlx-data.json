@@ -135,31 +135,6 @@
     },
     "query": "\n                INSERT INTO user (id, email, username, password, date, token)\n                VALUES (?, ?, ?, ?, ?, ?)\n            "
   },
-  "054ab33081554c1d19d1f859f90a3886747165cd57adf3c61a2d4da0b9710150": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 6
-      }
-    },
-    "query": "\n                WITH RECURSIVE descendants AS (\n                    SELECT id, parent_id\n                    FROM term_taxonomy\n                    WHERE (? is null OR id = ?)\n\n                    UNION\n\n                    SELECT tt.id, tt.parent_id\n                    FROM term_taxonomy tt\n                    JOIN descendants d ON tt.parent_id = d.id\n                ), subject_entities AS (\n                SELECT tte.entity_id\n                FROM descendants\n                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id\n\n                UNION\n\n                SELECT entity_link.child_id\n                FROM descendants\n                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id\n                JOIN entity_link ON entity_link.parent_id = tte.entity_id\n\n                UNION\n\n                SELECT entity_link.child_id\n                FROM descendants\n                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id\n                JOIN entity_link parent_link ON parent_link.parent_id = tte.entity_id\n                JOIN entity_link ON entity_link.parent_id = parent_link.child_id\n\n                UNION\n\n                SELECT id FROM descendants\n                )\n                SELECT comment.id\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                JOIN comment answer ON comment.id = answer.parent_id OR\n                    comment.id = answer.id\n                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id\n                JOIN subject_entities ON subject_entities.entity_id = comment.uuid_id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR comment.instance_id = ?)\n                    AND parent_uuid.discriminator != \"user\"\n                GROUP BY comment.id\n                HAVING MAX(GREATEST(answer.date, comment.date)) < ?\n                ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC\n                LIMIT ?;\n            "
-  },
   "0775fb20c50e22a43297a12e8959dc4e6c7527a64d40dfbe885f616acf252865": {
     "describe": {
       "columns": [
@@ -3802,6 +3777,31 @@
       }
     },
     "query": "\n                SELECT term_taxonomy_id as id\n                    FROM (\n                        SELECT term_taxonomy_id, entity_id FROM term_taxonomy_entity\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l ON t.entity_id = l.parent_id\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l2.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l1 ON t.entity_id = l1.parent_id\n                            JOIN entity_link l2 ON l2.parent_id = l1.child_id\n                    ) u\n                    WHERE entity_id = ?\n            "
+  },
+  "e0334daae44b4b45248e148a16fe617984b0b02cb7667ab6eff2acaf65d8cdfd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "\n                WITH RECURSIVE descendants AS (\n                    SELECT id, parent_id\n                    FROM term_taxonomy\n                    WHERE (? is null OR id = ?)\n\n                    UNION\n\n                    SELECT tt.id, tt.parent_id\n                    FROM term_taxonomy tt\n                    JOIN descendants d ON tt.parent_id = d.id\n                ), subject_entities AS (\n                SELECT id as entity_id FROM descendants\n\n                UNION\n\n                SELECT tte.entity_id\n                FROM descendants\n                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id\n\n                UNION\n\n                SELECT entity_link.child_id\n                FROM descendants\n                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id\n                JOIN entity_link ON entity_link.parent_id = tte.entity_id\n\n                UNION\n\n                SELECT entity_link.child_id\n                FROM descendants\n                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id\n                JOIN entity_link parent_link ON parent_link.parent_id = tte.entity_id\n                JOIN entity_link ON entity_link.parent_id = parent_link.child_id\n                )\n                SELECT comment.id\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                JOIN comment answer ON comment.id = answer.parent_id OR\n                    comment.id = answer.id\n                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id\n                JOIN subject_entities ON subject_entities.entity_id = comment.uuid_id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR comment.instance_id = ?)\n                    AND parent_uuid.discriminator != \"user\"\n                GROUP BY comment.id\n                HAVING MAX(GREATEST(answer.date, comment.date)) < ?\n                ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC\n                LIMIT ?;\n            "
   },
   "e14024e5584079e74f13206f1cea5284f06572386a8ee1aecb54348fd4afda13": {
     "describe": {

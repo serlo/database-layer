@@ -326,7 +326,7 @@ pub mod entities_metadata_query {
                     license: LinkedNode { id: result.license_url },
                     main_entity_of_page: json!([
                         {
-                            "id": "https://serlo.org/metadata-api",
+                            "id": "https://serlo.org/metadata",
                             "provider": get_serlo_organization_metadata(),
                             "dateCreated": current_date,
                             "dateModified": current_date,

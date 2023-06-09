@@ -64,6 +64,7 @@ pub mod all_threads_query {
         pub first: i32,
         pub after: Option<String>,
         pub instance: Option<Instance>,
+        pub subject_id: Option<i32>,
     }
 
     #[async_trait]
@@ -77,6 +78,7 @@ pub mod all_threads_query {
                         self.first,
                         self.after.clone(),
                         self.instance.clone(),
+                        self.subject_id,
                         pool,
                     )
                     .await?
@@ -86,6 +88,7 @@ pub mod all_threads_query {
                         self.first,
                         self.after.clone(),
                         self.instance.clone(),
+                        self.subject_id,
                         transaction,
                     )
                     .await?

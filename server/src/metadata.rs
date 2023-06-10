@@ -360,14 +360,76 @@ pub mod entities_metadata_query {
     }
 
     fn get_learning_resource_type(entity_type: &str) -> Vec<LinkedNode> {
+        let shared_text_exercise = vec![
+            "assessment",
+            "drill_and_practice",
+            "text",
+            "open_activity",
+            "teaching_module",
+            "tool",
+            "wiki",
+            "worksheet",
+        ];
+
         match entity_type {
-            "article" => vec!["text", "worksheet", "course", "web_page", "wiki"],
-            "course" => vec!["course", "exploration", "web_page", "wiki"],
-            "text-exercise-group" | "text-exercise" => {
-                vec!["drill_and_practice", "assessment", "web_page", "wiki"]
+            "article" => vec![
+                "text",
+                "worksheet",
+                "course",
+                "web_page",
+                "wiki",
+                "demonstration",
+                "image",
+                "open_activity",
+                "teaching_module",
+                "tool",
+            ],
+            "course" => vec![
+                "course",
+                "exploration",
+                "web_page",
+                "wiki",
+                "assessment",
+                "demonstration",
+                "drill_and_practice",
+                "educational_game",
+                "enquiry_oriented_activity",
+                "experiment",
+                "text",
+                "open_activity",
+                "teaching_module",
+                "tool",
+            ],
+            "text-exercise" => {
+                let mut exercise_vec = shared_text_exercise.clone();
+                exercise_vec.push("worksheet");
+                exercise_vec
             }
-            "video" => vec!["video", "audiovisual_medium"],
-            "applet" => vec!["application", "demonstration"],
+            "text-exercise-group" => {
+                let mut exercise_group_vec = shared_text_exercise.clone();
+                exercise_group_vec.push("data");
+                exercise_group_vec
+            }
+            "video" => vec![
+                "video",
+                "audiovisual_medium",
+                "demonstration",
+                "audio",
+                "teaching_module",
+                "tool",
+            ],
+            "applet" => vec![
+                "application",
+                "assessment",
+                "demonstration",
+                "drill_and_practice",
+                "experiment",
+                "exploration",
+                "other_asset_type",
+                "teaching_module",
+                "tool",
+                "wiki",
+            ],
             _ => vec![],
         }
         .into_iter()

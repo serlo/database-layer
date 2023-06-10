@@ -364,10 +364,11 @@ pub mod entities_metadata_query {
             "assessment",
             "drill_and_practice",
             "text",
+            "web_page",
+            "wiki",
             "open_activity",
             "teaching_module",
             "tool",
-            "wiki",
             "worksheet",
         ];
 
@@ -400,11 +401,7 @@ pub mod entities_metadata_query {
                 "teaching_module",
                 "tool",
             ],
-            "text-exercise" => {
-                let mut exercise_vec = shared_text_exercise.clone();
-                exercise_vec.push("worksheet");
-                exercise_vec
-            }
+            "text-exercise" => shared_text_exercise,
             "text-exercise-group" => {
                 let mut exercise_group_vec = shared_text_exercise.clone();
                 exercise_group_vec.push("data");

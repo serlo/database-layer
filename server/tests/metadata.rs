@@ -208,8 +208,8 @@ mod entities_metadata_query {
           "isFamilyFriendly": true,
           "learningResourceType": [
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/application" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/demonstration" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/demonstration" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/experiment" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/exploration" },
@@ -380,15 +380,15 @@ mod entities_metadata_query {
           "isFamilyFriendly": true,
           "isPartOf": [{ "id": "https://serlo.org/25614" }],
           "learningResourceType": [
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/text" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/text" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/open_activity" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/teaching_module" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/tool" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/worksheet" }
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/worksheet" },
           ],
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
@@ -454,11 +454,11 @@ mod entities_metadata_query {
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
           "learningResourceType": [
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
+            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/text" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/text" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/open_activity" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/teaching_module" },
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/tool" },

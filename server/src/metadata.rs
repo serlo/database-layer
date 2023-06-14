@@ -360,7 +360,7 @@ pub mod entities_metadata_query {
     }
 
     fn get_learning_resource_type(entity_type: &str) -> Vec<LinkedNode> {
-        let shared_text_exercise = vec![
+        let mut recource_types_exercise = vec![
             "assessment",
             "drill_and_practice",
             "text",
@@ -401,11 +401,10 @@ pub mod entities_metadata_query {
                 "teaching_module",
                 "tool",
             ],
-            "text-exercise" => shared_text_exercise,
+            "text-exercise" => resource_types_exercise,
             "text-exercise-group" => {
-                let mut exercise_group_vec = shared_text_exercise.clone();
-                exercise_group_vec.push("data");
-                exercise_group_vec
+                resource_types_exercise.push("data");
+                resource_types_exercise
             }
             "video" => vec![
                 "video",

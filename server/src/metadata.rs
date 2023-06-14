@@ -319,10 +319,7 @@ pub mod entities_metadata_query {
                     .unwrap_or(Vec::new());
                 let subject_metadata: Option<Vec<SubjectMetadata>> = subject_ids.iter().map(|id| {
                     let raw_subject_metadata = lookup_subject_metadata(*id);
-                    return if let Some(data) = raw_subject_metadata {
-                        Some(data.into())
-                    }
-                        else { None }
+                    raw_subject_metadata.map(|data| data.into())
                 }).collect();
 
                 EntityMetadata {
@@ -471,7 +468,7 @@ pub mod entities_metadata_query {
     }
 
     fn lookup_subject_metadata(id: i32) -> Option<RawSubjectMetadata> {
-        return match id {
+        match id {
             //Mathematik
             5 | 23593 | 141587 | 169580 => Some(RawSubjectMetadata {
                 id: "1017".to_string(),
@@ -575,6 +572,6 @@ pub mod entities_metadata_query {
                 in_scheme: SchemeId::UniversitySubject,
             }),
             _ => None,
-        };
+        }
     }
 }

@@ -470,11 +470,13 @@ pub mod entities_metadata_query {
 
     fn lookup_subject_metadata(id: i32) -> Option<RawSubjectMetadata> {
         return match id {
-            5 => Some(RawSubjectMetadata {
+            //Mathematik
+            5 | 23593 | 141587 | 169580 => Some(RawSubjectMetadata {
                 id: "1017".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
-            17744 => Some(RawSubjectMetadata {
+            //Naturschutz
+            17744 | 48416 | 242851 => Some(RawSubjectMetadata {
                 id: "064".to_string(),
                 in_scheme: SchemeId::UniversitySubject,
             }),
@@ -530,7 +532,8 @@ pub mod entities_metadata_query {
                 id: "1033".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
-            167849 => Some(RawSubjectMetadata {
+            //Musik
+            167849 | 48415 => Some(RawSubjectMetadata {
                 id: "1020".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
@@ -553,6 +556,21 @@ pub mod entities_metadata_query {
             227992 => Some(RawSubjectMetadata {
                 id: "1009".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
+            }),
+            //Sexualerziehung
+            78339 => Some(RawSubjectMetadata {
+                id: "1029".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            //Materialwissenschaft
+            141607 => Some(RawSubjectMetadata {
+                id: "294".to_string(),
+                in_scheme: SchemeId::UniversitySubject,
+            }),
+            //Asiatische Sprachen und Kulturen/Asienwissenschaften
+            140527 => Some(RawSubjectMetadata {
+                id: "187".to_string(),
+                in_scheme: SchemeId::UniversitySubject,
             }),
             _ => None,
         };

@@ -26,6 +26,7 @@ impl Threads {
         first: i32,
         after: Option<String>,
         instance: Option<Instance>,
+        subject_id: Option<i32>,
         executor: E,
     ) -> Result<Self, operation::Error>
     where
@@ -46,12 +47,47 @@ impl Threads {
         // TODO: use alias for MAX(GREATEST(...)) when sqlx supports it
         let result = sqlx::query!(
             r#"
+                WITH RECURSIVE descendants AS (
+                    SELECT id, parent_id
+                    FROM term_taxonomy
+                    WHERE (? is null OR id = ?)
+
+                    UNION
+
+                    SELECT tt.id, tt.parent_id
+                    FROM term_taxonomy tt
+                    JOIN descendants d ON tt.parent_id = d.id
+                ), subject_entities AS (
+                SELECT id as entity_id FROM descendants
+
+                UNION
+
+                SELECT tte.entity_id
+                FROM descendants
+                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id
+
+                UNION
+
+                SELECT entity_link.child_id
+                FROM descendants
+                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id
+                JOIN entity_link ON entity_link.parent_id = tte.entity_id
+
+                UNION
+
+                SELECT entity_link.child_id
+                FROM descendants
+                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id
+                JOIN entity_link parent_link ON parent_link.parent_id = tte.entity_id
+                JOIN entity_link ON entity_link.parent_id = parent_link.child_id
+                )
                 SELECT comment.id
                 FROM comment
                 JOIN uuid ON uuid.id = comment.id
                 JOIN comment answer ON comment.id = answer.parent_id OR
                     comment.id = answer.id
                 JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id
+                JOIN subject_entities ON subject_entities.entity_id = comment.uuid_id
                 WHERE
                     comment.uuid_id IS NOT NULL
                     AND uuid.trashed = 0
@@ -61,8 +97,10 @@ impl Threads {
                 GROUP BY comment.id
                 HAVING MAX(GREATEST(answer.date, comment.date)) < ?
                 ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC
-                LIMIT ?
+                LIMIT ?;
             "#,
+            subject_id,
+            subject_id,
             instance_id,
             instance_id,
             after_parsed,

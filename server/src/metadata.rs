@@ -449,7 +449,9 @@ pub mod entities_metadata_query {
             SubjectMetadata {
                 r#type: "Concept".to_string(),
                 id: data.in_scheme.to_id_string() + &data.id,
-                in_scheme: data.in_scheme.to_scheme_string(),
+                in_scheme: Scheme {
+                    id: data.in_scheme.to_scheme_string(),
+                },
             }
         }
     }
@@ -459,7 +461,13 @@ pub mod entities_metadata_query {
     struct SubjectMetadata {
         r#type: String,
         id: String,
-        in_scheme: String,
+        in_scheme: Scheme,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Scheme {
+        id: String,
     }
 
     struct RawSubjectMetadata {

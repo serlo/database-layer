@@ -11,7 +11,9 @@ mod entities_metadata_query {
             {
               "type": "Concept",
               "id": "http://w3id.org/kim/schulfaecher/s1017",
-              "inScheme": "http://w3id.org/kim/schulfaecher/"
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
             }
           ],
           "@context": [
@@ -178,7 +180,9 @@ mod entities_metadata_query {
             {
               "type": "Concept",
               "id": "http://w3id.org/kim/schulfaecher/s1017",
-              "inScheme": "http://w3id.org/kim/schulfaecher/"
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
             }
           ],
           "@context": [
@@ -254,7 +258,9 @@ mod entities_metadata_query {
             {
               "type": "Concept",
               "id": "http://w3id.org/kim/schulfaecher/s1017",
-              "inScheme": "http://w3id.org/kim/schulfaecher/"
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
             }
           ],
           "@context": [
@@ -347,7 +353,9 @@ mod entities_metadata_query {
             {
               "type": "Concept",
               "id": "http://w3id.org/kim/schulfaecher/s1017",
-              "inScheme": "http://w3id.org/kim/schulfaecher/"
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
             }
           ],
           "@context": [
@@ -424,7 +432,9 @@ mod entities_metadata_query {
             {
               "type": "Concept",
               "id": "http://w3id.org/kim/schulfaecher/s1017",
-              "inScheme": "http://w3id.org/kim/schulfaecher/"
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
             }
           ],
           "@context": [
@@ -504,7 +514,9 @@ mod entities_metadata_query {
             {
               "type": "Concept",
               "id": "http://w3id.org/kim/schulfaecher/s1017",
-              "inScheme": "http://w3id.org/kim/schulfaecher/"
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
             }
           ],
           "@context": [

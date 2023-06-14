@@ -360,7 +360,7 @@ pub mod entities_metadata_query {
     }
 
     fn get_learning_resource_type(entity_type: &str) -> Vec<LinkedNode> {
-        let mut recource_types_exercise = vec![
+        let mut resource_types_exercise = vec![
             "assessment",
             "drill_and_practice",
             "text",

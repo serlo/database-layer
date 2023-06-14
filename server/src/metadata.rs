@@ -449,9 +449,11 @@ pub mod entities_metadata_query {
 
     impl From<RawSubjectMetadata> for SubjectMetadata {
         fn from(data: RawSubjectMetadata) -> Self {
-            SubjectMetadata { r#type: "Concept".to_string(),
-            id: data.in_scheme.to_id_string() + &data.id,
-            in_scheme: data.in_scheme.to_scheme_string()}
+            SubjectMetadata {
+                r#type: "Concept".to_string(),
+                id: data.in_scheme.to_id_string() + &data.id,
+                in_scheme: data.in_scheme.to_scheme_string(),
+            }
         }
     }
 

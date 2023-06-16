@@ -190,7 +190,7 @@ pub mod entities_metadata_query {
                     AND uuid.trashed = 0
                     AND type.name IN ("applet", "article", "course", "text-exercise",
                                       "text-exercise-group", "video")
-                    AND (ancestors.parent_id is NULL OR ancestors.id = 106081 OR ancestors.id = 146728)
+                    AND (ancestors.parent_id is NULL OR ancestors.root_id = 106081 OR ancestors.root_id = 146728)
                 GROUP BY entity.id
                 ORDER BY entity.id
                 LIMIT ?

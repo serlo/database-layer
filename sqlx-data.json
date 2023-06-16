@@ -2440,57 +2440,7 @@
     },
     "query": "UPDATE uuid SET trashed = ? WHERE id = ?"
   },
-  "9bd4c7f005e7e5f56c58e3efe7fbe64ba6a51ca405228bca0af0df42f2ebef71": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 161
-            },
-            "max_size": 21,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "SELECT LAST_INSERT_ID() as id FROM uuid"
-  },
-  "9e88bbbd1ac7d5ee3321bc38b7cbe2056ad0d68766e014ce413c9d1822aa6fe4": {
-    "describe": {
-      "columns": [
-        {
-          "name": "email",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4101
-            },
-            "max_size": 508,
-            "type": "VarString"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "select email from user where id = ?"
-  },
-  "9fa6aa3eb144c80cd58f48b2a5323c85e9112ea40b5a836662a2a5e49859d79f": {
+  "98bb12315dcfff96942e0e1a17b30463c3752190919be3229817d4b435a09ac2": {
     "describe": {
       "columns": [
         {
@@ -2669,7 +2619,57 @@
         "Right": 6
       }
     },
-    "query": "\n                WITH RECURSIVE ancestors AS (\n                    SELECT id, parent_id, id AS origin_id, id as subject_id\n                    FROM term_taxonomy\n\n                    UNION ALL\n\n                    SELECT tt.id, tt.parent_id,  a.origin_id, a.id\n                    FROM term_taxonomy tt\n                    JOIN ancestors a ON tt.id = a.parent_id\n                )\n                SELECT\n                    entity.id,\n                    JSON_ARRAYAGG(ancestors.subject_id) AS subject_ids,\n                    type.name AS resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance,\n                    JSON_ARRAYAGG(term_taxonomy.id) AS taxonomy_term_ids,\n                    JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names,\n                    JSON_OBJECTAGG(user.id, user.username) AS authors,\n                    JSON_OBJECTAGG(all_revisions_of_entity.id, user.id) AS author_edits\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id\n                JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id\n                JOIN term on term_taxonomy.term_id = term.id\n                JOIN entity_revision all_revisions_of_entity ON all_revisions_of_entity.repository_id = entity.id\n                JOIN user ON all_revisions_of_entity.author_id = user.id\n                JOIN ancestors on ancestors.origin_id = term_taxonomy_entity.term_taxonomy_id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND type.name IN (\"applet\", \"article\", \"course\", \"text-exercise\",\n                                      \"text-exercise-group\", \"video\")\n                    AND (ancestors.parent_id is NULL OR ancestors.id = 106081 OR ancestors.id = 146728)\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
+    "query": "\n                WITH RECURSIVE ancestors AS (\n                    SELECT id AS root_id, parent_id, id AS origin_id, id AS subject_id\n                    FROM term_taxonomy\n\n                    UNION\n\n                    SELECT tt.id, tt.parent_id,  a.origin_id, a.root_id\n                    FROM term_taxonomy tt\n                    JOIN ancestors a ON tt.id = a.parent_id\n                )\n                SELECT\n                    entity.id,\n                    JSON_ARRAYAGG(ancestors.subject_id) AS subject_ids,\n                    type.name AS resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance,\n                    JSON_ARRAYAGG(term_taxonomy.id) AS taxonomy_term_ids,\n                    JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names,\n                    JSON_OBJECTAGG(user.id, user.username) AS authors,\n                    JSON_OBJECTAGG(all_revisions_of_entity.id, user.id) AS author_edits\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id\n                JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id\n                JOIN term on term_taxonomy.term_id = term.id\n                JOIN entity_revision all_revisions_of_entity ON all_revisions_of_entity.repository_id = entity.id\n                JOIN user ON all_revisions_of_entity.author_id = user.id\n                JOIN ancestors on ancestors.origin_id = term_taxonomy_entity.term_taxonomy_id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND type.name IN (\"applet\", \"article\", \"course\", \"text-exercise\",\n                                      \"text-exercise-group\", \"video\")\n                    AND (ancestors.parent_id is NULL OR ancestors.root_id = 106081 OR ancestors.root_id = 146728)\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
+  },
+  "9bd4c7f005e7e5f56c58e3efe7fbe64ba6a51ca405228bca0af0df42f2ebef71": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 161
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "SELECT LAST_INSERT_ID() as id FROM uuid"
+  },
+  "9e88bbbd1ac7d5ee3321bc38b7cbe2056ad0d68766e014ce413c9d1822aa6fe4": {
+    "describe": {
+      "columns": [
+        {
+          "name": "email",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 508,
+            "type": "VarString"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "select email from user where id = ?"
   },
   "9fc7d40b0e6cc18ec82eb84d5c3cac04c38b66623271b229bdf90cbf92a40df0": {
     "describe": {

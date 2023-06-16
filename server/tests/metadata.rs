@@ -7,6 +7,15 @@ mod entities_metadata_query {
     #[actix_rt::test]
     async fn returns_metadata_for_articles() {
         assert_metadata(json!({
+          "about": [
+            {
+              "type": "Concept",
+              "id": "http://w3id.org/kim/schulfaecher/s1017",
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
+            }
+          ],
           "@context": [
             "https://w3id.org/kim/amb/context.jsonld",
             {
@@ -167,6 +176,15 @@ mod entities_metadata_query {
     #[actix_rt::test]
     async fn returns_metadata_for_applets() {
         assert_metadata(json!({
+          "about": [
+            {
+              "type": "Concept",
+              "id": "http://w3id.org/kim/schulfaecher/s1017",
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
+            }
+          ],
           "@context": [
             "https://w3id.org/kim/amb/context.jsonld",
             {
@@ -236,6 +254,15 @@ mod entities_metadata_query {
     #[actix_rt::test]
     async fn returns_metadata_for_courses() {
         assert_metadata(json!({
+          "about": [
+            {
+              "type": "Concept",
+              "id": "http://w3id.org/kim/schulfaecher/s1017",
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
+            }
+          ],
           "@context": [
             "https://w3id.org/kim/amb/context.jsonld",
             {
@@ -322,6 +349,15 @@ mod entities_metadata_query {
     #[actix_rt::test]
     async fn returns_metadata_for_exercises() {
         assert_metadata(json!({
+          "about": [
+            {
+              "type": "Concept",
+              "id": "http://w3id.org/kim/schulfaecher/s1017",
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
+            }
+          ],
           "@context": [
             "https://w3id.org/kim/amb/context.jsonld",
             {
@@ -392,6 +428,15 @@ mod entities_metadata_query {
     #[actix_rt::test]
     async fn returns_metadata_for_exercise_groups() {
         assert_metadata(json!({
+          "about": [
+            {
+              "type": "Concept",
+              "id": "http://w3id.org/kim/schulfaecher/s1017",
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
+            }
+          ],
           "@context": [
             "https://w3id.org/kim/amb/context.jsonld",
             {
@@ -465,6 +510,15 @@ mod entities_metadata_query {
     #[actix_rt::test]
     async fn returns_metadata_for_videos() {
         assert_metadata(json!({
+          "about": [
+            {
+              "type": "Concept",
+              "id": "http://w3id.org/kim/schulfaecher/s1017",
+              "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+              }
+            }
+          ],
           "@context": [
             "https://w3id.org/kim/amb/context.jsonld",
             {

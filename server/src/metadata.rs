@@ -148,12 +148,12 @@ pub mod entities_metadata_query {
         Ok(sqlx::query!(
             r#"
                 WITH RECURSIVE ancestors AS (
-                    SELECT id, parent_id, id AS origin_id, id as subject_id
+                    SELECT id AS root_id, parent_id, id AS origin_id, id AS subject_id
                     FROM term_taxonomy
 
-                    UNION ALL
+                    UNION
 
-                    SELECT tt.id, tt.parent_id,  a.origin_id, a.id
+                    SELECT tt.id, tt.parent_id,  a.origin_id, a.root_id
                     FROM term_taxonomy tt
                     JOIN ancestors a ON tt.id = a.parent_id
                 )
@@ -318,7 +318,7 @@ pub mod entities_metadata_query {
                     })
                     .unwrap_or(Vec::new());
                 let subject_metadata: Option<Vec<SubjectMetadata>> = subject_ids.iter().map(|id| {
-                    let raw_subject_metadata = lookup_subject_metadata(*id);
+                    let raw_subject_metadata = map_serlo_subjects_to_amb_standard(*id);
                     raw_subject_metadata.map(|data| data.into())
                 }).collect();
 
@@ -475,106 +475,124 @@ pub mod entities_metadata_query {
         in_scheme: SchemeId,
     }
 
-    fn lookup_subject_metadata(id: i32) -> Option<RawSubjectMetadata> {
+    fn map_serlo_subjects_to_amb_standard(id: i32) -> Option<RawSubjectMetadata> {
         match id {
-            //Mathematik
+            // Mathematik (Schule)
             5 | 23593 | 141587 | 169580 => Some(RawSubjectMetadata {
                 id: "1017".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
-            //Naturschutz
+            // Naturschutz (Hochschule)
             17744 | 48416 | 242851 => Some(RawSubjectMetadata {
                 id: "064".to_string(),
                 in_scheme: SchemeId::UniversitySubject,
             }),
+            // Chemie (Schule)
             18230 => Some(RawSubjectMetadata {
                 id: "1002".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Biologie (Schule)
             23362 => Some(RawSubjectMetadata {
                 id: "1001".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Englisch (Schule)
             25979 | 107557 | 113127 => Some(RawSubjectMetadata {
                 id: "1007".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Latein (Schule)
             33894 | 106085 => Some(RawSubjectMetadata {
                 id: "1016".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Physik (Schule)
             41107 => Some(RawSubjectMetadata {
                 id: "1022".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Informatik (Schule)
             47899 => Some(RawSubjectMetadata {
                 id: "1013".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Politik (Schule)
             79159 | 107556 => Some(RawSubjectMetadata {
                 id: "1023".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Medienbildung (Schule)
             106083 => Some(RawSubjectMetadata {
                 id: "1046".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Geografie (Schule)
             106084 => Some(RawSubjectMetadata {
                 id: "1010".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Psychologie (Schule)
             106086 => Some(RawSubjectMetadata {
                 id: "1043".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Deutsch als Zweitsprache (Schule)
             112723 => Some(RawSubjectMetadata {
                 id: "1006".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Geschichte (Schule)
             136362 => Some(RawSubjectMetadata {
                 id: "1011".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Wirtschaftskunde (Schule)
             137757 => Some(RawSubjectMetadata {
                 id: "1033".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
-            //Musik
+            // Musik (Schule)
             167849 | 48415 => Some(RawSubjectMetadata {
                 id: "1020".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Spanisch (Schule)
             190109 => Some(RawSubjectMetadata {
                 id: "1030".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Italienisch (Schule)
             198076 => Some(RawSubjectMetadata {
                 id: "1014".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Ethik (Schule)
             208736 => Some(RawSubjectMetadata {
                 id: "1008".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Deutsch (Schule)
             210462 => Some(RawSubjectMetadata {
                 id: "1005".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
+            // Französisch (Schule)
             227992 => Some(RawSubjectMetadata {
                 id: "1009".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
-            //Sexualerziehung
+            // Sexualerziehung
             78339 => Some(RawSubjectMetadata {
                 id: "1029".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
             }),
-            //Materialwissenschaft
+            // Materialwissenschaft
             141607 => Some(RawSubjectMetadata {
                 id: "294".to_string(),
                 in_scheme: SchemeId::UniversitySubject,
             }),
-            //Asiatische Sprachen und Kulturen/Asienwissenschaften
+            // Asiatische Sprachen und Kulturen/Asienwissenschaften
             140527 => Some(RawSubjectMetadata {
                 id: "187".to_string(),
                 in_scheme: SchemeId::UniversitySubject,

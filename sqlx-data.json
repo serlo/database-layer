@@ -774,6 +774,31 @@
     },
     "query": "\n                SELECT t.name, u.trashed, r.date, r.author_id, r.repository_id\n                    FROM entity_revision r\n                    JOIN uuid u ON u.id = r.id\n                    JOIN entity e ON e.id = r.repository_id\n                    JOIN type t ON t.id = e.type_id\n                    WHERE r.id = ?\n            "
   },
+  "25e8a1f49798548f80da67121db5fe6feb87263196b0032d960443d1fedd828e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                SELECT page_repository.id\n                FROM instance, page_repository\n                JOIN page_revision ON page_repository.id = page_revision.page_repository_id\n                WHERE page_repository.instance_id = instance.id\n                AND (? is null or instance.subdomain = ?)\n                AND page_repository.current_revision_id = page_revision.id\n                ORDER BY page_repository.id\n            "
+  },
   "281acbea5bb6f6c8db1f93b28161ac9526e53a9f1d7c419c27980e7900ef6d40": {
     "describe": {
       "columns": [],
@@ -968,31 +993,6 @@
       }
     },
     "query": "update event_log set actor_id = ? where actor_id = ?"
-  },
-  "34e6872f5d566d3b3c6ce33c3eeb95e23f6acd41a16ead03d768d6ad8cdd95a7": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                SELECT page_repository.id\n                FROM instance, page_repository\n                JOIN page_revision ON page_repository.id = page_revision.page_repository_id\n                WHERE page_repository.instance_id = instance.id\n                AND (? is null or instance.subdomain = ?)\n                AND page_repository.current_revision_id = page_revision.id\n            "
   },
   "3b6098e00bd82ec3f18a1c5e07915e1fc229059e2964da68c03a787fb4ba62a1": {
     "describe": {
@@ -1598,31 +1598,6 @@
     },
     "query": "update blog_post set author_id = ? where author_id = ?"
   },
-  "605be0a0be8cb2149d2b92a36a65a25fab72f341b9ffa53b96f4accbb8dda382": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Right": 4
-      }
-    },
-    "query": "\n                SELECT comment.id\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                JOIN comment answer ON comment.id = answer.parent_id OR\n                    comment.id = answer.id\n                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR comment.instance_id = ?)\n                    AND parent_uuid.discriminator != \"user\"\n                GROUP BY comment.id\n                HAVING MAX(GREATEST(answer.date, comment.date)) < ?\n                ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC\n                LIMIT ?\n            "
-  },
   "649f401fd7262aa959e1e5a8f1071d74a7315cce328cdbbce4ad1a4aec849820": {
     "describe": {
       "columns": [],
@@ -2050,174 +2025,6 @@
     },
     "query": "\n                    SELECT id FROM term_taxonomy_entity\n                        WHERE entity_id = ?\n                        AND term_taxonomy_id = ?\n                "
   },
-  "80bc606ca6a32c83c02c49c49cec6322eb0cb53c186024631d93f570ff24943f": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4107
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "resource_type",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4101
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "params",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 128
-            },
-            "max_size": 16777216,
-            "type": "Json"
-          }
-        },
-        {
-          "name": "date_created",
-          "ordinal": 3,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1153
-            },
-            "max_size": 19,
-            "type": "Timestamp"
-          }
-        },
-        {
-          "name": "date_modified",
-          "ordinal": 4,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1153
-            },
-            "max_size": 19,
-            "type": "Timestamp"
-          }
-        },
-        {
-          "name": "version",
-          "ordinal": 5,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 0
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "license_url",
-          "ordinal": 6,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "instance",
-          "ordinal": 7,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 40,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "taxonomy_term_ids",
-          "ordinal": 8,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 128
-            },
-            "max_size": 16777216,
-            "type": "Json"
-          }
-        },
-        {
-          "name": "term_names",
-          "ordinal": 9,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 128
-            },
-            "max_size": 16777216,
-            "type": "Json"
-          }
-        },
-        {
-          "name": "authors",
-          "ordinal": 10,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 128
-            },
-            "max_size": 16777216,
-            "type": "Json"
-          }
-        },
-        {
-          "name": "author_edits",
-          "ordinal": 11,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 128
-            },
-            "max_size": 16777216,
-            "type": "Json"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true,
-        false,
-        false,
-        true,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true
-      ],
-      "parameters": {
-        "Right": 6
-      }
-    },
-    "query": "\n                SELECT\n                    entity.id,\n                    type.name AS resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance,\n                    JSON_ARRAYAGG(term_taxonomy.id) AS taxonomy_term_ids,\n                    JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names,\n                    JSON_OBJECTAGG(user.id, user.username) AS authors,\n                    JSON_OBJECTAGG(all_revisions_of_entity.id, user.id) AS author_edits\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id\n                JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id\n                JOIN term on term_taxonomy.term_id = term.id\n                JOIN entity_revision all_revisions_of_entity ON all_revisions_of_entity.repository_id = entity.id\n                JOIN user ON all_revisions_of_entity.author_id = user.id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND type.name IN (\"applet\", \"article\", \"course\", \"text-exercise\",\n                                      \"text-exercise-group\", \"video\")\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
-  },
   "86d9154ff359e925b1f73ba4be620d309230f7d3f37c4d710f25f5acffd2527b": {
     "describe": {
       "columns": [
@@ -2475,7 +2282,7 @@
             "flags": {
               "bits": 128
             },
-            "max_size": 16777216,
+            "max_size": 4294967292,
             "type": "Json"
           }
         },
@@ -2487,7 +2294,7 @@
             "flags": {
               "bits": 128
             },
-            "max_size": 16777216,
+            "max_size": 4294967292,
             "type": "Json"
           }
         }
@@ -2632,6 +2439,187 @@
       }
     },
     "query": "UPDATE uuid SET trashed = ? WHERE id = ?"
+  },
+  "98bb12315dcfff96942e0e1a17b30463c3752190919be3229817d4b435a09ac2": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "subject_ids",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 4294967292,
+            "type": "Json"
+          }
+        },
+        {
+          "name": "resource_type",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4101
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "params",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 4294967292,
+            "type": "Json"
+          }
+        },
+        {
+          "name": "date_created",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1153
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        },
+        {
+          "name": "date_modified",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1153
+            },
+            "max_size": 19,
+            "type": "Timestamp"
+          }
+        },
+        {
+          "name": "version",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "license_url",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "instance",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 40,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "taxonomy_term_ids",
+          "ordinal": 9,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 4294967292,
+            "type": "Json"
+          }
+        },
+        {
+          "name": "term_names",
+          "ordinal": 10,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 4294967292,
+            "type": "Json"
+          }
+        },
+        {
+          "name": "authors",
+          "ordinal": 11,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 4294967292,
+            "type": "Json"
+          }
+        },
+        {
+          "name": "author_edits",
+          "ordinal": 12,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 4294967292,
+            "type": "Json"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true
+      ],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "\n                WITH RECURSIVE ancestors AS (\n                    SELECT id AS root_id, parent_id, id AS origin_id, id AS subject_id\n                    FROM term_taxonomy\n\n                    UNION\n\n                    SELECT tt.id, tt.parent_id,  a.origin_id, a.root_id\n                    FROM term_taxonomy tt\n                    JOIN ancestors a ON tt.id = a.parent_id\n                )\n                SELECT\n                    entity.id,\n                    JSON_ARRAYAGG(ancestors.subject_id) AS subject_ids,\n                    type.name AS resource_type,\n                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance,\n                    JSON_ARRAYAGG(term_taxonomy.id) AS taxonomy_term_ids,\n                    JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names,\n                    JSON_OBJECTAGG(user.id, user.username) AS authors,\n                    JSON_OBJECTAGG(all_revisions_of_entity.id, user.id) AS author_edits\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id\n                JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id\n                JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id\n                JOIN term on term_taxonomy.term_id = term.id\n                JOIN entity_revision all_revisions_of_entity ON all_revisions_of_entity.repository_id = entity.id\n                JOIN user ON all_revisions_of_entity.author_id = user.id\n                JOIN ancestors on ancestors.origin_id = term_taxonomy_entity.term_taxonomy_id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND type.name IN (\"applet\", \"article\", \"course\", \"text-exercise\",\n                                      \"text-exercise-group\", \"video\")\n                    AND (ancestors.parent_id is NULL OR ancestors.root_id = 106081 OR ancestors.root_id = 146728)\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
   },
   "9bd4c7f005e7e5f56c58e3efe7fbe64ba6a51ca405228bca0af0df42f2ebef71": {
     "describe": {
@@ -3802,6 +3790,31 @@
       }
     },
     "query": "\n                SELECT term_taxonomy_id as id\n                    FROM (\n                        SELECT term_taxonomy_id, entity_id FROM term_taxonomy_entity\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l ON t.entity_id = l.parent_id\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l2.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l1 ON t.entity_id = l1.parent_id\n                            JOIN entity_link l2 ON l2.parent_id = l1.child_id\n                    ) u\n                    WHERE entity_id = ?\n            "
+  },
+  "e0334daae44b4b45248e148a16fe617984b0b02cb7667ab6eff2acaf65d8cdfd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4107
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "\n                WITH RECURSIVE descendants AS (\n                    SELECT id, parent_id\n                    FROM term_taxonomy\n                    WHERE (? is null OR id = ?)\n\n                    UNION\n\n                    SELECT tt.id, tt.parent_id\n                    FROM term_taxonomy tt\n                    JOIN descendants d ON tt.parent_id = d.id\n                ), subject_entities AS (\n                SELECT id as entity_id FROM descendants\n\n                UNION\n\n                SELECT tte.entity_id\n                FROM descendants\n                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id\n\n                UNION\n\n                SELECT entity_link.child_id\n                FROM descendants\n                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id\n                JOIN entity_link ON entity_link.parent_id = tte.entity_id\n\n                UNION\n\n                SELECT entity_link.child_id\n                FROM descendants\n                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id\n                JOIN entity_link parent_link ON parent_link.parent_id = tte.entity_id\n                JOIN entity_link ON entity_link.parent_id = parent_link.child_id\n                )\n                SELECT comment.id\n                FROM comment\n                JOIN uuid ON uuid.id = comment.id\n                JOIN comment answer ON comment.id = answer.parent_id OR\n                    comment.id = answer.id\n                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id\n                JOIN subject_entities ON subject_entities.entity_id = comment.uuid_id\n                WHERE\n                    comment.uuid_id IS NOT NULL\n                    AND uuid.trashed = 0\n                    AND comment.archived = 0\n                    AND (? is null OR comment.instance_id = ?)\n                    AND parent_uuid.discriminator != \"user\"\n                GROUP BY comment.id\n                HAVING MAX(GREATEST(answer.date, comment.date)) < ?\n                ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC\n                LIMIT ?;\n            "
   },
   "e14024e5584079e74f13206f1cea5284f06572386a8ee1aecb54348fd4afda13": {
     "describe": {

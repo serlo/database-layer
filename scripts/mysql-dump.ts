@@ -10,10 +10,7 @@ import * as path from 'node:path'
 import * as process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import {
-  ConcatenateInsertCommands,
-  IgnoreInsecurePasswordWarning,
-} from './transform'
+import { ConcatenateInsertCommands } from './transform'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -35,8 +32,6 @@ const sqlInitFile = path.join(
 // more readable.
 const mysqldumpCommand = [
   'mysqldump',
-  '--user=root',
-  '--password=secret',
   '--lock-all-tables',
   '--complete-insert',
   '--skip-extended-insert',
@@ -53,9 +48,7 @@ mysqldump.stdout
   .pipe(new ConcatenateInsertCommands(encoding, maxInsertCmdLength))
   .pipe(fs.createWriteStream(sqlInitFile))
 
-mysqldump.stderr
-  .pipe(new IgnoreInsecurePasswordWarning('utf8'))
-  .pipe(process.stderr)
+mysqldump.stderr.pipe(process.stderr)
 
 mysqldump.on('error', (error) => {
   console.error('ERROR: ' + error)

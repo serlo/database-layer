@@ -40,12 +40,14 @@ spawnSync('docker', ['cp', '/tmp/mysql.sql', `${container}:/tmp/mysql.sql`], {
 spawnSync('docker', ['cp', '/tmp/user.csv', `${container}:/tmp/user.csv`], {
   stdio: 'inherit',
 })
+
+info('Start importing MySQL data')
 await execSql('source /tmp/mysql.sql;')
-console.log('succeeded dump')
+
+info('Start importing anonymized user data')
 await execSql(
   "LOAD DATA LOCAL INFILE '/tmp/user.csv' INTO TABLE user FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n' IGNORE 1 ROWS;"
 )
-console.log('succeeded loading')
 
 async function execSql(command: string) {
   await new Promise<void>((resolve, reject) => {
@@ -72,4 +74,8 @@ async function execSql(command: string) {
       }
     })
   })
+}
+
+function info(message: string) {
+  console.error(`INFO: ${message}`)
 }

@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process'
 import * as process from 'node:process'
 
-const mysqlRollbackCmd = 'mysql < /docker-entrypoint-initdb.d/001-init.sql'
+const mysqlRollbackCmd =
+  'mysql serlo < /docker-entrypoint-initdb.d/001-init.sql'
 
 const dockerComposeArgs = ['exec', '-T', 'mysql', 'sh', '-c', mysqlRollbackCmd]
 

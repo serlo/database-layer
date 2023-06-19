@@ -34,7 +34,7 @@ runCmd('docker', ['cp', '/tmp/mysql.sql', `${container}:/tmp/mysql.sql`])
 runCmd('docker', ['cp', '/tmp/user.csv', `${container}:/tmp/user.csv`])
 
 info('Start importing MySQL data')
-execCommand(`pv /tmp/mysql.sql | mysql`)
+execCommand(`pv /tmp/mysql.sql | mysql serlo`)
 
 info('Start importing anonymized user data')
 execSql(
@@ -42,7 +42,7 @@ execSql(
 )
 
 function execSql(command: string) {
-  execCommand(`mysql --local_infile=1 -e "${command}"`)
+  execCommand(`mysql --local_infile=1 -e "${command}" serlo`)
 }
 
 function execCommand(command: string) {

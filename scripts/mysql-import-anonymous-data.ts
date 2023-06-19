@@ -40,7 +40,6 @@ spawnSync('docker', ['cp', '/tmp/mysql.sql', `${container}:/tmp/mysql.sql`], {
 spawnSync('docker', ['cp', '/tmp/user.csv', `${container}:/tmp/user.csv`], {
   stdio: 'inherit',
 })
-await execSql('SET GLOBAL local_infile = ON;')
 await execSql('source /tmp/mysql.sql;')
 console.log('succeeded dump')
 await execSql(

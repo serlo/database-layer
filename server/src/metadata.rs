@@ -78,7 +78,7 @@ pub mod entities_metadata_query {
         maintainer: serde_json::Value,
         name: String,
         publisher: Vec<serde_json::Value>,
-        version: String,
+        version: LinkedNode,
     }
 
     #[derive(Serialize)]
@@ -354,10 +354,10 @@ pub mod entities_metadata_query {
                     is_accessible_for_free: true,
                     is_family_friendly: true,
                     learning_resource_type: get_learning_resource_type(&result.resource_type),
-                    license: LinkedNode { id: result.license_url},
+                    license: LinkedNode { id: result.license_url },
                     main_entity_of_page: json!([
                         {
-                            "id": "https://serlo.org/metadata-api",
+                            "id": "https://serlo.org/metadata",
                             "provider": get_serlo_organization_metadata(),
                             "dateCreated": current_date,
                             "dateModified": current_date,
@@ -367,7 +367,7 @@ pub mod entities_metadata_query {
                     name,
                     publisher: vec![get_serlo_organization_metadata()],
                     is_part_of,
-                    version: get_iri(result.version.unwrap())
+                    version: LinkedNode { id: get_iri(result.version.unwrap()) }
                 }
             })
             .collect()
@@ -391,14 +391,72 @@ pub mod entities_metadata_query {
     }
 
     fn get_learning_resource_type(entity_type: &str) -> Vec<LinkedNode> {
+        let mut resource_types_exercise = vec![
+            "assessment",
+            "drill_and_practice",
+            "text",
+            "web_page",
+            "wiki",
+            "open_activity",
+            "teaching_module",
+            "tool",
+            "worksheet",
+        ];
+
         match entity_type {
-            "article" => vec!["text", "worksheet", "course", "web_page", "wiki"],
-            "course" => vec!["course", "exploration", "web_page", "wiki"],
-            "text-exercise-group" | "text-exercise" => {
-                vec!["drill_and_practice", "assessment", "web_page", "wiki"]
+            "article" => vec![
+                "text",
+                "worksheet",
+                "course",
+                "web_page",
+                "wiki",
+                "demonstration",
+                "image",
+                "open_activity",
+                "teaching_module",
+                "tool",
+            ],
+            "course" => vec![
+                "course",
+                "exploration",
+                "web_page",
+                "wiki",
+                "assessment",
+                "demonstration",
+                "drill_and_practice",
+                "educational_game",
+                "enquiry_oriented_activity",
+                "experiment",
+                "text",
+                "open_activity",
+                "teaching_module",
+                "tool",
+            ],
+            "text-exercise" => resource_types_exercise,
+            "text-exercise-group" => {
+                resource_types_exercise.push("data");
+                resource_types_exercise
             }
-            "video" => vec!["video", "audiovisual_medium"],
-            "applet" => vec!["application", "demonstration"],
+            "video" => vec![
+                "video",
+                "audiovisual_medium",
+                "demonstration",
+                "audio",
+                "teaching_module",
+                "tool",
+            ],
+            "applet" => vec![
+                "application",
+                "assessment",
+                "demonstration",
+                "drill_and_practice",
+                "experiment",
+                "exploration",
+                "other_asset_type",
+                "teaching_module",
+                "tool",
+                "wiki",
+            ],
             _ => vec![],
         }
         .into_iter()

@@ -40,10 +40,11 @@ spawnSync('docker', ['cp', '/tmp/mysql.sql', `${container}:/tmp/mysql.sql`], {
 spawnSync('docker', ['cp', '/tmp/user.csv', `${container}:/tmp/user.csv`], {
   stdio: 'inherit',
 })
-await execSql('serlo < /tmp/mysql.sql')
+await execSql('SET GLOBAL local_infile = ON;')
+await execSql('source /tmp/mysql.sql;')
 console.log('succeeded dump')
 await execSql(
-  "-e \"LOAD DATA LOCAL INFILE '/tmp/user.csv' INTO TABLE user FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n' IGNORE 1 ROWS;\" serlo"
+  "LOAD DATA LOCAL INFILE '/tmp/user.csv' INTO TABLE user FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n' IGNORE 1 ROWS;"
 )
 console.log('succeeded loading')
 
@@ -55,7 +56,7 @@ async function execSql(command: string) {
       'mysql',
       'sh',
       '-c',
-      `mysql --user=root --password="$MYSQL_ROOT_PASSWORD" ${command}`,
+      `mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --local_infile=1 serlo -e "${command}"`,
     ])
     dockerComposeExec.stdout.pipe(process.stdout)
     dockerComposeExec.stderr

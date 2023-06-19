@@ -20,24 +20,19 @@ const fileName = spawnSync('basename', [latestDump], {
 })
   .stdout.toString()
   .trim()
-spawnSync('gsutil', ['cp', latestDump, `/tmp/${fileName}`], {
-  stdio: 'inherit',
-})
+
+runCmd('gsutil', ['cp', latestDump, `/tmp/${fileName}`])
+
 const container = spawnSync('docker-compose', ['ps', '-q', 'mysql'], {
   stdio: 'pipe',
   encoding: 'utf-8',
 })
   .stdout.toString()
   .trim()
-spawnSync('unzip', ['-o', `/tmp/${fileName}`, '-d', '/tmp'], {
-  stdio: 'inherit',
-})
-spawnSync('docker', ['cp', '/tmp/mysql.sql', `${container}:/tmp/mysql.sql`], {
-  stdio: 'inherit',
-})
-spawnSync('docker', ['cp', '/tmp/user.csv', `${container}:/tmp/user.csv`], {
-  stdio: 'inherit',
-})
+
+runCmd('unzip', ['-o', `/tmp/${fileName}`, '-d', '/tmp'])
+runCmd('docker', ['cp', '/tmp/mysql.sql', `${container}:/tmp/mysql.sql`])
+runCmd('docker', ['cp', '/tmp/user.csv', `${container}:/tmp/user.csv`])
 
 info('Start importing MySQL data')
 execCommand(`pv /tmp/mysql.sql | ${mysqlCommand}`)
@@ -52,11 +47,14 @@ function execSql(command: string) {
 }
 
 function execCommand(command: string) {
-  const cmd = ['exec', 'mysql', 'sh', '-c', `${command}`]
+  const args = ['exec', 'mysql', 'sh', '-c', `${command}`]
 
-  spawnSync('docker-compose', cmd, {
-    stdio: [process.stdin, process.stdout, process.stderr],
-  })
+  runCmd('docker-compose', args)
+}
+
+function runCmd(cmd: string, args: string[]) {
+  const opt = { stdio: [process.stdin, process.stdout, process.stderr] }
+  spawnSync(cmd, args, opt)
 }
 
 function info(message: string) {

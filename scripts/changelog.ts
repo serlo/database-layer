@@ -310,6 +310,24 @@ const content = generateChangelog({
         'thread: handle state change of many comments, not only of the first one',
       ],
     },
+    {
+      tagName: 'v0.3.65',
+      date: '2023-06-19',
+      added: [
+        'add about to MetadataQuery',
+        'filter threads by subjectId',
+        'Metadata: Return dict for version',
+        'Ignore Metadata Query param modifiedAfter if API has changed recently',
+      ],
+      changed: [
+        'Change `mainEntityOfPage` to an array',
+        'Update organization link to /organization',
+        'Update URL in `@context`',
+        'remove headline when empty',
+        'Always use the same JSON for Serlo',
+        'distinguish Serlo as organization from website',
+      ],
+    },
   ],
 })
 

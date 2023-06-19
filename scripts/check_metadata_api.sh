@@ -30,7 +30,7 @@ function main() {
 }
 
 function check_metadata() {
-  (( AFTER = $1 - 1 ))
+  ((AFTER = $1 - 1))
   PAYLOAD="{ \
     \"type\": \"EntitiesMetadataQuery\", \
     \"payload\": { \"first\": 1, \"after\": $AFTER } \

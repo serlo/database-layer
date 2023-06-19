@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.65](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.64..v0.3.65) - June 19, 2023
+
+### Added
+
+- add about to MetadataQuery
+
+- filter threads by subjectId
+
+- Metadata: Return dict for version
+
+- Ignore Metadata Query param modifiedAfter if API has changed recently
+
+### Changed
+
+- Change `mainEntityOfPage` to an array
+
+- Update organization link to /organization
+
+- Update URL in `@context`
+
+- remove headline when empty
+
+- Always use the same JSON for Serlo
+
+- distinguish Serlo as organization from website
+
 ## [v0.3.64](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.63..v0.3.64) - May 9, 2023
 
 ### Added

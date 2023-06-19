@@ -496,6 +496,7 @@ impl Page {
                 WHERE page_repository.instance_id = instance.id
                 AND (? is null or instance.subdomain = ?)
                 AND page_repository.current_revision_id = page_revision.id
+                ORDER BY page_repository.id
             "#,
             payload.instance,
             payload.instance,

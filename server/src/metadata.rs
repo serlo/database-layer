@@ -52,6 +52,8 @@ pub mod entities_metadata_query {
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
     struct EntityMetadata {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        about: Option<Vec<SubjectMetadata>>,
         #[serde(rename = "@context")]
         context: serde_json::Value,
         id: String,
@@ -145,8 +147,19 @@ pub mod entities_metadata_query {
 
         Ok(sqlx::query!(
             r#"
+                WITH RECURSIVE ancestors AS (
+                    SELECT id AS root_id, parent_id, id AS origin_id, id AS subject_id
+                    FROM term_taxonomy
+
+                    UNION
+
+                    SELECT tt.id, tt.parent_id,  a.origin_id, a.root_id
+                    FROM term_taxonomy tt
+                    JOIN ancestors a ON tt.id = a.parent_id
+                )
                 SELECT
                     entity.id,
+                    JSON_ARRAYAGG(ancestors.subject_id) AS subject_ids,
                     type.name AS resource_type,
                     JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,
                     entity.date AS date_created,
@@ -170,12 +183,14 @@ pub mod entities_metadata_query {
                 JOIN term on term_taxonomy.term_id = term.id
                 JOIN entity_revision all_revisions_of_entity ON all_revisions_of_entity.repository_id = entity.id
                 JOIN user ON all_revisions_of_entity.author_id = user.id
+                JOIN ancestors on ancestors.origin_id = term_taxonomy_entity.term_taxonomy_id
                 WHERE entity.id > ?
                     AND (? is NULL OR instance.subdomain = ?)
                     AND (? is NULL OR entity_revision.date > ?)
                     AND uuid.trashed = 0
                     AND type.name IN ("applet", "article", "course", "text-exercise",
                                       "text-exercise-group", "video")
+                    AND (ancestors.parent_id is NULL OR ancestors.root_id = 106081 OR ancestors.root_id = 146728)
                 GROUP BY entity.id
                 ORDER BY entity.id
                 LIMIT ?
@@ -291,8 +306,24 @@ pub mod entities_metadata_query {
                     })
                     .unwrap_or(Vec::new());
                 let current_date = Utc::now().to_rfc3339();
+                let subject_ids: Vec<i32> = result.subject_ids.as_ref()
+                    .and_then(|value| value.as_array())
+                    .map(|ids| {
+                        ids.iter()
+                            .filter_map(|element| element.as_i64())
+                            .collect::<HashSet<i64>>()
+                            .into_iter()
+                            .map(|id| id as i32)
+                            .collect()
+                    })
+                    .unwrap_or(Vec::new());
+                let subject_metadata: Option<Vec<SubjectMetadata>> = subject_ids.iter().map(|id| {
+                    let raw_subject_metadata = map_serlo_subjects_to_amb_standard(*id);
+                    raw_subject_metadata.map(|data| data.into())
+                }).collect();
 
                 EntityMetadata {
+                    about: subject_metadata,
                     context: json!([
                         "https://w3id.org/kim/amb/context.jsonld",
                         {
@@ -445,5 +476,186 @@ pub mod entities_metadata_query {
             "type": "Organization",
             "name": "Serlo Education e.V."
         })
+    }
+
+    enum SchemeId {
+        UniversitySubject,
+        SchoolSubject,
+    }
+
+    impl SchemeId {
+        fn to_scheme_string(&self) -> String {
+            match *self {
+                SchemeId::UniversitySubject => {
+                    "https://w3id.org/kim/hochschulfaechersystematik/scheme".to_string()
+                }
+                SchemeId::SchoolSubject => "http://w3id.org/kim/schulfaecher/".to_string(),
+            }
+        }
+        fn to_id_string(&self) -> String {
+            match *self {
+                SchemeId::UniversitySubject => {
+                    "https://w3id.org/kim/hochschulfaechersystematik/n".to_string()
+                }
+                SchemeId::SchoolSubject => "http://w3id.org/kim/schulfaecher/s".to_string(),
+            }
+        }
+    }
+
+    impl From<RawSubjectMetadata> for SubjectMetadata {
+        fn from(data: RawSubjectMetadata) -> Self {
+            SubjectMetadata {
+                r#type: "Concept".to_string(),
+                id: data.in_scheme.to_id_string() + &data.id,
+                in_scheme: Scheme {
+                    id: data.in_scheme.to_scheme_string(),
+                },
+            }
+        }
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct SubjectMetadata {
+        r#type: String,
+        id: String,
+        in_scheme: Scheme,
+    }
+
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Scheme {
+        id: String,
+    }
+
+    struct RawSubjectMetadata {
+        id: String,
+        in_scheme: SchemeId,
+    }
+
+    fn map_serlo_subjects_to_amb_standard(id: i32) -> Option<RawSubjectMetadata> {
+        match id {
+            // Mathematik (Schule)
+            5 | 23593 | 141587 | 169580 => Some(RawSubjectMetadata {
+                id: "1017".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Naturschutz (Hochschule)
+            17744 | 48416 | 242851 => Some(RawSubjectMetadata {
+                id: "064".to_string(),
+                in_scheme: SchemeId::UniversitySubject,
+            }),
+            // Chemie (Schule)
+            18230 => Some(RawSubjectMetadata {
+                id: "1002".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Biologie (Schule)
+            23362 => Some(RawSubjectMetadata {
+                id: "1001".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Englisch (Schule)
+            25979 | 107557 | 113127 => Some(RawSubjectMetadata {
+                id: "1007".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Latein (Schule)
+            33894 | 106085 => Some(RawSubjectMetadata {
+                id: "1016".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Physik (Schule)
+            41107 => Some(RawSubjectMetadata {
+                id: "1022".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Informatik (Schule)
+            47899 => Some(RawSubjectMetadata {
+                id: "1013".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Politik (Schule)
+            79159 | 107556 => Some(RawSubjectMetadata {
+                id: "1023".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Medienbildung (Schule)
+            106083 => Some(RawSubjectMetadata {
+                id: "1046".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Geografie (Schule)
+            106084 => Some(RawSubjectMetadata {
+                id: "1010".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Psychologie (Schule)
+            106086 => Some(RawSubjectMetadata {
+                id: "1043".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Deutsch als Zweitsprache (Schule)
+            112723 => Some(RawSubjectMetadata {
+                id: "1006".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Geschichte (Schule)
+            136362 => Some(RawSubjectMetadata {
+                id: "1011".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Wirtschaftskunde (Schule)
+            137757 => Some(RawSubjectMetadata {
+                id: "1033".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Musik (Schule)
+            167849 | 48415 => Some(RawSubjectMetadata {
+                id: "1020".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Spanisch (Schule)
+            190109 => Some(RawSubjectMetadata {
+                id: "1030".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Italienisch (Schule)
+            198076 => Some(RawSubjectMetadata {
+                id: "1014".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Ethik (Schule)
+            208736 => Some(RawSubjectMetadata {
+                id: "1008".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Deutsch (Schule)
+            210462 => Some(RawSubjectMetadata {
+                id: "1005".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Französisch (Schule)
+            227992 => Some(RawSubjectMetadata {
+                id: "1009".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Sexualerziehung
+            78339 => Some(RawSubjectMetadata {
+                id: "1029".to_string(),
+                in_scheme: SchemeId::SchoolSubject,
+            }),
+            // Materialwissenschaft
+            141607 => Some(RawSubjectMetadata {
+                id: "294".to_string(),
+                in_scheme: SchemeId::UniversitySubject,
+            }),
+            // Asiatische Sprachen und Kulturen/Asienwissenschaften
+            140527 => Some(RawSubjectMetadata {
+                id: "187".to_string(),
+                in_scheme: SchemeId::UniversitySubject,
+            }),
+            _ => None,
+        }
     }
 }

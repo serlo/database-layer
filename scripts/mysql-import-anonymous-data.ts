@@ -1,6 +1,5 @@
 import { spawnSync } from 'child_process'
 
-const mysqlCommand = 'mysql --user=root --password="$MYSQL_ROOT_PASSWORD" serlo'
 const latestDump = spawnSync(
   'bash',
   [
@@ -35,7 +34,7 @@ runCmd('docker', ['cp', '/tmp/mysql.sql', `${container}:/tmp/mysql.sql`])
 runCmd('docker', ['cp', '/tmp/user.csv', `${container}:/tmp/user.csv`])
 
 info('Start importing MySQL data')
-execCommand(`pv /tmp/mysql.sql | ${mysqlCommand}`)
+execCommand(`pv /tmp/mysql.sql | mysql`)
 
 info('Start importing anonymized user data')
 execSql(
@@ -43,7 +42,7 @@ execSql(
 )
 
 function execSql(command: string) {
-  execCommand(`${mysqlCommand} --local_infile=1 -e "${command}"`)
+  execCommand(`mysql --local_infile=1 -e "${command}"`)
 }
 
 function execCommand(command: string) {

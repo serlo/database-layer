@@ -1,8 +1,6 @@
-import { spawn, spawnSync } from 'child_process'
-import * as process from 'node:process'
+import { spawnSync } from 'child_process'
 
-import { IgnoreInsecurePasswordWarning } from './transform'
-
+const mysqlCommand = 'mysql --user=root --password="$MYSQL_ROOT_PASSWORD" serlo'
 const latestDump = spawnSync(
   'bash',
   [
@@ -42,37 +40,22 @@ spawnSync('docker', ['cp', '/tmp/user.csv', `${container}:/tmp/user.csv`], {
 })
 
 info('Start importing MySQL data')
-await execSql('source /tmp/mysql.sql;')
+execCommand(`pv /tmp/mysql.sql | ${mysqlCommand}`)
 
 info('Start importing anonymized user data')
-await execSql(
+execSql(
   "LOAD DATA LOCAL INFILE '/tmp/user.csv' INTO TABLE user FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n' IGNORE 1 ROWS;"
 )
 
-async function execSql(command: string) {
-  await new Promise<void>((resolve, reject) => {
-    const dockerComposeExec = spawn('docker-compose', [
-      'exec',
-      '-T',
-      'mysql',
-      'sh',
-      '-c',
-      `mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --local_infile=1 serlo -e "${command}"`,
-    ])
-    dockerComposeExec.stdout.pipe(process.stdout)
-    dockerComposeExec.stderr
-      .pipe(new IgnoreInsecurePasswordWarning('utf8'))
-      .pipe(process.stderr)
-    dockerComposeExec.on('error', (error) => {
-      console.error('ERROR: ' + error)
-    })
-    dockerComposeExec.on('exit', (code) => {
-      if (code) {
-        reject(code)
-      } else {
-        resolve()
-      }
-    })
+function execSql(command: string) {
+  execCommand(`${mysqlCommand} --local_infile=1 -e "${command}"`)
+}
+
+function execCommand(command: string) {
+  const cmd = ['exec', 'mysql', 'sh', '-c', `${command}`]
+
+  spawnSync('docker-compose', cmd, {
+    stdio: [process.stdin, process.stdout, process.stderr],
   })
 }
 

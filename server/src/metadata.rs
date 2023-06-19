@@ -76,7 +76,8 @@ pub mod entities_metadata_query {
         maintainer: serde_json::Value,
         name: String,
         publisher: Vec<serde_json::Value>,
-        version: LinkedNode,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        version: Option<LinkedNode>,
     }
 
     #[derive(Serialize)]
@@ -336,7 +337,7 @@ pub mod entities_metadata_query {
                     name,
                     publisher: vec![get_serlo_organization_metadata()],
                     is_part_of,
-                    version: LinkedNode { id: get_iri(result.version.unwrap()) }
+                    version: result.version.map(|version| LinkedNode { id: get_iri(version) })
                 }
             })
             .collect()

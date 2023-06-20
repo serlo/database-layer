@@ -1,0 +1,3 @@
+#!/bin/bash
+
+mysql --defaults-extra-file=/etc/mysql/client.cnf "$@"

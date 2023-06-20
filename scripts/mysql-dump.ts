@@ -32,6 +32,8 @@ const sqlInitFile = path.join(
 // more readable.
 const mysqldumpCommand = [
   'mysqldump',
+  '--user=root',
+  '--password=secret',
   '--lock-all-tables',
   '--complete-insert',
   '--skip-extended-insert',

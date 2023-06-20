@@ -353,7 +353,7 @@
             "flags": {
               "bits": 1
             },
-            "max_size": 10,
+            "max_size": 11,
             "type": "Long"
           }
         },
@@ -1770,7 +1770,7 @@
             "flags": {
               "bits": 1
             },
-            "max_size": 10,
+            "max_size": 11,
             "type": "Long"
           }
         },
@@ -2084,7 +2084,7 @@
             "flags": {
               "bits": 1
             },
-            "max_size": 10,
+            "max_size": 11,
             "type": "Long"
           }
         },
@@ -2704,7 +2704,7 @@
           "type_info": {
             "char_set": 63,
             "flags": {
-              "bits": 0
+              "bits": 1
             },
             "max_size": 1,
             "type": "Tiny"
@@ -2716,7 +2716,7 @@
           "type_info": {
             "char_set": 63,
             "flags": {
-              "bits": 0
+              "bits": 1
             },
             "max_size": 1,
             "type": "Tiny"
@@ -2738,8 +2738,8 @@
       "nullable": [
         false,
         false,
-        true,
-        true,
+        false,
+        false,
         false
       ],
       "parameters": {

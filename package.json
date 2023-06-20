@@ -17,7 +17,7 @@
     "down": "docker-compose down",
     "fetch": "./scripts/fetch.sh",
     "format": "prettier --write .",
-    "mysql": "docker-compose exec mysql mysql --user=root --password=secret serlo",
+    "mysql": "docker-compose exec mysql serlo-mysql",
     "mysql:dump": "ts-node --experimental-specifier-resolution=node scripts/mysql-dump",
     "mysql:import-anonymous-data": "ts-node --experimental-specifier-resolution=node scripts/mysql-import-anonymous-data",
     "mysql:rollback": "ts-node --experimental-specifier-resolution=node scripts/mysql-rollback",

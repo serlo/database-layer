@@ -162,7 +162,8 @@ pub mod entities_metadata_query {
                     entity.id,
                     JSON_ARRAYAGG(ancestors.subject_id) AS subject_ids,
                     type.name AS resource_type,
-                    JSON_OBJECTAGG(entity_revision_field.field, entity_revision_field.value) AS params,
+                    MIN(field_title.value) AS title,
+                    MIN(field_description.value) AS description,
                     entity.date AS date_created,
                     entity_revision.date AS date_modified,
                     entity.current_revision_id AS version,
@@ -178,7 +179,12 @@ pub mod entities_metadata_query {
                 JOIN type on entity.type_id = type.id
                 JOIN license on license.id = entity.license_id
                 JOIN entity_revision ON entity.current_revision_id = entity_revision.id
-                JOIN entity_revision_field on entity_revision_field.entity_revision_id = entity_revision.id
+                JOIN entity_revision_field field_title on
+                    field_title.entity_revision_id = entity_revision.id AND
+                    field_title.field = "title"
+                JOIN entity_revision_field field_description on
+                    field_description.entity_revision_id = entity_revision.id AND
+                    field_description.field = "meta_description"
                 JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id
                 JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id
                 JOIN term on term_taxonomy.term_id = term.id
@@ -207,10 +213,7 @@ pub mod entities_metadata_query {
             .into_iter()
             .map(|result| {
                 let identifier = result.id as i32;
-                let title: Option<String> = result.params.as_ref()
-                    .and_then(|params| params.get("title"))
-                    .and_then(|title| title.as_str())
-                    .map(|title| title.to_string());
+                let title: Option<String> = result.title;
                 let id = get_iri(result.id as i32);
 
                 let authors_map: HashMap<i32, String> = result.authors
@@ -335,11 +338,7 @@ pub mod entities_metadata_query {
                         }
                     ]),
                     schema_type: vec!["LearningResource".to_string(), schema_type],
-                    description: result.params.as_ref()
-                        .and_then(|params| params.get("meta_description"))
-                        .and_then(|title| title.as_str())
-                        .filter(|title| !title.is_empty())
-                        .map(|title| title.to_string()),
+                    description: result.description.filter(|title| !title.is_empty()),
                     date_created: result.date_created.to_rfc3339(),
                     date_modified: result.date_modified.to_rfc3339(),
                     headline: title

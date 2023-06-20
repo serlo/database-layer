@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.66](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.65..v0.3.66) - June 20, 2023
+
+### Fixed
+
+- Fix metadata query 500 when hitting entity 1613
+
 ## [v0.3.65](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.64..v0.3.65) - June 19, 2023
 
 ### Added

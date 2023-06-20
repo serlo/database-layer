@@ -525,7 +525,68 @@
     },
     "query": "\n                SELECT u.trashed, i.subdomain, p.current_revision_id, p.license_id, r.title\n                    FROM page_repository p\n                    JOIN uuid u ON u.id = p.id\n                    JOIN instance i ON i.id = p.instance_id\n                    LEFT JOIN page_revision r ON r.id = p.current_revision_id\n                    WHERE p.id = ?\n            "
   },
-  "18a58e550f561e4acfc5868d7ac23680fa58b917191bc1203b9f6a0660a1b860": {
+  "1d29fa3ec059188475b89dd62c131002f744586b21ee747a9fbac8a705b218f7": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                    INSERT INTO event_parameter (log_id, name_id)\n                        SELECT ?, id\n                        FROM event_parameter_name\n                        WHERE name = ?\n                "
+  },
+  "1d4ecbf8ff61c9aba3c70729c5c0baf459cda208f7ec9e0540a9f443c6e7e1e4": {
+    "describe": {
+      "columns": [
+        {
+          "name": "uuid_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "user_id",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4105
+            },
+            "max_size": 20,
+            "type": "LongLong"
+          }
+        },
+        {
+          "name": "notify_mailman",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 1,
+            "type": "Tiny"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT s.uuid_id, s.user_id, s.notify_mailman FROM subscription s\n                JOIN uuid on uuid.id = s.uuid_id\n                LEFT JOIN entity on entity.id = s.uuid_id\n                WHERE s.user_id = ?\n                    AND uuid.discriminator NOT IN (\"attachment\", \"blogPost\")\n                    AND (entity.type_id IS NULL OR entity.type_id IN (1,2,3,4,5,6,7,8,49,50))\n            "
+  },
+  "1e05f195896b4e74b300b4c2de7de8ab86075741378e50fb277bf16a7a7f83c9": {
     "describe": {
       "columns": [
         {
@@ -717,68 +778,7 @@
         "Right": 6
       }
     },
-    "query": "\n                WITH RECURSIVE ancestors AS (\n                    SELECT id AS root_id, parent_id, id AS origin_id, id AS subject_id\n                    FROM term_taxonomy\n\n                    UNION\n\n                    SELECT tt.id, tt.parent_id,  a.origin_id, a.root_id\n                    FROM term_taxonomy tt\n                    JOIN ancestors a ON tt.id = a.parent_id\n                )\n                SELECT\n                    entity.id,\n                    JSON_ARRAYAGG(ancestors.subject_id) AS subject_ids,\n                    type.name AS resource_type,\n                    MIN(field_title.value) AS title,\n                    MIN(field_description.value) AS description,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance,\n                    JSON_ARRAYAGG(term_taxonomy.id) AS taxonomy_term_ids,\n                    JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names,\n                    JSON_OBJECTAGG(user.id, user.username) AS authors,\n                    JSON_OBJECTAGG(all_revisions_of_entity.id, user.id) AS author_edits\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                JOIN entity_revision_field field_title on\n                    field_title.entity_revision_id = entity_revision.id AND\n                    field_title.field = \"title\"\n                JOIN entity_revision_field field_description on\n                    field_description.entity_revision_id = entity_revision.id AND\n                    field_description.field = \"meta_description\"\n                JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id\n                JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id\n                JOIN term on term_taxonomy.term_id = term.id\n                JOIN entity_revision all_revisions_of_entity ON all_revisions_of_entity.repository_id = entity.id\n                JOIN user ON all_revisions_of_entity.author_id = user.id\n                JOIN ancestors on ancestors.origin_id = term_taxonomy_entity.term_taxonomy_id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND type.name IN (\"applet\", \"article\", \"course\", \"text-exercise\",\n                                      \"text-exercise-group\", \"video\")\n                    AND (ancestors.parent_id is NULL OR ancestors.root_id = 106081 OR ancestors.root_id = 146728)\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
-  },
-  "1d29fa3ec059188475b89dd62c131002f744586b21ee747a9fbac8a705b218f7": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 2
-      }
-    },
-    "query": "\n                    INSERT INTO event_parameter (log_id, name_id)\n                        SELECT ?, id\n                        FROM event_parameter_name\n                        WHERE name = ?\n                "
-  },
-  "1d4ecbf8ff61c9aba3c70729c5c0baf459cda208f7ec9e0540a9f443c6e7e1e4": {
-    "describe": {
-      "columns": [
-        {
-          "name": "uuid_id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "user_id",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4105
-            },
-            "max_size": 20,
-            "type": "LongLong"
-          }
-        },
-        {
-          "name": "notify_mailman",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 1
-            },
-            "max_size": 1,
-            "type": "Tiny"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                SELECT s.uuid_id, s.user_id, s.notify_mailman FROM subscription s\n                JOIN uuid on uuid.id = s.uuid_id\n                LEFT JOIN entity on entity.id = s.uuid_id\n                WHERE s.user_id = ?\n                    AND uuid.discriminator NOT IN (\"attachment\", \"blogPost\")\n                    AND (entity.type_id IS NULL OR entity.type_id IN (1,2,3,4,5,6,7,8,49,50))\n            "
+    "query": "\n                WITH RECURSIVE ancestors AS (\n                    SELECT id AS root_id, parent_id, id AS origin_id, id AS subject_id\n                    FROM term_taxonomy\n\n                    UNION\n\n                    SELECT tt.id, tt.parent_id,  a.origin_id, a.root_id\n                    FROM term_taxonomy tt\n                    JOIN ancestors a ON tt.id = a.parent_id\n                )\n                SELECT\n                    entity.id,\n                    JSON_ARRAYAGG(ancestors.subject_id) AS subject_ids,\n                    type.name AS resource_type,\n                    MIN(field_title.value) AS title,\n                    MIN(field_description.value) AS description,\n                    entity.date AS date_created,\n                    entity_revision.date AS date_modified,\n                    entity.current_revision_id AS version,\n                    license.url AS license_url,\n                    instance.subdomain AS instance,\n                    JSON_ARRAYAGG(term_taxonomy.id) AS taxonomy_term_ids,\n                    JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names,\n                    JSON_OBJECTAGG(user.id, user.username) AS authors,\n                    JSON_OBJECTAGG(all_revisions_of_entity.id, user.id) AS author_edits\n                FROM entity\n                JOIN uuid ON uuid.id = entity.id\n                JOIN instance ON entity.instance_id = instance.id\n                JOIN type on entity.type_id = type.id\n                JOIN license on license.id = entity.license_id\n                JOIN entity_revision ON entity.current_revision_id = entity_revision.id\n                LEFT JOIN entity_revision_field field_title on\n                    field_title.entity_revision_id = entity_revision.id AND\n                    field_title.field = \"title\"\n                LEFT JOIN entity_revision_field field_description on\n                    field_description.entity_revision_id = entity_revision.id AND\n                    field_description.field = \"meta_description\"\n                JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id\n                JOIN term_taxonomy on term_taxonomy_entity.term_taxonomy_id = term_taxonomy.id\n                JOIN term on term_taxonomy.term_id = term.id\n                JOIN entity_revision all_revisions_of_entity ON all_revisions_of_entity.repository_id = entity.id\n                JOIN user ON all_revisions_of_entity.author_id = user.id\n                JOIN ancestors on ancestors.origin_id = term_taxonomy_entity.term_taxonomy_id\n                WHERE entity.id > ?\n                    AND (? is NULL OR instance.subdomain = ?)\n                    AND (? is NULL OR entity_revision.date > ?)\n                    AND uuid.trashed = 0\n                    AND type.name IN (\"applet\", \"article\", \"course\", \"text-exercise\",\n                                      \"text-exercise-group\", \"video\")\n                    AND (ancestors.parent_id is NULL OR ancestors.root_id = 106081 OR ancestors.root_id = 146728)\n                GROUP BY entity.id\n                ORDER BY entity.id\n                LIMIT ?\n            "
   },
   "1ee1dd9cee6adc4c510cd46ae79e143e8b04f696bd68b41a6e55871c64ecbf23": {
     "describe": {
@@ -874,7 +874,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4121
+              "bits": 4113
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -2867,7 +2867,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4120
+              "bits": 4112
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -2879,7 +2879,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4120
+              "bits": 4112
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -4151,7 +4151,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 4121
+              "bits": 4113
             },
             "max_size": 4294967295,
             "type": "Blob"
@@ -4406,7 +4406,7 @@
           "type_info": {
             "char_set": 224,
             "flags": {
-              "bits": 24
+              "bits": 16
             },
             "max_size": 262140,
             "type": "Blob"

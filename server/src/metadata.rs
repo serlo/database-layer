@@ -179,10 +179,10 @@ pub mod entities_metadata_query {
                 JOIN type on entity.type_id = type.id
                 JOIN license on license.id = entity.license_id
                 JOIN entity_revision ON entity.current_revision_id = entity_revision.id
-                JOIN entity_revision_field field_title on
+                LEFT JOIN entity_revision_field field_title on
                     field_title.entity_revision_id = entity_revision.id AND
                     field_title.field = "title"
-                JOIN entity_revision_field field_description on
+                LEFT JOIN entity_revision_field field_description on
                     field_description.entity_revision_id = entity_revision.id AND
                     field_description.field = "meta_description"
                 JOIN term_taxonomy_entity on term_taxonomy_entity.entity_id = entity.id

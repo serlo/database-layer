@@ -1,7 +1,4 @@
-import { spawn, spawnSync } from 'child_process'
-import * as process from 'node:process'
-
-import { IgnoreInsecurePasswordWarning } from './transform'
+import { spawnSync } from 'child_process'
 
 const latestDump = spawnSync(
   'bash',
@@ -22,55 +19,43 @@ const fileName = spawnSync('basename', [latestDump], {
 })
   .stdout.toString()
   .trim()
-spawnSync('gsutil', ['cp', latestDump, `/tmp/${fileName}`], {
-  stdio: 'inherit',
-})
+
+runCmd('gsutil', ['cp', latestDump, `/tmp/${fileName}`])
+
 const container = spawnSync('docker-compose', ['ps', '-q', 'mysql'], {
   stdio: 'pipe',
   encoding: 'utf-8',
 })
   .stdout.toString()
   .trim()
-spawnSync('unzip', ['-o', `/tmp/${fileName}`, '-d', '/tmp'], {
-  stdio: 'inherit',
-})
-spawnSync('docker', ['cp', '/tmp/mysql.sql', `${container}:/tmp/mysql.sql`], {
-  stdio: 'inherit',
-})
-spawnSync('docker', ['cp', '/tmp/user.csv', `${container}:/tmp/user.csv`], {
-  stdio: 'inherit',
-})
-await execSql('SET GLOBAL local_infile = ON;')
-await execSql('source /tmp/mysql.sql;')
-console.log('succeeded dump')
-await execSql(
+
+runCmd('unzip', ['-o', `/tmp/${fileName}`, '-d', '/tmp'])
+runCmd('docker', ['cp', '/tmp/mysql.sql', `${container}:/tmp/mysql.sql`])
+runCmd('docker', ['cp', '/tmp/user.csv', `${container}:/tmp/user.csv`])
+
+info('Start importing MySQL data')
+execCommand(`pv /tmp/mysql.sql | serlo-mysql`)
+
+info('Start importing anonymized user data')
+execSql(
   "LOAD DATA LOCAL INFILE '/tmp/user.csv' INTO TABLE user FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n' IGNORE 1 ROWS;"
 )
-console.log('succeeded loading')
 
-async function execSql(command: string) {
-  await new Promise<void>((resolve, reject) => {
-    const dockerComposeExec = spawn('docker-compose', [
-      'exec',
-      '-T',
-      'mysql',
-      'sh',
-      '-c',
-      `mysql --user=root --password="$MYSQL_ROOT_PASSWORD" --local_infile=1 serlo -e "${command}"`,
-    ])
-    dockerComposeExec.stdout.pipe(process.stdout)
-    dockerComposeExec.stderr
-      .pipe(new IgnoreInsecurePasswordWarning('utf8'))
-      .pipe(process.stderr)
-    dockerComposeExec.on('error', (error) => {
-      console.error('ERROR: ' + error)
-    })
-    dockerComposeExec.on('exit', (code) => {
-      if (code) {
-        reject(code)
-      } else {
-        resolve()
-      }
-    })
-  })
+function execSql(command: string) {
+  execCommand(`serlo-mysql --local_infile=1 -e "${command}"`)
+}
+
+function execCommand(command: string) {
+  const args = ['exec', 'mysql', 'sh', '-c', `${command}`]
+
+  runCmd('docker-compose', args)
+}
+
+function runCmd(cmd: string, args: string[]) {
+  const opt = { stdio: [process.stdin, process.stdout, process.stderr] }
+  spawnSync(cmd, args, opt)
+}
+
+function info(message: string) {
+  console.error(`INFO: ${message}`)
 }

@@ -10,10 +10,7 @@ import * as path from 'node:path'
 import * as process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import {
-  ConcatenateInsertCommands,
-  IgnoreInsecurePasswordWarning,
-} from './transform'
+import { ConcatenateInsertCommands } from './transform'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -24,6 +21,7 @@ const maxInsertCmdLength = 1024 * 1024
 const repositoryBaseDir = path.dirname(__dirname)
 const sqlInitFile = path.join(
   repositoryBaseDir,
+  'mysql',
   'docker-entrypoint-initdb.d',
   '001-init.sql'
 )
@@ -52,9 +50,7 @@ mysqldump.stdout
   .pipe(new ConcatenateInsertCommands(encoding, maxInsertCmdLength))
   .pipe(fs.createWriteStream(sqlInitFile))
 
-mysqldump.stderr
-  .pipe(new IgnoreInsecurePasswordWarning('utf8'))
-  .pipe(process.stderr)
+mysqldump.stderr.pipe(process.stderr)
 
 mysqldump.on('error', (error) => {
   console.error('ERROR: ' + error)

@@ -328,6 +328,11 @@ const content = generateChangelog({
         'distinguish Serlo as organization from website',
       ],
     },
+    {
+      tagName: 'v0.3.66',
+      date: '2023-06-20',
+      fixed: ['Fix metadata query 500 when hitting entity 1613'],
+    },
   ],
 })
 

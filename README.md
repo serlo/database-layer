@@ -93,6 +93,9 @@ You can also provide the path to a local pact file in case you want to test new 
 PACT_FILE=../api.serlo.org/pacts/api.serlo.org-serlo.org-database-layer.json ./scripts/pacts.sh
 ```
 
+You can generate the pacts .json file (`api.serlo.org-serlo.org-database-layer.json`) locally by checking out the [api.serlo.org/](https://github.com/serlo/api.serlo.org/)
+repository and running `yarn pacts` at the root of the cloned repository. The generated .json file will be in `path_to_api.serlo.org_repository/pacts`.
+
 ### Other helpful commands
 
 - `cargo test` – Run all tests (see https://doc.rust-lang.org/book/ch11-01-writing-tests.html )

@@ -28,13 +28,14 @@ impl std::str::FromStr for Discriminator {
 
 impl sqlx::Type<MySql> for Discriminator {
     fn type_info() -> MySqlTypeInfo {
-        str::type_info()
+        <str as sqlx::Type<MySql>>::type_info()
     }
 }
 impl<'q> sqlx::Encode<'q, MySql> for Discriminator {
     fn encode_by_ref(&self, buf: &mut <MySql as HasArguments<'q>>::ArgumentBuffer) -> IsNull {
-        let decoded = serde_json::to_value(self).unwrap();
-        let decoded = decoded.as_str().unwrap();
-        decoded.encode_by_ref(buf)
+        <&str as sqlx::Encode<'_, MySql>>::encode_by_ref(
+            &serde_json::to_value(self).unwrap().as_str().unwrap(),
+            buf,
+        )
     }
 }

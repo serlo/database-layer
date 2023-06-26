@@ -28,7 +28,7 @@ sqlx = { version = "0.5.13", features = ["chrono", "offline", "json", "mysql", "
 thiserror = "1.0.40"
 
 [dev-dependencies]
-criterion = { version = "0.4", features = ["html_reports", "async"] }
+criterion = { version = "~0.5.1", features = ["html_reports", "async"] }
 rstest = "~0.17.0"
 test-utils = { path="../test-utils" }
 

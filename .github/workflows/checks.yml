@@ -71,7 +71,7 @@ jobs:
           args: --all -- --check
 
   metadata:
-    name: Check compatbility of metadata API with AMB
+    name: Check compatibility of metadata API with AMB
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

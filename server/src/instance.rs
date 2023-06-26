@@ -52,12 +52,11 @@ impl fmt::Display for Instance {
 
 impl sqlx::Type<MySql> for Instance {
     fn type_info() -> MySqlTypeInfo {
-        str::type_info()
+        <str as sqlx::Type<MySql>>::type_info()
     }
 }
 impl<'q> sqlx::Encode<'q, MySql> for Instance {
     fn encode_by_ref(&self, buf: &mut <MySql as HasArguments<'q>>::ArgumentBuffer) -> IsNull {
-        let decoded = format!("{self}");
-        decoded.encode_by_ref(buf)
+        <std::string::String as sqlx::Encode<'_, MySql>>::encode_by_ref(&format!("{self}"), buf)
     }
 }

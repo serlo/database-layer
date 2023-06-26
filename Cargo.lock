@@ -531,9 +531,12 @@ checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
 name = "convert_case"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb4a24b1aaf0fd0ce8b45161144d6f42cd91677fd5940fd431183eb023b3a2b8"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "cookie"
@@ -2250,7 +2253,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "chrono-tz",
- "convert_case 0.5.0",
+ "convert_case 0.6.0",
  "criterion",
  "dotenv",
  "futures",
@@ -2618,7 +2621,7 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "assert-json-diff",
- "convert_case 0.5.0",
+ "convert_case 0.6.0",
  "pretty_assertions",
  "rand",
  "serde_json",

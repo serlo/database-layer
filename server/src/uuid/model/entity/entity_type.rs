@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use sqlx::database::HasArguments;
 use sqlx::encode::IsNull;
 use sqlx::mysql::MySqlTypeInfo;
 use sqlx::MySql;
@@ -87,14 +86,20 @@ impl std::str::FromStr for EntityType {
 
 impl sqlx::Type<MySql> for EntityType {
     fn type_info() -> MySqlTypeInfo {
-        str::type_info()
+        <str as sqlx::Type<MySql>>::type_info()
     }
 }
 impl<'q> sqlx::Encode<'q, MySql> for EntityType {
-    fn encode_by_ref(&self, buf: &mut <MySql as HasArguments<'q>>::ArgumentBuffer) -> IsNull {
-        let raw_entity_type: RawEntityType = self.clone().into();
-        let decoded = serde_json::to_value(raw_entity_type).unwrap();
-        let decoded = decoded.as_str().unwrap();
-        decoded.encode_by_ref(buf)
+    fn encode_by_ref(
+        &self,
+        buf: &mut <sqlx::MySql as sqlx::database::HasArguments<'q>>::ArgumentBuffer,
+    ) -> IsNull {
+        <&str as sqlx::Encode<'_, MySql>>::encode_by_ref(
+            &serde_json::to_value(std::convert::Into::<RawEntityType>::into(self.clone()))
+                .unwrap()
+                .as_str()
+                .unwrap(),
+            buf,
+        )
     }
 }

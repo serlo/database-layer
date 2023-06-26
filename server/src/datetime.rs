@@ -99,16 +99,15 @@ impl Serialize for DateTime {
 
 impl sqlx::Type<MySql> for DateTime {
     fn type_info() -> MySqlTypeInfo {
-        chrono::DateTime::<Utc>::type_info()
+        <sqlx::types::chrono::DateTime<Utc> as sqlx::Type<MySql>>::type_info()
     }
 }
 
 impl<'q> sqlx::Encode<'q, MySql> for DateTime {
     fn encode_by_ref(&self, buf: &mut <MySql as HasArguments<'q>>::ArgumentBuffer) -> IsNull {
-        let datetime = self.0;
-        let datetime = Berlin.from_utc_datetime(&datetime.naive_utc());
-        let datetime = datetime.naive_local();
-        let datetime = Utc.from_utc_datetime(&datetime);
-        datetime.encode_by_ref(buf)
+        <chrono::DateTime<chrono::Utc> as sqlx::Encode<'_, MySql>>::encode_by_ref(
+            &Utc.from_utc_datetime(&Berlin.from_utc_datetime(&self.0.naive_utc()).naive_local()),
+            buf,
+        )
     }
 }

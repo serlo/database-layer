@@ -16,7 +16,7 @@ jobs:
           override: true
           profile: minimal
       - run: echo "SQLX_OFFLINE=true" >> $GITHUB_ENV
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/registry
@@ -37,7 +37,7 @@ jobs:
           override: true
           profile: minimal
           components: clippy
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/registry
@@ -59,7 +59,7 @@ jobs:
           override: true
           profile: minimal
           components: rustfmt
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/registry
@@ -83,7 +83,7 @@ jobs:
           override: true
           profile: minimal
       - run: cargo build
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
           node-version: 16.x
       - run: yarn  --immutable --immutable-cache

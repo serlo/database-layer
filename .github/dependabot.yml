@@ -10,7 +10,7 @@ updates:
       interval: 'weekly'
     ignore:
       # we want LTS version of node and not suggested current version
-      - dependency-name: 'types/node'
+      - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
 
 

@@ -321,9 +321,9 @@ pub mod entities_metadata_query {
                             .collect()
                     })
                     .unwrap_or(Vec::new());
-                let subject_metadata_raw: Vec<SubjectMetadata> = subject_ids.iter().map(|id| {
+                let subject_metadata_raw: Vec<SubjectMetadata> = subject_ids.iter().flat_map(|id| {
                     map_serlo_subjects_to_amb_standard(*id)
-                }).flatten().collect();
+                }).collect();
                 let subject_metadata = match subject_metadata_raw.is_empty() {
                     false => Some(subject_metadata_raw),
                     true => None

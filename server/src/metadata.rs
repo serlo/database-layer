@@ -324,12 +324,10 @@ pub mod entities_metadata_query {
                 let subject_metadata_raw: Vec<SubjectMetadata> = subject_ids.iter().map(|id| {
                     map_serlo_subjects_to_amb_standard(*id)
                 }).flatten().collect();
-                println!("{}", subject_metadata_raw.len());
                 let subject_metadata = match subject_metadata_raw.is_empty() {
                     false => Some(subject_metadata_raw),
                     true => None
                 };
-                println!("{}", subject_metadata.is_some());
                 EntityMetadata {
                     about: subject_metadata,
                     context: json!([
@@ -538,7 +536,6 @@ pub mod entities_metadata_query {
     }
 
     fn map_serlo_subjects_to_amb_standard(id: i32) -> Vec<SubjectMetadata> {
-        println!("{}", id);
         match id {
             // Mathematik (Schule)
             5 | 23593 | 141587 | 169580 => vec![RawSubjectMetadata {

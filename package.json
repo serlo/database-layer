@@ -31,7 +31,7 @@
     "@inyono/changelog": "0.5.2",
     "@pact-foundation/pact": "^10.4.1",
     "@types/node": "^16.18.12",
-    "@types/ramda": "^0.28.23",
+    "@types/ramda": "^0.29.3",
     "@types/semver": "^7.5.0",
     "ajv-cli": "^5.0.0",
     "ajv-formats": "^2.1.1",

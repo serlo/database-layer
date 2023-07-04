@@ -73,7 +73,7 @@ impl RevisionEventPayload {
             self.raw_typename.clone(),
             self.user_id,
             self.revision_id,
-            self.instance.fetch_id(&mut transaction).await?,
+            self.instance.fetch_id(&mut *transaction).await?,
             [("reason".to_string(), self.reason.to_string())]
                 .iter()
                 .cloned()
@@ -83,7 +83,7 @@ impl RevisionEventPayload {
                 .cloned()
                 .collect(),
         )
-        .save(&mut transaction)
+        .save(&mut *transaction)
         .await?;
 
         transaction.commit().await?;

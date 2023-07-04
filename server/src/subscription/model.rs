@@ -87,7 +87,7 @@ impl Subscription {
             DateTime::now(),
             self.send_email,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         transaction.commit().await?;
@@ -105,7 +105,7 @@ impl Subscription {
             self.object_id,
             self.user_id,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         transaction.commit().await?;
@@ -159,9 +159,9 @@ impl Subscription {
             };
 
             if payload.subscribe {
-                subscription.save(&mut transaction).await?;
+                subscription.save(&mut *transaction).await?;
             } else {
-                subscription.remove(&mut transaction).await?;
+                subscription.remove(&mut *transaction).await?;
             }
         }
         transaction.commit().await?;

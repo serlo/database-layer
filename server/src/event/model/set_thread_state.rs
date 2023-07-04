@@ -55,7 +55,7 @@ impl SetThreadStateEventPayload {
             r#"SELECT instance_id FROM comment WHERE id = ?"#,
             self.object_id
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await?;
 
         let event = EventPayload::new(
@@ -66,7 +66,7 @@ impl SetThreadStateEventPayload {
             HashMap::new(),
             HashMap::new(),
         )
-        .save(&mut transaction)
+        .save(&mut *transaction)
         .await?;
 
         transaction.commit().await?;

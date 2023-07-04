@@ -319,8 +319,8 @@ impl RawNavigationChild {
     {
         let mut transaction = executor.begin().await?;
 
-        let pages = fetch_all_children!(id, &mut transaction).await?;
-        let params = fetch_all_parameters!(id, &mut transaction).await?;
+        let pages = fetch_all_children!(id, &mut *transaction).await?;
+        let params = fetch_all_parameters!(id, &mut *transaction).await?;
 
         let raw_navigation_child = to_raw_navigation_child!(id, pages, params);
 

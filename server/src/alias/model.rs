@@ -92,7 +92,7 @@ where
                     "#,
             username
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .map(|x| x.id as i32)
         .ok_or(operation::Error::NotFoundError)?
@@ -111,14 +111,14 @@ where
                 instance,
                 path
             )
-            .fetch_optional(&mut transaction)
+            .fetch_optional(&mut *transaction)
             .await?
             .map(|result| result.uuid_id as i32)
             .ok_or(operation::Error::NotFoundError)?
         }
     };
 
-    let uuid = Uuid::fetch_via_transaction(id, &mut transaction).await?;
+    let uuid = Uuid::fetch_via_transaction(id, &mut *transaction).await?;
 
     transaction.commit().await?;
 

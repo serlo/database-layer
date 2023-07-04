@@ -52,11 +52,11 @@ impl SetUuidStateEventPayload {
             self.raw_typename.clone(),
             self.actor_id,
             self.object_id,
-            self.instance.fetch_id(&mut transaction).await?,
+            self.instance.fetch_id(&mut *transaction).await?,
             HashMap::new(),
             HashMap::new(),
         )
-        .save(&mut transaction)
+        .save(&mut *transaction)
         .await?;
 
         transaction.commit().await?;

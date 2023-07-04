@@ -168,7 +168,7 @@ impl EventPayload {
             "#,
             self.actor_id,
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .ok_or(EventError::MissingUser)?;
 
@@ -185,11 +185,11 @@ impl EventPayload {
             self.date,
             self.raw_typename,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let event_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .id as i32;
 
@@ -204,11 +204,11 @@ impl EventPayload {
                 event_id,
                 parameter
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
 
             let parameter_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-                .fetch_one(&mut transaction)
+                .fetch_one(&mut *transaction)
                 .await?
                 .id as i32;
 
@@ -220,7 +220,7 @@ impl EventPayload {
                 value,
                 parameter_id
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 
@@ -235,11 +235,11 @@ impl EventPayload {
                 event_id,
                 parameter
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
 
             let parameter_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-                .fetch_one(&mut transaction)
+                .fetch_one(&mut *transaction)
                 .await?
                 .id as i32;
 
@@ -251,12 +251,12 @@ impl EventPayload {
                 uuid_id,
                 parameter_id
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 
-        let event = Event::fetch_via_transaction(event_id, &mut transaction).await?;
-        Notifications::create_notifications(&event, &mut transaction).await?;
+        let event = Event::fetch_via_transaction(event_id, &mut *transaction).await?;
+        Notifications::create_notifications(&event, &mut *transaction).await?;
 
         transaction.commit().await?;
 
@@ -274,7 +274,7 @@ impl Event {
     {
         let mut transaction = executor.begin().await?;
         let instance_id = match payload.instance.as_ref() {
-            Some(instance) => Some(Instance::fetch_id(instance, &mut transaction).await?),
+            Some(instance) => Some(Instance::fetch_id(instance, &mut *transaction).await?),
             None => None,
         };
         let mut event_records = sqlx::query!(
@@ -329,7 +329,7 @@ impl Event {
             instance_id,
             payload.first + 1
         )
-        .fetch(&mut transaction);
+        .fetch(&mut *transaction);
 
         let mut events: Vec<Event> = Vec::new();
         let mut has_next_page = false;

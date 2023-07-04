@@ -120,7 +120,8 @@ impl Notifications {
         object_ids.extend(event.abstract_event.uuid_parameters.values());
 
         for object_id in object_ids {
-            let subscriptions = Subscriptions::fetch_by_object(object_id, &mut transaction).await?;
+            let subscriptions =
+                Subscriptions::fetch_by_object(object_id, &mut *transaction).await?;
             let subscriptions = subscriptions
                 .0
                 .iter()
@@ -134,7 +135,7 @@ impl Notifications {
         }
 
         for subscriber in subscribers {
-            Self::create_notification(event, &subscriber, &mut transaction).await?;
+            Self::create_notification(event, &subscriber, &mut *transaction).await?;
         }
 
         transaction.commit().await?;
@@ -161,7 +162,7 @@ impl Notifications {
             event.abstract_event.date,
             subscriber.send_email
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
         sqlx::query!(
             r#"
@@ -170,7 +171,7 @@ impl Notifications {
             "#,
             event.abstract_event.id,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         transaction.commit().await?;
@@ -201,7 +202,7 @@ impl Notifications {
                 seen,
                 id
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 

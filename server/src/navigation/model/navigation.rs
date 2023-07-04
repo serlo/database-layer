@@ -123,7 +123,7 @@ impl Navigation {
     {
         let mut transaction = executor.begin().await?;
 
-        let pages = fetch_all_pages!(instance, &mut transaction).await?;
+        let pages = fetch_all_pages!(instance, &mut *transaction).await?;
 
         let mut raw_navigation_children: HashMap<i32, RawNavigationChild> = HashMap::new();
         let mut stack: Vec<i32> = pages.iter().map(|page| page.id).collect();
@@ -132,7 +132,7 @@ impl Navigation {
         while let Some(id) = stack.pop() {
             handle_raw_navigation_child!(
                 id,
-                RawNavigationChild::fetch_via_transaction(id, &mut transaction).await,
+                RawNavigationChild::fetch_via_transaction(id, &mut *transaction).await,
                 raw_navigation_children,
                 stack,
                 ids_dfs

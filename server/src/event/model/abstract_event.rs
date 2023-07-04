@@ -171,9 +171,9 @@ impl AbstractEvent {
     {
         let mut transaction = executor.begin().await?;
 
-        let event = fetch_one_event!(id, &mut transaction).await;
-        let string_parameters = fetch_all_string_parameters!(id, &mut transaction).await;
-        let uuid_parameters = fetch_all_uuid_parameters!(id, &mut transaction).await;
+        let event = fetch_one_event!(id, &mut *transaction).await;
+        let string_parameters = fetch_all_string_parameters!(id, &mut *transaction).await;
+        let uuid_parameters = fetch_all_uuid_parameters!(id, &mut *transaction).await;
 
         let abstract_event = to_abstract_event!(event, string_parameters, uuid_parameters);
 

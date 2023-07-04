@@ -358,6 +358,7 @@ pub mod entities_metadata_query {
                     main_entity_of_page: json!([
                         {
                             "id": "https://serlo.org/metadata",
+                            "type": "WebAPI",
                             "provider": get_serlo_organization_metadata(),
                             "dateCreated": current_date,
                             "dateModified": current_date,

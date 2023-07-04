@@ -102,7 +102,7 @@ mod tests {
                        (100001, 0, 'entity')
             "#,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .unwrap();
         sqlx::query(
@@ -112,7 +112,7 @@ mod tests {
                        (100001, 39, 1, 1, CURDATE(), 2)
             "#,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .unwrap();
 
@@ -123,11 +123,11 @@ mod tests {
                 VALUES (100001, 100000, 9)
             "#,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .unwrap();
 
-        let result = Uuid::fetch_via_transaction(100000, &mut transaction).await;
+        let result = Uuid::fetch_via_transaction(100000, &mut *transaction).await;
 
         assert!(result.is_err());
         match result.as_ref().err().unwrap() {

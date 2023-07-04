@@ -656,7 +656,7 @@ mod entities_metadata_query {
             where id = 41509 and field = "meta_description";
         "#
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .unwrap();
 
@@ -664,7 +664,7 @@ mod entities_metadata_query {
             "EntitiesMetadataQuery",
             json!({ "first": 1, "after": 2152 }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_ok_with(|result| {
             assert_json_include!(

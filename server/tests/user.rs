@@ -26,7 +26,7 @@ mod user_add_role_mutation {
             "UserAddRoleMutation",
             json!({ "username": username, "roleName": role_name}),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_ok();
 
@@ -40,7 +40,7 @@ mod user_add_role_mutation {
             user_id,
             role_id
         )
-        .fetch_all(&mut transaction)
+        .fetch_all(&mut *transaction)
         .await
         .unwrap();
         assert_eq!(response[0].user_id as i32, user_id);
@@ -57,7 +57,7 @@ mod user_add_role_mutation {
             "UserAddRoleMutation",
             json!({ "username": username, "roleName": role_name}),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_ok();
 
@@ -71,7 +71,7 @@ mod user_add_role_mutation {
             user_id,
             role_id
         )
-        .fetch_all(&mut transaction)
+        .fetch_all(&mut *transaction)
         .await
         .unwrap();
 
@@ -86,7 +86,7 @@ mod user_add_role_mutation {
             "UserAddRoleMutation",
             json!({ "username": username, "roleName": "not a role"}),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_bad_request();
     }
@@ -99,7 +99,7 @@ mod user_add_role_mutation {
             "UserAddRoleMutation",
             json!({ "username": username, "roleName": "login"}),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_bad_request();
     }
@@ -112,7 +112,7 @@ mod user_create_mutation {
     async fn creates_an_user() {
         let mut transaction = begin_transaction().await;
         let response = Message::new("UserCreateMutation", json!({ "username": "testUser", "email": "mail@mail.test", "password": "securePassword!"}))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .get_json();
 
@@ -122,7 +122,7 @@ mod user_create_mutation {
                 FROM uuid;
             "#,
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await
         .unwrap()
         .id;
@@ -132,7 +132,7 @@ mod user_create_mutation {
         assert_eq!(user_id, last_id);
 
         let user = Message::new("UuidQuery", json!({ "id": user_id }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .get_json();
 
@@ -182,21 +182,21 @@ mod user_delete_bots_mutation {
     #[actix_rt::test]
     async fn deletes_a_user_permanentely() {
         let mut transaction = begin_transaction().await;
-        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+        let user_id = create_new_test_user(&mut *transaction).await.unwrap();
 
-        set_email(user_id, "testuser@example.org", &mut transaction)
+        set_email(user_id, "testuser@example.org", &mut *transaction)
             .await
             .unwrap();
 
         Message::new("UserDeleteBotsMutation", json!({ "botIds": [user_id] }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok_with_body(
                 json!({ "success": true, "emailHashes": ["cd5610c5b6be1e5a62fb621031ae3856"] }),
             );
 
         Message::new("UuidQuery", json!({ "id": user_id }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_not_found();
     }
@@ -215,12 +215,12 @@ mod user_delete_regular_users_mutation {
             "UserDeleteRegularUsersMutation",
             json!({ "userId": user_id }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_ok_with_body(json!({ "success": true, }));
 
         Message::new("UuidQuery", json!({ "id": user_id }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_not_found();
 
@@ -228,28 +228,28 @@ mod user_delete_regular_users_mutation {
             "UserActivityByTypeQuery",
             json!({ "userId": deleted_user_id }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_ok_with_body(
             json!({ "edits": 893, "reviews": 923, "comments": 154, "taxonomy": 944 }),
         );
 
         let check_ad = sqlx::query!(r#"select author_id from ad where id = 1"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap();
 
         assert_eq!(check_ad.author_id as i32, deleted_user_id);
 
         let check_blog_post = sqlx::query!(r#"select author_id from blog_post where id = 1199"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap();
 
         assert_eq!(check_blog_post.author_id as i32, deleted_user_id);
 
         let check_comment = sqlx::query!(r#"select author_id from comment where id = 16740"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap();
 
@@ -257,7 +257,7 @@ mod user_delete_regular_users_mutation {
 
         let comment_vote_does_not_exist =
             sqlx::query!(r#"select * from comment_vote where user_id = 10"#)
-                .fetch_optional(&mut transaction)
+                .fetch_optional(&mut *transaction)
                 .await
                 .unwrap();
 
@@ -265,14 +265,14 @@ mod user_delete_regular_users_mutation {
 
         let check_entity_revision =
             sqlx::query!(r#"select author_id from entity_revision where id = 16114"#)
-                .fetch_one(&mut transaction)
+                .fetch_one(&mut *transaction)
                 .await
                 .unwrap();
 
         assert_eq!(check_entity_revision.author_id as i32, deleted_user_id);
 
         let check_event_log = sqlx::query!(r#"select actor_id from event_log where id = 38383"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap();
 
@@ -280,7 +280,7 @@ mod user_delete_regular_users_mutation {
 
         let notification_does_not_exist =
             sqlx::query!(r#"select * from notification where user_id = 10"#)
-                .fetch_optional(&mut transaction)
+                .fetch_optional(&mut *transaction)
                 .await
                 .unwrap();
 
@@ -288,7 +288,7 @@ mod user_delete_regular_users_mutation {
 
         let check_page_revision =
             sqlx::query!(r#"select author_id from page_revision where id = 16283"#)
-                .fetch_one(&mut transaction)
+                .fetch_one(&mut *transaction)
                 .await
                 .unwrap();
 
@@ -296,7 +296,7 @@ mod user_delete_regular_users_mutation {
 
         let role_user_does_not_exist =
             sqlx::query!(r#"select * from role_user where user_id = 10"#)
-                .fetch_optional(&mut transaction)
+                .fetch_optional(&mut *transaction)
                 .await
                 .unwrap();
 
@@ -304,7 +304,7 @@ mod user_delete_regular_users_mutation {
 
         let subscription_does_not_exist =
             sqlx::query!(r#"select * from subscription where user_id = 10"#)
-                .fetch_optional(&mut transaction)
+                .fetch_optional(&mut *transaction)
                 .await
                 .unwrap();
 
@@ -312,14 +312,14 @@ mod user_delete_regular_users_mutation {
 
         let subscription_does_not_exist2 =
             sqlx::query!(r#"select * from subscription where uuid_id = 10"#)
-                .fetch_optional(&mut transaction)
+                .fetch_optional(&mut *transaction)
                 .await
                 .unwrap();
 
         assert!(subscription_does_not_exist2.is_none());
 
         let uuid_does_not_exist = sqlx::query!(r#"select * from uuid where id = 10"#)
-            .fetch_optional(&mut transaction)
+            .fetch_optional(&mut *transaction)
             .await
             .unwrap();
 
@@ -335,11 +335,11 @@ mod user_delete_regular_users_mutation {
             "UserDeleteRegularUsersMutation",
             json!({ "userId": reporter_id }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await;
 
         let flag_does_not_exist = sqlx::query!(r#"select * from flag where reporter_id = 10"#)
-            .fetch_optional(&mut transaction)
+            .fetch_optional(&mut *transaction)
             .await
             .unwrap();
 
@@ -370,13 +370,13 @@ mod user_potential_spam_users_query {
     async fn returns_user_with_a_description() {
         let mut transaction = begin_transaction().await;
 
-        let user_id = create_new_test_user(&mut transaction).await.unwrap();
-        set_description(user_id, "Test", &mut transaction)
+        let user_id = create_new_test_user(&mut *transaction).await.unwrap();
+        set_description(user_id, "Test", &mut *transaction)
             .await
             .unwrap();
 
         Message::new("UserPotentialSpamUsersQuery", json!({ "first": 2 }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
@@ -385,12 +385,12 @@ mod user_potential_spam_users_query {
     async fn with_after_parameter() {
         let mut transaction = begin_transaction().await;
 
-        let user_id = create_new_test_user(&mut transaction).await.unwrap();
-        set_description(user_id, "Test", &mut transaction)
+        let user_id = create_new_test_user(&mut *transaction).await.unwrap();
+        set_description(user_id, "Test", &mut *transaction)
             .await
             .unwrap();
-        let user_id2 = create_new_test_user(&mut transaction).await.unwrap();
-        set_description(user_id2, "Test", &mut transaction)
+        let user_id2 = create_new_test_user(&mut *transaction).await.unwrap();
+        set_description(user_id2, "Test", &mut *transaction)
             .await
             .unwrap();
 
@@ -398,7 +398,7 @@ mod user_potential_spam_users_query {
             "UserPotentialSpamUsersQuery",
             json!({ "first": 3, "after": user_id2 }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
@@ -407,12 +407,12 @@ mod user_potential_spam_users_query {
     async fn does_not_return_user_with_higher_role() {
         let mut transaction = begin_transaction().await;
 
-        let user_id = create_new_test_user(&mut transaction).await.unwrap();
-        let user_id2 = create_new_test_user(&mut transaction).await.unwrap();
-        set_description(user_id, "Test", &mut transaction)
+        let user_id = create_new_test_user(&mut *transaction).await.unwrap();
+        let user_id2 = create_new_test_user(&mut *transaction).await.unwrap();
+        set_description(user_id, "Test", &mut *transaction)
             .await
             .unwrap();
-        set_description(user_id2, "Test", &mut transaction)
+        set_description(user_id2, "Test", &mut *transaction)
             .await
             .unwrap();
         sqlx::query!(
@@ -422,12 +422,12 @@ mod user_potential_spam_users_query {
             "#,
             user_id2
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .unwrap();
 
         Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1 }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
@@ -436,12 +436,12 @@ mod user_potential_spam_users_query {
     async fn does_not_return_user_with_6_edits() {
         let mut transaction = begin_transaction().await;
 
-        let user_id = create_new_test_user(&mut transaction).await.unwrap();
-        let user_id2 = create_new_test_user(&mut transaction).await.unwrap();
-        set_description(user_id, "Test", &mut transaction)
+        let user_id = create_new_test_user(&mut *transaction).await.unwrap();
+        let user_id2 = create_new_test_user(&mut *transaction).await.unwrap();
+        set_description(user_id, "Test", &mut *transaction)
             .await
             .unwrap();
-        set_description(user_id2, "Test", &mut transaction)
+        set_description(user_id2, "Test", &mut *transaction)
             .await
             .unwrap();
 
@@ -455,7 +455,7 @@ mod user_potential_spam_users_query {
                     "pageId": 16569
                 }),
             )
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok();
         }
@@ -464,7 +464,7 @@ mod user_potential_spam_users_query {
             "UserPotentialSpamUsersQuery",
             json!({ "first": 1, "after": user_id2}),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
@@ -492,7 +492,7 @@ mod user_remove_role_mutation {
             "UserRemoveRoleMutation",
             json!({ "username": username, "roleName": role_name}),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_ok();
 
@@ -506,7 +506,7 @@ mod user_remove_role_mutation {
             user_id,
             role_id
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await
         .unwrap();
 
@@ -522,7 +522,7 @@ mod user_remove_role_mutation {
             "UserRemoveRoleMutation",
             json!({ "username": username, "roleName": role_name}),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_ok();
     }
@@ -535,7 +535,7 @@ mod user_remove_role_mutation {
             "UserRemoveRoleMutation",
             json!({ "username": username, "roleName": "not a role"}),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_bad_request();
     }
@@ -548,7 +548,7 @@ mod user_remove_role_mutation {
             "UserRemoveRoleMutation",
             json!({ "username": username, "roleName": "login"}),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_bad_request();
     }
@@ -621,18 +621,18 @@ mod user_set_description_mutation {
     #[actix_rt::test]
     async fn updates_user_description() {
         let mut transaction = begin_transaction().await;
-        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+        let user_id = create_new_test_user(&mut *transaction).await.unwrap();
 
         Message::new(
             "UserSetDescriptionMutation",
             json!({ "userId": user_id, "description": "new description".to_string() }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_ok_with_body(json!({ "success": true }));
 
         Message::new("UuidQuery", json!({ "id": user_id }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["description"], "new description".to_string())
@@ -660,10 +660,10 @@ mod user_set_email_mutation {
     #[actix_rt::test]
     async fn updates_user_email() {
         let mut transaction = begin_transaction().await;
-        let user_id = create_new_test_user(&mut transaction).await.unwrap();
+        let user_id = create_new_test_user(&mut *transaction).await.unwrap();
         let new_email = "user@example.com".to_string();
         let user = Message::new("UuidQuery", json!({ "id": user_id }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .get_json();
         let username = user.get("username").unwrap().as_str().unwrap();
@@ -672,11 +672,11 @@ mod user_set_email_mutation {
             "UserSetEmailMutation",
             json!({ "userId": user_id, "email": &new_email }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .should_be_ok_with_body(json!({ "success": true, "username": username }));
 
-        let email = get_email(user_id, &mut transaction).await.unwrap();
+        let email = get_email(user_id, &mut *transaction).await.unwrap();
 
         assert_eq!(email, new_email)
     }

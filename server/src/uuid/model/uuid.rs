@@ -154,28 +154,28 @@ impl UuidFetcher for Uuid {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        let uuid = fetch_one_uuid!(id, &mut transaction)?;
+        let uuid = fetch_one_uuid!(id, &mut *transaction)?;
         let discriminator = get_discriminator!(uuid)?;
         let uuid = match discriminator {
             Discriminator::Attachment => {
-                Attachment::fetch_via_transaction(id, &mut transaction).await?
+                Attachment::fetch_via_transaction(id, &mut *transaction).await?
             }
             Discriminator::BlogPost => {
-                BlogPost::fetch_via_transaction(id, &mut transaction).await?
+                BlogPost::fetch_via_transaction(id, &mut *transaction).await?
             }
-            Discriminator::Comment => Comment::fetch_via_transaction(id, &mut transaction).await?,
-            Discriminator::Entity => Entity::fetch_via_transaction(id, &mut transaction).await?,
+            Discriminator::Comment => Comment::fetch_via_transaction(id, &mut *transaction).await?,
+            Discriminator::Entity => Entity::fetch_via_transaction(id, &mut *transaction).await?,
             Discriminator::EntityRevision => {
-                EntityRevision::fetch_via_transaction(id, &mut transaction).await?
+                EntityRevision::fetch_via_transaction(id, &mut *transaction).await?
             }
-            Discriminator::Page => Page::fetch_via_transaction(id, &mut transaction).await?,
+            Discriminator::Page => Page::fetch_via_transaction(id, &mut *transaction).await?,
             Discriminator::PageRevision => {
-                PageRevision::fetch_via_transaction(id, &mut transaction).await?
+                PageRevision::fetch_via_transaction(id, &mut *transaction).await?
             }
             Discriminator::TaxonomyTerm => {
-                TaxonomyTerm::fetch_via_transaction(id, &mut transaction).await?
+                TaxonomyTerm::fetch_via_transaction(id, &mut *transaction).await?
             }
-            Discriminator::User => User::fetch_via_transaction(id, &mut transaction).await?,
+            Discriminator::User => User::fetch_via_transaction(id, &mut *transaction).await?,
         };
         transaction.commit().await?;
         Ok(uuid)
@@ -215,7 +215,7 @@ impl Uuid {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        let uuid = fetch_one_uuid!(id, &mut transaction)?;
+        let uuid = fetch_one_uuid!(id, &mut *transaction)?;
         let discriminator = get_discriminator!(uuid)?;
         let context = match discriminator {
             Discriminator::Attachment => Attachment::get_context(),
@@ -223,19 +223,19 @@ impl Uuid {
             // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
             Discriminator::Comment => None,
             Discriminator::Entity => {
-                Entity::fetch_canonical_subject_via_transaction(id, &mut transaction)
+                Entity::fetch_canonical_subject_via_transaction(id, &mut *transaction)
                     .await?
                     .map(|subject| subject.name)
             }
             Discriminator::EntityRevision => {
-                EntityRevision::fetch_canonical_subject_via_transaction(id, &mut transaction)
+                EntityRevision::fetch_canonical_subject_via_transaction(id, &mut *transaction)
                     .await?
                     .map(|subject| subject.name)
             }
             Discriminator::Page => None,         // TODO:
             Discriminator::PageRevision => None, // TODO:
             Discriminator::TaxonomyTerm => {
-                TaxonomyTerm::fetch_canonical_subject(id, &mut transaction)
+                TaxonomyTerm::fetch_canonical_subject(id, &mut *transaction)
                     .await?
                     .map(|subject| subject.name)
             }
@@ -285,7 +285,7 @@ impl Uuid {
                 "#,
                 id
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await;
             match result {
                 Ok(uuid) => {
@@ -311,10 +311,10 @@ impl Uuid {
                         }
                     })?;
 
-                    Uuid::set_state(*id, payload.trashed, &mut transaction).await?;
+                    Uuid::set_state(*id, payload.trashed, &mut *transaction).await?;
 
                     SetUuidStateEventPayload::new(payload.trashed, payload.user_id, *id, instance)
-                        .save(&mut transaction)
+                        .save(&mut *transaction)
                         .await?;
                 }
                 Err(sqlx::Error::RowNotFound) => {
@@ -367,7 +367,7 @@ mod tests {
                 user_id: 1,
                 trashed: true,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
@@ -384,20 +384,20 @@ mod tests {
                 user_id: 1,
                 trashed: true,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
         // Verify that the object was trashed.
         let uuid = sqlx::query!(r#"SELECT trashed FROM uuid WHERE id = ?"#, 1855)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap();
         assert!(uuid.trashed != 0);
 
         // Verify that the event was created.
-        let duration = fetch_age_of_newest_event(1855, &mut transaction)
+        let duration = fetch_age_of_newest_event(1855, &mut *transaction)
             .await
             .unwrap();
         assert!(duration < Duration::minutes(1));
@@ -414,20 +414,20 @@ mod tests {
                 user_id: 1,
                 trashed: false,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
         // Verify that the object is not trashed.
         let uuid = sqlx::query!(r#"SELECT trashed FROM uuid WHERE id = ?"#, 1855)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap();
         assert!(uuid.trashed == 0);
 
         // Verify that no event was created.
-        let duration = fetch_age_of_newest_event(1855, &mut transaction)
+        let duration = fetch_age_of_newest_event(1855, &mut *transaction)
             .await
             .unwrap();
         assert!(duration > Duration::minutes(1));

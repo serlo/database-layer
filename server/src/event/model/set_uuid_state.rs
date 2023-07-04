@@ -82,9 +82,9 @@ mod tests {
 
         let set_uuid_state_event = SetUuidStateEventPayload::new(true, 1, 1855, Instance::De);
 
-        let event = set_uuid_state_event.save(&mut transaction).await.unwrap();
+        let event = set_uuid_state_event.save(&mut *transaction).await.unwrap();
         let persisted_event =
-            Event::fetch_via_transaction(event.abstract_event.id, &mut transaction)
+            Event::fetch_via_transaction(event.abstract_event.id, &mut *transaction)
                 .await
                 .unwrap();
 
@@ -114,9 +114,9 @@ mod tests {
 
         let set_uuid_state_event = SetUuidStateEventPayload::new(false, 1, 1855, Instance::De);
 
-        let event = set_uuid_state_event.save(&mut transaction).await.unwrap();
+        let event = set_uuid_state_event.save(&mut *transaction).await.unwrap();
         let persisted_event =
-            Event::fetch_via_transaction(event.abstract_event.id, &mut transaction)
+            Event::fetch_via_transaction(event.abstract_event.id, &mut *transaction)
                 .await
                 .unwrap();
 

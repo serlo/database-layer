@@ -117,11 +117,11 @@ where
                 INSERT INTO uuid (trashed, discriminator) VALUES (0, "user")
             "#
     )
-    .execute(&mut transaction)
+    .execute(&mut *transaction)
     .await?;
 
     let new_user_id = sqlx::query!("SELECT LAST_INSERT_ID() as id FROM uuid")
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await?
         .id as i32;
 
@@ -136,7 +136,7 @@ where
         "",
         random_string(10)
     )
-    .execute(&mut transaction)
+    .execute(&mut *transaction)
     .await?;
 
     transaction.commit().await?;
@@ -196,7 +196,7 @@ pub async fn set_entity_revision_field<'a>(
         revision_id,
         value
     )
-    .execute(&mut transaction)
+    .execute(&mut *transaction)
     .await?
     .rows_affected()
         == 0
@@ -207,7 +207,7 @@ pub async fn set_entity_revision_field<'a>(
             field,
             value
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
     };
     transaction.commit().await?;

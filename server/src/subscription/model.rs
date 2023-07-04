@@ -186,12 +186,12 @@ pub mod tests {
                 "SELECT id FROM uuid WHERE discriminator = ?",
                 unsupported_uuid
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap()
             .id as i32;
 
-            assert_get_subscriptions_does_not_return(uuid_id, &mut transaction)
+            assert_get_subscriptions_does_not_return(uuid_id, &mut *transaction)
                 .await
                 .unwrap();
         }
@@ -203,12 +203,12 @@ pub mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let entity_id = sqlx::query!("SELECT id FROM entity WHERE type_id = 43",)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap()
             .id as i32;
 
-        assert_get_subscriptions_does_not_return(entity_id, &mut transaction)
+        assert_get_subscriptions_does_not_return(entity_id, &mut *transaction)
             .await
             .unwrap();
     }
@@ -231,10 +231,10 @@ pub mod tests {
             uuid_id,
             user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
-        let subscriptions = Subscriptions::fetch_by_user(user_id, &mut transaction).await?;
+        let subscriptions = Subscriptions::fetch_by_user(user_id, &mut *transaction).await?;
 
         assert!(!subscriptions.0.iter().any(|sub| sub.object_id == uuid_id));
 
@@ -247,7 +247,7 @@ pub mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         // Verify assumption that the user is not subscribed to object
-        let subscription = fetch_subscription_by_user_and_object(1, 1555, &mut transaction)
+        let subscription = fetch_subscription_by_user_and_object(1, 1555, &mut *transaction)
             .await
             .unwrap();
         assert!(subscription.is_none());
@@ -257,10 +257,10 @@ pub mod tests {
             user_id: 1,
             send_email: true,
         };
-        subscription.save(&mut transaction).await.unwrap();
+        subscription.save(&mut *transaction).await.unwrap();
 
         // Verify that user is now subscribed to object
-        let new_subscription = fetch_subscription_by_user_and_object(1, 1555, &mut transaction)
+        let new_subscription = fetch_subscription_by_user_and_object(1, 1555, &mut *transaction)
             .await
             .unwrap();
         assert_eq!(new_subscription, Some(subscription));
@@ -273,7 +273,7 @@ pub mod tests {
 
         // Get existing subscription for comparison
         let existing_subscription =
-            fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
+            fetch_subscription_by_user_and_object(1, 1565, &mut *transaction)
                 .await
                 .unwrap()
                 .unwrap();
@@ -283,10 +283,10 @@ pub mod tests {
             user_id: 1,
             send_email: false,
         };
-        subscription.save(&mut transaction).await.unwrap();
+        subscription.save(&mut *transaction).await.unwrap();
 
         // Verify that subscription was changed
-        let subscription = fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
+        let subscription = fetch_subscription_by_user_and_object(1, 1565, &mut *transaction)
             .await
             .unwrap();
         assert_eq!(
@@ -305,7 +305,7 @@ pub mod tests {
 
         // Verify assumption that the user is subscribed to object
         let existing_subscription =
-            fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
+            fetch_subscription_by_user_and_object(1, 1565, &mut *transaction)
                 .await
                 .unwrap();
         assert!(existing_subscription.is_some());
@@ -315,10 +315,10 @@ pub mod tests {
             user_id: 1,
             send_email: false,
         };
-        subscription.remove(&mut transaction).await.unwrap();
+        subscription.remove(&mut *transaction).await.unwrap();
 
         // Verify that user is no longer subscribed to object
-        let subscription = fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
+        let subscription = fetch_subscription_by_user_and_object(1, 1565, &mut *transaction)
             .await
             .unwrap();
         assert!(subscription.is_none());

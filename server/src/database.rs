@@ -31,8 +31,8 @@ impl<'a, A> Acquire<'a> for A where A: sqlx::Acquire<'a, Database = sqlx::MySql>
 ///     E: Executor<'a>,
 /// {
 ///     let mut transaction = executor.begin().await?;
-///     let events = sqlx::query!(r#"SELECT id FROM event_log"#).fetch_all(&mut transaction).await?;
-///     let users = sqlx::query!(r#"SELECT id FROM user"#).fetch_all(&mut transaction).await?;
+///     let events = sqlx::query!(r#"SELECT id FROM event_log"#).fetch_all(&mut *transaction).await?;
+///     let users = sqlx::query!(r#"SELECT id FROM user"#).fetch_all(&mut *transaction).await?;
 ///     transaction.commit().await?;
 ///     Ok(())
 /// }

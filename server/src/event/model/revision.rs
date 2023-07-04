@@ -115,11 +115,11 @@ mod tests {
             "Improve explanation".to_string(),
             Instance::De,
         )
-        .save(&mut transaction)
+        .save(&mut *transaction)
         .await
         .unwrap();
         let persisted_event =
-            Event::fetch_via_transaction(event.abstract_event.id, &mut transaction)
+            Event::fetch_via_transaction(event.abstract_event.id, &mut *transaction)
                 .await
                 .unwrap();
 

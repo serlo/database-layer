@@ -285,17 +285,17 @@ impl UuidFetcher for Entity {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        let entity = fetch_one_entity!(id, &mut transaction).await?;
-        let revisions = fetch_all_revisions!(id, &mut transaction).await?;
-        let taxonomy_terms = fetch_all_taxonomy_terms_parents!(id, &mut transaction).await?;
-        let subject = Entity::fetch_canonical_subject_via_transaction(id, &mut transaction).await?;
+        let entity = fetch_one_entity!(id, &mut *transaction).await?;
+        let revisions = fetch_all_revisions!(id, &mut *transaction).await?;
+        let taxonomy_terms = fetch_all_taxonomy_terms_parents!(id, &mut *transaction).await?;
+        let subject = Entity::fetch_canonical_subject_via_transaction(id, &mut *transaction).await?;
         let result = to_entity!(
             id,
             entity,
             revisions,
             taxonomy_terms,
             subject,
-            &mut transaction
+            &mut *transaction
         );
         transaction.commit().await?;
         result
@@ -339,8 +339,8 @@ impl Entity {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        let taxonomy_terms = fetch_all_taxonomy_terms_ancestors!(id, &mut transaction).await?;
-        let subject = fetch_canonical_subject!(taxonomy_terms, &mut transaction);
+        let taxonomy_terms = fetch_all_taxonomy_terms_ancestors!(id, &mut *transaction).await?;
+        let subject = fetch_canonical_subject!(taxonomy_terms, &mut *transaction);
         transaction.commit().await?;
         Ok(subject)
     }
@@ -459,7 +459,7 @@ impl Entity {
     {
         let mut transaction = executor.begin().await?;
 
-        Self::assert_entity_exists(payload.input.entity_id, &mut transaction).await?;
+        Self::assert_entity_exists(payload.input.entity_id, &mut *transaction).await?;
 
         let last_not_trashed_revision = sqlx::query!(
             r#"
@@ -473,7 +473,7 @@ impl Entity {
             "#,
             payload.input.entity_id
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .map(|x| x.id as i32);
 
@@ -481,7 +481,7 @@ impl Entity {
 
         if let Some(revision_id) = last_not_trashed_revision {
             let mut last_revision_fields: HashMap<String, String> =
-                fetch_all_fields!(revision_id, &mut transaction)
+                fetch_all_fields!(revision_id, &mut *transaction)
                     .await?
                     .into_iter()
                     .filter(|field| field.field != "changes")
@@ -505,7 +505,7 @@ impl Entity {
 
             if last_revision_fields == fields {
                 return Ok(
-                    EntityRevision::fetch_via_transaction(revision_id, &mut transaction).await?,
+                    EntityRevision::fetch_via_transaction(revision_id, &mut *transaction).await?,
                 );
             }
         }
@@ -514,7 +514,7 @@ impl Entity {
 
         let entity_revision =
             EntityRevisionPayload::new(payload.user_id, payload.input.entity_id, fields)
-                .save(&mut transaction)
+                .save(&mut *transaction)
                 .await?;
 
         let instance_id = sqlx::query!(
@@ -525,7 +525,7 @@ impl Entity {
             "#,
             payload.input.entity_id
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await?
         .instance_id;
 
@@ -535,7 +535,7 @@ impl Entity {
             payload.user_id,
             instance_id,
         )
-        .save(&mut transaction)
+        .save(&mut *transaction)
         .await?;
 
         if !payload.input.needs_review {
@@ -545,7 +545,7 @@ impl Entity {
                     user_id: payload.user_id,
                     reason: "".to_string(),
                 },
-                &mut transaction,
+                &mut *transaction,
             )
             .await
             .map_err(|error| operation::Error::InternalServerError {
@@ -560,7 +560,7 @@ impl Entity {
                     user_id: payload.user_id,
                     send_email: payload.input.subscribe_this_by_email,
                 },
-                &mut transaction,
+                &mut *transaction,
             )
             .await?;
         }
@@ -610,7 +610,7 @@ impl Entity {
                         reason: "parent_id needs to be provided".to_string(),
                     })?
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .ok()
             .is_some()
@@ -626,16 +626,16 @@ impl Entity {
                     VALUES (0, "entity")
             "#,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let entity_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .id as i32;
 
         let type_id = sqlx::query!(r#"SELECT id FROM type WHERE name = ?"#, payload.entity_type)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .id;
 
@@ -653,7 +653,7 @@ impl Entity {
                 })?;
 
             instance_id = sqlx::query!("select instance_id from entity where id = ?", parent_id)
-                .fetch_optional(&mut transaction)
+                .fetch_optional(&mut *transaction)
                 .await?
                 .ok_or(operation::Error::BadRequest {
                     reason: format!("parent entity with id {parent_id} does not exist"),
@@ -667,7 +667,7 @@ impl Entity {
                     reason: "taxonomy_term_id needs to be provided".to_string(),
                 })?;
 
-            instance_id = TaxonomyTerm::get_instance_id(parent_id, &mut transaction).await?;
+            instance_id = TaxonomyTerm::get_instance_id(parent_id, &mut *transaction).await?;
         }
 
         sqlx::query!(
@@ -681,7 +681,7 @@ impl Entity {
             payload.input.license_id,
             DateTime::now(),
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
@@ -695,7 +695,7 @@ impl Entity {
                 "#,
                 parent_id,
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .current_last as i32
                 + 1;
@@ -709,11 +709,11 @@ impl Entity {
                 entity_id,
                 last_order
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
 
             EntityLinkEventPayload::new(entity_id, parent_id, payload.user_id, instance_id)
-                .save(&mut transaction)
+                .save(&mut *transaction)
                 .await?;
         } else {
             let last_position = sqlx::query!(
@@ -724,7 +724,7 @@ impl Entity {
                 "#,
                 parent_id
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .current_last as i32
                 + 1;
@@ -738,16 +738,16 @@ impl Entity {
                 parent_id,
                 last_position
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
 
             CreateTaxonomyLinkEventPayload::new(entity_id, parent_id, payload.user_id, instance_id)
-                .save(&mut transaction)
+                .save(&mut *transaction)
                 .await?;
         }
 
         CreateEntityEventPayload::new(entity_id, payload.user_id, instance_id)
-            .save(&mut transaction)
+            .save(&mut *transaction)
             .await?;
 
         Entity::add_revision(
@@ -763,11 +763,11 @@ impl Entity {
                 revision_type: EntityRevisionType::from(payload.entity_type.clone()),
                 user_id: payload.user_id,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await?;
 
-        let entity = Entity::fetch_via_transaction(entity_id, &mut transaction).await?;
+        let entity = Entity::fetch_via_transaction(entity_id, &mut *transaction).await?;
 
         transaction.commit().await?;
 
@@ -786,7 +786,7 @@ impl Entity {
         let mut transaction = executor.begin().await?;
 
         let revision_id = payload.revision_id;
-        let revision = EntityRevision::fetch_via_transaction(revision_id, &mut transaction).await?;
+        let revision = EntityRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
 
         if let ConcreteUuid::EntityRevision(EntityRevision {
             abstract_entity_revision,
@@ -795,7 +795,7 @@ impl Entity {
         {
             let repository_id = abstract_entity_revision.repository_id;
 
-            let repository = Entity::fetch_via_transaction(repository_id, &mut transaction).await?;
+            let repository = Entity::fetch_via_transaction(repository_id, &mut *transaction).await?;
 
             if let ConcreteUuid::Entity(Entity {
                 abstract_entity, ..
@@ -807,7 +807,7 @@ impl Entity {
                     });
                 }
 
-                Uuid::set_state(revision_id, false, &mut transaction).await?;
+                Uuid::set_state(revision_id, false, &mut *transaction).await?;
 
                 sqlx::query!(
                     r#"
@@ -818,7 +818,7 @@ impl Entity {
                     revision_id,
                     repository_id,
                 )
-                .execute(&mut transaction)
+                .execute(&mut *transaction)
                 .await?;
 
                 RevisionEventPayload::new(
@@ -829,7 +829,7 @@ impl Entity {
                     payload.reason.clone(),
                     abstract_entity.instance,
                 )
-                .save(&mut transaction)
+                .save(&mut *transaction)
                 .await?;
 
                 transaction.commit().await?;
@@ -859,7 +859,7 @@ impl Entity {
         let mut transaction = executor.begin().await?;
 
         let revision_id = payload.revision_id;
-        let revision = EntityRevision::fetch_via_transaction(revision_id, &mut transaction).await?;
+        let revision = EntityRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
 
         if let ConcreteUuid::EntityRevision(EntityRevision {
             abstract_entity_revision,
@@ -874,7 +874,7 @@ impl Entity {
 
             let repository_id = abstract_entity_revision.repository_id;
 
-            let repository = Entity::fetch_via_transaction(repository_id, &mut transaction).await?;
+            let repository = Entity::fetch_via_transaction(repository_id, &mut *transaction).await?;
 
             if let ConcreteUuid::Entity(Entity {
                 abstract_entity, ..
@@ -886,7 +886,7 @@ impl Entity {
                     });
                 }
 
-                Uuid::set_state(revision_id, true, &mut transaction).await?;
+                Uuid::set_state(revision_id, true, &mut *transaction).await?;
 
                 RevisionEventPayload::new(
                     true,
@@ -896,7 +896,7 @@ impl Entity {
                     payload.reason.clone(),
                     abstract_entity.instance,
                 )
-                .save(&mut transaction)
+                .save(&mut *transaction)
                 .await?;
 
                 transaction.commit().await?;
@@ -1008,7 +1008,7 @@ impl Entity {
             "select child_id from entity_link where parent_id = ? order by entity_link.order",
             payload.entity_id
         )
-        .fetch_all(&mut transaction)
+        .fetch_all(&mut *transaction)
         .await?
         .into_iter()
         .map(|x| x.child_id as i32)
@@ -1039,7 +1039,7 @@ impl Entity {
                 payload.entity_id,
                 child_id,
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 
@@ -1065,7 +1065,7 @@ impl Entity {
             "#,
             payload.user_id,
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .ok_or(operation::Error::BadRequest {
             reason: format!("An user with id {} does not exist.", payload.user_id),
@@ -1077,7 +1077,7 @@ impl Entity {
             "#,
             payload.entity_id,
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .ok_or(operation::Error::BadRequest {
             reason: format!("An entity with id {} does not exist.", payload.entity_id),
@@ -1094,11 +1094,11 @@ impl Entity {
             payload.license_id,
             payload.entity_id,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         CreateSetLicenseEventPayload::new(payload.entity_id, payload.user_id, entity.instance_id)
-            .save(&mut transaction)
+            .save(&mut *transaction)
             .await?;
 
         transaction.commit().await?;
@@ -1124,7 +1124,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        match Entity::assert_entity_exists(1, &mut transaction).await {
+        match Entity::assert_entity_exists(1, &mut *transaction).await {
             Err(error) => match error {
                 operation::Error::BadRequest { reason: _ } => {}
                 _ => panic!("check_entity_exists didn't throw expected error"),
@@ -1159,12 +1159,12 @@ mod tests {
                 revision_type: EntityRevisionType::Article,
                 user_id: 1,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
-        let entity = Entity::fetch_via_transaction(1495, &mut transaction)
+        let entity = Entity::fetch_via_transaction(1495, &mut *transaction)
             .await
             .unwrap();
 
@@ -1204,12 +1204,12 @@ mod tests {
                 revision_type: EntityRevisionType::Article,
                 user_id: 1,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
-        let entity = Entity::fetch_via_transaction(1495, &mut transaction)
+        let entity = Entity::fetch_via_transaction(1495, &mut *transaction)
             .await
             .unwrap();
         if let ConcreteUuid::Entity(Entity {
@@ -1248,12 +1248,12 @@ mod tests {
                 revision_type: EntityRevisionType::Article,
                 user_id: 1,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
-        let entity_subscription = fetch_subscription_by_user_and_object(1, 1497, &mut transaction)
+        let entity_subscription = fetch_subscription_by_user_and_object(1, 1497, &mut *transaction)
             .await
             .unwrap();
 
@@ -1278,13 +1278,13 @@ mod tests {
                 user_id: 1,
                 reason: "Revert changes".to_string(),
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
         // Verify that revision was checked out.
-        let entity = Entity::fetch_via_transaction(1855, &mut transaction)
+        let entity = Entity::fetch_via_transaction(1855, &mut *transaction)
             .await
             .unwrap();
         if let ConcreteUuid::Entity(Entity {
@@ -1297,7 +1297,7 @@ mod tests {
         }
 
         // Verify that the event was created.
-        let duration = fetch_age_of_newest_event(30672, &mut transaction)
+        let duration = fetch_age_of_newest_event(30672, &mut *transaction)
             .await
             .unwrap();
         assert!(duration < Duration::minutes(1));
@@ -1311,11 +1311,11 @@ mod tests {
         let revision_id: i32 = 30672;
         let entity_id: i32 = 1855;
 
-        Uuid::set_state(revision_id, true, &mut transaction)
+        Uuid::set_state(revision_id, true, &mut *transaction)
             .await
             .unwrap();
 
-        let entity = Entity::fetch_via_transaction(entity_id, &mut transaction)
+        let entity = Entity::fetch_via_transaction(entity_id, &mut *transaction)
             .await
             .unwrap();
         assert!(!entity.trashed);
@@ -1332,7 +1332,7 @@ mod tests {
                 user_id: 1,
                 reason: "Revert changes".to_string(),
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await;
 
@@ -1357,19 +1357,19 @@ mod tests {
                 user_id: 1,
                 reason: "Contains an error".to_string(),
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
         // Verify that revision was trashed.
-        let revision = EntityRevision::fetch_via_transaction(30672, &mut transaction)
+        let revision = EntityRevision::fetch_via_transaction(30672, &mut *transaction)
             .await
             .unwrap();
         assert!(revision.trashed);
 
         // Verify that the event was created.
-        let duration = fetch_age_of_newest_event(30672, &mut transaction)
+        let duration = fetch_age_of_newest_event(30672, &mut *transaction)
             .await
             .unwrap();
         assert!(duration < Duration::minutes(1));
@@ -1380,7 +1380,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        Uuid::set_state(30672, true, &mut transaction)
+        Uuid::set_state(30672, true, &mut *transaction)
             .await
             .unwrap();
 
@@ -1390,7 +1390,7 @@ mod tests {
                 user_id: 1,
                 reason: "Contains an error".to_string(),
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await;
 
@@ -1415,7 +1415,7 @@ mod tests {
                 user_id: 1,
                 reason: "Contains an error".to_string(),
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await;
 

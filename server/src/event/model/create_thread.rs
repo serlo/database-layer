@@ -87,9 +87,9 @@ mod tests {
 
         let create_thread_event = CreateThreadEventPayload::new(16740, 1292, 10, 1);
 
-        let event = create_thread_event.save(&mut transaction).await.unwrap();
+        let event = create_thread_event.save(&mut *transaction).await.unwrap();
         let persisted_event =
-            Event::fetch_via_transaction(event.abstract_event.id, &mut transaction)
+            Event::fetch_via_transaction(event.abstract_event.id, &mut *transaction)
                 .await
                 .unwrap();
 

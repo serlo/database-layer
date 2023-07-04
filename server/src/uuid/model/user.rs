@@ -91,8 +91,8 @@ impl UuidFetcher for User {
     {
         let mut transaction = executor.begin().await?;
 
-        let user = fetch_one_user!(id, &mut transaction).await;
-        let roles = fetch_all_roles!(id, &mut transaction).await;
+        let user = fetch_one_user!(id, &mut *transaction).await;
+        let roles = fetch_all_roles!(id, &mut *transaction).await;
 
         transaction.commit().await?;
 

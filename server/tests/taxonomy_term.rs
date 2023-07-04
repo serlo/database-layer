@@ -15,12 +15,12 @@ mod set_name_and_description_mutation {
                     "description": description
                 }),
             )
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok_with_body(json!({ "success": true }));
 
             Message::new("UuidQuery", json!({ "id": 7 }))
-                .execute_on(&mut transaction)
+                .execute_on(&mut *transaction)
                 .await
                 .should_be_ok_with(|result| {
                     assert_eq!(result["name"], "a name");
@@ -28,7 +28,7 @@ mod set_name_and_description_mutation {
                 });
 
             Message::new("EventsQuery", json!({ "first": 1, "objectId": 7 }))
-                .execute_on(&mut transaction)
+                .execute_on(&mut *transaction)
                 .await
                 .should_be_ok_with(|result| {
                     assert_json_include!(
@@ -81,13 +81,13 @@ mod create_mutation {
                     "taxonomyType": taxonomy_type
                     }),
                 )
-                .execute_on(&mut transaction)
+                .execute_on(&mut *transaction)
                 .await
                 .get_json()["id"]
                     .clone();
 
                 Message::new("UuidQuery", json!({ "id": new_taxonomy_id }))
-                    .execute_on(&mut transaction)
+                    .execute_on(&mut *transaction)
                     .await
                     .should_be_ok_with(|result| {
                         assert_eq!(result["name"], "a name");
@@ -103,7 +103,7 @@ mod create_mutation {
                     "EventsQuery",
                     json ! ({ "first": 1, "objectId": new_taxonomy_id }),
                 )
-                .execute_on(&mut transaction)
+                .execute_on(&mut *transaction)
                 .await
                 .should_be_ok_with(|result| {
                     assert_json_include ! (
@@ -135,13 +135,13 @@ mod create_mutation {
             "taxonomyType": "curriculum"
             }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await
         .get_json()["id"]
             .clone();
 
         Message::new("UuidQuery", json!({ "id": 1440 }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["childrenIds"][2], new_taxonomy_id);
@@ -180,12 +180,12 @@ mod create_entity_link_mutation {
             "TaxonomyCreateEntityLinksMutation",
             json! ({ "userId": 1, "entityIds": children_ids, "taxonomyTermId": taxonomy_term_id }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await;
 
         for child_id in children_ids.iter() {
             Message::new("UuidQuery", json!({ "id": child_id }))
-                .execute_on(&mut transaction)
+                .execute_on(&mut *transaction)
                 .await
                 .should_be_ok_with(|result| {
                     assert!(result["taxonomyTermIds"]
@@ -195,7 +195,7 @@ mod create_entity_link_mutation {
                 });
 
             Message::new("EventsQuery", json ! ({ "first": 1, "objectId": child_id }))
-                .execute_on(&mut transaction)
+                .execute_on(&mut *transaction)
                 .await
                 .should_be_ok_with(|result| {
                     assert_json_include ! (
@@ -313,7 +313,7 @@ mod create_entity_link_mutation {
         let taxonomy_term_id = 1307;
 
         let count_before =
-            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut transaction).await;
+            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut *transaction).await;
 
         Message::new(
             "TaxonomyCreateEntityLinksMutation",
@@ -329,7 +329,7 @@ mod create_entity_link_mutation {
 
         assert_eq!(
             count_before,
-            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut transaction).await
+            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut *transaction).await
         );
     }
 }
@@ -348,12 +348,12 @@ mod delete_entity_links_mutation {
             "TaxonomyDeleteEntityLinksMutation",
             json! ({ "userId": 1, "entityIds": children_ids, "taxonomyTermId": taxonomy_term_id }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await;
 
         for child_id in children_ids.iter() {
             Message::new("UuidQuery", json!({ "id": child_id }))
-                .execute_on(&mut transaction)
+                .execute_on(&mut *transaction)
                 .await
                 .should_be_ok_with(|result| {
                     assert!(!result["taxonomyTermIds"]
@@ -363,7 +363,7 @@ mod delete_entity_links_mutation {
                 });
 
             Message::new("EventsQuery", json ! ({ "first": 1, "objectId": child_id }))
-                .execute_on(&mut transaction)
+                .execute_on(&mut *transaction)
                 .await
                 .should_be_ok_with(|result| {
                     assert_json_include ! (
@@ -422,18 +422,18 @@ mod sort_mutation {
                 "taxonomyTermId": taxonomy_term_id
             }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await;
 
         Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["childrenIds"], to_value(children_ids).unwrap());
             });
 
         Message::new("EventsQuery", json!({ "first": 1, "objectId": 3 }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_json_include!(
@@ -461,11 +461,11 @@ mod sort_mutation {
                 "taxonomyTermId": taxonomy_term_id
             }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await;
 
         Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["childrenIds"], json!([1949, 2021, 24390, 1455]));
@@ -487,18 +487,18 @@ mod sort_mutation {
                 "taxonomyTermId": taxonomy_term_id
             }),
         )
-        .execute_on(&mut transaction)
+        .execute_on(&mut *transaction)
         .await;
 
         Message::new("UuidQuery", json!({ "id": taxonomy_term_id }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["childrenIds"], to_value(children_ids).unwrap());
             });
 
         Message::new("EventsQuery", json!({ "first": 1, "objectId": 3 }))
-            .execute_on(&mut transaction)
+            .execute_on(&mut *transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_json_include!(

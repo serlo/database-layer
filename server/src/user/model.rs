@@ -109,7 +109,7 @@ impl User {
     {
         let mut transaction = executor.begin().await?;
 
-        let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
+        let role_id = Self::role_name_to_id(&payload.role_name, &mut *transaction).await?;
 
         let user_id = sqlx::query!(
             r#"
@@ -119,7 +119,7 @@ impl User {
             "#,
             payload.username
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .ok_or(operation::Error::BadRequest {
             reason: "This user does not exist.".to_string(),
@@ -135,7 +135,7 @@ impl User {
             user_id,
             role_id,
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?;
 
         if response.is_some() {
@@ -150,7 +150,7 @@ impl User {
             user_id,
             role_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
         transaction.commit().await?;
         Ok(())
@@ -197,7 +197,7 @@ impl User {
                 VALUES ('user')
             "#,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let user_id = sqlx::query!(
@@ -206,7 +206,7 @@ impl User {
                 FROM uuid
             "#,
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await?
         .id;
 
@@ -228,7 +228,7 @@ impl User {
             DateTime::now(),
             token.to_lowercase(),
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
@@ -239,7 +239,7 @@ impl User {
             user_id,
             default_role_id,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         transaction.commit().await?;
@@ -258,7 +258,7 @@ impl User {
 
         for bot_id in &payload.bot_ids {
             let result = sqlx::query!("select email from user where id = ?", bot_id)
-                .fetch_optional(&mut transaction)
+                .fetch_optional(&mut *transaction)
                 .await?
                 .map(|user| user.email);
 
@@ -270,7 +270,7 @@ impl User {
                 r#"DELETE FROM uuid WHERE id = ? AND discriminator = 'user'"#,
                 bot_id,
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 
@@ -297,7 +297,7 @@ impl User {
         let mut transaction = executor.begin().await?;
 
         sqlx::query!(r#"select * from user where id = ?"#, payload.user_id)
-            .fetch_optional(&mut transaction)
+            .fetch_optional(&mut *transaction)
             .await?
             .ok_or(operation::Error::BadRequest {
                 reason: "The requested user does not exist.".to_string(),
@@ -308,7 +308,7 @@ impl User {
             deleted_user_id,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
@@ -316,7 +316,7 @@ impl User {
             deleted_user_id,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
@@ -324,14 +324,14 @@ impl User {
             deleted_user_id,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
             r#"delete from comment_vote where user_id = ?"#,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
@@ -339,7 +339,7 @@ impl User {
             deleted_user_id,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
@@ -347,18 +347,18 @@ impl User {
             deleted_user_id,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(r#"delete from flag where reporter_id = ?"#, payload.user_id)
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
 
         sqlx::query!(
             r#"delete from notification where user_id = ?"#,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
@@ -366,35 +366,35 @@ impl User {
             deleted_user_id,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
             r#"delete from role_user where user_id = ?"#,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
             r#"delete from subscription where user_id = ?"#,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
             r#"delete from subscription where uuid_id = ?"#,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
             r#"delete from uuid where id = ? and discriminator = 'user'"#,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         transaction.commit().await?;
@@ -430,13 +430,13 @@ impl User {
             payload.after,
             payload.first,
         )
-        .fetch_all(&mut transaction)
+        .fetch_all(&mut *transaction)
         .await?
         .into_iter();
 
         let mut ids: Vec<i32> = Vec::new();
         for item in result {
-            let activity = User::fetch_activity_by_type(item.id as i32, &mut transaction).await?;
+            let activity = User::fetch_activity_by_type(item.id as i32, &mut *transaction).await?;
             if activity.edits <= 5 {
                 ids.push(item.id as i32);
             }
@@ -453,7 +453,7 @@ impl User {
     {
         let mut transaction = executor.begin().await?;
 
-        let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
+        let role_id = Self::role_name_to_id(&payload.role_name, &mut *transaction).await?;
 
         let user_id = sqlx::query!(
             r#"
@@ -463,7 +463,7 @@ impl User {
             "#,
             payload.username
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .ok_or(operation::Error::BadRequest {
             reason: "This user does not exist.".to_string(),
@@ -478,7 +478,7 @@ impl User {
             user_id,
             role_id,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         transaction.commit().await?;
@@ -498,7 +498,7 @@ impl User {
             });
         }
         let mut transaction = executor.begin().await?;
-        let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
+        let role_id = Self::role_name_to_id(&payload.role_name, &mut *transaction).await?;
         Ok(sqlx::query!(
             r#"
                     SELECT user_id
@@ -513,7 +513,7 @@ impl User {
             payload.after,
             payload.first,
         )
-        .fetch_all(&mut transaction)
+        .fetch_all(&mut *transaction)
         .await?
         .into_iter()
         .map(|x| x.user_id as i32)
@@ -553,7 +553,7 @@ impl User {
         let mut transaction = executor.begin().await?;
 
         let username = sqlx::query!("select username from user where id = ?", payload.user_id)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .username;
         sqlx::query!(
@@ -561,7 +561,7 @@ impl User {
             payload.email,
             payload.user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
         transaction.commit().await?;
         Ok(username)

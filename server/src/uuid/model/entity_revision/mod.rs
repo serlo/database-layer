@@ -162,8 +162,8 @@ impl UuidFetcher for EntityRevision {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        let revision = fetch_one_revision!(id, &mut transaction).await?;
-        let fields = fetch_all_fields!(id, &mut transaction).await?;
+        let revision = fetch_one_revision!(id, &mut *transaction).await?;
+        let fields = fetch_all_fields!(id, &mut *transaction).await?;
         transaction.commit().await?;
         to_entity_revisions!(id, revision, fields)
     }
@@ -195,11 +195,11 @@ impl EntityRevision {
             r#"SELECT repository_id FROM entity_revision WHERE id = ?"#,
             id
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await?;
         let subject = Entity::fetch_canonical_subject_via_transaction(
             revision.repository_id as i32,
-            &mut transaction,
+            &mut *transaction,
         )
         .await;
         transaction.commit().await?;

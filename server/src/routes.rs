@@ -29,7 +29,7 @@ async fn message(
 
     if rollback {
         let mut transaction = pool.begin().await.expect("Failed to begin transaction.");
-        let connection = Connection::Transaction(&mut transaction);
+        let connection = Connection::Transaction(&mut *transaction);
         let response = message.handle(connection).await;
         transaction
             .rollback()

@@ -107,9 +107,9 @@ impl UuidFetcher for Comment {
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        let comment = fetch_one_comment!(id, &mut transaction).await;
-        let children = fetch_all_children!(id, &mut transaction).await;
-        let context = Comment::fetch_context_via_transaction(id, &mut transaction).await;
+        let comment = fetch_one_comment!(id, &mut *transaction).await;
+        let children = fetch_all_children!(id, &mut *transaction).await;
+        let context = Comment::fetch_context_via_transaction(id, &mut *transaction).await;
 
         transaction.commit().await?;
 
@@ -159,13 +159,13 @@ impl Comment {
             "#,
             id
         )
-        .fetch_one(&mut transaction).await
+        .fetch_one(&mut *transaction).await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => UuidError::NotFound,
             error => error.into(),
         })?;
         let context =
-            Uuid::fetch_context_via_transaction(object.id.unwrap() as i32, &mut transaction)
+            Uuid::fetch_context_via_transaction(object.id.unwrap() as i32, &mut *transaction)
                 .await?;
         transaction.commit().await?;
         Ok(context)

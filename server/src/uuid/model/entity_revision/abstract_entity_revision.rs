@@ -113,11 +113,11 @@ impl EntityRevisionPayload {
                     VALUES (0, 'entityRevision')
             "#,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let entity_revision_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .id as i32;
 
@@ -131,7 +131,7 @@ impl EntityRevisionPayload {
             self.repository_id,
             DateTime::now(),
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         for (field, value) in &self.fields {
@@ -146,12 +146,12 @@ impl EntityRevisionPayload {
                 value,
                 entity_revision_id,
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 
         let uuid =
-            EntityRevision::fetch_via_transaction(entity_revision_id, &mut transaction).await?;
+            EntityRevision::fetch_via_transaction(entity_revision_id, &mut *transaction).await?;
 
         transaction.commit().await?;
 

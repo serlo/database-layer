@@ -321,11 +321,9 @@ pub mod entities_metadata_query {
                             .collect()
                     })
                     .unwrap_or(Vec::new());
-                let subject_metadata: Option<Vec<SubjectMetadata>> = subject_ids.iter().map(|id| {
-                    let raw_subject_metadata = map_serlo_subjects_to_amb_standard(*id);
-                    raw_subject_metadata.map(|data| data.into())
-                }).collect();
-
+                let subject_metadata = Option::from(subject_ids.iter().flat_map(|id| {
+                    map_serlo_subjects_to_amb_standard(*id)
+                }).collect::<Vec<SubjectMetadata>>()).filter(|v| !v.is_empty());
                 EntityMetadata {
                     about: subject_metadata,
                     context: json!([
@@ -534,129 +532,201 @@ pub mod entities_metadata_query {
         in_scheme: SchemeId,
     }
 
-    fn map_serlo_subjects_to_amb_standard(id: i32) -> Option<RawSubjectMetadata> {
+    fn map_serlo_subjects_to_amb_standard(id: i32) -> Vec<SubjectMetadata> {
         match id {
             // Mathematik (Schule)
-            5 | 23593 | 141587 | 169580 => Some(RawSubjectMetadata {
+            5 | 23593 | 141587 | 169580 => vec![RawSubjectMetadata {
                 id: "1017".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
-            // Naturschutz (Hochschule)
-            17744 | 48416 | 242851 => Some(RawSubjectMetadata {
-                id: "064".to_string(),
-                in_scheme: SchemeId::UniversitySubject,
-            }),
+            }
+            .into()],
+            // Nachhaltigkeit => Biologie, Ethik (Schule)
+            17744 | 48416 | 242851 => vec![
+                RawSubjectMetadata {
+                    id: "1001".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+                RawSubjectMetadata {
+                    id: "1008".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+            ],
             // Chemie (Schule)
-            18230 => Some(RawSubjectMetadata {
+            18230 => vec![RawSubjectMetadata {
                 id: "1002".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Biologie (Schule)
-            23362 => Some(RawSubjectMetadata {
+            23362 => vec![RawSubjectMetadata {
                 id: "1001".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Englisch (Schule)
-            25979 | 107557 | 113127 => Some(RawSubjectMetadata {
+            25979 | 107557 | 113127 => vec![RawSubjectMetadata {
                 id: "1007".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Latein (Schule)
-            33894 | 106085 => Some(RawSubjectMetadata {
+            33894 | 106085 => vec![RawSubjectMetadata {
                 id: "1016".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Physik (Schule)
-            41107 => Some(RawSubjectMetadata {
+            41107 => vec![RawSubjectMetadata {
                 id: "1022".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Informatik (Schule)
-            47899 => Some(RawSubjectMetadata {
+            47899 => vec![RawSubjectMetadata {
                 id: "1013".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
-            // Politik (Schule)
-            79159 | 107556 => Some(RawSubjectMetadata {
-                id: "1023".to_string(),
-                in_scheme: SchemeId::SchoolSubject,
-            }),
-            // Medienbildung (Schule)
-            106083 => Some(RawSubjectMetadata {
-                id: "1046".to_string(),
-                in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
+            // Politik => Politik, Sachunterricht (Schule)
+            79159 | 107556 => vec![
+                RawSubjectMetadata {
+                    id: "1023".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+                RawSubjectMetadata {
+                    id: "1028".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+            ],
+            // Medienbildung => Medienbildung, Informatik (Schule)
+            106083 => vec![
+                RawSubjectMetadata {
+                    id: "1046".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+                RawSubjectMetadata {
+                    id: "1013".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+            ],
             // Geografie (Schule)
-            106084 => Some(RawSubjectMetadata {
+            106084 => vec![RawSubjectMetadata {
                 id: "1010".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Psychologie (Schule)
-            106086 => Some(RawSubjectMetadata {
+            106086 => vec![RawSubjectMetadata {
                 id: "1043".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Deutsch als Zweitsprache (Schule)
-            112723 => Some(RawSubjectMetadata {
+            112723 => vec![RawSubjectMetadata {
                 id: "1006".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Geschichte (Schule)
-            136362 => Some(RawSubjectMetadata {
+            136362 | 140528 => vec![RawSubjectMetadata {
                 id: "1011".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Wirtschaftskunde (Schule)
-            137757 => Some(RawSubjectMetadata {
+            137757 => vec![RawSubjectMetadata {
                 id: "1033".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Musik (Schule)
-            167849 | 48415 => Some(RawSubjectMetadata {
+            167849 | 48415 => vec![RawSubjectMetadata {
                 id: "1020".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Spanisch (Schule)
-            190109 => Some(RawSubjectMetadata {
+            190109 => vec![RawSubjectMetadata {
                 id: "1030".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Italienisch (Schule)
-            198076 => Some(RawSubjectMetadata {
+            198076 => vec![RawSubjectMetadata {
                 id: "1014".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
-            // Ethik (Schule)
-            208736 => Some(RawSubjectMetadata {
-                id: "1008".to_string(),
-                in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
+            // Religionen, deren Wahrnehmung und Vorurteile => Ethik, Geschichte (Schule)
+            208736 => vec![
+                RawSubjectMetadata {
+                    id: "1008".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+                RawSubjectMetadata {
+                    id: "1011".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+            ],
             // Deutsch (Schule)
-            210462 => Some(RawSubjectMetadata {
+            210462 => vec![RawSubjectMetadata {
                 id: "1005".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
             // Französisch (Schule)
-            227992 => Some(RawSubjectMetadata {
+            227992 => vec![RawSubjectMetadata {
                 id: "1009".to_string(),
                 in_scheme: SchemeId::SchoolSubject,
-            }),
-            // Sexualerziehung
-            78339 => Some(RawSubjectMetadata {
-                id: "1029".to_string(),
-                in_scheme: SchemeId::SchoolSubject,
-            }),
+            }
+            .into()],
+            // Sex Education => Sexualerziehung, Biologie (Schule)
+            78339 => vec![
+                RawSubjectMetadata {
+                    id: "1029".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+                RawSubjectMetadata {
+                    id: "1001".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+            ],
             // Materialwissenschaft
-            141607 => Some(RawSubjectMetadata {
+            141607 => vec![RawSubjectMetadata {
                 id: "294".to_string(),
                 in_scheme: SchemeId::UniversitySubject,
-            }),
-            // Asiatische Sprachen und Kulturen/Asienwissenschaften
-            140527 => Some(RawSubjectMetadata {
+            }
+            .into()],
+            // Grammatik => Asiatische Sprachen und Kulturen/Asienwissenschaften
+            140527 => vec![RawSubjectMetadata {
                 id: "187".to_string(),
                 in_scheme: SchemeId::UniversitySubject,
-            }),
-            _ => None,
+            }
+            .into()],
+            // Kommunikation => Psychologie, Deutsch (Schule)
+            173235 => vec![
+                RawSubjectMetadata {
+                    id: "1043".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+                RawSubjectMetadata {
+                    id: "1005".to_string(),
+                    in_scheme: SchemeId::SchoolSubject,
+                }
+                .into(),
+            ],
+            _ => vec![],
         }
     }
 }

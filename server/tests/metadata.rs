@@ -767,6 +767,33 @@ mod entities_metadata_query {
     }
 
     #[actix_rt::test]
+    async fn returns_several_subjects_in_about_property() {
+        let expected_about = json!([
+            {
+                "type": "Concept",
+                "id": "http://w3id.org/kim/schulfaecher/s1001",
+                "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+                }
+            },
+            {
+                "type": "Concept",
+                "id": "http://w3id.org/kim/schulfaecher/s1008",
+                "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+                }
+            }
+        ]);
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 25506 }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["about"], expected_about));
+    }
+
+    #[actix_rt::test]
     async fn fails_when_first_parameter_is_too_high() {
         Message::new("EntitiesMetadataQuery", json!({ "first": 1_000_000 }))
             .execute()

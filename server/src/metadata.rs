@@ -321,13 +321,9 @@ pub mod entities_metadata_query {
                             .collect()
                     })
                     .unwrap_or(Vec::new());
-                let subject_metadata_raw: Vec<SubjectMetadata> = subject_ids.iter().flat_map(|id| {
+                let subject_metadata = Option::from(subject_ids.iter().flat_map(|id| {
                     map_serlo_subjects_to_amb_standard(*id)
-                }).collect();
-                let subject_metadata = match subject_metadata_raw.is_empty() {
-                    false => Some(subject_metadata_raw),
-                    true => None
-                };
+                }).collect::<Vec<SubjectMetadata>>()).filter(|v| !v.is_empty());
                 EntityMetadata {
                     about: subject_metadata,
                     context: json!([

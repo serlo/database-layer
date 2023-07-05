@@ -1,6 +1,7 @@
 name: Pacts
 on:
   pull_request:
+  merge_group:
 jobs:
   pacts_test:
     runs-on: ubuntu-latest
@@ -9,7 +10,7 @@ jobs:
       - run: docker-compose up -d
       - uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: 18.x
       - run: yarn --immutable --immutable-cache
       - uses: actions-rs/toolchain@v1
         with:

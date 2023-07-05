@@ -146,6 +146,7 @@ mod entities_metadata_query {
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
                "id": "https://serlo.org/organization",
                "type": "Organization",
@@ -239,6 +240,7 @@ mod entities_metadata_query {
           "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
               "id": "https://serlo.org/organization",
               "type": "Organization",
@@ -341,6 +343,7 @@ mod entities_metadata_query {
           },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
               "id": "https://serlo.org/organization",
               "type": "Organization",
@@ -429,6 +432,7 @@ mod entities_metadata_query {
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
               "id": "https://serlo.org/organization",
               "type": "Organization",
@@ -513,6 +517,7 @@ mod entities_metadata_query {
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
               "id": "https://serlo.org/organization",
               "type": "Organization",
@@ -618,6 +623,7 @@ mod entities_metadata_query {
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
               "id": "https://serlo.org/organization",
               "type": "Organization",

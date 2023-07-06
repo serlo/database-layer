@@ -109,7 +109,7 @@ impl User {
     {
         let mut transaction = executor.begin().await?;
 
-        let role_id = Self::role_name_to_id(&payload.role_name, &mut *transaction).await?;
+        let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
 
         let user_id = sqlx::query!(
             r#"
@@ -453,7 +453,7 @@ impl User {
     {
         let mut transaction = executor.begin().await?;
 
-        let role_id = Self::role_name_to_id(&payload.role_name, &mut *transaction).await?;
+        let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
 
         let user_id = sqlx::query!(
             r#"
@@ -498,7 +498,7 @@ impl User {
             });
         }
         let mut transaction = executor.begin().await?;
-        let role_id = Self::role_name_to_id(&payload.role_name, &mut *transaction).await?;
+        let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
         Ok(sqlx::query!(
             r#"
                     SELECT user_id

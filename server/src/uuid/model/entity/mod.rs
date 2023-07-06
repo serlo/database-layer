@@ -288,7 +288,8 @@ impl UuidFetcher for Entity {
         let entity = fetch_one_entity!(id, &mut *transaction).await?;
         let revisions = fetch_all_revisions!(id, &mut *transaction).await?;
         let taxonomy_terms = fetch_all_taxonomy_terms_parents!(id, &mut *transaction).await?;
-        let subject = Entity::fetch_canonical_subject_via_transaction(id, &mut *transaction).await?;
+        let subject =
+            Entity::fetch_canonical_subject_via_transaction(id, &mut *transaction).await?;
         let result = to_entity!(
             id,
             entity,
@@ -450,14 +451,11 @@ impl Entity {
 }
 
 impl Entity {
-    pub async fn add_revision<'a, E>(
+    pub async fn add_revision<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &entity_add_revision_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         Self::assert_entity_exists(payload.input.entity_id, &mut *transaction).await?;
 
@@ -589,14 +587,11 @@ impl Entity {
         Ok(())
     }
 
-    pub async fn create<'a, E>(
+    pub async fn create<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &entity_create_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         if payload.entity_type == EntityType::Solution
             && sqlx::query!(
@@ -776,17 +771,15 @@ impl Entity {
 }
 
 impl Entity {
-    pub async fn checkout_revision<'a, E>(
+    pub async fn checkout_revision<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &checkout_revision_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let revision_id = payload.revision_id;
-        let revision = EntityRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
+        let revision =
+            EntityRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
 
         if let ConcreteUuid::EntityRevision(EntityRevision {
             abstract_entity_revision,
@@ -795,7 +788,8 @@ impl Entity {
         {
             let repository_id = abstract_entity_revision.repository_id;
 
-            let repository = Entity::fetch_via_transaction(repository_id, &mut *transaction).await?;
+            let repository =
+                Entity::fetch_via_transaction(repository_id, &mut *transaction).await?;
 
             if let ConcreteUuid::Entity(Entity {
                 abstract_entity, ..
@@ -849,17 +843,15 @@ impl Entity {
 }
 
 impl Entity {
-    pub async fn reject_revision<'a, E>(
+    pub async fn reject_revision<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &reject_revision_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let revision_id = payload.revision_id;
-        let revision = EntityRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
+        let revision =
+            EntityRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
 
         if let ConcreteUuid::EntityRevision(EntityRevision {
             abstract_entity_revision,
@@ -874,7 +866,8 @@ impl Entity {
 
             let repository_id = abstract_entity_revision.repository_id;
 
-            let repository = Entity::fetch_via_transaction(repository_id, &mut *transaction).await?;
+            let repository =
+                Entity::fetch_via_transaction(repository_id, &mut *transaction).await?;
 
             if let ConcreteUuid::Entity(Entity {
                 abstract_entity, ..
@@ -916,10 +909,10 @@ impl Entity {
 }
 
 impl Entity {
-    pub async fn unrevised_entities<'a, E>(executor: E) -> Result<Vec<i32>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn unrevised_entities<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        acquire_from: A,
+    ) -> Result<Vec<i32>, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         Ok(sqlx::query!(
             r#"
                 SELECT
@@ -936,7 +929,7 @@ impl Entity {
                 ORDER BY min_revision_id
             "#,
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?
         .iter()
         .map(|record| record.entity_id.unwrap() as i32)
@@ -945,13 +938,11 @@ impl Entity {
 }
 
 impl Entity {
-    pub async fn deleted_entities<'a, E>(
+    pub async fn deleted_entities<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &deleted_entities_query::Payload,
-        executor: E,
-    ) -> Result<Vec<deleted_entities_query::DeletedEntity>, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Vec<deleted_entities_query::DeletedEntity>, operation::Error> {
+        let mut connection = acquire_from.acquire().await?;
         let after_db_time = match payload.after.as_ref() {
             Some(date) => DateTime::parse_from_rfc3339(date)?,
             None => DateTime::now(),
@@ -979,7 +970,7 @@ impl Entity {
             payload.instance,
             payload.first,
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?
         .into_iter()
         .filter_map(|result| {
@@ -995,14 +986,11 @@ impl Entity {
 }
 
 impl Entity {
-    pub async fn sort<'a, E>(
+    pub async fn sort<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &entity_sort_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let children_ids: Vec<i32> = sqlx::query!(
             "select child_id from entity_link where parent_id = ? order by entity_link.order",
@@ -1050,14 +1038,11 @@ impl Entity {
 }
 
 impl Entity {
-    pub async fn set_license<'a, E>(
+    pub async fn set_license<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &entity_set_license_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"

@@ -122,14 +122,11 @@ impl UuidFetcher for Page {
 }
 
 impl Page {
-    pub async fn add_revision<'a, E>(
+    pub async fn add_revision<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &add_revision_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"SELECT id FROM page_repository WHERE id = ?"#,
@@ -253,14 +250,11 @@ impl From<EventError> for PageCheckoutRevisionError {
 }
 
 impl Page {
-    pub async fn checkout_revision<'a, E>(
+    pub async fn checkout_revision<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &checkout_revision_mutation::Payload,
-        executor: E,
-    ) -> Result<(), PageCheckoutRevisionError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), PageCheckoutRevisionError> {
+        let mut transaction = acquire_from.begin().await?;
 
         let revision_id = payload.revision_id;
         let revision = PageRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
@@ -313,14 +307,11 @@ impl Page {
 }
 
 impl Page {
-    pub async fn create<'a, E>(
+    pub async fn create<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &create_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"
@@ -429,14 +420,11 @@ impl From<EventError> for PageRejectRevisionError {
 }
 
 impl Page {
-    pub async fn reject_revision<'a, E>(
+    pub async fn reject_revision<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &reject_revision_mutation::Payload,
-        executor: E,
-    ) -> Result<(), PageRejectRevisionError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), PageRejectRevisionError> {
+        let mut transaction = acquire_from.begin().await?;
 
         let revision_id = payload.revision_id;
         let revision = PageRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
@@ -481,13 +469,11 @@ impl Page {
 }
 
 impl Page {
-    pub async fn fetch_all_pages<'a, E>(
+    pub async fn fetch_all_pages<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &pages_query::Payload,
-        executor: E,
-    ) -> Result<Vec<i32>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Vec<i32>, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         Ok(sqlx::query!(
             r#"
                 SELECT page_repository.id
@@ -501,7 +487,7 @@ impl Page {
             payload.instance,
             payload.instance,
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?
         .into_iter()
         .map(|result| result.id as i32)

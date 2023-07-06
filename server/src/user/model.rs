@@ -1,4 +1,3 @@
-use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::operation;
 use crate::user::messages::{
@@ -14,10 +13,10 @@ use std::env;
 pub struct User {}
 
 impl User {
-    pub async fn fetch_active_authors<'a, E>(executor: E) -> Result<Vec<i32>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn fetch_active_authors<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        acquire_from: A,
+    ) -> Result<Vec<i32>, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         let user_ids = sqlx::query!(
             r#"
                 SELECT u.id
@@ -29,7 +28,7 @@ impl User {
             "#,
             Self::now()
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?;
         Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }

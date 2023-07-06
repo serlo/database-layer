@@ -207,7 +207,6 @@ impl Notifications {
 mod tests {
     use super::*;
     use crate::create_database_pool;
-    use crate::database::Executor;
     use crate::event::{
         EntityLinkEventPayload, Event, RevisionEventPayload, SetUuidStateEventPayload,
     };
@@ -341,16 +340,15 @@ mod tests {
         Revision(RevisionEventPayload),
     }
 
-    async fn assert_no_notifications_for<'a, E, F>(
+    async fn assert_no_notifications_for<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>, F>(
         create_event: F,
         message: String,
-        executor: E,
+        acquire_from: A,
     ) -> Result<(), sqlx::Error>
     where
         F: Fn(i32) -> EntityPayloadType,
-        E: Executor<'a>,
     {
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
         let new_user_id = create_new_test_user(&mut *transaction).await?;
         let event = match create_event(new_user_id) {
             EntityPayloadType::EntityLink(payload) => {

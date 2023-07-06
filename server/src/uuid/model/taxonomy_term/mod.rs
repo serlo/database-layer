@@ -328,14 +328,11 @@ impl TaxonomyTerm {
         .instance_id)
     }
 
-    pub async fn set_name_and_description<'a, E>(
+    pub async fn set_name_and_description<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &taxonomy_term_set_name_and_description_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let term = sqlx::query!(
             r#"
@@ -402,14 +399,11 @@ impl TaxonomyTerm {
         Ok(())
     }
 
-    pub async fn create<'a, E>(
+    pub async fn create<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &taxonomy_term_create_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"
@@ -514,14 +508,11 @@ impl TaxonomyTerm {
         Ok(taxonomy_term)
     }
 
-    pub async fn create_entity_link<'a, E>(
+    pub async fn create_entity_link<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &taxonomy_create_entity_links_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let taxonomy = sqlx::query!(
             r#"
@@ -657,14 +648,11 @@ impl TaxonomyTerm {
         Ok(())
     }
 
-    pub async fn delete_entity_link<'a, E>(
+    pub async fn delete_entity_link<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &taxonomy_delete_entity_links_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let instance_id =
             Self::get_instance_id(payload.taxonomy_term_id, &mut *transaction).await?;
@@ -729,14 +717,11 @@ impl TaxonomyTerm {
         Ok(())
     }
 
-    pub async fn sort<'a, E>(
+    pub async fn sort<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &taxonomy_sort_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         Self::assert_exists(payload.taxonomy_term_id, &mut *transaction).await?;
 

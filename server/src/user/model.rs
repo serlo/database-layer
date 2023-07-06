@@ -35,10 +35,10 @@ impl User {
         Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }
 
-    pub async fn fetch_active_reviewers<'a, E>(executor: E) -> Result<Vec<i32>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn fetch_active_reviewers<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        acquire_from: A,
+    ) -> Result<Vec<i32>, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         let user_ids = sqlx::query!(
             r#"
                 SELECT u.id
@@ -51,18 +51,16 @@ impl User {
             "#,
             Self::now()
         )
-            .fetch_all(executor)
+            .fetch_all(&mut *connection)
             .await?;
         Ok(user_ids.iter().map(|user| user.id as i32).collect())
     }
 
-    pub async fn fetch_activity_by_type<'a, E>(
+    pub async fn fetch_activity_by_type<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         user_id: i32,
-        executor: E,
-    ) -> Result<user_activity_by_type_query::Output, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<user_activity_by_type_query::Output, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         let result = sqlx::query!(
             r#"
                 SELECT events.type AS event_type, count(*) AS counts
@@ -81,7 +79,7 @@ impl User {
             "#,
             user_id
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?;
 
         let find_counts = |event_type: &str| {
@@ -100,14 +98,11 @@ impl User {
         })
     }
 
-    pub async fn add_role<'a, E>(
+    pub async fn add_role<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &user_add_role_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
 
@@ -156,13 +151,10 @@ impl User {
         Ok(())
     }
 
-    pub async fn create<'a, E>(
+    pub async fn create<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &user_create_mutation::Payload,
-        executor: E,
-    ) -> Result<i32, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<i32, operation::Error> {
         let default_role_id: i32 = 2;
 
         if payload.username.len() > 32 {
@@ -189,7 +181,7 @@ impl User {
             });
         }
 
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"
@@ -246,14 +238,11 @@ impl User {
         Ok(user_id as i32)
     }
 
-    pub async fn delete_bot<'a, E>(
+    pub async fn delete_bot<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &user_delete_bots_mutation::Payload,
-        executor: E,
-    ) -> Result<Vec<String>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Vec<String>, sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
         let mut email_hashes: Vec<String> = Vec::new();
 
         for bot_id in &payload.bot_ids {
@@ -279,13 +268,10 @@ impl User {
         Ok(email_hashes)
     }
 
-    pub async fn delete_regular_user<'a, E>(
+    pub async fn delete_regular_user<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &user_delete_regular_users_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
         let deleted_user_id: i32 = 4;
 
         if payload.user_id == deleted_user_id {
@@ -294,7 +280,7 @@ impl User {
             });
         }
 
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(r#"select * from user where id = ?"#, payload.user_id)
             .fetch_optional(&mut *transaction)
@@ -402,14 +388,11 @@ impl User {
         Ok(())
     }
 
-    pub async fn potential_spam_users<'a, E>(
+    pub async fn potential_spam_users<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &potential_spam_users_query::Payload,
-        executor: E,
-    ) -> Result<Vec<i32>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Vec<i32>, sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
         let result = sqlx::query!(
             r#"
                 SELECT id
@@ -444,14 +427,11 @@ impl User {
         Ok(ids)
     }
 
-    pub async fn remove_role<'a, E>(
+    pub async fn remove_role<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &user_remove_role_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
 
@@ -485,19 +465,16 @@ impl User {
         Ok(())
     }
 
-    pub async fn users_by_role<'a, E>(
+    pub async fn users_by_role<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &users_by_role_query::Payload,
-        executor: E,
-    ) -> Result<Vec<i32>, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Vec<i32>, operation::Error> {
         if payload.first > 10000 {
             return Err(operation::Error::BadRequest {
                 reason: "The parameter first is not allowed to be greater than 10,000.".to_string(),
             });
         }
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
         let role_id = Self::role_name_to_id(&payload.role_name, &mut transaction).await?;
         Ok(sqlx::query!(
             r#"
@@ -520,13 +497,11 @@ impl User {
         .collect())
     }
 
-    pub async fn set_description<'a, E>(
+    pub async fn set_description<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &user_set_description_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut connection = acquire_from.acquire().await?;
         if payload.description.len() >= 64 * 1024 {
             return Err(operation::Error::BadRequest {
                 reason: "description is too long".to_string(),
@@ -538,19 +513,16 @@ impl User {
             payload.description,
             payload.user_id
         )
-        .execute(executor)
+        .execute(&mut *connection)
         .await?;
         Ok(())
     }
 
-    pub async fn set_email<'a, E>(
+    pub async fn set_email<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &user_set_email_mutation::Payload,
-        executor: E,
-    ) -> Result<String, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<String, sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let username = sqlx::query!("select username from user where id = ?", payload.user_id)
             .fetch_one(&mut *transaction)

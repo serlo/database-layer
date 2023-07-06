@@ -9,7 +9,6 @@ use sophia::serializer::*;
 use sophia::term::literal::Literal;
 use thiserror::Error;
 
-use crate::database::Executor;
 use crate::instance::Instance;
 use crate::uuid::TaxonomyType;
 
@@ -18,13 +17,10 @@ pub struct Vocabulary;
 const BASE: &str = "https://vocabulary.serlo.org/";
 
 impl Vocabulary {
-    pub async fn fetch_taxonomy_vocabulary<'a, E>(
+    pub async fn fetch_taxonomy_vocabulary<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         instance: Instance,
-        executor: E,
-    ) -> Result<String, VocabularyError>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<String, VocabularyError> {
         let base = format!("{BASE}{instance}/taxonomy/");
         let title = match instance {
             Instance::De => "de.serlo.org Taxonomie",
@@ -52,23 +48,22 @@ impl Vocabulary {
             instance,
             &types_allowlist,
             &terms_blocklist,
-            executor,
+            acquire_from,
         )
         .await
     }
 
-    async fn fetch_taxonomy_terms_vocabulary<'a, E>(
+    async fn fetch_taxonomy_terms_vocabulary<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         base: &str,
         title: &str,
         creator: &str,
         instance: Instance,
         types_allowlist: &[TaxonomyType],
         terms_blocklist: &[i64],
-        executor: E,
-    ) -> Result<String, VocabularyError>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<String, VocabularyError> {
+        let mut connection = acquire_from.acquire().await?;
+
         const DCT: &str = "http://purl.org/dc/terms/";
         const SKOS: &str = "http://www.w3.org/2004/02/skos/core#";
 
@@ -95,7 +90,7 @@ impl Vocabulary {
             "#,
             instance
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?;
 
         let (root_id, terms) = Self::sort_terms_by_depth(&terms)?;

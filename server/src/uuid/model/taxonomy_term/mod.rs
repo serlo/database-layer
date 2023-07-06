@@ -506,7 +506,8 @@ impl TaxonomyTerm {
             .save(&mut *transaction)
             .await?;
 
-        let taxonomy_term = Self::fetch_via_transaction(taxonomy_term_id, &mut *transaction).await?;
+        let taxonomy_term =
+            Self::fetch_via_transaction(taxonomy_term_id, &mut *transaction).await?;
 
         transaction.commit().await?;
 
@@ -541,7 +542,8 @@ impl TaxonomyTerm {
         let taxonomy_is_folder = term_type == TaxonomyType::CurriculumTopicFolder
             || term_type == TaxonomyType::TopicFolder;
 
-        let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut *transaction).await?;
+        let instance_id =
+            Self::get_instance_id(payload.taxonomy_term_id, &mut *transaction).await?;
 
         for child_id in &payload.entity_ids {
             let entity_type = Entity::fetch_entity_type(*child_id, &mut *transaction)
@@ -664,7 +666,8 @@ impl TaxonomyTerm {
     {
         let mut transaction = executor.begin().await?;
 
-        let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut *transaction).await?;
+        let instance_id =
+            Self::get_instance_id(payload.taxonomy_term_id, &mut *transaction).await?;
 
         for child_id in &payload.entity_ids {
             let term_taxonomy_entity_id = sqlx::query!(

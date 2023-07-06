@@ -22,17 +22,14 @@ pub struct Threads {
 }
 
 impl Threads {
-    pub async fn fetch_all_threads<'a, E>(
+    pub async fn fetch_all_threads<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         first: i32,
         after: Option<String>,
         instance: Option<Instance>,
         subject_id: Option<i32>,
-        executor: E,
-    ) -> Result<Self, operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Self, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let instance_id = match instance.as_ref() {
             Some(instance) => Some(Instance::fetch_id(instance, &mut *transaction).await?),
@@ -118,15 +115,16 @@ impl Threads {
         Self::fetch_via_transaction(id, pool).await
     }
 
-    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Self, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         let result = sqlx::query!(
             r#"SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC"#,
             id
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?;
 
         let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();
@@ -134,14 +132,11 @@ impl Threads {
         Ok(Self { first_comment_ids })
     }
 
-    pub async fn set_archive<'a, E>(
+    pub async fn set_archive<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &set_thread_archived_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let number_comments = payload.ids.len();
         if number_comments == 0 {
@@ -191,20 +186,17 @@ impl Threads {
         Ok(())
     }
 
-    pub async fn comment_thread<'a, E>(
+    pub async fn comment_thread<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &create_comment_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
         if payload.content.is_empty() {
             return Err(operation::Error::BadRequest {
                 reason: "content is empty".to_string(),
             });
         };
 
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
 
         let thread = sqlx::query!(
             r#"
@@ -292,20 +284,17 @@ impl Threads {
         Ok(comment)
     }
 
-    pub async fn start_thread<'a, E>(
+    pub async fn start_thread<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &create_thread_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
         if payload.content.is_empty() {
             return Err(operation::Error::BadRequest {
                 reason: "content is empty".to_string(),
             });
         }
 
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
 
         let instance_id = sqlx::query!(
             r#"
@@ -398,20 +387,17 @@ impl Threads {
         Ok(comment)
     }
 
-    pub async fn edit_comment<'a, E>(
+    pub async fn edit_comment<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &edit_comment_mutation::Payload,
-        executor: E,
-    ) -> Result<operation::SuccessOutput, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<operation::SuccessOutput, operation::Error> {
         if payload.content.is_empty() {
             return Err(operation::Error::BadRequest {
                 reason: "content is empty".to_string(),
             });
         }
 
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
 
         let comment = sqlx::query!(
             r#"

@@ -265,14 +265,11 @@ impl EventPayload {
 }
 
 impl Event {
-    pub async fn fetch_events<'a, E>(
+    pub async fn fetch_events<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &events_query::Payload,
-        executor: E,
-    ) -> Result<events_query::Output, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<events_query::Output, sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
         let instance_id = match payload.instance.as_ref() {
             Some(instance) => Some(Instance::fetch_id(instance, &mut *transaction).await?),
             None => None,

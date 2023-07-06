@@ -4,7 +4,6 @@ use std::hash::{Hash, Hasher};
 use serde::Serialize;
 
 use super::messages::*;
-use crate::database::Executor;
 use crate::event::{AbstractEvent, Event};
 use crate::subscription::Subscriptions;
 use sqlx::MySqlPool;
@@ -48,13 +47,11 @@ impl Notifications {
         Self::fetch_via_transaction(user_id, pool).await
     }
 
-    pub async fn fetch_via_transaction<'a, E>(
+    pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         user_id: i32,
-        executor: E,
-    ) -> Result<Notifications, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Notifications, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         let notifications = sqlx::query!(
             r#"
                 SELECT n.id, n.seen, n.email_sent, n.email, e.event_log_id
@@ -81,7 +78,7 @@ impl Notifications {
             "#,
             user_id
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?;
 
         let mut notifications: Vec<Notification> = notifications
@@ -102,11 +99,11 @@ impl Notifications {
         })
     }
 
-    pub async fn create_notifications<'a, E>(event: &Event, executor: E) -> Result<(), sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    pub async fn create_notifications<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        event: &Event,
+        acquire_from: A,
+    ) -> Result<(), sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let AbstractEvent {
             actor_id,
@@ -143,15 +140,12 @@ impl Notifications {
         Ok(())
     }
 
-    async fn create_notification<'a, E>(
+    async fn create_notification<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         event: &Event,
         subscriber: &Subscriber,
-        executor: E,
-    ) -> Result<(), sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"
@@ -181,14 +175,11 @@ impl Notifications {
 }
 
 impl Notifications {
-    pub async fn set_notification_state<'a, E>(
+    pub async fn set_notification_state<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &set_state_mutation::Payload,
-        executor: E,
-    ) -> Result<(), sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         for id in &payload.ids {
             let seen = !payload.unread;
@@ -362,7 +353,9 @@ mod tests {
         let mut transaction = executor.begin().await?;
         let new_user_id = create_new_test_user(&mut *transaction).await?;
         let event = match create_event(new_user_id) {
-            EntityPayloadType::EntityLink(payload) => payload.save(&mut *transaction).await.unwrap(),
+            EntityPayloadType::EntityLink(payload) => {
+                payload.save(&mut *transaction).await.unwrap()
+            }
             EntityPayloadType::Revision(payload) => payload.save(&mut *transaction).await.unwrap(),
         };
 

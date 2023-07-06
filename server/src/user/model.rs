@@ -9,7 +9,6 @@ use crate::user::messages::{
 };
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
-use sqlx::{MySql, Transaction};
 use std::env;
 
 pub struct User {}
@@ -539,10 +538,11 @@ impl User {
         Ok(username)
     }
 
-    async fn role_name_to_id<'a>(
+    async fn role_name_to_id<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         name: &str,
-        transaction: &mut Transaction<'a, MySql>,
+        acquire_from: A,
     ) -> Result<i32, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
         Ok(sqlx::query!(
             r#"
                 SELECT id
@@ -551,7 +551,7 @@ impl User {
             "#,
             name
         )
-        .fetch_optional(transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .ok_or(operation::Error::BadRequest {
             reason: "This role does not exist.".to_string(),

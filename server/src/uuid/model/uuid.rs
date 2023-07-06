@@ -251,14 +251,11 @@ impl Uuid {
 }
 
 impl Uuid {
-    pub async fn set_uuid_state<'a, E>(
+    pub async fn set_uuid_state<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &uuid_set_state_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         for id in &payload.ids {
             let result = sqlx::query!(

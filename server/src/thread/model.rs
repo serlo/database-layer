@@ -3,7 +3,7 @@ use super::messages::{
     set_thread_archived_mutation,
 };
 use serde::Serialize;
-use sqlx::MySqlPool;
+use sqlx::{MySqlPool, Row};
 
 use crate::database::Executor;
 use crate::datetime::DateTime;

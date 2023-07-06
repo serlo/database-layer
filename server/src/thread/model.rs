@@ -5,7 +5,6 @@ use super::messages::{
 use serde::Serialize;
 use sqlx::{MySqlPool, Row};
 
-use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::event::{
     CreateCommentEventPayload, CreateThreadEventPayload, SetThreadStateEventPayload,

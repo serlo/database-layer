@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use crate::database::{Connection, Executor};
+use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 
@@ -58,10 +58,10 @@ pub mod subjects_query {
         }
     }
 
-    async fn fetch_subjects<'a, E>(executor: E) -> Result<subjects_query::Output, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+    async fn fetch_subjects<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        acquire_from: A,
+    ) -> Result<subjects_query::Output, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         let subjects = sqlx::query!(
             r#"
                 SELECT
@@ -84,7 +84,7 @@ pub mod subjects_query {
 
             "#,
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?
         .iter()
         .map(|record| subjects_query::Subject {

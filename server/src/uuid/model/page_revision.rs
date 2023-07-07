@@ -3,7 +3,6 @@ use serde::Serialize;
 use sqlx::MySqlPool;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::database::Executor;
 use crate::datetime::DateTime;
 
 #[derive(Debug, Serialize)]
@@ -24,10 +23,14 @@ impl UuidFetcher for PageRevision {
         Self::fetch_via_transaction(id, pool).await
     }
 
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
-    where
-        E: Executor<'a>,
-    {
+    async fn fetch_via_transaction<
+        'a,
+        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
+    >(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Uuid, UuidError> {
+        let mut connection = acquire_from.acquire().await?;
         sqlx::query!(
             r#"
                 SELECT u.trashed, r.title, r.content, r.date, r.author_id, r.page_repository_id
@@ -37,7 +40,7 @@ impl UuidFetcher for PageRevision {
             "#,
             id
         )
-        .fetch_one(executor)
+        .fetch_one(&mut *connection)
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => UuidError::NotFound,

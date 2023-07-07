@@ -280,11 +280,14 @@ impl UuidFetcher for Entity {
         to_entity!(id, entity, revisions, taxonomy_terms, subject, pool)
     }
 
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    async fn fetch_via_transaction<
+        'a,
+        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
+    >(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Uuid, UuidError> {
+        let mut transaction = acquire_from.begin().await?;
         let entity = fetch_one_entity!(id, &mut *transaction).await?;
         let revisions = fetch_all_revisions!(id, &mut *transaction).await?;
         let taxonomy_terms = fetch_all_taxonomy_terms_parents!(id, &mut *transaction).await?;

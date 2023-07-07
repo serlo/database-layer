@@ -157,11 +157,14 @@ impl UuidFetcher for EntityRevision {
         to_entity_revisions!(id, revision, fields)
     }
 
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    async fn fetch_via_transaction<
+        'a,
+        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
+    >(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Uuid, UuidError> {
+        let mut transaction = acquire_from.begin().await?;
         let revision = fetch_one_revision!(id, &mut *transaction).await?;
         let fields = fetch_all_fields!(id, &mut *transaction).await?;
         transaction.commit().await?;

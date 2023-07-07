@@ -102,11 +102,14 @@ impl UuidFetcher for Comment {
         to_comment!(id, comment, children, context)
     }
 
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    async fn fetch_via_transaction<
+        'a,
+        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
+    >(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Uuid, UuidError> {
+        let mut transaction = acquire_from.begin().await?;
         let comment = fetch_one_comment!(id, &mut *transaction).await;
         let children = fetch_all_children!(id, &mut *transaction).await;
         let context = Comment::fetch_context_via_transaction(id, &mut *transaction).await;

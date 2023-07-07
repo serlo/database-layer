@@ -86,9 +86,14 @@ pub trait UuidFetcher {
     async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError>
     where
         Self: Sized;
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
+    async fn fetch_via_transaction<
+        'a,
+        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
+    >(
+        id: i32,
+        aquire_from: A,
+    ) -> Result<Uuid, UuidError>
     where
-        E: Executor<'a>,
         Self: Sized;
 }
 
@@ -149,11 +154,14 @@ impl UuidFetcher for Uuid {
         Ok(uuid)
     }
 
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, UuidError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    async fn fetch_via_transaction<
+        'a,
+        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
+    >(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Self, UuidError> {
+        let mut transaction = acquire_from.begin().await?;
         let uuid = fetch_one_uuid!(id, &mut *transaction)?;
         let discriminator = get_discriminator!(uuid)?;
         let uuid = match discriminator {

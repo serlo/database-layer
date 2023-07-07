@@ -5,7 +5,6 @@ use sqlx::MySqlPool;
 use thiserror::Error;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::format_alias;
 use crate::instance::Instance;
@@ -106,11 +105,14 @@ impl UuidFetcher for Page {
         to_page!(id, page, revisions)
     }
 
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    async fn fetch_via_transaction<
+        'a,
+        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
+    >(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Uuid, UuidError> {
+        let mut transaction = acquire_from.begin().await?;
 
         let page = fetch_one_page!(id, &mut *transaction).await;
         let revisions = fetch_all_revisions!(id, &mut *transaction).await;

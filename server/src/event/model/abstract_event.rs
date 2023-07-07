@@ -6,7 +6,6 @@ use sqlx::MySqlPool;
 
 use super::event_type::{EventType, RawEventType};
 use super::EventError;
-use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::instance::Instance;
 
@@ -165,11 +164,11 @@ impl AbstractEvent {
         Ok(abstract_event)
     }
 
-    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, EventError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Self, EventError> {
+        let mut transaction = acquire_from.begin().await?;
 
         let event = fetch_one_event!(id, &mut *transaction).await;
         let string_parameters = fetch_all_string_parameters!(id, &mut *transaction).await;

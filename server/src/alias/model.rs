@@ -2,7 +2,6 @@ use regex::Regex;
 use sqlx::MySqlPool;
 
 use crate::alias::messages::alias_query;
-use crate::database::Executor;
 use crate::instance::Instance;
 use crate::operation;
 use crate::uuid::{Uuid, UuidFetcher};
@@ -17,14 +16,11 @@ pub async fn fetch(
     fetch_via_transaction(path, instance, pool).await
 }
 
-pub async fn fetch_via_transaction<'a, E>(
+pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
     path: &str,
     instance: Instance,
-    executor: E,
-) -> Result<Alias, operation::Error>
-where
-    E: Executor<'a>,
-{
+    acquire_from: A,
+) -> Result<Alias, operation::Error> {
     let path = path.strip_prefix('/').unwrap_or(path);
 
     if path == "backend"
@@ -80,7 +76,7 @@ where
 
     let re = Regex::new(r"^user/profile/(?P<username>.+)$").unwrap();
 
-    let mut transaction = executor.begin().await?;
+    let mut transaction = acquire_from.begin().await?;
 
     let id = if let Some(captures) = re.captures(path) {
         let username = captures.name("username").unwrap().as_str();

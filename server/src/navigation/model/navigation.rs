@@ -7,7 +7,6 @@ use sqlx::MySqlPool;
 use super::navigation_child::{
     NavigationChild, NavigationChildError, RawNavigationChild, RawNavigationChildError,
 };
-use crate::database::Executor;
 use crate::instance::Instance;
 
 #[derive(Serialize)]
@@ -114,14 +113,11 @@ impl Navigation {
     }
 
     #[allow(dead_code)]
-    pub async fn fetch_via_transaction<'a, E>(
+    pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         instance: Instance,
-        executor: E,
-    ) -> Result<Navigation, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Navigation, sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let pages = fetch_all_pages!(instance, &mut *transaction).await?;
 

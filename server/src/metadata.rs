@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::env;
 
-use crate::database::{Connection, Executor};
+use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::Error;
 use crate::operation::{self, Operation};
@@ -123,13 +123,10 @@ pub mod entities_metadata_query {
         }
     }
 
-    async fn query<'a, E>(
+    async fn query<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &Payload,
-        executor: E,
-    ) -> Result<Vec<EntityMetadata>, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Vec<EntityMetadata>, operation::Error> {
         // See https://github.com/serlo/private-issues-sso-metadata-wallet/issues/37
         let metadata_api_last_changes_date: DateTime<Utc> = DateTime::parse_from_rfc3339(
             &env::var("METADATA_API_LAST_CHANGES_DATE")
@@ -146,6 +143,7 @@ pub mod entities_metadata_query {
             Option::None
         };
 
+        let mut connection = acquire_from.acquire().await?;
         Ok(sqlx::query!(
             r#"
                 WITH RECURSIVE ancestors AS (
@@ -208,7 +206,7 @@ pub mod entities_metadata_query {
             modified_after,
             modified_after,
             payload.first
-        ).fetch_all(executor)
+        ).fetch_all(&mut *connection)
             .await?
             .into_iter()
             .map(|result| {

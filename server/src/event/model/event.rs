@@ -62,11 +62,11 @@ impl Event {
         abstract_event.try_into()
     }
 
-    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Event, EventError>
-    where
-        E: Executor<'a>,
-    {
-        let abstract_event = AbstractEvent::fetch_via_transaction(id, executor).await?;
+    pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Event, EventError> {
+        let abstract_event = AbstractEvent::fetch_via_transaction(id, acquire_from).await?;
         abstract_event.try_into()
     }
 }

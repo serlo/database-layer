@@ -53,7 +53,7 @@ impl DateTime {
         DateTime(
             Utc.with_ymd_and_hms(year, month, date, 0, 0, 0)
                 .latest()
-                .unwrap(),
+                .expect("Invalid date"),
         )
     }
 

@@ -49,7 +49,6 @@ impl DateTime {
     }
 
     pub fn ymd(year: i32, month: u32, date: u32) -> Self {
-        // TODO: Proper handling of unwrap here...
         DateTime(
             Utc.with_ymd_and_hms(year, month, date, 0, 0, 0)
                 .latest()

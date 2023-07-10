@@ -2,7 +2,7 @@
 
 # serlo.org – Database Layer
 
-The database layer provides a Restful API in front of the database of [Serlo](https://serlo.org/).
+The database layer provides a RESTful API in front of the database of [Serlo](https://serlo.org/).
 
 ## Setup
 
@@ -56,7 +56,7 @@ Happy coding!
 
 ### sqlx and `yarn sqlx:prepare`
 
-We use [sqlx](https://github.com/launchbadge/sqlx) for creating and executing SQL queries. Here it is necessary that you run locally a local database (see section above) in order to be able to compile the source code. Also in the end of each PR the command `yarn sqlx:prepare` needs to be executed and the changes in [`sqlx-data.json`](./sqlx-data.json) need to be commited.
+We use [sqlx](https://github.com/launchbadge/sqlx) for creating and executing SQL queries. Here it is necessary that you run locally a local database (see section above) in order to be able to compile the source code. Also in the end of each PR the command `yarn sqlx:prepare` needs to be executed and the changes in [`sqlx-data.json`](./sqlx-data.json) need to be committed.
 
 ### Run all checks
 

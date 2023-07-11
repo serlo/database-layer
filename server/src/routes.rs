@@ -1,7 +1,6 @@
 use actix_web::{get, post, web, HttpRequest, HttpResponse};
 use sqlx::MySqlPool;
 
-use crate::database::Connection;
 use crate::message::{Message, MessageResponder};
 
 #[get("/")]
@@ -29,16 +28,14 @@ async fn message(
 
     if rollback {
         let mut transaction = pool.begin().await.expect("Failed to begin transaction.");
-        let connection = Connection::Transaction(&mut transaction);
-        let response = message.handle(connection).await;
+        let response = message.handle(&mut transaction).await;
         transaction
             .rollback()
             .await
             .expect("Failed to roll back transaction.");
         response
     } else {
-        let connection = Connection::Pool(pool);
-        message.handle(connection).await
+        message.handle(pool).await
     }
 }
 

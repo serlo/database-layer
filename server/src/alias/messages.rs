@@ -47,7 +47,7 @@ pub mod alias_query {
         type Output = Output;
 
         #[allow(clippy::async_yields_async)]
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             let path = self.path.as_str();
             let instance = self.instance.clone();
             Ok(match connection {

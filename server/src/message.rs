@@ -3,7 +3,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::alias::AliasMessage;
-use crate::database::Connection;
 use crate::event::EventMessage;
 use crate::metadata::MetadataMessage;
 use crate::navigation::NavigationMessage;
@@ -46,7 +45,10 @@ pub enum Message {
 #[async_trait]
 impl MessageResponder for Message {
     #[allow(clippy::async_yields_async)]
-    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
             Message::AliasMessage(message) => message.handle(connection).await,
             Message::EntityMessage(message) => message.handle(connection).await,

@@ -50,7 +50,7 @@ pub mod subjects_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => fetch_subjects(pool).await?,
                 Connection::Transaction(transaction) => fetch_subjects(transaction).await?,

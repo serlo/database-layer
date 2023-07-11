@@ -69,7 +69,7 @@ pub mod add_revision_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             let page_revision = match connection {
                 Connection::Pool(pool) => Page::add_revision(self, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -99,7 +99,7 @@ pub mod checkout_revision_mutation {
     impl Operation for Payload {
         type Output = operation::SuccessOutput;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             match connection {
                 Connection::Pool(pool) => Page::checkout_revision(self, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -154,7 +154,7 @@ pub mod create_mutation {
     impl Operation for Payload {
         type Output = Uuid;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => Page::create(self, pool).await?,
                 Connection::Transaction(transaction) => Page::create(self, transaction).await?,
@@ -178,7 +178,7 @@ pub mod reject_revision_mutation {
     impl Operation for Payload {
         type Output = operation::SuccessOutput;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             match connection {
                 Connection::Pool(pool) => Page::reject_revision(self, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -234,7 +234,7 @@ pub mod pages_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             let result = match connection {
                 Connection::Pool(pool) => Page::fetch_all_pages(self, pool).await?,
                 Connection::Transaction(transaction) => {

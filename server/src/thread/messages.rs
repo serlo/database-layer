@@ -71,7 +71,7 @@ pub mod all_threads_query {
     impl Operation for Payload {
         type Output = Threads;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => {
                     Threads::fetch_all_threads(
@@ -111,7 +111,7 @@ pub mod threads_query {
     impl Operation for Payload {
         type Output = Threads;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => Threads::fetch(self.id, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -140,7 +140,7 @@ pub mod create_thread_mutation {
     impl Operation for Payload {
         type Output = Uuid;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => Threads::start_thread(self, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -167,7 +167,7 @@ pub mod create_comment_mutation {
     impl Operation for Payload {
         type Output = Uuid;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => Threads::comment_thread(self, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -193,7 +193,7 @@ pub mod set_thread_archived_mutation {
     impl Operation for Payload {
         type Output = ();
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             match connection {
                 Connection::Pool(pool) => Threads::set_archive(self, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -220,7 +220,7 @@ pub mod edit_comment_mutation {
     impl Operation for Payload {
         type Output = operation::SuccessOutput;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => Threads::edit_comment(self, pool).await?,
                 Connection::Transaction(transaction) => {

@@ -57,7 +57,7 @@ pub mod subscriptions_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => fetch_subscriptions_by_user(self.user_id, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -89,7 +89,7 @@ pub mod subscription_set_mutation {
     #[async_trait]
     impl Operation for Payload {
         type Output = Output;
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             match connection {
                 Connection::Pool(pool) => Subscription::change_subscription(self, pool).await?,
                 Connection::Transaction(transaction) => {

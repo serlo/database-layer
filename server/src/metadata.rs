@@ -107,7 +107,7 @@ pub mod entities_metadata_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             if self.first > 10_000 {
                 return Err(Error::BadRequest {
                     reason: "The 'first' value should be less than or equal 10_000".to_string(),

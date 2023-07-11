@@ -39,7 +39,7 @@ pub mod navigation_query {
     impl Operation for Payload {
         type Output = Navigation;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             let instance = self.instance.clone();
             Ok(match connection {
                 Connection::Pool(pool) => Navigation::fetch(instance, pool).await?,

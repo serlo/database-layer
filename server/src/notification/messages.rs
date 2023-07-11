@@ -44,7 +44,7 @@ pub mod notifications_query {
     impl Operation for Payload {
         type Output = Notifications;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => Notifications::fetch(self.user_id, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -70,7 +70,7 @@ pub mod set_state_mutation {
     impl Operation for Payload {
         type Output = SuccessOutput;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
             match connection {
                 Connection::Pool(pool) => Notifications::set_notification_state(self, pool).await?,
                 Connection::Transaction(transaction) => {

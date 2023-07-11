@@ -1,4 +1,3 @@
-use crate::database::Connection;
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::Serialize;
@@ -53,11 +52,18 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub trait Operation {
     type Output: Serialize;
 
-    async fn execute(&self, connection: Connection<'_, '_>) -> Result<Self::Output>;
+    async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> Result<Self::Output>;
 
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, operation_type: &str, connection: Connection<'_, '_>) -> HttpResponse {
-        match &self.execute(connection).await {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        operation_type: &str,
+        acquire_from: A,
+    ) -> HttpResponse {
+        match &self.execute(acquire_from).await {
             Ok(data) => HttpResponse::Ok()
                 .content_type("application/json; charset=utf-8")
                 .json(data),

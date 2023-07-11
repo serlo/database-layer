@@ -18,7 +18,10 @@ use crate::vocabulary::VocabularyMessage;
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]
 #[async_trait]
 pub trait MessageResponder {
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse;
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse;
 }
 
 #[derive(Deserialize, Serialize)]

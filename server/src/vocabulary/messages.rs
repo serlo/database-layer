@@ -2,7 +2,6 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 
@@ -17,10 +16,15 @@ pub enum VocabularyMessage {
 #[async_trait]
 impl MessageResponder for VocabularyMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
             VocabularyMessage::VocabularyTaxonomyQuery(payload) => {
-                payload.handle("VocabularyTaxonomyQuery", connection).await
+                payload
+                    .handle("VocabularyTaxonomyQuery", acquire_from)
+                    .await
             }
         }
     }
@@ -41,16 +45,11 @@ pub mod taxonomy_vocabulary_query {
     impl Operation for Payload {
         type Output = String;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => {
-                    Vocabulary::fetch_taxonomy_vocabulary(self.instance.clone(), pool).await?
-                }
-                Connection::Transaction(transaction) => {
-                    Vocabulary::fetch_taxonomy_vocabulary(self.instance.clone(), transaction)
-                        .await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(Vocabulary::fetch_taxonomy_vocabulary(self.instance.clone(), acquire_from).await?)
         }
     }
 

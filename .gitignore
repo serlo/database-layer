@@ -86,9 +86,6 @@ dist
 # Docker Compose override file
 docker-compose.override.yml
 
-# asdf-vm configuration file
-.tool-versions
-
 # Editor files
 .vscode
 *.iml

@@ -2,11 +2,17 @@
 
 # serlo.org – Database Layer
 
-The database layer provides a Restful API in front of the database of [Serlo](https://serlo.org/).
+The database layer provides a RESTful API in front of the database of [Serlo](https://serlo.org/).
 
 ## Setup
 
-You need [Docker](https://docs.docker.com/engine/installation/) and [Rust](https://www.rust-lang.org) installed on your system. In order to run the pact tests (= contract test suite we use) you need to install [Node.js](https://nodejs.org/) version `16.x` and [yarn](https://yarnpkg.com/).
+You need the following installed on your system:
+
+- [Docker](https://docs.docker.com/engine/installation/)
+- [Rust](https://www.rust-lang.org) version from [.tool-versions](.tool-versions). [^1]
+- [Node.js](https://nodejs.org/) and [yarn cli](https://yarnpkg.com/) versions from [.tool-versions](.tool-versions), in order to run the pact tests (= contract test suite we use). [^1]
+
+[^1]: You can use [asdf](https://asdf-vm.com/) for the installation.
 
 ### Install sqlx-cli
 
@@ -50,7 +56,7 @@ Happy coding!
 
 ### sqlx and `yarn sqlx:prepare`
 
-We use [sqlx](https://github.com/launchbadge/sqlx) for creating and executing SQL queries. Here it is necessary that you run locally a local database (see section above) in order to be able to compile the source code. Also in the end of each PR the command `yarn sqlx:prepare` needs to be executed and the changes in [`sqlx-data.json`](./sqlx-data.json) need to be commited.
+We use [sqlx](https://github.com/launchbadge/sqlx) for creating and executing SQL queries. Here it is necessary that you run locally a local database (see section above) in order to be able to compile the source code. Also in the end of each PR the command `yarn sqlx:prepare` needs to be executed and the changes in [`sqlx-data.json`](./sqlx-data.json) need to be committed.
 
 ### Run all checks
 

@@ -85,7 +85,7 @@ jobs:
       - run: cargo build
       - uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version-file: .tool-versions
       - run: yarn  --immutable --immutable-cache
       - run: ./scripts/check_metadata_api.sh
 

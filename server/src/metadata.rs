@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::env;
 
-use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::Error;
 use crate::operation::{self, Operation};
@@ -19,7 +18,10 @@ pub enum MetadataMessage {
 #[async_trait]
 impl MessageResponder for MetadataMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
             MetadataMessage::EntitiesMetadataQuery(payload) => {
                 payload.handle("EntitiesMetadataQuery", acquire_from).await
@@ -107,18 +109,16 @@ pub mod entities_metadata_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
             if self.first > 10_000 {
                 return Err(Error::BadRequest {
                     reason: "The 'first' value should be less than or equal 10_000".to_string(),
                 });
             };
-
-            let entities = match connection {
-                Connection::Pool(pool) => query(self, pool).await?,
-                Connection::Transaction(transaction) => query(self, transaction).await?,
-            };
-
+            let entities = query(self, acquire_from).await?;
             Ok(Output { entities })
         }
     }

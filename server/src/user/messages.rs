@@ -3,7 +3,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::model::User;
-use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 
@@ -30,7 +29,10 @@ pub enum UserMessage {
 #[async_trait]
 impl MessageResponder for UserMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
             UserMessage::ActiveAuthorsQuery(_) => {
                 active_authors_query::Payload {}
@@ -96,13 +98,11 @@ pub mod active_authors_query {
     impl Operation for Payload {
         type Output = Vec<i32>;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => User::fetch_active_authors(pool).await?,
-                Connection::Transaction(transaction) => {
-                    User::fetch_active_authors(transaction).await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(User::fetch_active_authors(acquire_from).await?)
         }
     }
 }
@@ -118,13 +118,11 @@ pub mod active_reviewers_query {
     impl Operation for Payload {
         type Output = Vec<i32>;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => User::fetch_active_reviewers(pool).await?,
-                Connection::Transaction(transaction) => {
-                    User::fetch_active_reviewers(transaction).await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(User::fetch_active_reviewers(acquire_from).await?)
         }
     }
 }
@@ -150,13 +148,11 @@ pub mod user_activity_by_type_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => User::fetch_activity_by_type(self.user_id, pool).await?,
-                Connection::Transaction(transaction) => {
-                    User::fetch_activity_by_type(self.user_id, transaction).await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(User::fetch_activity_by_type(self.user_id, acquire_from).await?)
         }
     }
 }
@@ -181,11 +177,11 @@ pub mod user_add_role_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => User::add_role(self, pool).await?,
-                Connection::Transaction(transaction) => User::add_role(self, transaction).await?,
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            User::add_role(self, acquire_from).await?;
             Ok(Output { success: true })
         }
     }
@@ -213,11 +209,11 @@ pub mod user_create_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            let user_id: i32 = match connection {
-                Connection::Pool(pool) => User::create(self, pool).await?,
-                Connection::Transaction(transaction) => User::create(self, transaction).await?,
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            let user_id: i32 = User::create(self, acquire_from).await?;
             Ok(Output {
                 success: true,
                 user_id,
@@ -246,11 +242,11 @@ pub mod user_delete_bots_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            let email_hashes = match connection {
-                Connection::Pool(pool) => User::delete_bot(self, pool).await?,
-                Connection::Transaction(transaction) => User::delete_bot(self, transaction).await?,
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            let email_hashes = User::delete_bot(self, acquire_from).await?;
             Ok(Output {
                 success: true,
                 email_hashes,
@@ -278,14 +274,11 @@ pub mod user_delete_regular_users_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => User::delete_regular_user(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    User::delete_regular_user(self, transaction).await?
-                }
-            };
-
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            User::delete_regular_user(self, acquire_from).await?;
             Ok(Output { success: true })
         }
     }
@@ -311,19 +304,17 @@ pub mod potential_spam_users_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
             if self.first > 10_000 {
                 return Err(operation::Error::BadRequest {
                     reason: "parameter `first` is too high".to_string(),
                 });
             };
             Ok(Output {
-                user_ids: match connection {
-                    Connection::Pool(pool) => User::potential_spam_users(self, pool).await?,
-                    Connection::Transaction(transaction) => {
-                        User::potential_spam_users(self, transaction).await?
-                    }
-                },
+                user_ids: User::potential_spam_users(self, acquire_from).await?,
             })
         }
     }
@@ -349,13 +340,11 @@ pub mod user_remove_role_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => User::remove_role(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    User::remove_role(self, transaction).await?
-                }
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            User::remove_role(self, acquire_from).await?;
             Ok(Output { success: true })
         }
     }
@@ -382,14 +371,12 @@ pub mod users_by_role_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
             Ok(Output {
-                users_by_role: match connection {
-                    Connection::Pool(pool) => User::users_by_role(self, pool).await?,
-                    Connection::Transaction(transaction) => {
-                        User::users_by_role(self, transaction).await?
-                    }
-                },
+                users_by_role: User::users_by_role(self, acquire_from).await?,
             })
         }
     }
@@ -415,13 +402,11 @@ pub mod user_set_description_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => User::set_description(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    User::set_description(self, transaction).await?
-                }
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            User::set_description(self, acquire_from).await?;
             Ok(Output { success: true })
         }
     }
@@ -448,11 +433,11 @@ pub mod user_set_email_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            let username = match connection {
-                Connection::Pool(pool) => User::set_email(self, pool).await?,
-                Connection::Transaction(transaction) => User::set_email(self, transaction).await?,
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            let username = User::set_email(self, acquire_from).await?;
             Ok(Output {
                 success: true,
                 username,

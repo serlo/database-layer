@@ -3,10 +3,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{
-    fetch_subscriptions_by_user, fetch_subscriptions_by_user_via_transaction, Subscription,
-};
-use crate::database::Connection;
+use super::model::{fetch_subscriptions_by_user_via_transaction, Subscription};
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
@@ -19,13 +16,18 @@ pub enum SubscriptionMessage {
 #[async_trait]
 impl MessageResponder for SubscriptionMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
             SubscriptionMessage::SubscriptionsQuery(message) => {
                 message.handle("SubscriptionsQuery", acquire_from).await
             }
             SubscriptionMessage::SubscriptionSetMutation(message) => {
-                message.handle("SubscriptionSetMutation", acquire_from).await
+                message
+                    .handle("SubscriptionSetMutation", acquire_from)
+                    .await
             }
         }
     }
@@ -57,13 +59,11 @@ pub mod subscriptions_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => fetch_subscriptions_by_user(self.user_id, pool).await?,
-                Connection::Transaction(transaction) => {
-                    fetch_subscriptions_by_user_via_transaction(self.user_id, transaction).await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(fetch_subscriptions_by_user_via_transaction(self.user_id, acquire_from).await?)
         }
     }
 }
@@ -89,13 +89,11 @@ pub mod subscription_set_mutation {
     #[async_trait]
     impl Operation for Payload {
         type Output = Output;
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => Subscription::change_subscription(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Subscription::change_subscription(self, transaction).await?
-                }
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Subscription::change_subscription(self, acquire_from).await?;
             Ok(Output { success: true })
         }
     }

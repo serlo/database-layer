@@ -19,7 +19,7 @@ impl MessageResponder for AliasMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
-            AliasMessage::AliasQuery(payload) => payload.handle("AliasQuery", connection).await,
+            AliasMessage::AliasQuery(payload) => payload.handle("AliasQuery", acquire_from).await,
         }
     }
 }

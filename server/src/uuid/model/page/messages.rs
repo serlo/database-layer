@@ -26,22 +26,22 @@ impl MessageResponder for PageMessage {
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
             PageMessage::PageAddRevisionMutation(payload) => {
-                payload.handle("PageAddRevisionMutation", connection).await
+                payload.handle("PageAddRevisionMutation", acquire_from).await
             }
             PageMessage::PageCheckoutRevisionMutation(payload) => {
                 payload
-                    .handle("PageCheckoutRevisionMutation", connection)
+                    .handle("PageCheckoutRevisionMutation", acquire_from)
                     .await
             }
             PageMessage::PageCreateMutation(payload) => {
-                payload.handle("PageCreateMutation", connection).await
+                payload.handle("PageCreateMutation", acquire_from).await
             }
             PageMessage::PageRejectRevisionMutation(payload) => {
                 payload
-                    .handle("PageRejectRevisionMutation", connection)
+                    .handle("PageRejectRevisionMutation", acquire_from)
                     .await
             }
-            PageMessage::PagesQuery(payload) => payload.handle("PagesQuery", connection).await,
+            PageMessage::PagesQuery(payload) => payload.handle("PagesQuery", acquire_from).await,
         }
     }
 }

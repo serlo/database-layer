@@ -34,52 +34,52 @@ impl MessageResponder for UserMessage {
         match self {
             UserMessage::ActiveAuthorsQuery(_) => {
                 active_authors_query::Payload {}
-                    .handle("ActiveAuthorsQuery", connection)
+                    .handle("ActiveAuthorsQuery", acquire_from)
                     .await
             }
             UserMessage::ActiveReviewersQuery(_) => {
                 active_reviewers_query::Payload {}
-                    .handle("ActiveReviewersQuery", connection)
+                    .handle("ActiveReviewersQuery", acquire_from)
                     .await
             }
             UserMessage::ActivityByTypeQuery(payload) => {
-                payload.handle("ActivityByTypeQuery", connection).await
+                payload.handle("ActivityByTypeQuery", acquire_from).await
             }
             UserMessage::UserActivityByTypeQuery(payload) => {
-                payload.handle("ActivityByTypeQuery", connection).await
+                payload.handle("ActivityByTypeQuery", acquire_from).await
             }
             UserMessage::UserAddRoleMutation(payload) => {
-                payload.handle("UserAddRoleMutation", connection).await
+                payload.handle("UserAddRoleMutation", acquire_from).await
             }
             UserMessage::UserCreateMutation(payload) => {
-                payload.handle("UserCreateMutation", connection).await
+                payload.handle("UserCreateMutation", acquire_from).await
             }
             UserMessage::UserDeleteBotsMutation(payload) => {
-                payload.handle("UserDeleteBotsMutation", connection).await
+                payload.handle("UserDeleteBotsMutation", acquire_from).await
             }
             UserMessage::UserDeleteRegularUsersMutation(payload) => {
                 payload
-                    .handle("UserDeleteRegularUsersMutation", connection)
+                    .handle("UserDeleteRegularUsersMutation", acquire_from)
                     .await
             }
             UserMessage::UserPotentialSpamUsersQuery(payload) => {
                 payload
-                    .handle("UserPotentialSpamUsersQuery", connection)
+                    .handle("UserPotentialSpamUsersQuery", acquire_from)
                     .await
             }
             UserMessage::UserRemoveRoleMutation(payload) => {
-                payload.handle("UserRemoveRoleMutation", connection).await
+                payload.handle("UserRemoveRoleMutation", acquire_from).await
             }
             UserMessage::UsersByRoleQuery(payload) => {
-                payload.handle("UsersByRoleQuery", connection).await
+                payload.handle("UsersByRoleQuery", acquire_from).await
             }
             UserMessage::UserSetDescriptionMutation(payload) => {
                 payload
-                    .handle("UserSetDescriptionMutation", connection)
+                    .handle("UserSetDescriptionMutation", acquire_from)
                     .await
             }
             UserMessage::UserSetEmailMutation(payload) => {
-                payload.handle("UserSetEmailMutation", connection).await
+                payload.handle("UserSetEmailMutation", acquire_from).await
             }
         }
     }

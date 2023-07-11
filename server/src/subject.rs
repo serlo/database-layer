@@ -19,7 +19,7 @@ impl MessageResponder for SubjectsMessage {
         match self {
             SubjectsMessage::SubjectsQuery(_) => {
                 subjects_query::Payload {}
-                    .handle("SubjectsQuery", connection)
+                    .handle("SubjectsQuery", acquire_from)
                     .await
             }
         }

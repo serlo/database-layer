@@ -20,8 +20,8 @@ impl MessageResponder for EventMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
-            EventMessage::EventQuery(payload) => payload.handle("EventQuery", connection).await,
-            EventMessage::EventsQuery(payload) => payload.handle("EventsQuery", connection).await,
+            EventMessage::EventQuery(payload) => payload.handle("EventQuery", acquire_from).await,
+            EventMessage::EventsQuery(payload) => payload.handle("EventsQuery", acquire_from).await,
         }
     }
 }

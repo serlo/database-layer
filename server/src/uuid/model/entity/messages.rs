@@ -31,33 +31,33 @@ impl MessageResponder for EntityMessage {
         match self {
             EntityMessage::EntityAddRevisionMutation(message) => {
                 message
-                    .handle("EntityAddRevisionMutation", connection)
+                    .handle("EntityAddRevisionMutation", acquire_from)
                     .await
             }
             EntityMessage::EntityCheckoutRevisionMutation(payload) => {
                 payload
-                    .handle("EntityCheckoutRevisionMutation", connection)
+                    .handle("EntityCheckoutRevisionMutation", acquire_from)
                     .await
             }
             EntityMessage::EntityCreateMutation(message) => {
-                message.handle("EntityCreateMutation", connection).await
+                message.handle("EntityCreateMutation", acquire_from).await
             }
             EntityMessage::EntityRejectRevisionMutation(payload) => {
                 payload
-                    .handle("EntityRejectRevisionMutation", connection)
+                    .handle("EntityRejectRevisionMutation", acquire_from)
                     .await
             }
             EntityMessage::UnrevisedEntitiesQuery(payload) => {
-                payload.handle("UnrevisedEntitiesQuery", connection).await
+                payload.handle("UnrevisedEntitiesQuery", acquire_from).await
             }
             EntityMessage::DeletedEntitiesQuery(message) => {
-                message.handle("DeletedEntitiesQuery", connection).await
+                message.handle("DeletedEntitiesQuery", acquire_from).await
             }
             EntityMessage::EntitySetLicenseMutation(message) => {
-                message.handle("EntitySetLicenseMutation", connection).await
+                message.handle("EntitySetLicenseMutation", acquire_from).await
             }
             EntityMessage::EntitySortMutation(message) => {
-                message.handle("EntitySortMutation", connection).await
+                message.handle("EntitySortMutation", acquire_from).await
             }
         }
     }

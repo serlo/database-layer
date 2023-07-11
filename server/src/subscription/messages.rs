@@ -22,10 +22,10 @@ impl MessageResponder for SubscriptionMessage {
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
             SubscriptionMessage::SubscriptionsQuery(message) => {
-                message.handle("SubscriptionsQuery", connection).await
+                message.handle("SubscriptionsQuery", acquire_from).await
             }
             SubscriptionMessage::SubscriptionSetMutation(message) => {
-                message.handle("SubscriptionSetMutation", connection).await
+                message.handle("SubscriptionSetMutation", acquire_from).await
             }
         }
     }

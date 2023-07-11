@@ -20,11 +20,11 @@ impl MessageResponder for NotificationMessage {
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
             NotificationMessage::NotificationsQuery(payload) => {
-                payload.handle("NotificationsQuery", connection).await
+                payload.handle("NotificationsQuery", acquire_from).await
             }
             NotificationMessage::NotificationSetStateMutation(payload) => {
                 payload
-                    .handle("NotificationSetStateMutation", connection)
+                    .handle("NotificationSetStateMutation", acquire_from)
                     .await
             }
         }

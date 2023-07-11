@@ -22,7 +22,7 @@ impl MessageResponder for MetadataMessage {
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
             MetadataMessage::EntitiesMetadataQuery(payload) => {
-                payload.handle("EntitiesMetadataQuery", connection).await
+                payload.handle("EntitiesMetadataQuery", acquire_from).await
             }
         }
     }

@@ -26,29 +26,29 @@ impl MessageResponder for ThreadMessage {
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
             ThreadMessage::AllThreadsQuery(message) => {
-                message.handle("AllThreadsQuery", connection).await
+                message.handle("AllThreadsQuery", acquire_from).await
             }
             ThreadMessage::ThreadsQuery(message) => {
-                message.handle("ThreadsQuery", connection).await
+                message.handle("ThreadsQuery", acquire_from).await
             }
             ThreadMessage::ThreadCreateThreadMutation(message) => {
                 message
-                    .handle("ThreadCreateThreadMutation", connection)
+                    .handle("ThreadCreateThreadMutation", acquire_from)
                     .await
             }
             ThreadMessage::ThreadCreateCommentMutation(message) => {
                 message
-                    .handle("ThreadCreateCommentMutation", connection)
+                    .handle("ThreadCreateCommentMutation", acquire_from)
                     .await
             }
             ThreadMessage::ThreadSetThreadArchivedMutation(message) => {
                 message
-                    .handle("ThreadSetThreadArchivedMutation", connection)
+                    .handle("ThreadSetThreadArchivedMutation", acquire_from)
                     .await
             }
             ThreadMessage::ThreadEditCommentMutation(message) => {
                 message
-                    .handle("ThreadEditCommentMutation", connection)
+                    .handle("ThreadEditCommentMutation", acquire_from)
                     .await
             }
         }

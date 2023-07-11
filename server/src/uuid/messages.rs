@@ -19,9 +19,9 @@ impl MessageResponder for UuidMessage {
     #[allow(clippy::async_yields_async)]
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
-            UuidMessage::UuidQuery(message) => message.handle("UuidQuery", connection).await,
+            UuidMessage::UuidQuery(message) => message.handle("UuidQuery", acquire_from).await,
             UuidMessage::UuidSetStateMutation(message) => {
-                message.handle("UuidSetStateMutation", connection).await
+                message.handle("UuidSetStateMutation", acquire_from).await
             }
         }
     }

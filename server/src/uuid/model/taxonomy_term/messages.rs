@@ -23,30 +23,33 @@ pub enum TaxonomyTermMessage {
 #[async_trait]
 impl MessageResponder for TaxonomyTermMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
             TaxonomyTermMessage::TaxonomyTermSetNameAndDescriptionMutation(payload) => {
                 payload
-                    .handle("TaxonomyTermSetNameAndDescriptionMutation", connection)
+                    .handle("TaxonomyTermSetNameAndDescriptionMutation", acquire_from)
                     .await
             }
             TaxonomyTermMessage::TaxonomyTermCreateMutation(payload) => {
                 payload
-                    .handle("TaxonomyTermCreateMutation", connection)
+                    .handle("TaxonomyTermCreateMutation", acquire_from)
                     .await
             }
             TaxonomyTermMessage::TaxonomyCreateEntityLinksMutation(payload) => {
                 payload
-                    .handle("TaxonomyCreateEntityLinksMutation", connection)
+                    .handle("TaxonomyCreateEntityLinksMutation", acquire_from)
                     .await
             }
             TaxonomyTermMessage::TaxonomyDeleteEntityLinksMutation(payload) => {
                 payload
-                    .handle("TaxonomyDeleteEntityLinksMutation", connection)
+                    .handle("TaxonomyDeleteEntityLinksMutation", acquire_from)
                     .await
             }
             TaxonomyTermMessage::TaxonomySortMutation(payload) => {
-                payload.handle("TaxonomySortMutation", connection).await
+                payload.handle("TaxonomySortMutation", acquire_from).await
             }
         }
     }
@@ -74,7 +77,10 @@ pub mod taxonomy_term_set_name_and_description_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
             match connection {
                 Connection::Pool(pool) => {
                     TaxonomyTerm::set_name_and_description(self, pool).await?
@@ -106,7 +112,10 @@ pub mod taxonomy_term_create_mutation {
     impl Operation for Payload {
         type Output = Uuid;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
             Ok(match connection {
                 Connection::Pool(pool) => TaxonomyTerm::create(self, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -132,7 +141,10 @@ pub mod taxonomy_create_entity_links_mutation {
     impl Operation for Payload {
         type Output = SuccessOutput;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
             match connection {
                 Connection::Pool(pool) => TaxonomyTerm::create_entity_link(self, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -159,7 +171,10 @@ pub mod taxonomy_delete_entity_links_mutation {
     impl Operation for Payload {
         type Output = SuccessOutput;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
             match connection {
                 Connection::Pool(pool) => TaxonomyTerm::delete_entity_link(self, pool).await?,
                 Connection::Transaction(transaction) => {
@@ -186,13 +201,11 @@ pub mod taxonomy_sort_mutation {
     impl Operation for Payload {
         type Output = SuccessOutput;
 
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self,acquire_from: A,) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => TaxonomyTerm::sort(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    TaxonomyTerm::sort(self, transaction).await?
-                }
-            }
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            TaxonomyTerm::sort(self, acquire_from).await?;
             Ok(SuccessOutput { success: true })
         }
     }

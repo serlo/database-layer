@@ -23,7 +23,7 @@ pub enum ThreadMessage {
 #[async_trait]
 impl MessageResponder for ThreadMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
             ThreadMessage::AllThreadsQuery(message) => {
                 message.handle("AllThreadsQuery", connection).await

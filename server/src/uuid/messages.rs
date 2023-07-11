@@ -17,7 +17,7 @@ pub enum UuidMessage {
 #[async_trait]
 impl MessageResponder for UuidMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
             UuidMessage::UuidQuery(message) => message.handle("UuidQuery", connection).await,
             UuidMessage::UuidSetStateMutation(message) => {

@@ -17,7 +17,7 @@ pub enum NotificationMessage {
 #[async_trait]
 impl MessageResponder for NotificationMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
             NotificationMessage::NotificationsQuery(payload) => {
                 payload.handle("NotificationsQuery", connection).await

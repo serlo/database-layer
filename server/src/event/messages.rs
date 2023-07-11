@@ -18,7 +18,7 @@ pub enum EventMessage {
 #[async_trait]
 impl MessageResponder for EventMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(&self, acquire_from: A,) -> HttpResponse {
         match self {
             EventMessage::EventQuery(payload) => payload.handle("EventQuery", connection).await,
             EventMessage::EventsQuery(payload) => payload.handle("EventsQuery", connection).await,

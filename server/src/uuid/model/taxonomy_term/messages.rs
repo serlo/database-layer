@@ -3,7 +3,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::TaxonomyTerm;
-use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation, SuccessOutput};
 use crate::uuid::{TaxonomyType, Uuid};
@@ -81,15 +80,7 @@ pub mod taxonomy_term_set_name_and_description_mutation {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => {
-                    TaxonomyTerm::set_name_and_description(self, pool).await?
-                }
-                Connection::Transaction(transaction) => {
-                    TaxonomyTerm::set_name_and_description(self, transaction).await?
-                }
-            };
-
+            TaxonomyTerm::set_name_and_description(self, acquire_from).await?;
             Ok(Output { success: true })
         }
     }
@@ -116,12 +107,7 @@ pub mod taxonomy_term_create_mutation {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => TaxonomyTerm::create(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    TaxonomyTerm::create(self, transaction).await?
-                }
-            })
+            Ok(TaxonomyTerm::create(self, acquire_from).await?)
         }
     }
 }
@@ -145,12 +131,7 @@ pub mod taxonomy_create_entity_links_mutation {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => TaxonomyTerm::create_entity_link(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    TaxonomyTerm::create_entity_link(self, transaction).await?
-                }
-            }
+            TaxonomyTerm::create_entity_link(self, acquire_from).await?;
             Ok(SuccessOutput { success: true })
         }
     }
@@ -175,12 +156,7 @@ pub mod taxonomy_delete_entity_links_mutation {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => TaxonomyTerm::delete_entity_link(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    TaxonomyTerm::delete_entity_link(self, transaction).await?
-                }
-            }
+            TaxonomyTerm::delete_entity_link(self, acquire_from).await?;
             Ok(SuccessOutput { success: true })
         }
     }

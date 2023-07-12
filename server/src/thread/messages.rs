@@ -106,7 +106,7 @@ pub mod threads_query {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            Ok(Threads::fetch_via_transaction(self.id, acquire_from).await?)
+            Ok(Threads::fetch(self.id, acquire_from).await?)
         }
     }
 }

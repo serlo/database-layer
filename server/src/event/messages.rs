@@ -45,7 +45,7 @@ pub mod event_query {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            Ok(Event::fetch_via_transaction(self.id, acquire_from)
+            Ok(Event::fetch(self.id, acquire_from)
                 .await
                 .map_err(|e| match e {
                     EventError::InvalidType

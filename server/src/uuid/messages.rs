@@ -125,7 +125,7 @@ mod tests {
         .await
         .unwrap();
 
-        let result = Uuid::fetch_via_transaction(100000, &mut *transaction).await;
+        let result = Uuid::fetch(100000, &mut *transaction).await;
 
         assert!(result.is_err());
         match result.as_ref().err().unwrap() {

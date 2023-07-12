@@ -96,19 +96,7 @@ macro_rules! to_page {
 
 #[async_trait]
 impl UuidFetcher for Page {
-    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,>(id: i32, acquire_from: A,) -> Result<Uuid, UuidError> {
-        let page = fetch_one_page!(id, acquire_from);
-        let revisions = fetch_all_revisions!(id, acquire_from);
-
-        let (page, revisions) = join!(page, revisions);
-
-        to_page!(id, page, revisions)
-    }
-
-    async fn fetch_via_transaction<
-        'a,
-        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
-    >(
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
         id: i32,
         acquire_from: A,
     ) -> Result<Uuid, UuidError> {
@@ -203,7 +191,7 @@ impl Page {
             error: Box::new(error),
         })?;
 
-        let uuid = PageRevision::fetch_via_transaction(page_revision_id, &mut *transaction).await?;
+        let uuid = PageRevision::fetch(page_revision_id, &mut *transaction).await?;
 
         transaction.commit().await?;
 
@@ -259,12 +247,12 @@ impl Page {
         let mut transaction = acquire_from.begin().await?;
 
         let revision_id = payload.revision_id;
-        let revision = PageRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
+        let revision = PageRevision::fetch(revision_id, &mut *transaction).await?;
 
         if let ConcreteUuid::PageRevision(page_revision) = revision.concrete_uuid {
             let repository_id = page_revision.repository_id;
 
-            let repository = Page::fetch_via_transaction(repository_id, &mut *transaction).await?;
+            let repository = Page::fetch(repository_id, &mut *transaction).await?;
 
             if let ConcreteUuid::Page(page) = repository.concrete_uuid {
                 if page.current_revision_id == Some(revision_id) {
@@ -369,7 +357,7 @@ impl Page {
         )
         .await?;
 
-        let page = Page::fetch_via_transaction(page_id, &mut *transaction).await?;
+        let page = Page::fetch(page_id, &mut *transaction).await?;
 
         transaction.commit().await?;
 
@@ -429,7 +417,7 @@ impl Page {
         let mut transaction = acquire_from.begin().await?;
 
         let revision_id = payload.revision_id;
-        let revision = PageRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
+        let revision = PageRevision::fetch(revision_id, &mut *transaction).await?;
 
         if let ConcreteUuid::PageRevision(page_revision) = revision.concrete_uuid {
             if revision.trashed {
@@ -438,7 +426,7 @@ impl Page {
 
             let repository_id = page_revision.repository_id;
 
-            let repository = Page::fetch_via_transaction(repository_id, &mut *transaction).await?;
+            let repository = Page::fetch(repository_id, &mut *transaction).await?;
 
             if let ConcreteUuid::Page(page) = repository.concrete_uuid {
                 if page.current_revision_id == Some(revision_id) {
@@ -574,9 +562,7 @@ mod tests {
         .unwrap();
 
         // Verify that revision was checked out.
-        let entity = Page::fetch_via_transaction(19767, &mut *transaction)
-            .await
-            .unwrap();
+        let entity = Page::fetch(19767, &mut *transaction).await.unwrap();
         if let ConcreteUuid::Page(page) = entity.concrete_uuid {
             assert_eq!(page.current_revision_id, Some(33220));
         } else {
@@ -602,9 +588,7 @@ mod tests {
             .await
             .unwrap();
 
-        let entity = Page::fetch_via_transaction(entity_id, &mut *transaction)
-            .await
-            .unwrap();
+        let entity = Page::fetch(entity_id, &mut *transaction).await.unwrap();
         assert!(!entity.trashed);
     }
 
@@ -650,9 +634,7 @@ mod tests {
         .unwrap();
 
         // Verify that revision was trashed.
-        let revision = PageRevision::fetch_via_transaction(33220, &mut *transaction)
-            .await
-            .unwrap();
+        let revision = PageRevision::fetch(33220, &mut *transaction).await.unwrap();
         assert!(revision.trashed);
 
         // Verify that the event was created.

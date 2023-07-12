@@ -75,29 +75,14 @@ macro_rules! to_user {
 
 #[async_trait]
 impl UuidFetcher for User {
-    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,>(id: i32, acquire_from: A,) -> Result<Uuid, UuidError> {
-        let user = fetch_one_user!(id, acquire_from);
-        let roles = fetch_all_roles!(id, acquire_from);
-
-        let (user, roles) = join!(user, roles);
-
-        to_user!(id, user, roles)
-    }
-
-    async fn fetch_via_transaction<
-        'a,
-        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
-    >(
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
         id: i32,
         acquire_from: A,
     ) -> Result<Uuid, UuidError> {
         let mut transaction = acquire_from.begin().await?;
-
         let user = fetch_one_user!(id, &mut *transaction).await;
         let roles = fetch_all_roles!(id, &mut *transaction).await;
-
         transaction.commit().await?;
-
         to_user!(id, user, roles)
     }
 }

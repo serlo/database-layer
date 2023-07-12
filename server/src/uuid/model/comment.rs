@@ -92,27 +92,14 @@ macro_rules! to_comment {
 
 #[async_trait]
 impl UuidFetcher for Comment {
-    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,>(id: i32, acquire_from: A,) -> Result<Uuid, UuidError> {
-        let comment = fetch_one_comment!(id, acquire_from);
-        let children = fetch_all_children!(id, acquire_from);
-        let context = Comment::fetch_context(id, acquire_from);
-
-        let (comment, children, context) = join!(comment, children, context);
-
-        to_comment!(id, comment, children, context)
-    }
-
-    async fn fetch_via_transaction<
-        'a,
-        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
-    >(
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
         id: i32,
         acquire_from: A,
     ) -> Result<Uuid, UuidError> {
         let mut transaction = acquire_from.begin().await?;
         let comment = fetch_one_comment!(id, &mut *transaction).await;
         let children = fetch_all_children!(id, &mut *transaction).await;
-        let context = Comment::fetch_context_via_transaction(id, &mut *transaction).await;
+        let context = Comment::fetch_context(id, &mut *transaction).await;
 
         transaction.commit().await?;
 
@@ -121,35 +108,11 @@ impl UuidFetcher for Comment {
 }
 
 impl Comment {
-    pub async fn fetch_context(id: i32, pool: &MySqlPool) -> Result<Option<String>, UuidError> {
-        let object = sqlx::query!(
-            r#"
-                SELECT uuid_id as id
-                    FROM (
-                        SELECT id, uuid_id FROM comment c
-                        UNION ALL
-                        SELECT c.id, p.uuid_id FROM comment p LEFT JOIN comment c ON c.parent_id = p.id
-                    ) t
-                    WHERE id = ? AND uuid_id IS NOT NULL
-            "#,
-            id
-        )
-        .fetch_one(pool).await
-        .map_err(|error| match error {
-            sqlx::Error::RowNotFound => UuidError::NotFound,
-            error => error.into(),
-        })?;
-        Uuid::fetch_context(object.id.unwrap() as i32, pool).await
-    }
-
-    pub async fn fetch_context_via_transaction<'a, E>(
+    pub async fn fetch_context<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         id: i32,
-        executor: E,
-    ) -> Result<Option<String>, UuidError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Option<String>, UuidError> {
+        let mut transaction = acquire_from.begin().await?;
         let object = sqlx::query!(
             r#"
                 SELECT uuid_id as id
@@ -167,9 +130,7 @@ impl Comment {
             sqlx::Error::RowNotFound => UuidError::NotFound,
             error => error.into(),
         })?;
-        let context =
-            Uuid::fetch_context_via_transaction(object.id.unwrap() as i32, &mut *transaction)
-                .await?;
+        let context = Uuid::fetch_context(object.id.unwrap() as i32, &mut *transaction).await?;
         transaction.commit().await?;
         Ok(context)
     }

@@ -43,11 +43,7 @@ impl Hash for Subscriber {
 }
 
 impl Notifications {
-    pub async fn fetch(user_id: i32, pool: &MySqlPool) -> Result<Notifications, sqlx::Error> {
-        Self::fetch_via_transaction(user_id, pool).await
-    }
-
-    pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         user_id: i32,
         acquire_from: A,
     ) -> Result<Notifications, sqlx::Error> {
@@ -368,7 +364,7 @@ mod tests {
         .await?;
 
         assert_eq!(
-            Notifications::fetch_via_transaction(new_user_id, &mut *transaction)
+            Notifications::fetch(new_user_id, &mut *transaction)
                 .await?
                 .notifications
                 .len(),
@@ -485,9 +481,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let event = Event::fetch_via_transaction(38513, &mut *transaction)
-            .await
-            .unwrap();
+        let event = Event::fetch(38513, &mut *transaction).await.unwrap();
 
         // Verify assumption that the event has no subscribers.
         let subscriptions =
@@ -538,7 +532,7 @@ mod tests {
 
         // Verify that the notification was created.
         assert_eq!(
-            Notifications::fetch_via_transaction(test_user, &mut *transaction)
+            Notifications::fetch(test_user, &mut *transaction)
                 .await
                 .unwrap()
                 .notifications
@@ -552,9 +546,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let event = Event::fetch_via_transaction(37373, &mut *transaction)
-            .await
-            .unwrap();
+        let event = Event::fetch(37373, &mut *transaction).await.unwrap();
 
         // Verify the assumption that the event has no direct subscriber.
         let subscriptions =
@@ -594,7 +586,7 @@ mod tests {
 
         // Verify that the notifications were created.
         for subscriber in subscribers {
-            let notifications = Notifications::fetch_via_transaction(subscriber, &mut *transaction)
+            let notifications = Notifications::fetch(subscriber, &mut *transaction)
                 .await
                 .unwrap();
             let notifications: Vec<_> = notifications

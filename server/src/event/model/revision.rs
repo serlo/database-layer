@@ -119,7 +119,7 @@ mod tests {
         .await
         .unwrap();
         let persisted_event =
-            Event::fetch_via_transaction(event.abstract_event.id, &mut *transaction)
+            Event::fetch(event.abstract_event.id, &mut *transaction)
                 .await
                 .unwrap();
 

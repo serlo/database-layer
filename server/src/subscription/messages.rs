@@ -3,7 +3,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::{fetch_subscriptions_by_user_via_transaction, Subscription};
+use super::model::{fetch_subscriptions_by_user, Subscription};
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
@@ -63,7 +63,7 @@ pub mod subscriptions_query {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            Ok(fetch_subscriptions_by_user_via_transaction(self.user_id, acquire_from).await?)
+            Ok(fetch_subscriptions_by_user(self.user_id, acquire_from).await?)
         }
     }
 }

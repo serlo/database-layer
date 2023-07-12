@@ -277,8 +277,7 @@ impl UuidFetcher for Entity {
         let entity = fetch_one_entity!(id, &mut *transaction).await?;
         let revisions = fetch_all_revisions!(id, &mut *transaction).await?;
         let taxonomy_terms = fetch_all_taxonomy_terms_parents!(id, &mut *transaction).await?;
-        let subject =
-            Entity::fetch_canonical_subject_via_transaction(id, &mut *transaction).await?;
+        let subject = Entity::fetch_canonical_subject(id, &mut *transaction).await?;
         let result = to_entity!(
             id,
             entity,
@@ -312,23 +311,11 @@ impl Entity {
         }
     }
 
-    pub async fn fetch_canonical_subject(
+    pub async fn fetch_canonical_subject<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         id: i32,
-        pool: &MySqlPool,
+        acquire_from: A,
     ) -> Result<Option<Subject>, sqlx::Error> {
-        let taxonomy_terms = fetch_all_taxonomy_terms_ancestors!(id, acquire_from).await?;
-        let subject = fetch_canonical_subject!(taxonomy_terms, pool);
-        Ok(subject)
-    }
-
-    pub async fn fetch_canonical_subject_via_transaction<'a, E>(
-        id: i32,
-        executor: E,
-    ) -> Result<Option<Subject>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
         let taxonomy_terms = fetch_all_taxonomy_terms_ancestors!(id, &mut *transaction).await?;
         let subject = fetch_canonical_subject!(taxonomy_terms, &mut *transaction);
         transaction.commit().await?;

@@ -115,17 +115,7 @@ impl Subscription {
     }
 }
 
-pub async fn fetch_subscriptions_by_user(
-    user_id: i32,
-    pool: &MySqlPool,
-) -> Result<subscriptions_query::Output, sqlx::Error> {
-    fetch_subscriptions_by_user_via_transaction(user_id, pool).await
-}
-
-pub async fn fetch_subscriptions_by_user_via_transaction<
-    'a,
-    A: sqlx::Acquire<'a, Database = sqlx::MySql>,
->(
+pub async fn fetch_subscriptions_by_user<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
     user_id: i32,
     acquire_from: A,
 ) -> Result<subscriptions_query::Output, sqlx::Error> {

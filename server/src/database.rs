@@ -12,7 +12,7 @@ impl<'a, A> Acquire<'a> for A where A: sqlx::Acquire<'a, Database = sqlx::MySql>
 /// ```rust
 /// use server::database::Executor;
 ///
-/// async fn fetch_via_transaction<'a, E>(executor: E) -> Result<(), sqlx::Error>
+/// async fn fetch<'a, E>(executor: E) -> Result<(), sqlx::Error>
 /// where
 ///     E: Executor<'a>,
 /// {
@@ -26,7 +26,7 @@ impl<'a, A> Acquire<'a> for A where A: sqlx::Acquire<'a, Database = sqlx::MySql>
 /// ```rust
 /// use server::database::Executor;
 ///
-/// async fn fetch_via_transaction<'a, E>(executor: E) -> Result<(), sqlx::Error>
+/// async fn fetch<'a, E>(executor: E) -> Result<(), sqlx::Error>
 /// where
 ///     E: Executor<'a>,
 /// {
@@ -40,7 +40,7 @@ impl<'a, A> Acquire<'a> for A where A: sqlx::Acquire<'a, Database = sqlx::MySql>
 ///
 /// Note: you can't parallelize multiple queries using `try_join` in this case because Rust
 /// will consider `executor` as moved. For this reason, we write our models using `MySqlPool`
-/// by default instead and only provide an unoptimized `Executor`-variant (suffixed by `_via_transaction`)
+/// by default instead and only provide an unoptimized `Executor`-variant (suffixed by ``)
 /// if we need it in a mutation or in tests.
 pub trait Executor<'a>: sqlx::Executor<'a, Database = sqlx::MySql> + Acquire<'a> {}
 

@@ -84,7 +84,7 @@ mod tests {
 
         let event = set_uuid_state_event.save(&mut *transaction).await.unwrap();
         let persisted_event =
-            Event::fetch_via_transaction(event.abstract_event.id, &mut *transaction)
+            Event::fetch(event.abstract_event.id, &mut *transaction)
                 .await
                 .unwrap();
 
@@ -116,7 +116,7 @@ mod tests {
 
         let event = set_uuid_state_event.save(&mut *transaction).await.unwrap();
         let persisted_event =
-            Event::fetch_via_transaction(event.abstract_event.id, &mut *transaction)
+            Event::fetch(event.abstract_event.id, &mut *transaction)
                 .await
                 .unwrap();
 

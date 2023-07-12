@@ -50,7 +50,7 @@ pub mod notifications_query {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            Ok(Notifications::fetch_via_transaction(self.user_id, acquire_from).await?)
+            Ok(Notifications::fetch(self.user_id, acquire_from).await?)
         }
     }
 }

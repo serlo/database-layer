@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::model::fetch_via_transaction;
+use super::model::fetch;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
@@ -55,7 +55,7 @@ pub mod alias_query {
         ) -> operation::Result<Self::Output> {
             let path = self.path.as_str();
             let instance = self.instance.clone();
-            Ok(fetch_via_transaction(path, instance, acquire_from).await?)
+            Ok(fetch(path, instance, acquire_from).await?)
         }
     }
 }

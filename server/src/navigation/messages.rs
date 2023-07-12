@@ -46,7 +46,7 @@ pub mod navigation_query {
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
             let instance = self.instance.clone();
-            Ok(Navigation::fetch_via_transaction(instance, acquire_from).await?)
+            Ok(Navigation::fetch(instance, acquire_from).await?)
         }
     }
 }

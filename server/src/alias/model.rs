@@ -8,15 +8,7 @@ use crate::uuid::{Uuid, UuidFetcher};
 
 type Alias = alias_query::Output;
 
-pub async fn fetch(
-    path: &str,
-    instance: Instance,
-    pool: &MySqlPool,
-) -> Result<Alias, operation::Error> {
-    fetch_via_transaction(path, instance, pool).await
-}
-
-pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
     path: &str,
     instance: Instance,
     acquire_from: A,
@@ -114,7 +106,7 @@ pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MyS
         }
     };
 
-    let uuid = Uuid::fetch_via_transaction(id, &mut *transaction).await?;
+    let uuid = Uuid::fetch(id, &mut *transaction).await?;
 
     transaction.commit().await?;
 

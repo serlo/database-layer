@@ -151,7 +151,7 @@ impl EntityRevisionPayload {
         }
 
         let uuid =
-            EntityRevision::fetch_via_transaction(entity_revision_id, &mut *transaction).await?;
+            EntityRevision::fetch(entity_revision_id, &mut *transaction).await?;
 
         transaction.commit().await?;
 

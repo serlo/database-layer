@@ -150,17 +150,7 @@ macro_rules! to_entity_revisions {
 
 #[async_trait]
 impl UuidFetcher for EntityRevision {
-    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,>(id: i32, acquire_from: A,) -> Result<Uuid, UuidError> {
-        let revision = fetch_one_revision!(id, acquire_from);
-        let fields = fetch_all_fields!(id, acquire_from);
-        let (revision, fields) = try_join!(revision, fields)?;
-        to_entity_revisions!(id, revision, fields)
-    }
-
-    async fn fetch_via_transaction<
-        'a,
-        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
-    >(
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
         id: i32,
         acquire_from: A,
     ) -> Result<Uuid, UuidError> {
@@ -173,38 +163,19 @@ impl UuidFetcher for EntityRevision {
 }
 
 impl EntityRevision {
-    pub async fn fetch_canonical_subject(
+    pub async fn fetch_canonical_subject<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         id: i32,
-        pool: &MySqlPool,
+        acquire_from: A,
     ) -> Result<Option<Subject>, sqlx::Error> {
-        let revision = sqlx::query!(
-            r#"SELECT repository_id FROM entity_revision WHERE id = ?"#,
-            id
-        )
-        .fetch_one(pool)
-        .await?;
-        Entity::fetch_canonical_subject(revision.repository_id as i32, pool).await
-    }
-
-    pub async fn fetch_canonical_subject_via_transaction<'a, E>(
-        id: i32,
-        executor: E,
-    ) -> Result<Option<Subject>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
         let revision = sqlx::query!(
             r#"SELECT repository_id FROM entity_revision WHERE id = ?"#,
             id
         )
         .fetch_one(&mut *transaction)
         .await?;
-        let subject = Entity::fetch_canonical_subject_via_transaction(
-            revision.repository_id as i32,
-            &mut *transaction,
-        )
-        .await;
+        let subject =
+            Entity::fetch_canonical_subject(revision.repository_id as i32, &mut *transaction).await;
         transaction.commit().await?;
         subject
     }

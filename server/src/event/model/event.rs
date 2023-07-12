@@ -56,14 +56,6 @@ pub enum ConcreteEvent {
 }
 
 impl Event {
-    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
-        id: i32,
-        acquire_from: A,
-    ) -> Result<Event, EventError> {
-        let abstract_event = AbstractEvent::fetch(id, acquire_from).await?;
-        abstract_event.try_into()
-    }
-
     pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         id: i32,
         acquire_from: A,

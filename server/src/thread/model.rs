@@ -110,11 +110,7 @@ impl Threads {
         Ok(Self { first_comment_ids })
     }
 
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, sqlx::Error> {
-        Self::fetch_via_transaction(id, acquire_from).await
-    }
-
-    pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         id: i32,
         acquire_from: A,
     ) -> Result<Self, sqlx::Error> {
@@ -272,7 +268,7 @@ impl Threads {
             }
         }
 
-        let comment = Uuid::fetch_via_transaction(comment_id, &mut *transaction)
+        let comment = Uuid::fetch(comment_id, &mut *transaction)
             .await
             .map_err(|error| operation::Error::InternalServerError {
                 error: Box::new(error),
@@ -375,7 +371,7 @@ impl Threads {
             subscription.save(&mut *transaction).await?;
         }
 
-        let comment = Uuid::fetch_via_transaction(thread_id, &mut *transaction)
+        let comment = Uuid::fetch(thread_id, &mut *transaction)
             .await
             .map_err(|error| operation::Error::InternalServerError {
                 error: Box::new(error),

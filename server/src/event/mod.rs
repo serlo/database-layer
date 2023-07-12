@@ -29,7 +29,7 @@ pub(crate) mod test_helpers {
 
         match result {
             Ok(event) => {
-                let event = Event::fetch_via_transaction(event.id as i32, &mut *transaction)
+                let event = Event::fetch(event.id as i32, &mut *transaction)
                     .await
                     .unwrap();
                 Ok(DateTime::now().signed_duration_since(event.abstract_event.date))

@@ -96,9 +96,9 @@ macro_rules! to_page {
 
 #[async_trait]
 impl UuidFetcher for Page {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
-        let page = fetch_one_page!(id, pool);
-        let revisions = fetch_all_revisions!(id, pool);
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,>(id: i32, acquire_from: A,) -> Result<Uuid, UuidError> {
+        let page = fetch_one_page!(id, acquire_from);
+        let revisions = fetch_all_revisions!(id, acquire_from);
 
         let (page, revisions) = join!(page, revisions);
 

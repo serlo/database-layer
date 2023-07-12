@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use serde::Serialize;
-use sqlx::MySqlPool;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 use crate::datetime::DateTime;
@@ -19,14 +18,7 @@ pub struct PageRevision {
 
 #[async_trait]
 impl UuidFetcher for PageRevision {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
-        Self::fetch_via_transaction(id, pool).await
-    }
-
-    async fn fetch_via_transaction<
-        'a,
-        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
-    >(
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
         id: i32,
         acquire_from: A,
     ) -> Result<Uuid, UuidError> {

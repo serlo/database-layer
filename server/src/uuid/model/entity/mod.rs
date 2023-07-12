@@ -269,21 +269,7 @@ macro_rules! fetch_canonical_subject {
 
 #[async_trait]
 impl UuidFetcher for Entity {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
-        let entity = fetch_one_entity!(id, pool);
-        let revisions = fetch_all_revisions!(id, pool);
-        let taxonomy_terms = fetch_all_taxonomy_terms_parents!(id, pool);
-        let subject = Entity::fetch_canonical_subject(id, pool);
-        let (entity, revisions, taxonomy_terms, subject) =
-            try_join!(entity, revisions, taxonomy_terms, subject)?;
-
-        to_entity!(id, entity, revisions, taxonomy_terms, subject, pool)
-    }
-
-    async fn fetch_via_transaction<
-        'a,
-        A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,
-    >(
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
         id: i32,
         acquire_from: A,
     ) -> Result<Uuid, UuidError> {
@@ -330,7 +316,7 @@ impl Entity {
         id: i32,
         pool: &MySqlPool,
     ) -> Result<Option<Subject>, sqlx::Error> {
-        let taxonomy_terms = fetch_all_taxonomy_terms_ancestors!(id, pool).await?;
+        let taxonomy_terms = fetch_all_taxonomy_terms_ancestors!(id, acquire_from).await?;
         let subject = fetch_canonical_subject!(taxonomy_terms, pool);
         Ok(subject)
     }
@@ -505,9 +491,7 @@ impl Entity {
             }
 
             if last_revision_fields == fields {
-                return Ok(
-                    EntityRevision::fetch_via_transaction(revision_id, &mut *transaction).await?,
-                );
+                return Ok(EntityRevision::fetch(revision_id, &mut *transaction).await?);
             }
         }
 
@@ -765,7 +749,7 @@ impl Entity {
         )
         .await?;
 
-        let entity = Entity::fetch_via_transaction(entity_id, &mut *transaction).await?;
+        let entity = Entity::fetch(entity_id, &mut *transaction).await?;
 
         transaction.commit().await?;
 
@@ -781,8 +765,7 @@ impl Entity {
         let mut transaction = acquire_from.begin().await?;
 
         let revision_id = payload.revision_id;
-        let revision =
-            EntityRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
+        let revision = EntityRevision::fetch(revision_id, &mut *transaction).await?;
 
         if let ConcreteUuid::EntityRevision(EntityRevision {
             abstract_entity_revision,
@@ -791,8 +774,7 @@ impl Entity {
         {
             let repository_id = abstract_entity_revision.repository_id;
 
-            let repository =
-                Entity::fetch_via_transaction(repository_id, &mut *transaction).await?;
+            let repository = Entity::fetch(repository_id, &mut *transaction).await?;
 
             if let ConcreteUuid::Entity(Entity {
                 abstract_entity, ..
@@ -853,8 +835,7 @@ impl Entity {
         let mut transaction = acquire_from.begin().await?;
 
         let revision_id = payload.revision_id;
-        let revision =
-            EntityRevision::fetch_via_transaction(revision_id, &mut *transaction).await?;
+        let revision = EntityRevision::fetch(revision_id, &mut *transaction).await?;
 
         if let ConcreteUuid::EntityRevision(EntityRevision {
             abstract_entity_revision,
@@ -869,8 +850,7 @@ impl Entity {
 
             let repository_id = abstract_entity_revision.repository_id;
 
-            let repository =
-                Entity::fetch_via_transaction(repository_id, &mut *transaction).await?;
+            let repository = Entity::fetch(repository_id, &mut *transaction).await?;
 
             if let ConcreteUuid::Entity(Entity {
                 abstract_entity, ..

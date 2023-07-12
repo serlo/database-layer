@@ -300,8 +300,8 @@ impl RawNavigationChild {
         id: i32,
         pool: &MySqlPool,
     ) -> Result<RawNavigationChild, RawNavigationChildError> {
-        let pages = fetch_all_children!(id, pool);
-        let params = fetch_all_parameters!(id, pool);
+        let pages = fetch_all_children!(id, acquire_from);
+        let params = fetch_all_parameters!(id, acquire_from);
 
         let (pages, params) = try_join!(pages, params)?;
 

@@ -150,9 +150,9 @@ macro_rules! to_entity_revisions {
 
 #[async_trait]
 impl UuidFetcher for EntityRevision {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
-        let revision = fetch_one_revision!(id, pool);
-        let fields = fetch_all_fields!(id, pool);
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,>(id: i32, acquire_from: A,) -> Result<Uuid, UuidError> {
+        let revision = fetch_one_revision!(id, acquire_from);
+        let fields = fetch_all_fields!(id, acquire_from);
         let (revision, fields) = try_join!(revision, fields)?;
         to_entity_revisions!(id, revision, fields)
     }

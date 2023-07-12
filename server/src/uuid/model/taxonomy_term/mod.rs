@@ -186,11 +186,11 @@ macro_rules! to_taxonomy_term {
 
 #[async_trait]
 impl UuidFetcher for TaxonomyTerm {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
-        let taxonomy_term = fetch_one_taxonomy_term!(id, pool);
-        let entities = fetch_all_entities!(id, pool);
-        let children = fetch_all_children!(id, pool);
-        let subject = fetch_subject!(id, pool);
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,>(id: i32, acquire_from: A,) -> Result<Uuid, UuidError> {
+        let taxonomy_term = fetch_one_taxonomy_term!(id, acquire_from);
+        let entities = fetch_all_entities!(id, acquire_from);
+        let children = fetch_all_children!(id, acquire_from);
+        let subject = fetch_subject!(id, acquire_from);
 
         let (taxonomy_term, entities, children, subject) =
             join!(taxonomy_term, entities, children, subject);

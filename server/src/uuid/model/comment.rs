@@ -92,10 +92,10 @@ macro_rules! to_comment {
 
 #[async_trait]
 impl UuidFetcher for Comment {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
-        let comment = fetch_one_comment!(id, pool);
-        let children = fetch_all_children!(id, pool);
-        let context = Comment::fetch_context(id, pool);
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send,>(id: i32, acquire_from: A,) -> Result<Uuid, UuidError> {
+        let comment = fetch_one_comment!(id, acquire_from);
+        let children = fetch_all_children!(id, acquire_from);
+        let context = Comment::fetch_context(id, acquire_from);
 
         let (comment, children, context) = join!(comment, children, context);
 

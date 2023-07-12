@@ -3,7 +3,6 @@ use std::convert::{TryFrom, TryInto};
 
 use futures::TryStreamExt;
 use serde::Serialize;
-use sqlx::MySqlPool;
 
 use super::super::messages::*;
 use super::abstract_event::AbstractEvent;
@@ -57,8 +56,11 @@ pub enum ConcreteEvent {
 }
 
 impl Event {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Event, EventError> {
-        let abstract_event = AbstractEvent::fetch(id, pool).await?;
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Event, EventError> {
+        let abstract_event = AbstractEvent::fetch(id, acquire_from).await?;
         abstract_event.try_into()
     }
 

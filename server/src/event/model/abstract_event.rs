@@ -153,10 +153,13 @@ macro_rules! to_abstract_event {
 }
 
 impl AbstractEvent {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, EventError> {
-        let event = fetch_one_event!(id, pool);
-        let string_parameters = fetch_all_string_parameters!(id, pool);
-        let uuid_parameters = fetch_all_uuid_parameters!(id, pool);
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Self, EventError> {
+        let event = fetch_one_event!(id, acquire_from);
+        let string_parameters = fetch_all_string_parameters!(id, acquire_from);
+        let uuid_parameters = fetch_all_uuid_parameters!(id, acquire_from);
         let (event, string_parameters, uuid_parameters) =
             join!(event, string_parameters, uuid_parameters);
 

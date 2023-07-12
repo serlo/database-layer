@@ -102,7 +102,7 @@ impl Navigation {
         while let Some(id) = stack.pop() {
             handle_raw_navigation_child!(
                 id,
-                RawNavigationChild::fetch(id, pool).await,
+                RawNavigationChild::fetch(id, acquire_from).await,
                 raw_navigation_children,
                 stack,
                 ids_dfs

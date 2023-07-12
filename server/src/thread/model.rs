@@ -111,7 +111,7 @@ impl Threads {
     }
 
     pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, sqlx::Error> {
-        Self::fetch_via_transaction(id, pool).await
+        Self::fetch_via_transaction(id, acquire_from).await
     }
 
     pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(

@@ -146,6 +146,7 @@ mod entities_metadata_query {
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
                "id": "https://serlo.org/organization",
                "type": "Organization",
@@ -239,6 +240,7 @@ mod entities_metadata_query {
           "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
               "id": "https://serlo.org/organization",
               "type": "Organization",
@@ -341,6 +343,7 @@ mod entities_metadata_query {
           },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
               "id": "https://serlo.org/organization",
               "type": "Organization",
@@ -429,6 +432,7 @@ mod entities_metadata_query {
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
               "id": "https://serlo.org/organization",
               "type": "Organization",
@@ -513,6 +517,7 @@ mod entities_metadata_query {
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
               "id": "https://serlo.org/organization",
               "type": "Organization",
@@ -618,6 +623,7 @@ mod entities_metadata_query {
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
+            "type": "WebAPI",
             "provider": {
               "id": "https://serlo.org/organization",
               "type": "Organization",
@@ -758,6 +764,33 @@ mod entities_metadata_query {
         .execute()
         .await
         .should_be_ok_with(|value| assert_eq!(value["entities"][0]["identifier"]["value"], 1495));
+    }
+
+    #[actix_rt::test]
+    async fn returns_several_subjects_in_about_property() {
+        let expected_about = json!([
+            {
+                "type": "Concept",
+                "id": "http://w3id.org/kim/schulfaecher/s1001",
+                "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+                }
+            },
+            {
+                "type": "Concept",
+                "id": "http://w3id.org/kim/schulfaecher/s1008",
+                "inScheme": {
+                "id": "http://w3id.org/kim/schulfaecher/"
+                }
+            }
+        ]);
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 25506 }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["about"], expected_about));
     }
 
     #[actix_rt::test]

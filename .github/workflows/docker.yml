@@ -18,4 +18,3 @@ jobs:
           push: false
           file: ./Dockerfile
           tags: serlo-org-database-layer:PR-${{ env.PR_NUMBER }}
-

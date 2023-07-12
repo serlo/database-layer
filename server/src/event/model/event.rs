@@ -56,7 +56,7 @@ pub enum ConcreteEvent {
 }
 
 impl Event {
-    pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         id: i32,
         acquire_from: A,
     ) -> Result<Event, EventError> {
@@ -249,7 +249,7 @@ impl EventPayload {
             .await?;
         }
 
-        let event = Event::fetch_via_transaction(event_id, &mut *transaction).await?;
+        let event = Event::fetch(event_id, &mut *transaction).await?;
         Notifications::create_notifications(&event, &mut *transaction).await?;
 
         transaction.commit().await?;

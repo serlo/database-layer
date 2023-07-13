@@ -112,9 +112,9 @@ async fn get_discriminator<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + st
     id: i32,
     acquire_from: A,
 ) -> Result<Discriminator, UuidError> {
-    let mut connection = acquire_from.acquire().await?;
+    let mut transaction = acquire_from.begin().await?;
     let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
-        .fetch_one(&mut *connection)
+        .fetch_one(&mut *transaction)
         .await
         .map_err(|e| match e {
             sqlx::Error::RowNotFound => UuidError::NotFound,
@@ -163,11 +163,9 @@ impl Uuid {
             Discriminator::BlogPost => BlogPost::get_context(),
             // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
             Discriminator::Comment => None,
-            Discriminator::Entity => {
-                Entity::fetch_canonical_subject(id, &mut *transaction)
-                    .await?
-                    .map(|subject| subject.name)
-            }
+            Discriminator::Entity => Entity::fetch_canonical_subject(id, &mut *transaction)
+                .await?
+                .map(|subject| subject.name),
             Discriminator::EntityRevision => {
                 EntityRevision::fetch_canonical_subject(id, &mut *transaction)
                     .await?

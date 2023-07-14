@@ -12,7 +12,6 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use server::create_database_pool;
-use server::database::Connection;
 use server::message::{Message as ServerMessage, MessageResponder};
 use server::uuid::abstract_entity_revision::EntityRevisionType;
 use server::uuid::{EntityType, TaxonomyType};
@@ -36,7 +35,7 @@ impl<'a> Message<'a> {
     ) -> MessageResult {
         let message = json!({ "type": self.message_type, "payload": self.payload });
         let message = from_value::<ServerMessage>(message).unwrap();
-        let http_response = message.handle(Connection::Transaction(transaction)).await;
+        let http_response = message.handle(&mut *transaction).await;
 
         MessageResult::new(http_response).await
     }

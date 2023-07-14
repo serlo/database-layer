@@ -58,7 +58,7 @@ impl User {
         user_id: i32,
         acquire_from: A,
     ) -> Result<user_activity_by_type_query::Output, sqlx::Error> {
-        let mut connection = acquire_from.acquire().await?;
+        let mut connection = acquire_from.begin().await?;
         let result = sqlx::query!(
             r#"
                 SELECT events.type AS event_type, count(*) AS counts

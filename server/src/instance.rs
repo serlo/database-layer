@@ -24,7 +24,7 @@ impl Instance {
         &self,
         acquire_from: A,
     ) -> Result<i32, Error> {
-        let mut connection = acquire_from.acquire().await?;
+        let mut connection = acquire_from.begin().await?;
         Ok(
             sqlx::query!("SELECT id FROM instance WHERE subdomain = ?", self)
                 .fetch_one(&mut *connection)

@@ -1,9 +1,9 @@
 use crate::uuid::Subject;
 use async_trait::async_trait;
 use convert_case::{Case, Casing};
-use futures::try_join;
+
 use serde::Serialize;
-use sqlx::MySqlPool;
+
 use sqlx::Row;
 use std::collections::{HashMap, HashSet};
 

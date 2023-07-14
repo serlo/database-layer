@@ -7,7 +7,7 @@ use super::abstract_event::AbstractEvent;
 use super::event::{Event, EventPayload};
 use super::event_type::RawEventType;
 use super::EventError;
-use crate::database::Executor;
+
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

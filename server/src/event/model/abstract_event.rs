@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use futures::join;
+
 use serde::Serialize;
-use sqlx::MySqlPool;
+
 
 use super::event_type::{EventType, RawEventType};
 use super::EventError;

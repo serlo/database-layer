@@ -6,7 +6,7 @@ use serde::Serialize;
 use super::messages::*;
 use crate::event::{AbstractEvent, Event};
 use crate::subscription::Subscriptions;
-use sqlx::MySqlPool;
+
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -2,13 +2,13 @@ use std::collections::HashSet;
 
 use async_trait::async_trait;
 use convert_case::{Case, Casing};
-use futures::join;
+
 use serde::{Deserialize, Serialize};
 use sqlx::database::HasArguments;
 use sqlx::encode::IsNull;
 use sqlx::mysql::MySqlTypeInfo;
 use sqlx::MySql;
-use sqlx::MySqlPool;
+
 
 use super::{AssertExists, ConcreteUuid, Uuid, UuidError, UuidFetcher};
 

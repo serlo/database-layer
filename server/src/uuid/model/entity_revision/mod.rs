@@ -1,8 +1,8 @@
 use crate::uuid::Subject;
 use async_trait::async_trait;
-use futures::try_join;
+
 use serde::Serialize;
-use sqlx::MySqlPool;
+
 
 use self::abstract_entity_revision::EntityRevisionFields;
 use self::abstract_entity_revision::{AbstractEntityRevision, EntityRevisionType};
@@ -16,7 +16,7 @@ use self::generic_entity_revision::GenericRevision;
 use self::video_revision::VideoRevision;
 use super::entity::Entity;
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::database::Executor;
+
 
 pub mod abstract_entity_revision;
 mod applet_revision;

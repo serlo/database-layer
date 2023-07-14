@@ -20,7 +20,7 @@ use super::set_uuid_state::SetUuidStateEvent;
 use super::taxonomy_link::TaxonomyLinkEvent;
 use super::taxonomy_term::TaxonomyTermEvent;
 use super::EventError;
-use crate::database::Executor;
+
 use crate::datetime::DateTime;
 use crate::event::{EventStringParameters, EventUuidParameters};
 use crate::instance::Instance;

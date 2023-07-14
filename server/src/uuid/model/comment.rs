@@ -1,10 +1,10 @@
 use async_trait::async_trait;
-use futures::join;
+
 use serde::Serialize;
-use sqlx::MySqlPool;
+
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::database::Executor;
+
 use crate::datetime::DateTime;
 use crate::format_alias;
 

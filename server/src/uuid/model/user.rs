@@ -1,7 +1,7 @@
 use async_trait::async_trait;
-use futures::join;
+
 use serde::Serialize;
-use sqlx::MySqlPool;
+
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 use crate::datetime::DateTime;

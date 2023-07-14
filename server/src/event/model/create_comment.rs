@@ -84,11 +84,13 @@ mod tests {
 
         let set_thread_state_event = CreateCommentEventPayload::new(16740, 18932, 10, 1);
 
-        let event = set_thread_state_event.save(&mut *transaction).await.unwrap();
-        let persisted_event =
-            Event::fetch(event.abstract_event.id, &mut *transaction)
-                .await
-                .unwrap();
+        let event = set_thread_state_event
+            .save(&mut *transaction)
+            .await
+            .unwrap();
+        let persisted_event = Event::fetch(event.abstract_event.id, &mut *transaction)
+            .await
+            .unwrap();
 
         assert_eq!(event, persisted_event);
 

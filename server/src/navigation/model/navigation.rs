@@ -3,7 +3,6 @@ use std::convert::TryInto;
 
 use serde::Serialize;
 
-
 use super::navigation_child::{
     NavigationChild, NavigationChildError, RawNavigationChild, RawNavigationChildError,
 };

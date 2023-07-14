@@ -3,7 +3,6 @@ use async_trait::async_trait;
 
 use serde::Serialize;
 
-
 use self::abstract_entity_revision::EntityRevisionFields;
 use self::abstract_entity_revision::{AbstractEntityRevision, EntityRevisionType};
 use self::applet_revision::AppletRevision;
@@ -16,7 +15,6 @@ use self::generic_entity_revision::GenericRevision;
 use self::video_revision::VideoRevision;
 use super::entity::Entity;
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-
 
 pub mod abstract_entity_revision;
 mod applet_revision;

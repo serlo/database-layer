@@ -9,7 +9,6 @@ use sqlx::encode::IsNull;
 use sqlx::mysql::MySqlTypeInfo;
 use sqlx::MySql;
 
-
 use super::{AssertExists, ConcreteUuid, Uuid, UuidError, UuidFetcher};
 
 use crate::database::Executor;

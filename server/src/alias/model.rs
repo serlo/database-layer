@@ -1,6 +1,5 @@
 use regex::Regex;
 
-
 use crate::alias::messages::alias_query;
 use crate::instance::Instance;
 use crate::operation;

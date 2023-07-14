@@ -7,7 +7,6 @@ use super::messages::*;
 use crate::event::{AbstractEvent, Event};
 use crate::subscription::Subscriptions;
 
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Notifications {

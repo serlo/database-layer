@@ -1,6 +1,5 @@
 use crate::subscription::messages::{subscription_set_mutation, subscriptions_query};
 
-
 use crate::datetime::DateTime;
 
 #[derive(Debug, Eq, PartialEq)]

@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 
-
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 use crate::format_alias;
 

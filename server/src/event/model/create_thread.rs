@@ -8,7 +8,6 @@ use super::event::{Event, EventPayload};
 use super::event_type::RawEventType;
 use super::EventError;
 
-
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateThreadEvent {

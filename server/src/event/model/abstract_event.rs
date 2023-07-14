@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-
 use serde::Serialize;
-
 
 use super::event_type::{EventType, RawEventType};
 use super::EventError;

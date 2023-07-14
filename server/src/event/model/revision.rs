@@ -118,10 +118,9 @@ mod tests {
         .save(&mut *transaction)
         .await
         .unwrap();
-        let persisted_event =
-            Event::fetch(event.abstract_event.id, &mut *transaction)
-                .await
-                .unwrap();
+        let persisted_event = Event::fetch(event.abstract_event.id, &mut *transaction)
+            .await
+            .unwrap();
 
         assert_eq!(event, persisted_event);
 

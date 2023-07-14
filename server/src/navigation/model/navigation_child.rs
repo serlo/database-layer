@@ -1,13 +1,10 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
-
 use regex::Regex;
 use serde::Serialize;
 
 use thiserror::Error;
-
-
 
 #[derive(Serialize)]
 #[serde(untagged)]

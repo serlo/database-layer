@@ -2,7 +2,6 @@ use async_trait::async_trait;
 
 use serde::Serialize;
 
-
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 
 use crate::datetime::DateTime;

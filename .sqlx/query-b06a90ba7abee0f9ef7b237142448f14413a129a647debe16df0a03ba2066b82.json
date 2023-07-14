@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, 'pageRevision')\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "b06a90ba7abee0f9ef7b237142448f14413a129a647debe16df0a03ba2066b82"
+}

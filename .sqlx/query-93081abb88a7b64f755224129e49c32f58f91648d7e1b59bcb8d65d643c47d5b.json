@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                        UPDATE page_repository\n                            SET current_revision_id = ?\n                            WHERE id = ?\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "93081abb88a7b64f755224129e49c32f58f91648d7e1b59bcb8d65d643c47d5b"
+}

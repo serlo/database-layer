@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "select type.name from entity join type on type.id = entity.type_id where entity.id = ?",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | UNIQUE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 1020
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "65cd0955be9597ee668c9857b362a8702b70c8d1c0482674e2ad869828622df7"
+}

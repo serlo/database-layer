@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                    UPDATE term_taxonomy\n                    SET weight = ?\n                    WHERE parent_id = ?\n                        AND id = ?\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "e5384760ba98e78643eb4b8c7318835490413607bf787711997eba1237eee1de"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, 'comment')\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "87b99c353a3ccda694aaef3e4bd9d122313e7293997b7903d333327296a1118f"
+}

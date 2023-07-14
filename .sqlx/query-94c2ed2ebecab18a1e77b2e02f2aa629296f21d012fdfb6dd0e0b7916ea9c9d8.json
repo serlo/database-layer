@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "DELETE FROM uuid WHERE id = ? AND discriminator = 'user'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "94c2ed2ebecab18a1e77b2e02f2aa629296f21d012fdfb6dd0e0b7916ea9c9d8"
+}

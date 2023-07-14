@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO page_repository (id, instance_id, license_id, discussions_enabled)\n                    VALUES (?, ?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "e9a80b5531000c8562bd2e7e3646216aa5ceb68730510d69dd17bce84ff8ea3f"
+}

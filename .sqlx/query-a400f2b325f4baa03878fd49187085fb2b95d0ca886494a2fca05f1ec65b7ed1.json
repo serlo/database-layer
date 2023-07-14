@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT repository_id FROM entity_revision WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "repository_id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | MULTIPLE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 20
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a400f2b325f4baa03878fd49187085fb2b95d0ca886494a2fca05f1ec65b7ed1"
+}

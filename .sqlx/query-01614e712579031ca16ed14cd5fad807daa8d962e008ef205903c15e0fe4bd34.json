@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "\n            SELECT COUNT(*) AS count\n                FROM term_taxonomy_entity\n                WHERE entity_id = ?\n                    AND term_taxonomy_id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "char_set": 63,
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "01614e712579031ca16ed14cd5fad807daa8d962e008ef205903c15e0fe4bd34"
+}

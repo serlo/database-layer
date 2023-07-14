@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "update event_log set actor_id = ? where actor_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "3475791793b58ee5c67fe97f0aab6eb28b1d0882f95d830463ab9a4bef1acf12"
+}

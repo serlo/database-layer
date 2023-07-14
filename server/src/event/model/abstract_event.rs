@@ -153,7 +153,7 @@ macro_rules! to_abstract_event {
 }
 
 impl AbstractEvent {
-    pub async fn fetch_via_transaction<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         id: i32,
         acquire_from: A,
     ) -> Result<Self, EventError> {

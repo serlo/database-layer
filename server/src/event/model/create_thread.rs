@@ -51,10 +51,11 @@ impl CreateThreadEventPayload {
         }
     }
 
-    pub async fn save<'a, E>(&self, executor: E) -> Result<Event, EventError>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn save<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> Result<Event, EventError> {
+        let mut connection = acquire_from.begin().await?;
         EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
@@ -66,7 +67,7 @@ impl CreateThreadEventPayload {
                 .cloned()
                 .collect(),
         )
-        .save(executor)
+        .save(&mut *connection)
         .await
     }
 }
@@ -88,10 +89,9 @@ mod tests {
         let create_thread_event = CreateThreadEventPayload::new(16740, 1292, 10, 1);
 
         let event = create_thread_event.save(&mut *transaction).await.unwrap();
-        let persisted_event =
-            Event::fetch(event.abstract_event.id, &mut *transaction)
-                .await
-                .unwrap();
+        let persisted_event = Event::fetch(event.abstract_event.id, &mut *transaction)
+            .await
+            .unwrap();
 
         assert_eq!(event, persisted_event);
 

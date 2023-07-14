@@ -56,11 +56,11 @@ pub enum ConcreteEvent {
 }
 
 impl Event {
-    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
         id: i32,
         acquire_from: A,
     ) -> Result<Event, EventError> {
-        let abstract_event = AbstractEvent::fetch_via_transaction(id, acquire_from).await?;
+        let abstract_event = AbstractEvent::fetch(id, acquire_from).await?;
         abstract_event.try_into()
     }
 }
@@ -148,11 +148,11 @@ impl EventPayload {
         }
     }
 
-    pub async fn save<'a, E>(&self, executor: E) -> Result<Event, EventError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    pub async fn save<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> Result<Event, EventError> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"

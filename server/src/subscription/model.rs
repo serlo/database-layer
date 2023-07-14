@@ -49,7 +49,7 @@ impl Subscriptions {
         object_id: i32,
         acquire_from: A,
     ) -> Result<Self, sqlx::Error> {
-        let mut connection = acquire_from.acquire().await?;
+        let mut connection = acquire_from.begin().await?;
         let subscriptions = sqlx::query!(
             r#"SELECT uuid_id, user_id, notify_mailman FROM subscription WHERE uuid_id = ?"#,
             object_id

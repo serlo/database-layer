@@ -8,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: docker-compose up -d
-      - uses: ./.github/actions/setup-node
+      - uses: serlo/configure-repositories/actions/setup-node@main
+      - uses: serlo/configure-repositories/actions/setup-mysql@main
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -22,7 +22,6 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: ./.github/wait-for-mysql.sh
       - run: cargo run &
       - run: ./.github/wait-for-server.sh
       - run: yarn pacts

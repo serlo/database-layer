@@ -17,15 +17,17 @@
     "down": "docker-compose down",
     "fetch": "./scripts/fetch.sh",
     "format": "prettier --write .",
-    "mysql": "docker-compose exec mysql serlo-mysql",
-    "mysql:dump": "ts-node --experimental-specifier-resolution=node scripts/mysql-dump",
-    "mysql:import-anonymous-data": "ts-node --experimental-specifier-resolution=node scripts/mysql-import-anonymous-data",
-    "mysql:rollback": "ts-node --experimental-specifier-resolution=node scripts/mysql-rollback",
+    "mysql": "docker compose exec mysql serlo-mysql",
+    "mysql:import-anonymous-data": "ts-node --experimental-specifier-resolution=node scripts/mysql/mysql-import-anonymous-data",
+    "mysql:rollback": "docker compose exec mysql sh -c \"pv /docker-entrypoint-initdb.d/001-init.sql | serlo-mysql\"",
     "pacts": "NODE_OPTIONS=--dns-result-order=ipv4first node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config-pacts.js",
     "sqlx:prepare": "cargo sqlx prepare --merged",
     "start": "docker-compose up --detach",
     "test": "cargo test",
-    "update-version": "./scripts/update_server_version.sh"
+    "update-version": "./scripts/update_server_version.sh",
+    "start:docker": "docker compose up --detach",
+    "stop:docker": "docker compose down",
+    "stop": "yarn stop:docker"
   },
   "devDependencies": {
     "@inyono/changelog": "0.5.2",

@@ -83,10 +83,7 @@ jobs:
           override: true
           profile: minimal
       - run: cargo build
-      - uses: actions/setup-node@v3
-        with:
-          node-version-file: .tool-versions
-      - run: yarn  --immutable --immutable-cache
+      - uses: ./.github/actions/setup-node
       - run: ./scripts/check_metadata_api.sh
 
   test:

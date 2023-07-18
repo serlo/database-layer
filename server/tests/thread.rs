@@ -26,7 +26,7 @@ mod all_threads_query {
                 "sendEmail": false,
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok();
 
@@ -34,7 +34,7 @@ mod all_threads_query {
         thread::sleep(Duration::from_millis(1000));
 
         Message::new("AllThreadsQuery", json!({ "first": 5 }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with_body(
                 json!({ "firstCommentIds": [35163, 35090, 26976, 35082, 34793] }),
@@ -143,14 +143,14 @@ mod thread_mutations {
                 "sendEmail": send_email,
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await;
 
         assert_eq!(result.status, expected_response);
 
         if expected_response == StatusCode::OK {
             Message::new("UuidQuery", json!({ "id": &result.get_json()["id"], }))
-                .execute_on(&mut *transaction)
+                .execute_on(&mut transaction)
                 .await
                 .should_be_ok_with(|comment| {
                     assert_eq!(comment["title"], title);
@@ -186,14 +186,14 @@ mod thread_mutations {
                 "sendEmail": send_email,
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await;
 
         assert_eq!(result.status, expected_response);
 
         if expected_response == StatusCode::OK {
             Message::new("UuidQuery", json!({ "id": &result.get_json()["id"], }))
-                .execute_on(&mut *transaction)
+                .execute_on(&mut transaction)
                 .await
                 .should_be_ok_with(|comment| {
                     assert_eq!(comment["parentId"], thread_id);
@@ -222,7 +222,7 @@ mod thread_mutations {
         let mut transaction = begin_transaction().await;
 
         let original_comment = &Message::new("UuidQuery", json!({ "id": comment_id, }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .get_json();
 
@@ -234,7 +234,7 @@ mod thread_mutations {
                 "content": content,
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await;
 
         assert_eq!(result.status, expected_response);
@@ -249,7 +249,7 @@ mod thread_mutations {
         }
 
         Message::new("UuidQuery", json!({ "id": comment_id, }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|comment| {
                 if content_should_change {
@@ -287,7 +287,7 @@ mod thread_mutations {
                 "archived": archived,
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await;
 
         assert_eq!(result.status, expected_response);
@@ -295,7 +295,7 @@ mod thread_mutations {
         for (index, id) in ids.iter().enumerate() {
             if expected_response == StatusCode::OK {
                 Message::new("UuidQuery", json!({ "id": id }))
-                    .execute_on(&mut *transaction)
+                    .execute_on(&mut transaction)
                     .await
                     .should_be_ok_with(|comment| {
                         assert_eq!(comment["archived"], archived);
@@ -303,7 +303,7 @@ mod thread_mutations {
             }
 
             Message::new("EventsQuery", json!({ "first": ids.len() }))
-                .execute_on(&mut *transaction)
+                .execute_on(&mut transaction)
                 .await
                 .should_be_ok_with(|result| {
                     let latest_event = &result["events"][ids.len() - index - 1];

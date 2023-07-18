@@ -132,7 +132,7 @@ mod user_create_mutation {
         assert_eq!(user_id, last_id);
 
         let user = Message::new("UuidQuery", json!({ "id": user_id }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .get_json();
 
@@ -189,14 +189,14 @@ mod user_delete_bots_mutation {
             .unwrap();
 
         Message::new("UserDeleteBotsMutation", json!({ "botIds": [user_id] }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with_body(
                 json!({ "success": true, "emailHashes": ["cd5610c5b6be1e5a62fb621031ae3856"] }),
             );
 
         Message::new("UuidQuery", json!({ "id": user_id }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_not_found();
     }
@@ -215,12 +215,12 @@ mod user_delete_regular_users_mutation {
             "UserDeleteRegularUsersMutation",
             json!({ "userId": user_id }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with_body(json!({ "success": true, }));
 
         Message::new("UuidQuery", json!({ "id": user_id }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_not_found();
 
@@ -228,7 +228,7 @@ mod user_delete_regular_users_mutation {
             "UserActivityByTypeQuery",
             json!({ "userId": deleted_user_id }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with_body(
             json!({ "edits": 893, "reviews": 923, "comments": 154, "taxonomy": 944 }),
@@ -335,7 +335,7 @@ mod user_delete_regular_users_mutation {
             "UserDeleteRegularUsersMutation",
             json!({ "userId": reporter_id }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await;
 
         let flag_does_not_exist = sqlx::query!(r#"select * from flag where reporter_id = 10"#)
@@ -376,7 +376,7 @@ mod user_potential_spam_users_query {
             .unwrap();
 
         Message::new("UserPotentialSpamUsersQuery", json!({ "first": 2 }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
@@ -398,7 +398,7 @@ mod user_potential_spam_users_query {
             "UserPotentialSpamUsersQuery",
             json!({ "first": 3, "after": user_id2 }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
@@ -427,7 +427,7 @@ mod user_potential_spam_users_query {
         .unwrap();
 
         Message::new("UserPotentialSpamUsersQuery", json!({ "first": 1 }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }
@@ -455,7 +455,7 @@ mod user_potential_spam_users_query {
                     "pageId": 16569
                 }),
             )
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok();
         }
@@ -464,7 +464,7 @@ mod user_potential_spam_users_query {
             "UserPotentialSpamUsersQuery",
             json!({ "first": 1, "after": user_id2}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with_body(json!({ "userIds": [user_id] }));
     }

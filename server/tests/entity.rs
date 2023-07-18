@@ -35,13 +35,13 @@ mod add_revision_mutation {
                     "userId": 1,
                 }),
             )
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .get_json()["revisionId"]
                 .clone();
 
             Message::new("UuidQuery", json!({ "id": revision_id }))
-                .execute_on(&mut *transaction)
+                .execute_on(&mut transaction)
                 .await
                 .should_be_ok_with(|result| {
                     assert_eq!(result["changes"], "test changes");
@@ -56,7 +56,7 @@ mod add_revision_mutation {
                     }
                 });
 
-            assert_event_revision_ok(revision_id, revision.entity_id, &mut *transaction).await;
+            assert_event_revision_ok(revision_id, revision.entity_id, &mut transaction).await;
         }
     }
 
@@ -80,11 +80,11 @@ mod add_revision_mutation {
                     "userId": 1
                 }),
             )
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .get_json()["revisionId"]
                 .clone();
-            let first_revision_ids = get_revisions(revision.entity_id, &mut *transaction).await;
+            let first_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
             let second_revision_id = Message::new(
                 "EntityAddRevisionMutation",
@@ -101,11 +101,11 @@ mod add_revision_mutation {
                     "userId": 1
                 }),
             )
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .get_json()["revisionId"]
                 .clone();
-            let second_revision_ids = get_revisions(revision.entity_id, &mut *transaction).await;
+            let second_revision_ids = get_revisions(revision.entity_id, &mut transaction).await;
 
             assert_eq!(first_revision_id, second_revision_id);
             assert_eq!(first_revision_ids, second_revision_ids);
@@ -234,13 +234,13 @@ mod create_mutation {
                 "userId": 1,
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .get_json()["id"]
             .clone();
 
         Message::new("UuidQuery", json!({ "id": new_entity_id }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(
@@ -255,7 +255,7 @@ mod create_mutation {
             "EventsQuery",
             json!({ "first": 4, "objectId": new_entity_id }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with(|result| {
             let (parent_event_name, parent_id, object_id) = match taxonomy_term_id {
@@ -340,7 +340,7 @@ mod create_mutation {
                 "userId": 1,
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .get_json()["id"]
             .clone();
@@ -370,7 +370,7 @@ mod create_mutation {
                 "userId": 1,
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .get_json()["id"]
             .clone();
@@ -410,7 +410,7 @@ mod create_mutation {
                 "userId": 1,
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_bad_request();
     }
@@ -430,7 +430,7 @@ mod create_mutation {
                 "trashed": true
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok();
 
@@ -459,7 +459,7 @@ mod create_mutation {
                 "userId": 1,
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok();
     }
@@ -479,12 +479,12 @@ mod create_mutation {
                 "trashed": true
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok();
 
         Message::new("UuidQuery", json!({ "id": id_exercise }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(
@@ -502,7 +502,7 @@ mod create_mutation {
         let (mut transaction, id_exercise, id_solution) = exercise_with_solution.await;
 
         Message::new("UuidQuery", json!({ "id": id_exercise }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(
@@ -534,7 +534,7 @@ mod create_mutation {
                     "userId": 1,
                 }),
             )
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .get_json()["id"]
                 .clone();
@@ -550,7 +550,7 @@ mod create_mutation {
             };
 
             Message::new("UuidQuery", json!({ "id": parent_element_id }))
-                .execute_on(&mut *transaction)
+                .execute_on(&mut transaction)
                 .await
                 .should_be_ok_with(|result| {
                     let children_ids_value = result[children_ids_name].clone();
@@ -709,7 +709,7 @@ mod deleted_entities_query {
             "DeletedEntitiesQuery",
             json!({ "first": 1, "instance": "en" }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with_body(json!({
           "success": true,
@@ -750,12 +750,12 @@ mod set_license_mutation {
             "EntitySetLicenseMutation",
             json!({"userId": user_id, "entityId": entity_id, "licenseId": license_id}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with_body(json!({ "success": true, }));
 
         Message::new("UuidQuery", json!({ "id": entity_id }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| assert_eq!(result["licenseId"], license_id));
 
@@ -763,7 +763,7 @@ mod set_license_mutation {
             "EventsQuery",
             json!({ "first": 1_usize, "objectId": entity_id as usize}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with(|result| {
             assert_json_include!(
@@ -810,14 +810,14 @@ mod set_license_mutation {
             "EntitySetLicenseMutation",
             json!({"userId": 1, "entityId": entity_id, "licenseId": 1}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await;
 
         Message::new(
             "EventsQuery",
             json!({ "first": 1_usize, "objectId": entity_id as usize}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with(|result| {
             assert_json_include!(
@@ -844,12 +844,12 @@ mod sort_mutation {
             "EntitySortMutation",
             json!({ "childrenIds": children_ids, "entityId": entity_id }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with_body(json!({ "success": true }));
 
         Message::new("UuidQuery", json!({ "id": entity_id }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["exerciseIds"], to_value(children_ids).unwrap());
@@ -867,12 +867,12 @@ mod sort_mutation {
             "EntitySortMutation",
             json!({ "childrenIds": children_ids, "entityId": entity_id }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with_body(json!({ "success": true }));
 
         Message::new("UuidQuery", json!({ "id": entity_id }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(

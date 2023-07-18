@@ -148,7 +148,7 @@ mod general_events {
                 }
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .get_json()["revisionId"]
             .clone();
@@ -161,7 +161,7 @@ mod general_events {
                 "reason": "reason",
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_bad_request();
     }

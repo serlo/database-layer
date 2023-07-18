@@ -34,7 +34,7 @@ mod uuid_query {
         .unwrap();
 
         Message::new("UuidQuery", json!({ "id": exercise_group_revision_id }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| assert_eq!(result["cohesive"], true));
     }

@@ -26,7 +26,7 @@ mod user_add_role_mutation {
             "UserAddRoleMutation",
             json!({ "username": username, "roleName": role_name}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok();
 
@@ -57,7 +57,7 @@ mod user_add_role_mutation {
             "UserAddRoleMutation",
             json!({ "username": username, "roleName": role_name}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok();
 
@@ -86,7 +86,7 @@ mod user_add_role_mutation {
             "UserAddRoleMutation",
             json!({ "username": username, "roleName": "not a role"}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_bad_request();
     }
@@ -99,7 +99,7 @@ mod user_add_role_mutation {
             "UserAddRoleMutation",
             json!({ "username": username, "roleName": "login"}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_bad_request();
     }
@@ -112,7 +112,7 @@ mod user_create_mutation {
     async fn creates_an_user() {
         let mut transaction = begin_transaction().await;
         let response = Message::new("UserCreateMutation", json!({ "username": "testUser", "email": "mail@mail.test", "password": "securePassword!"}))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .get_json();
 
@@ -492,7 +492,7 @@ mod user_remove_role_mutation {
             "UserRemoveRoleMutation",
             json!({ "username": username, "roleName": role_name}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok();
 
@@ -522,7 +522,7 @@ mod user_remove_role_mutation {
             "UserRemoveRoleMutation",
             json!({ "username": username, "roleName": role_name}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok();
     }
@@ -535,7 +535,7 @@ mod user_remove_role_mutation {
             "UserRemoveRoleMutation",
             json!({ "username": username, "roleName": "not a role"}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_bad_request();
     }
@@ -548,7 +548,7 @@ mod user_remove_role_mutation {
             "UserRemoveRoleMutation",
             json!({ "username": username, "roleName": "login"}),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_bad_request();
     }
@@ -627,12 +627,12 @@ mod user_set_description_mutation {
             "UserSetDescriptionMutation",
             json!({ "userId": user_id, "description": "new description".to_string() }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with_body(json!({ "success": true }));
 
         Message::new("UuidQuery", json!({ "id": user_id }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["description"], "new description".to_string())
@@ -663,7 +663,7 @@ mod user_set_email_mutation {
         let user_id = create_new_test_user(&mut *transaction).await.unwrap();
         let new_email = "user@example.com".to_string();
         let user = Message::new("UuidQuery", json!({ "id": user_id }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .get_json();
         let username = user.get("username").unwrap().as_str().unwrap();
@@ -672,7 +672,7 @@ mod user_set_email_mutation {
             "UserSetEmailMutation",
             json!({ "userId": user_id, "email": &new_email }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .should_be_ok_with_body(json!({ "success": true, "username": username }));
 

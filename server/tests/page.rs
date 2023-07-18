@@ -16,13 +16,13 @@ mod add_revision_mutation {
                 "userId": 1,
             }),
         )
-        .execute_on(&mut *transaction)
+        .execute_on(&mut transaction)
         .await
         .get_json()["revisionId"]
             .clone();
 
         Message::new("UuidQuery", json!({ "id": new_revision_id }))
-            .execute_on(&mut *transaction)
+            .execute_on(&mut transaction)
             .await
             .should_be_ok_with(|result| {
                 assert_eq!(result["content"], "test content");

@@ -1119,9 +1119,7 @@ mod tests {
         .await
         .unwrap();
 
-        let entity = Entity::fetch_via_transaction(1495, &mut *transaction)
-            .await
-            .unwrap();
+        let entity = Entity::fetch(1495, &mut *transaction).await.unwrap();
 
         if let ConcreteUuid::Entity(Entity {
             abstract_entity, ..
@@ -1164,9 +1162,7 @@ mod tests {
         .await
         .unwrap();
 
-        let entity = Entity::fetch_via_transaction(1495, &mut *transaction)
-            .await
-            .unwrap();
+        let entity = Entity::fetch(1495, &mut *transaction).await.unwrap();
         if let ConcreteUuid::Entity(Entity {
             abstract_entity, ..
         }) = entity.concrete_uuid
@@ -1239,9 +1235,7 @@ mod tests {
         .unwrap();
 
         // Verify that revision was checked out.
-        let entity = Entity::fetch_via_transaction(1855, &mut *transaction)
-            .await
-            .unwrap();
+        let entity = Entity::fetch(1855, &mut *transaction).await.unwrap();
         if let ConcreteUuid::Entity(Entity {
             abstract_entity, ..
         }) = entity.concrete_uuid
@@ -1270,9 +1264,7 @@ mod tests {
             .await
             .unwrap();
 
-        let entity = Entity::fetch_via_transaction(entity_id, &mut *transaction)
-            .await
-            .unwrap();
+        let entity = Entity::fetch(entity_id, &mut *transaction).await.unwrap();
         assert!(!entity.trashed);
     }
 
@@ -1318,7 +1310,7 @@ mod tests {
         .unwrap();
 
         // Verify that revision was trashed.
-        let revision = EntityRevision::fetch_via_transaction(30672, &mut *transaction)
+        let revision = EntityRevision::fetch(30672, &mut *transaction)
             .await
             .unwrap();
         assert!(revision.trashed);

@@ -83,7 +83,7 @@ jobs:
           override: true
           profile: minimal
       - run: cargo build
-      - uses: ./.github/actions/setup-node
+      - uses: serlo/configure-repositories/actions/setup-node@main
       - run: ./scripts/check_metadata_api.sh
 
   test:

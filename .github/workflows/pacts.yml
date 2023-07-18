@@ -21,6 +21,5 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: ./.github/wait-for-mysql.sh
       - run: cargo run &
       - run: yarn pacts

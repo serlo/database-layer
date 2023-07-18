@@ -90,13 +90,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: docker-compose up -d
+      - uses: serlo/configure-repositories/actions/setup-mysql@main
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
           profile: minimal
-      - run: ./.github/wait-for-mysql.sh
       - uses: actions-rs/cargo@v1
         with:
           command: test

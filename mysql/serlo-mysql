@@ -1,5 +1,0 @@
-#!/bin/bash
-#
-# Executes MySQL client together with default settings for the serlo DB.
-
-mysql --defaults-extra-file=/etc/mysql/serlo.cnf "$@"

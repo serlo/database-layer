@@ -883,7 +883,7 @@ __metadata:
   dependencies:
     "@inyono/changelog": 0.5.2
     "@pact-foundation/pact": ^10.4.1
-    "@types/node": ^18.16.19
+    "@types/node": ^18.17.0
     "@types/ramda": ^0.29.3
     "@types/semver": ^7.5.0
     ajv-cli: ^5.0.0
@@ -891,7 +891,7 @@ __metadata:
     jest: ^29.6.1
     prettier: ^3.0.0
     prettier-plugin-packagejson: ^2.4.5
-    prettier-plugin-sh: ^0.13.0
+    prettier-plugin-sh: ^0.13.1
     ramda: ^0.29.0
     semver: ^7.5.4
     toml: ^3.0.0
@@ -1118,10 +1118,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^18.16.19":
+"@types/node@npm:*":
   version: 18.16.19
   resolution: "@types/node@npm:18.16.19"
   checksum: 63c31f09616508aa7135380a4c79470a897b75f9ff3a70eb069e534dfabdec3f32fb0f9df5939127f1086614d980ddea0fa5e8cc29a49103c4f74cd687618aaf
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^18.17.0":
+  version: 18.17.0
+  resolution: "@types/node@npm:18.17.0"
+  checksum: 3a43c5c5541342751b514485144818a515fac5427f663066068eaacbe8a108cbe1207aae75ec89d34c3b32414c334aad84e9083cf7fcf3ebfd970adc871314a4
   languageName: node
   linkType: hard
 
@@ -4758,16 +4765,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier-plugin-sh@npm:^0.13.0":
-  version: 0.13.0
-  resolution: "prettier-plugin-sh@npm:0.13.0"
+"prettier-plugin-sh@npm:^0.13.1":
+  version: 0.13.1
+  resolution: "prettier-plugin-sh@npm:0.13.1"
   dependencies:
     mvdan-sh: ^0.10.1
     sh-syntax: ^0.4.1
-    synckit: ^0.8.5
   peerDependencies:
     prettier: ^3.0.0
-  checksum: c4eca4e956548a36b267b284ea77af958899558c7fa4369f71137f61aa25f45b87b2da7b83ce330748af40cd32d852530296f5db6b2a63ec9dbff434ec3cff27
+  checksum: c0e383ff2691b1440e0751222a4ab9ae82228fd7f4a368ec35e2d44e88dd5cdba1c0ce7bf541c1ea4538c6852ef8304793113c4e9e2425084b08fbef2b27532f
   languageName: node
   linkType: hard
 
@@ -5540,7 +5546,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"synckit@npm:0.8.5, synckit@npm:^0.8.5":
+"synckit@npm:0.8.5":
   version: 0.8.5
   resolution: "synckit@npm:0.8.5"
   dependencies:

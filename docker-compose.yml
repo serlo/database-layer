@@ -2,9 +2,7 @@ version: '3.9'
 
 services:
   mysql:
-    build:
-      context: mysql
-      dockerfile: Dockerfile
+    image: eu.gcr.io/serlo-shared/serlo-mysql-database:latest
     platform: linux/x86_64
     ports:
       - '3306:3306'

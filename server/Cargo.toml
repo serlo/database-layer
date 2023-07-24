@@ -9,7 +9,7 @@ edition = "2021"
 actix-rt = "2.8.0"
 actix-service = "2.0.2"
 actix-web = "4.3.1"
-async-trait = "0.1.71"
+async-trait = "0.1.72"
 chrono = { version = "0.4.26", features = ["serde"] }
 chrono-tz = "~0.8.3"
 convert_case = "~0.6.0"
@@ -21,11 +21,11 @@ rand = "0.8.5"
 regex = "1.9.1"
 sentry = "~0.31.5"
 sentry-actix = "~0.31.5"
-serde = "1.0.168"
-serde_json = "1.0.100"
+serde = "1.0.175"
+serde_json = "1.0.103"
 sophia = "0.7.2"
 sqlx = { version = "~0.7.0", features = ["chrono", "json", "mysql", "runtime-tokio-native-tls"] }
-thiserror = "1.0.43"
+thiserror = "1.0.44"
 
 [dev-dependencies]
 criterion = { version = "~0.5.1", features = ["html_reports", "async"] }

@@ -55,7 +55,7 @@ impl CreateThreadEventPayload {
         acquire_from: A,
     ) -> Result<Event, EventError> {
         let mut transaction = acquire_from.begin().await?;
-        EventPayload::new(
+        let result = EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
             self.thread_id,
@@ -67,7 +67,9 @@ impl CreateThreadEventPayload {
                 .collect(),
         )
         .save(&mut *transaction)
-        .await
+        .await;
+        transaction.commit().await?;
+        result
     }
 }
 

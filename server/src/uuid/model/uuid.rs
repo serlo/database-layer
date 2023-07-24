@@ -84,7 +84,7 @@ impl From<UuidError> for operation::Error {
 pub trait UuidFetcher {
     async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
         id: i32,
-        aquire_from: A,
+        acquire_from: A,
     ) -> Result<Uuid, UuidError>
     where
         Self: Sized;

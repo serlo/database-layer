@@ -4,10 +4,8 @@ use std::hash::{Hash, Hasher};
 use serde::Serialize;
 
 use super::messages::*;
-use crate::database::Executor;
 use crate::event::{AbstractEvent, Event};
 use crate::subscription::Subscriptions;
-use sqlx::MySqlPool;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -44,17 +42,11 @@ impl Hash for Subscriber {
 }
 
 impl Notifications {
-    pub async fn fetch(user_id: i32, pool: &MySqlPool) -> Result<Notifications, sqlx::Error> {
-        Self::fetch_via_transaction(user_id, pool).await
-    }
-
-    pub async fn fetch_via_transaction<'a, E>(
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         user_id: i32,
-        executor: E,
-    ) -> Result<Notifications, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Notifications, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         let notifications = sqlx::query!(
             r#"
                 SELECT n.id, n.seen, n.email_sent, n.email, e.event_log_id
@@ -81,7 +73,7 @@ impl Notifications {
             "#,
             user_id
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?;
 
         let mut notifications: Vec<Notification> = notifications
@@ -102,11 +94,11 @@ impl Notifications {
         })
     }
 
-    pub async fn create_notifications<'a, E>(event: &Event, executor: E) -> Result<(), sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    pub async fn create_notifications<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        event: &Event,
+        acquire_from: A,
+    ) -> Result<(), sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let AbstractEvent {
             actor_id,
@@ -120,7 +112,8 @@ impl Notifications {
         object_ids.extend(event.abstract_event.uuid_parameters.values());
 
         for object_id in object_ids {
-            let subscriptions = Subscriptions::fetch_by_object(object_id, &mut transaction).await?;
+            let subscriptions =
+                Subscriptions::fetch_by_object(object_id, &mut *transaction).await?;
             let subscriptions = subscriptions
                 .0
                 .iter()
@@ -134,7 +127,7 @@ impl Notifications {
         }
 
         for subscriber in subscribers {
-            Self::create_notification(event, &subscriber, &mut transaction).await?;
+            Self::create_notification(event, &subscriber, &mut *transaction).await?;
         }
 
         transaction.commit().await?;
@@ -142,15 +135,12 @@ impl Notifications {
         Ok(())
     }
 
-    async fn create_notification<'a, E>(
+    async fn create_notification<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         event: &Event,
         subscriber: &Subscriber,
-        executor: E,
-    ) -> Result<(), sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"
@@ -161,7 +151,7 @@ impl Notifications {
             event.abstract_event.date,
             subscriber.send_email
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
         sqlx::query!(
             r#"
@@ -170,7 +160,7 @@ impl Notifications {
             "#,
             event.abstract_event.id,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         transaction.commit().await?;
@@ -180,14 +170,11 @@ impl Notifications {
 }
 
 impl Notifications {
-    pub async fn set_notification_state<'a, E>(
+    pub async fn set_notification_state<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &set_state_mutation::Payload,
-        executor: E,
-    ) -> Result<(), sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         for id in &payload.ids {
             let seen = !payload.unread;
@@ -201,7 +188,7 @@ impl Notifications {
                 seen,
                 id
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 
@@ -215,7 +202,6 @@ impl Notifications {
 mod tests {
     use super::*;
     use crate::create_database_pool;
-    use crate::database::Executor;
     use crate::event::{
         EntityLinkEventPayload, Event, RevisionEventPayload, SetUuidStateEventPayload,
     };
@@ -229,7 +215,7 @@ mod tests {
         for uuid_type in ["attachment", "blogPost"].iter() {
             let pool = create_database_pool().await.unwrap();
             let mut transaction = pool.begin().await.unwrap();
-            let instance_id = Instance::De.fetch_id(&mut transaction).await.unwrap();
+            let instance_id = Instance::De.fetch_id(&mut *transaction).await.unwrap();
 
             let unsupported_uuid =
                 sqlx::query!("select id from uuid where discriminator = ?", uuid_type)
@@ -280,7 +266,7 @@ mod tests {
     async fn query_notifications_does_not_return_notifications_with_unsupported_entity() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
-        let instance_id = Instance::De.fetch_id(&mut transaction).await.unwrap();
+        let instance_id = Instance::De.fetch_id(&mut *transaction).await.unwrap();
 
         let result = sqlx::query!(
             r#"
@@ -292,7 +278,7 @@ mod tests {
                 where type_id = 39
             "#
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await
         .unwrap();
 
@@ -349,20 +335,21 @@ mod tests {
         Revision(RevisionEventPayload),
     }
 
-    async fn assert_no_notifications_for<'a, E, F>(
+    async fn assert_no_notifications_for<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>, F>(
         create_event: F,
         message: String,
-        executor: E,
+        acquire_from: A,
     ) -> Result<(), sqlx::Error>
     where
         F: Fn(i32) -> EntityPayloadType,
-        E: Executor<'a>,
     {
-        let mut transaction = executor.begin().await?;
-        let new_user_id = create_new_test_user(&mut transaction).await?;
+        let mut transaction = acquire_from.begin().await?;
+        let new_user_id = create_new_test_user(&mut *transaction).await?;
         let event = match create_event(new_user_id) {
-            EntityPayloadType::EntityLink(payload) => payload.save(&mut transaction).await.unwrap(),
-            EntityPayloadType::Revision(payload) => payload.save(&mut transaction).await.unwrap(),
+            EntityPayloadType::EntityLink(payload) => {
+                payload.save(&mut *transaction).await.unwrap()
+            }
+            EntityPayloadType::Revision(payload) => payload.save(&mut *transaction).await.unwrap(),
         };
 
         Notifications::create_notification(
@@ -371,12 +358,12 @@ mod tests {
                 user_id: new_user_id,
                 send_email: false,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await?;
 
         assert_eq!(
-            Notifications::fetch_via_transaction(new_user_id, &mut transaction)
+            Notifications::fetch(new_user_id, &mut *transaction)
                 .await?
                 .notifications
                 .len(),
@@ -399,7 +386,7 @@ mod tests {
                 user_id: 1,
                 unread: true,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
@@ -416,14 +403,14 @@ mod tests {
                 user_id: 1,
                 unread: false,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
         // Verify that the object was set to read (seen is 1).
         let uuid = sqlx::query!(r#"SELECT seen FROM notification WHERE id = ?"#, 6522)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap();
         assert!(uuid.seen != 0);
@@ -440,14 +427,14 @@ mod tests {
                 user_id: 1,
                 unread: true,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
         // Verify that the object was set to unread (seen is 0).
         let uuid = sqlx::query!(r#"SELECT seen FROM notification WHERE id = ?"#, 1293)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap();
         assert!(uuid.seen == 0);
@@ -466,7 +453,7 @@ mod tests {
                 user_id: 1,
                 unread: true,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
@@ -480,7 +467,7 @@ mod tests {
                 "#,
                 id
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap();
 
@@ -493,18 +480,16 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let event = Event::fetch_via_transaction(38513, &mut transaction)
-            .await
-            .unwrap();
+        let event = Event::fetch(38513, &mut *transaction).await.unwrap();
 
         // Verify assumption that the event has no subscribers.
         let subscriptions =
-            Subscriptions::fetch_by_object(event.abstract_event.object_id, &mut transaction)
+            Subscriptions::fetch_by_object(event.abstract_event.object_id, &mut *transaction)
                 .await
                 .unwrap();
         assert!(subscriptions.0.is_empty());
 
-        Notifications::create_notifications(&event, &mut transaction)
+        Notifications::create_notifications(&event, &mut *transaction)
             .await
             .unwrap();
 
@@ -513,7 +498,7 @@ mod tests {
             r#"SELECT * FROM notification_event WHERE event_log_id = ?"#,
             event.abstract_event.id
         )
-        .fetch_all(&mut transaction)
+        .fetch_all(&mut *transaction)
         .await
         .unwrap();
         assert!(notifications.is_empty());
@@ -525,7 +510,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let other_user = 1;
-        let test_user = create_new_test_user(&mut transaction).await.unwrap();
+        let test_user = create_new_test_user(&mut *transaction).await.unwrap();
 
         sqlx::query!(
             r#"
@@ -535,18 +520,18 @@ mod tests {
             other_user,
             test_user
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .unwrap();
 
         SetUuidStateEventPayload::new(false, other_user, other_user, Instance::De)
-            .save(&mut transaction)
+            .save(&mut *transaction)
             .await
             .unwrap();
 
         // Verify that the notification was created.
         assert_eq!(
-            Notifications::fetch_via_transaction(test_user, &mut transaction)
+            Notifications::fetch(test_user, &mut *transaction)
                 .await
                 .unwrap()
                 .notifications
@@ -560,13 +545,11 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let event = Event::fetch_via_transaction(37373, &mut transaction)
-            .await
-            .unwrap();
+        let event = Event::fetch(37373, &mut *transaction).await.unwrap();
 
         // Verify the assumption that the event has no direct subscriber.
         let subscriptions =
-            Subscriptions::fetch_by_object(event.abstract_event.object_id, &mut transaction)
+            Subscriptions::fetch_by_object(event.abstract_event.object_id, &mut *transaction)
                 .await
                 .unwrap();
         assert!(subscriptions.0.is_empty());
@@ -579,7 +562,7 @@ mod tests {
                 .values()
                 .first()
                 .unwrap(),
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
@@ -592,17 +575,17 @@ mod tests {
             r#"DELETE FROM notification_event WHERE event_log_id = ?"#,
             event.abstract_event.id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .unwrap();
 
-        Notifications::create_notifications(&event, &mut transaction)
+        Notifications::create_notifications(&event, &mut *transaction)
             .await
             .unwrap();
 
         // Verify that the notifications were created.
         for subscriber in subscribers {
-            let notifications = Notifications::fetch_via_transaction(subscriber, &mut transaction)
+            let notifications = Notifications::fetch(subscriber, &mut *transaction)
                 .await
                 .unwrap();
             let notifications: Vec<_> = notifications

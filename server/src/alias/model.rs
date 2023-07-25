@@ -1,30 +1,17 @@
 use regex::Regex;
-use sqlx::MySqlPool;
 
 use crate::alias::messages::alias_query;
-use crate::database::Executor;
 use crate::instance::Instance;
 use crate::operation;
 use crate::uuid::{Uuid, UuidFetcher};
 
 type Alias = alias_query::Output;
 
-pub async fn fetch(
+pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
     path: &str,
     instance: Instance,
-    pool: &MySqlPool,
+    acquire_from: A,
 ) -> Result<Alias, operation::Error> {
-    fetch_via_transaction(path, instance, pool).await
-}
-
-pub async fn fetch_via_transaction<'a, E>(
-    path: &str,
-    instance: Instance,
-    executor: E,
-) -> Result<Alias, operation::Error>
-where
-    E: Executor<'a>,
-{
     let path = path.strip_prefix('/').unwrap_or(path);
 
     if path == "backend"
@@ -80,7 +67,7 @@ where
 
     let re = Regex::new(r"^user/profile/(?P<username>.+)$").unwrap();
 
-    let mut transaction = executor.begin().await?;
+    let mut transaction = acquire_from.begin().await?;
 
     let id = if let Some(captures) = re.captures(path) {
         let username = captures.name("username").unwrap().as_str();
@@ -92,7 +79,7 @@ where
                     "#,
             username
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .map(|x| x.id as i32)
         .ok_or(operation::Error::NotFoundError)?
@@ -111,14 +98,14 @@ where
                 instance,
                 path
             )
-            .fetch_optional(&mut transaction)
+            .fetch_optional(&mut *transaction)
             .await?
             .map(|result| result.uuid_id as i32)
             .ok_or(operation::Error::NotFoundError)?
         }
     };
 
-    let uuid = Uuid::fetch_via_transaction(id, &mut transaction).await?;
+    let uuid = Uuid::fetch(id, &mut *transaction).await?;
 
     transaction.commit().await?;
 

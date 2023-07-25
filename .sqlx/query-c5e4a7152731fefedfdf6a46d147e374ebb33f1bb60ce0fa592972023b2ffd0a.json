@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "update ad set author_id = ? where author_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c5e4a7152731fefedfdf6a46d147e374ebb33f1bb60ce0fa592972023b2ffd0a"
+}

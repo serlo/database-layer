@@ -1,0 +1,69 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT tt.id, t.name, tt.parent_id, u.trashed, type.name AS typename\n                FROM term t\n                        JOIN term_taxonomy tt ON t.id = tt.term_id\n                        JOIN taxonomy ON tt.taxonomy_id = taxonomy.id\n                        JOIN type ON taxonomy.type_id = type.id\n                        JOIN uuid u on tt.id = u.id\n                        JOIN instance i ON t.instance_id = i.id\n                WHERE i.subdomain = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | PRIMARY_KEY | MULTIPLE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 20
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "parent_id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "MULTIPLE_KEY",
+          "char_set": 63,
+          "max_size": 20
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "trashed",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL",
+          "char_set": 63,
+          "max_size": 1
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "typename",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | UNIQUE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 1020
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "e70be0cb523c16b136810a91281475f3a6ec5a191dd10a495e8c5831fc41d8ca"
+}

@@ -5,7 +5,7 @@ COPY server server
 COPY test-utils test-utils
 COPY Cargo.lock .
 COPY Cargo.toml .
-COPY sqlx-data.json .
+COPY .sqlx .sqlx
 RUN RUSTFLAGS='-C target-feature=-crt-static' cargo build --release
 
 FROM alpine:3.18

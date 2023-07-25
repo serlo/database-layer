@@ -2,7 +2,6 @@ use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use crate::database::{Connection, Executor};
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 
@@ -15,11 +14,14 @@ pub enum SubjectsMessage {
 #[async_trait]
 impl MessageResponder for SubjectsMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
             SubjectsMessage::SubjectsQuery(_) => {
                 subjects_query::Payload {}
-                    .handle("SubjectsQuery", connection)
+                    .handle("SubjectsQuery", acquire_from)
                     .await
             }
         }
@@ -50,18 +52,18 @@ pub mod subjects_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => fetch_subjects(pool).await?,
-                Connection::Transaction(transaction) => fetch_subjects(transaction).await?,
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(fetch_subjects(acquire_from).await?)
         }
     }
 
-    async fn fetch_subjects<'a, E>(executor: E) -> Result<subjects_query::Output, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+    async fn fetch_subjects<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        acquire_from: A,
+    ) -> Result<subjects_query::Output, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         let subjects = sqlx::query!(
             r#"
                 SELECT
@@ -84,7 +86,7 @@ pub mod subjects_query {
 
             "#,
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?
         .iter()
         .map(|record| subjects_query::Subject {

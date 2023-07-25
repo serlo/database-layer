@@ -1,0 +1,69 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT u.trashed, i.subdomain, p.current_revision_id, p.license_id, r.title\n                    FROM page_repository p\n                    JOIN uuid u ON u.id = p.id\n                    JOIN instance i ON i.id = p.instance_id\n                    LEFT JOIN page_revision r ON r.id = p.current_revision_id\n                    WHERE p.id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "trashed",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL",
+          "char_set": 63,
+          "max_size": 1
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "subdomain",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 40
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "current_revision_id",
+        "type_info": {
+          "type": "Long",
+          "flags": "",
+          "char_set": 63,
+          "max_size": 11
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "license_id",
+        "type_info": {
+          "type": "Long",
+          "flags": "NOT_NULL | MULTIPLE_KEY",
+          "char_set": 63,
+          "max_size": 11
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "title",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 1020
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "12ed467d6c81bc00bddc5a10220b65925488fc0521f1e62a81308d2296a961fe"
+}

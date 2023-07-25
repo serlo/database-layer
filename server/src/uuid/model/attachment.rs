@@ -1,22 +1,17 @@
 use async_trait::async_trait;
-use sqlx::MySqlPool;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::database::Executor;
 use crate::format_alias;
 
 pub struct Attachment {}
 
 #[async_trait]
 impl UuidFetcher for Attachment {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
-        Self::fetch_via_transaction(id, pool).await
-    }
-
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
-    where
-        E: Executor<'a>,
-    {
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Uuid, UuidError> {
+        let mut connection = acquire_from.acquire().await?;
         sqlx::query!(
             r#"
                 SELECT u.trashed, f.name
@@ -27,7 +22,7 @@ impl UuidFetcher for Attachment {
             "#,
             id
         )
-        .fetch_one(executor)
+        .fetch_one(&mut *connection)
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => UuidError::NotFound,

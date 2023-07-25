@@ -3,7 +3,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::Entity;
-use crate::database::Connection;
 use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation, SuccessOutput};
@@ -27,37 +26,42 @@ pub enum EntityMessage {
 #[async_trait]
 impl MessageResponder for EntityMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
             EntityMessage::EntityAddRevisionMutation(message) => {
                 message
-                    .handle("EntityAddRevisionMutation", connection)
+                    .handle("EntityAddRevisionMutation", acquire_from)
                     .await
             }
             EntityMessage::EntityCheckoutRevisionMutation(payload) => {
                 payload
-                    .handle("EntityCheckoutRevisionMutation", connection)
+                    .handle("EntityCheckoutRevisionMutation", acquire_from)
                     .await
             }
             EntityMessage::EntityCreateMutation(message) => {
-                message.handle("EntityCreateMutation", connection).await
+                message.handle("EntityCreateMutation", acquire_from).await
             }
             EntityMessage::EntityRejectRevisionMutation(payload) => {
                 payload
-                    .handle("EntityRejectRevisionMutation", connection)
+                    .handle("EntityRejectRevisionMutation", acquire_from)
                     .await
             }
             EntityMessage::UnrevisedEntitiesQuery(payload) => {
-                payload.handle("UnrevisedEntitiesQuery", connection).await
+                payload.handle("UnrevisedEntitiesQuery", acquire_from).await
             }
             EntityMessage::DeletedEntitiesQuery(message) => {
-                message.handle("DeletedEntitiesQuery", connection).await
+                message.handle("DeletedEntitiesQuery", acquire_from).await
             }
             EntityMessage::EntitySetLicenseMutation(message) => {
-                message.handle("EntitySetLicenseMutation", connection).await
+                message
+                    .handle("EntitySetLicenseMutation", acquire_from)
+                    .await
             }
             EntityMessage::EntitySortMutation(message) => {
-                message.handle("EntitySortMutation", connection).await
+                message.handle("EntitySortMutation", acquire_from).await
             }
         }
     }
@@ -97,14 +101,11 @@ pub mod entity_add_revision_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            let entity_revision = match connection {
-                Connection::Pool(pool) => Entity::add_revision(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Entity::add_revision(self, transaction).await?
-                }
-            };
-
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            let entity_revision = Entity::add_revision(self, acquire_from).await?;
             Ok(Output {
                 success: true,
                 reason: None,
@@ -129,13 +130,11 @@ pub mod checkout_revision_mutation {
     impl Operation for Payload {
         type Output = SuccessOutput;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => Entity::checkout_revision(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Entity::checkout_revision(self, transaction).await?
-                }
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Entity::checkout_revision(self, acquire_from).await?;
             Ok(SuccessOutput { success: true })
         }
     }
@@ -169,11 +168,11 @@ pub mod entity_create_mutation {
     impl Operation for Payload {
         type Output = Uuid;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => Entity::create(self, pool).await?,
-                Connection::Transaction(transaction) => Entity::create(self, transaction).await?,
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(Entity::create(self, acquire_from).await?)
         }
     }
 }
@@ -193,13 +192,11 @@ pub mod reject_revision_mutation {
     impl Operation for Payload {
         type Output = SuccessOutput;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => Entity::reject_revision(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Entity::reject_revision(self, transaction).await?
-                }
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Entity::reject_revision(self, acquire_from).await?;
             Ok(SuccessOutput { success: true })
         }
     }
@@ -222,14 +219,12 @@ pub mod unrevised_entities_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
             Ok(Output {
-                unrevised_entity_ids: match connection {
-                    Connection::Pool(pool) => Entity::unrevised_entities(pool).await?,
-                    Connection::Transaction(transaction) => {
-                        Entity::unrevised_entities(transaction).await?
-                    }
-                },
+                unrevised_entity_ids: Entity::unrevised_entities(acquire_from).await?,
             })
         }
     }
@@ -264,13 +259,11 @@ pub mod deleted_entities_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            let deleted_entities = match connection {
-                Connection::Pool(pool) => Entity::deleted_entities(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Entity::deleted_entities(self, transaction).await?
-                }
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            let deleted_entities = Entity::deleted_entities(self, acquire_from).await?;
             Ok(Output {
                 success: true,
                 deleted_entities,
@@ -300,13 +293,11 @@ pub mod entity_set_license_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => Entity::set_license(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Entity::set_license(self, transaction).await?
-                }
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Entity::set_license(self, acquire_from).await?;
             Ok(Output { success: true })
         }
     }
@@ -326,11 +317,11 @@ pub mod entity_sort_mutation {
     impl Operation for Payload {
         type Output = SuccessOutput;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => Entity::sort(self, pool).await?,
-                Connection::Transaction(transaction) => Entity::sort(self, transaction).await?,
-            }
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Entity::sort(self, acquire_from).await?;
             Ok(SuccessOutput { success: true })
         }
     }

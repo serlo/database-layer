@@ -1,13 +1,10 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
-use futures::try_join;
 use regex::Regex;
 use serde::Serialize;
-use sqlx::MySqlPool;
-use thiserror::Error;
 
-use crate::database::Executor;
+use thiserror::Error;
 
 #[derive(Serialize)]
 #[serde(untagged)]
@@ -296,31 +293,14 @@ macro_rules! to_raw_navigation_child {
 }
 
 impl RawNavigationChild {
-    pub async fn fetch(
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         id: i32,
-        pool: &MySqlPool,
+        acquire_from: A,
     ) -> Result<RawNavigationChild, RawNavigationChildError> {
-        let pages = fetch_all_children!(id, pool);
-        let params = fetch_all_parameters!(id, pool);
+        let mut transaction = acquire_from.begin().await?;
 
-        let (pages, params) = try_join!(pages, params)?;
-
-        let raw_navigation_child = to_raw_navigation_child!(id, pages, params);
-        Ok(raw_navigation_child)
-    }
-
-    pub async fn fetch_via_transaction<'e, 'c, E>(
-        id: i32,
-        executor: E,
-    ) -> Result<RawNavigationChild, RawNavigationChildError>
-    where
-        'c: 'e,
-        E: 'c + Executor<'e>,
-    {
-        let mut transaction = executor.begin().await?;
-
-        let pages = fetch_all_children!(id, &mut transaction).await?;
-        let params = fetch_all_parameters!(id, &mut transaction).await?;
+        let pages = fetch_all_children!(id, &mut *transaction).await?;
+        let params = fetch_all_parameters!(id, &mut *transaction).await?;
 
         let raw_navigation_child = to_raw_navigation_child!(id, pages, params);
 

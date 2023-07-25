@@ -3,9 +3,8 @@ use super::messages::{
     set_thread_archived_mutation,
 };
 use serde::Serialize;
-use sqlx::{MySqlPool, Row};
+use sqlx::Row;
 
-use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::event::{
     CreateCommentEventPayload, CreateThreadEventPayload, SetThreadStateEventPayload,
@@ -22,20 +21,17 @@ pub struct Threads {
 }
 
 impl Threads {
-    pub async fn fetch_all_threads<'a, E>(
+    pub async fn fetch_all_threads<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         first: i32,
         after: Option<String>,
         instance: Option<Instance>,
         subject_id: Option<i32>,
-        executor: E,
-    ) -> Result<Self, operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Self, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let instance_id = match instance.as_ref() {
-            Some(instance) => Some(Instance::fetch_id(instance, &mut transaction).await?),
+            Some(instance) => Some(Instance::fetch_id(instance, &mut *transaction).await?),
             None => None,
         };
 
@@ -106,7 +102,7 @@ impl Threads {
             after_parsed,
             first
         )
-        .fetch_all(&mut transaction)
+        .fetch_all(&mut *transaction)
         .await?;
 
         let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();
@@ -114,19 +110,16 @@ impl Threads {
         Ok(Self { first_comment_ids })
     }
 
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, sqlx::Error> {
-        Self::fetch_via_transaction(id, pool).await
-    }
-
-    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Self, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         let result = sqlx::query!(
             r#"SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC"#,
             id
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?;
 
         let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();
@@ -134,14 +127,11 @@ impl Threads {
         Ok(Self { first_comment_ids })
     }
 
-    pub async fn set_archive<'a, E>(
+    pub async fn set_archive<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &set_thread_archived_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let number_comments = payload.ids.len();
         if number_comments == 0 {
@@ -153,7 +143,7 @@ impl Threads {
         for id in payload.ids.iter() {
             query = query.bind(id);
         }
-        let comments = query.fetch_all(&mut transaction).await?;
+        let comments = query.fetch_all(&mut *transaction).await?;
         if comments.len() < number_comments {
             return Err(operation::Error::BadRequest {
                 reason: "not all given ids are comments".to_string(),
@@ -174,11 +164,11 @@ impl Threads {
                     is_archived_after,
                     id
                 )
-                .execute(&mut transaction)
+                .execute(&mut *transaction)
                 .await?;
 
                 SetThreadStateEventPayload::new(is_archived_after, payload.user_id, id)
-                    .save(&mut transaction)
+                    .save(&mut *transaction)
                     .await
                     .map_err(|error| operation::Error::InternalServerError {
                         error: Box::new(error),
@@ -191,20 +181,17 @@ impl Threads {
         Ok(())
     }
 
-    pub async fn comment_thread<'a, E>(
+    pub async fn comment_thread<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &create_comment_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
         if payload.content.is_empty() {
             return Err(operation::Error::BadRequest {
                 reason: "content is empty".to_string(),
             });
         };
 
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
 
         let thread = sqlx::query!(
             r#"
@@ -214,7 +201,7 @@ impl Threads {
             "#,
             payload.thread_id
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => operation::Error::BadRequest {
@@ -236,7 +223,7 @@ impl Threads {
                     VALUES (0, 'comment')
             "#
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
@@ -250,11 +237,11 @@ impl Threads {
             payload.user_id,
             thread.instance_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?;
         let comment_id = value.id as i32;
 
@@ -264,7 +251,7 @@ impl Threads {
             payload.user_id,
             thread.instance_id,
         )
-        .save(&mut transaction)
+        .save(&mut *transaction)
         .await
         .map_err(|error| operation::Error::InternalServerError {
             error: Box::new(error),
@@ -277,11 +264,11 @@ impl Threads {
                     user_id: payload.user_id,
                     send_email: payload.send_email,
                 };
-                subscription.save(&mut transaction).await?;
+                subscription.save(&mut *transaction).await?;
             }
         }
 
-        let comment = Uuid::fetch_via_transaction(comment_id, &mut transaction)
+        let comment = Uuid::fetch(comment_id, &mut *transaction)
             .await
             .map_err(|error| operation::Error::InternalServerError {
                 error: Box::new(error),
@@ -292,20 +279,17 @@ impl Threads {
         Ok(comment)
     }
 
-    pub async fn start_thread<'a, E>(
+    pub async fn start_thread<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &create_thread_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
         if payload.content.is_empty() {
             return Err(operation::Error::BadRequest {
                 reason: "content is empty".to_string(),
             });
         }
 
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
 
         let instance_id = sqlx::query!(
             r#"
@@ -334,7 +318,7 @@ impl Threads {
             "#,
             payload.object_id
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await.map_err(|error| match error {
             sqlx::Error::RowNotFound => operation::Error::BadRequest{
                 reason: "UUID not found".to_string(),
@@ -348,7 +332,7 @@ impl Threads {
                     VALUES (0, 'comment')
             "#
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         sqlx::query!(
@@ -363,16 +347,16 @@ impl Threads {
             payload.user_id,
             instance_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?;
         let thread_id = value.id as i32;
 
         CreateThreadEventPayload::new(thread_id, payload.object_id, payload.user_id, instance_id)
-            .save(&mut transaction)
+            .save(&mut *transaction)
             .await
             .map_err(|error| operation::Error::InternalServerError {
                 error: Box::new(error),
@@ -384,10 +368,10 @@ impl Threads {
                 user_id: payload.user_id,
                 send_email: payload.send_email,
             };
-            subscription.save(&mut transaction).await?;
+            subscription.save(&mut *transaction).await?;
         }
 
-        let comment = Uuid::fetch_via_transaction(thread_id, &mut transaction)
+        let comment = Uuid::fetch(thread_id, &mut *transaction)
             .await
             .map_err(|error| operation::Error::InternalServerError {
                 error: Box::new(error),
@@ -398,20 +382,17 @@ impl Threads {
         Ok(comment)
     }
 
-    pub async fn edit_comment<'a, E>(
+    pub async fn edit_comment<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &edit_comment_mutation::Payload,
-        executor: E,
-    ) -> Result<operation::SuccessOutput, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<operation::SuccessOutput, operation::Error> {
         if payload.content.is_empty() {
             return Err(operation::Error::BadRequest {
                 reason: "content is empty".to_string(),
             });
         }
 
-        let mut transaction = executor.begin().await?;
+        let mut transaction = acquire_from.begin().await?;
 
         let comment = sqlx::query!(
             r#"
@@ -421,7 +402,7 @@ impl Threads {
             "#,
             payload.comment_id
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await
         .map_err(|error| match error {
             sqlx::Error::RowNotFound => operation::Error::BadRequest {
@@ -459,7 +440,7 @@ impl Threads {
                 // DateTime::now(),
                 payload.comment_id,
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 

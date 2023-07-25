@@ -2,13 +2,12 @@ use std::collections::HashSet;
 
 use async_trait::async_trait;
 use convert_case::{Case, Casing};
-use futures::join;
+
 use serde::{Deserialize, Serialize};
 use sqlx::database::HasArguments;
 use sqlx::encode::IsNull;
 use sqlx::mysql::MySqlTypeInfo;
 use sqlx::MySql;
-use sqlx::MySqlPool;
 
 use super::{AssertExists, ConcreteUuid, Uuid, UuidError, UuidFetcher};
 
@@ -186,28 +185,16 @@ macro_rules! to_taxonomy_term {
 
 #[async_trait]
 impl UuidFetcher for TaxonomyTerm {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
-        let taxonomy_term = fetch_one_taxonomy_term!(id, pool);
-        let entities = fetch_all_entities!(id, pool);
-        let children = fetch_all_children!(id, pool);
-        let subject = fetch_subject!(id, pool);
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Uuid, UuidError> {
+        let mut transaction = acquire_from.begin().await?;
 
-        let (taxonomy_term, entities, children, subject) =
-            join!(taxonomy_term, entities, children, subject);
-
-        to_taxonomy_term!(id, taxonomy_term, entities, children, subject)
-    }
-
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
-
-        let taxonomy_term = fetch_one_taxonomy_term!(id, &mut transaction).await;
-        let entities = fetch_all_entities!(id, &mut transaction).await;
-        let children = fetch_all_children!(id, &mut transaction).await;
-        let subject = fetch_subject!(id, &mut transaction).await;
+        let taxonomy_term = fetch_one_taxonomy_term!(id, &mut *transaction).await;
+        let entities = fetch_all_entities!(id, &mut *transaction).await;
+        let children = fetch_all_children!(id, &mut *transaction).await;
+        let subject = fetch_subject!(id, &mut *transaction).await;
 
         transaction.commit().await?;
 
@@ -328,14 +315,11 @@ impl TaxonomyTerm {
         .instance_id)
     }
 
-    pub async fn set_name_and_description<'a, E>(
+    pub async fn set_name_and_description<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &taxonomy_term_set_name_and_description_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let term = sqlx::query!(
             r#"
@@ -347,7 +331,7 @@ impl TaxonomyTerm {
             "#,
             payload.id
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .ok_or(operation::Error::BadRequest {
             reason: format!("Taxonomy term with id {} does not exist", payload.id),
@@ -362,7 +346,7 @@ impl TaxonomyTerm {
             payload.name,
             term.id,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .map_err(|error| match error {
             sqlx::Error::Database(db_error) => {
@@ -390,11 +374,11 @@ impl TaxonomyTerm {
             payload.description,
             payload.id,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         SetTaxonomyTermEventPayload::new(payload.id, payload.user_id, term.instance_id)
-            .save(&mut transaction)
+            .save(&mut *transaction)
             .await?;
 
         transaction.commit().await?;
@@ -402,14 +386,11 @@ impl TaxonomyTerm {
         Ok(())
     }
 
-    pub async fn create<'a, E>(
+    pub async fn create<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &taxonomy_term_create_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"
@@ -417,15 +398,15 @@ impl TaxonomyTerm {
                     VALUES (0, "taxonomyTerm")
             "#,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let taxonomy_term_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .id as i32;
 
-        let instance_id = Self::get_instance_id(payload.parent_id, &mut transaction).await?;
+        let instance_id = Self::get_instance_id(payload.parent_id, &mut *transaction).await?;
 
         let type_id = sqlx::query!(
             r#"
@@ -438,7 +419,7 @@ impl TaxonomyTerm {
             payload.taxonomy_type,
             instance_id
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await?
         .id;
 
@@ -450,11 +431,11 @@ impl TaxonomyTerm {
             type_id,
             instance_id,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let taxonomy_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .id as i32;
 
@@ -466,11 +447,11 @@ impl TaxonomyTerm {
             payload.name,
             instance_id,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let term_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .id as i32;
 
@@ -482,7 +463,7 @@ impl TaxonomyTerm {
             "#,
             payload.parent_id,
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await?
         .current_heaviest as i32
             + 1;
@@ -499,28 +480,25 @@ impl TaxonomyTerm {
             payload.description,
             heaviest_weight
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         CreateTaxonomyTermEventPayload::new(taxonomy_term_id, payload.user_id, instance_id)
-            .save(&mut transaction)
+            .save(&mut *transaction)
             .await?;
 
-        let taxonomy_term = Self::fetch_via_transaction(taxonomy_term_id, &mut transaction).await?;
+        let taxonomy_term = Self::fetch(taxonomy_term_id, &mut *transaction).await?;
 
         transaction.commit().await?;
 
         Ok(taxonomy_term)
     }
 
-    pub async fn create_entity_link<'a, E>(
+    pub async fn create_entity_link<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &taxonomy_create_entity_links_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         let taxonomy = sqlx::query!(
             r#"
@@ -532,7 +510,7 @@ impl TaxonomyTerm {
         "#,
             payload.taxonomy_term_id
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .ok_or(operation::Error::BadRequest {
             reason: "Given target id is no taxonomy term".to_string(),
@@ -541,10 +519,11 @@ impl TaxonomyTerm {
         let taxonomy_is_folder = term_type == TaxonomyType::CurriculumTopicFolder
             || term_type == TaxonomyType::TopicFolder;
 
-        let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut transaction).await?;
+        let instance_id =
+            Self::get_instance_id(payload.taxonomy_term_id, &mut *transaction).await?;
 
         for child_id in &payload.entity_ids {
-            let entity_type = Entity::fetch_entity_type(*child_id, &mut transaction)
+            let entity_type = Entity::fetch_entity_type(*child_id, &mut *transaction)
                 .await?
                 .ok_or(operation::Error::BadRequest {
                     reason: format!("entity with id {child_id} does not exist"),
@@ -587,7 +566,7 @@ impl TaxonomyTerm {
                 child_id,
                 payload.taxonomy_term_id
             )
-            .fetch_optional(&mut transaction)
+            .fetch_optional(&mut *transaction)
             .await?;
 
             if is_child_already_linked_to_taxonomy.is_some() {
@@ -602,7 +581,7 @@ impl TaxonomyTerm {
                 "#,
                 child_id
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .instance_id;
 
@@ -623,7 +602,7 @@ impl TaxonomyTerm {
                 "#,
                 payload.taxonomy_term_id
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .current_last as i32
                 + 1;
@@ -637,7 +616,7 @@ impl TaxonomyTerm {
                 payload.taxonomy_term_id,
                 last_position
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
 
             CreateTaxonomyLinkEventPayload::new(
@@ -646,7 +625,7 @@ impl TaxonomyTerm {
                 payload.user_id,
                 instance_id,
             )
-            .save(&mut transaction)
+            .save(&mut *transaction)
             .await?;
         }
 
@@ -655,16 +634,14 @@ impl TaxonomyTerm {
         Ok(())
     }
 
-    pub async fn delete_entity_link<'a, E>(
+    pub async fn delete_entity_link<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &taxonomy_delete_entity_links_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
-        let instance_id = Self::get_instance_id(payload.taxonomy_term_id, &mut transaction).await?;
+        let instance_id =
+            Self::get_instance_id(payload.taxonomy_term_id, &mut *transaction).await?;
 
         for child_id in &payload.entity_ids {
             let term_taxonomy_entity_id = sqlx::query!(
@@ -676,7 +653,7 @@ impl TaxonomyTerm {
                 child_id,
                 payload.taxonomy_term_id
             )
-            .fetch_optional(&mut transaction)
+            .fetch_optional(&mut *transaction)
             .await?
             .ok_or(operation::Error::BadRequest {
                 reason: format!(
@@ -693,7 +670,7 @@ impl TaxonomyTerm {
                 "#,
                 child_id,
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .quantity as i32
             {
@@ -708,7 +685,7 @@ impl TaxonomyTerm {
                 r#"DELETE FROM term_taxonomy_entity WHERE id = ?"#,
                 term_taxonomy_entity_id,
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
 
             RemoveTaxonomyLinkEventPayload::new(
@@ -717,7 +694,7 @@ impl TaxonomyTerm {
                 payload.user_id,
                 instance_id,
             )
-            .save(&mut transaction)
+            .save(&mut *transaction)
             .await?;
         }
 
@@ -726,26 +703,23 @@ impl TaxonomyTerm {
         Ok(())
     }
 
-    pub async fn sort<'a, E>(
+    pub async fn sort<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &taxonomy_sort_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
-        Self::assert_exists(payload.taxonomy_term_id, &mut transaction).await?;
+        Self::assert_exists(payload.taxonomy_term_id, &mut *transaction).await?;
 
         let entities_ids: Vec<i32> =
-            fetch_all_entities!(payload.taxonomy_term_id, &mut transaction)
+            fetch_all_entities!(payload.taxonomy_term_id, &mut *transaction)
                 .await?
                 .iter()
                 .map(|child| child.entity_id as i32)
                 .collect();
 
         let children_taxonomy_ids: Vec<i32> =
-            fetch_all_children!(payload.taxonomy_term_id, &mut transaction)
+            fetch_all_children!(payload.taxonomy_term_id, &mut *transaction)
                 .await?
                 .iter()
                 .map(|child| child.id as i32)
@@ -783,7 +757,7 @@ impl TaxonomyTerm {
                 payload.taxonomy_term_id,
                 entity_id,
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 
@@ -804,7 +778,7 @@ impl TaxonomyTerm {
                 payload.taxonomy_term_id,
                 child_id,
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 
@@ -825,11 +799,11 @@ impl TaxonomyTerm {
             "#,
             payload.taxonomy_term_id,
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await?;
 
         SetTaxonomyTermEventPayload::new(root.id as i32, payload.user_id, root.instance_id)
-            .save(&mut transaction)
+            .save(&mut *transaction)
             .await?;
 
         transaction.commit().await?;

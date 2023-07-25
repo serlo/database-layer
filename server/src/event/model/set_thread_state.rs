@@ -55,7 +55,7 @@ impl SetThreadStateEventPayload {
             r#"SELECT instance_id FROM comment WHERE id = ?"#,
             self.object_id
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await?;
 
         let event = EventPayload::new(
@@ -66,7 +66,7 @@ impl SetThreadStateEventPayload {
             HashMap::new(),
             HashMap::new(),
         )
-        .save(&mut transaction)
+        .save(&mut *transaction)
         .await?;
 
         transaction.commit().await?;
@@ -92,11 +92,13 @@ mod tests {
 
         let set_thread_state_event = SetThreadStateEventPayload::new(true, 16462, 17666);
 
-        let event = set_thread_state_event.save(&mut transaction).await.unwrap();
-        let persisted_event =
-            Event::fetch_via_transaction(event.abstract_event.id, &mut transaction)
-                .await
-                .unwrap();
+        let event = set_thread_state_event
+            .save(&mut *transaction)
+            .await
+            .unwrap();
+        let persisted_event = Event::fetch(event.abstract_event.id, &mut *transaction)
+            .await
+            .unwrap();
 
         assert_eq!(event, persisted_event);
 
@@ -129,11 +131,13 @@ mod tests {
 
         let set_thread_state_event = SetThreadStateEventPayload::new(false, 15478, 17796);
 
-        let event = set_thread_state_event.save(&mut transaction).await.unwrap();
-        let persisted_event =
-            Event::fetch_via_transaction(event.abstract_event.id, &mut transaction)
-                .await
-                .unwrap();
+        let event = set_thread_state_event
+            .save(&mut *transaction)
+            .await
+            .unwrap();
+        let persisted_event = Event::fetch(event.abstract_event.id, &mut *transaction)
+            .await
+            .unwrap();
 
         assert_eq!(event, persisted_event);
 

@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                        UPDATE comment\n                            SET archived = ?\n                            WHERE id = ?\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "078426a1dc666919236049dc4916711c422d20a7feda98ab4213a28481d5f104"
+}

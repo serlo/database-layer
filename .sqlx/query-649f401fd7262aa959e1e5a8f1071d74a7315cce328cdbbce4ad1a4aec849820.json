@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, \"taxonomyTerm\")\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "649f401fd7262aa959e1e5a8f1071d74a7315cce328cdbbce4ad1a4aec849820"
+}

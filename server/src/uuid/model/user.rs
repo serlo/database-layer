@@ -1,10 +1,8 @@
 use async_trait::async_trait;
-use futures::join;
+
 use serde::Serialize;
-use sqlx::MySqlPool;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::format_alias;
 
@@ -76,26 +74,14 @@ macro_rules! to_user {
 
 #[async_trait]
 impl UuidFetcher for User {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
-        let user = fetch_one_user!(id, pool);
-        let roles = fetch_all_roles!(id, pool);
-
-        let (user, roles) = join!(user, roles);
-
-        to_user!(id, user, roles)
-    }
-
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
-
-        let user = fetch_one_user!(id, &mut transaction).await;
-        let roles = fetch_all_roles!(id, &mut transaction).await;
-
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Uuid, UuidError> {
+        let mut transaction = acquire_from.begin().await?;
+        let user = fetch_one_user!(id, &mut *transaction).await;
+        let roles = fetch_all_roles!(id, &mut *transaction).await;
         transaction.commit().await?;
-
         to_user!(id, user, roles)
     }
 }

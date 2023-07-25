@@ -3,7 +3,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::model::Notifications;
-use crate::database::Connection;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation, SuccessOutput};
 
@@ -17,14 +16,17 @@ pub enum NotificationMessage {
 #[async_trait]
 impl MessageResponder for NotificationMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
             NotificationMessage::NotificationsQuery(payload) => {
-                payload.handle("NotificationsQuery", connection).await
+                payload.handle("NotificationsQuery", acquire_from).await
             }
             NotificationMessage::NotificationSetStateMutation(payload) => {
                 payload
-                    .handle("NotificationSetStateMutation", connection)
+                    .handle("NotificationSetStateMutation", acquire_from)
                     .await
             }
         }
@@ -44,13 +46,11 @@ pub mod notifications_query {
     impl Operation for Payload {
         type Output = Notifications;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => Notifications::fetch(self.user_id, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Notifications::fetch_via_transaction(self.user_id, transaction).await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(Notifications::fetch(self.user_id, acquire_from).await?)
         }
     }
 }
@@ -70,13 +70,11 @@ pub mod set_state_mutation {
     impl Operation for Payload {
         type Output = SuccessOutput;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => Notifications::set_notification_state(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Notifications::set_notification_state(self, transaction).await?
-                }
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Notifications::set_notification_state(self, acquire_from).await?;
             Ok(SuccessOutput { success: true })
         }
     }

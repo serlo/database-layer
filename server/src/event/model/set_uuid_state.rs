@@ -52,11 +52,11 @@ impl SetUuidStateEventPayload {
             self.raw_typename.clone(),
             self.actor_id,
             self.object_id,
-            self.instance.fetch_id(&mut transaction).await?,
+            self.instance.fetch_id(&mut *transaction).await?,
             HashMap::new(),
             HashMap::new(),
         )
-        .save(&mut transaction)
+        .save(&mut *transaction)
         .await?;
 
         transaction.commit().await?;
@@ -82,11 +82,10 @@ mod tests {
 
         let set_uuid_state_event = SetUuidStateEventPayload::new(true, 1, 1855, Instance::De);
 
-        let event = set_uuid_state_event.save(&mut transaction).await.unwrap();
-        let persisted_event =
-            Event::fetch_via_transaction(event.abstract_event.id, &mut transaction)
-                .await
-                .unwrap();
+        let event = set_uuid_state_event.save(&mut *transaction).await.unwrap();
+        let persisted_event = Event::fetch(event.abstract_event.id, &mut *transaction)
+            .await
+            .unwrap();
 
         assert_eq!(event, persisted_event);
 
@@ -114,11 +113,10 @@ mod tests {
 
         let set_uuid_state_event = SetUuidStateEventPayload::new(false, 1, 1855, Instance::De);
 
-        let event = set_uuid_state_event.save(&mut transaction).await.unwrap();
-        let persisted_event =
-            Event::fetch_via_transaction(event.abstract_event.id, &mut transaction)
-                .await
-                .unwrap();
+        let event = set_uuid_state_event.save(&mut *transaction).await.unwrap();
+        let persisted_event = Event::fetch(event.abstract_event.id, &mut *transaction)
+            .await
+            .unwrap();
 
         assert_eq!(event, persisted_event);
 

@@ -4,7 +4,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::model::{Uuid, UuidFetcher};
-use crate::database::Connection;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
@@ -17,11 +16,14 @@ pub enum UuidMessage {
 #[async_trait]
 impl MessageResponder for UuidMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
-            UuidMessage::UuidQuery(message) => message.handle("UuidQuery", connection).await,
+            UuidMessage::UuidQuery(message) => message.handle("UuidQuery", acquire_from).await,
             UuidMessage::UuidSetStateMutation(message) => {
-                message.handle("UuidSetStateMutation", connection).await
+                message.handle("UuidSetStateMutation", acquire_from).await
             }
         }
     }
@@ -40,13 +42,11 @@ pub mod uuid_query {
     impl Operation for Payload {
         type Output = Uuid;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => Uuid::fetch(self.id, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Uuid::fetch_via_transaction(self.id, transaction).await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(Uuid::fetch(self.id, acquire_from).await?)
         }
     }
 }
@@ -72,13 +72,11 @@ pub mod uuid_set_state_mutation {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => Uuid::set_uuid_state(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Uuid::set_uuid_state(self, transaction).await?
-                }
-            };
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Uuid::set_uuid_state(self, acquire_from).await?;
             Ok(Output { success: true })
         }
     }
@@ -102,7 +100,7 @@ mod tests {
                        (100001, 0, 'entity')
             "#,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .unwrap();
         sqlx::query(
@@ -112,7 +110,7 @@ mod tests {
                        (100001, 39, 1, 1, CURDATE(), 2)
             "#,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .unwrap();
 
@@ -123,11 +121,11 @@ mod tests {
                 VALUES (100001, 100000, 9)
             "#,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .unwrap();
 
-        let result = Uuid::fetch_via_transaction(100000, &mut transaction).await;
+        let result = Uuid::fetch(100000, &mut *transaction).await;
 
         assert!(result.is_err());
         match result.as_ref().err().unwrap() {

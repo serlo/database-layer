@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                    SELECT p.id\n                        FROM navigation_page p\n                        JOIN navigation_container c ON c.id = p.container_id\n                        JOIN instance i ON i.id = c.instance_id\n                        JOIN type t ON t.id = c.type_id\n                        WHERE i.subdomain = ? AND t.name = 'default' AND p.parent_id IS NULL\n                        ORDER BY p.position, p.id\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Long",
+          "flags": "NOT_NULL | PRIMARY_KEY | AUTO_INCREMENT",
+          "char_set": 63,
+          "max_size": 11
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "01ec0b909247a28fa877dbb37da8db45610b8d2b460d68a429ca12919e5a2737"
+}

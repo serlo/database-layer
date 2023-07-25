@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO uuid (trashed, discriminator)\n                    VALUES (0, \"entity\")\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "1f97648096e571eb7285984b0c35d6e108a059dc483463142c7fbd1984e886f0"
+}

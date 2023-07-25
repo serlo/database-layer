@@ -1,0 +1,102 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    u.trashed, term.name, type.name as term_type, instance.subdomain,\n                    term_taxonomy.description, term_taxonomy.weight, term_taxonomy.parent_id,\n                    term_taxonomy.taxonomy_id\n                FROM term_taxonomy\n                JOIN term ON term.id = term_taxonomy.term_id\n                JOIN taxonomy ON taxonomy.id = term_taxonomy.taxonomy_id\n                JOIN type ON type.id = taxonomy.type_id\n                JOIN instance ON instance.id = taxonomy.instance_id\n                JOIN uuid u ON u.id = term_taxonomy.id\n                WHERE term_taxonomy.id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "trashed",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL",
+          "char_set": 63,
+          "max_size": 1
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "term_type",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | UNIQUE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "subdomain",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 40
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": {
+          "type": "Blob",
+          "flags": "MULTIPLE_KEY | BLOB",
+          "char_set": 224,
+          "max_size": 262140
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "weight",
+        "type_info": {
+          "type": "Long",
+          "flags": "",
+          "char_set": 63,
+          "max_size": 11
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "parent_id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "MULTIPLE_KEY",
+          "char_set": 63,
+          "max_size": 20
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "taxonomy_id",
+        "type_info": {
+          "type": "Long",
+          "flags": "NOT_NULL | MULTIPLE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 11
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "fc0ca0f5bbca56646e9a9cbad7d897b684ca6301e1c63c108d1497592ef3f34b"
+}

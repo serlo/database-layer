@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                UPDATE term_taxonomy\n                SET description = ?\n                WHERE id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "89aef87826cfcb634bd682c2f4f89244da6a21b16a9ae88cb0f368cc3826f2c9"
+}

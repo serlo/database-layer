@@ -1,11 +1,10 @@
 use async_trait::async_trait;
-use futures::join;
+
 use serde::Serialize;
-use sqlx::MySqlPool;
+
 use thiserror::Error;
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
-use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::format_alias;
 use crate::instance::Instance;
@@ -97,23 +96,14 @@ macro_rules! to_page {
 
 #[async_trait]
 impl UuidFetcher for Page {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError> {
-        let page = fetch_one_page!(id, pool);
-        let revisions = fetch_all_revisions!(id, pool);
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Uuid, UuidError> {
+        let mut transaction = acquire_from.begin().await?;
 
-        let (page, revisions) = join!(page, revisions);
-
-        to_page!(id, page, revisions)
-    }
-
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
-
-        let page = fetch_one_page!(id, &mut transaction).await;
-        let revisions = fetch_all_revisions!(id, &mut transaction).await;
+        let page = fetch_one_page!(id, &mut *transaction).await;
+        let revisions = fetch_all_revisions!(id, &mut *transaction).await;
 
         transaction.commit().await?;
 
@@ -122,20 +112,17 @@ impl UuidFetcher for Page {
 }
 
 impl Page {
-    pub async fn add_revision<'a, E>(
+    pub async fn add_revision<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &add_revision_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"SELECT id FROM page_repository WHERE id = ?"#,
             payload.page_id
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .ok_or(operation::Error::BadRequest {
             reason: "no page found for provided pageId".to_string(),
@@ -147,11 +134,11 @@ impl Page {
                     VALUES (0, 'pageRevision')
             "#,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let page_revision_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .id as i32;
 
@@ -167,7 +154,7 @@ impl Page {
             payload.content,
             DateTime::now(),
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let instance_id = sqlx::query!(
@@ -178,7 +165,7 @@ impl Page {
             "#,
             payload.page_id
         )
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await?
         .instance_id;
 
@@ -188,7 +175,7 @@ impl Page {
             payload.user_id,
             instance_id,
         )
-        .save(&mut transaction)
+        .save(&mut *transaction)
         .await?;
 
         Page::checkout_revision(
@@ -197,14 +184,14 @@ impl Page {
                 user_id: payload.user_id,
                 reason: "".to_string(),
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .map_err(|error| operation::Error::InternalServerError {
             error: Box::new(error),
         })?;
 
-        let uuid = PageRevision::fetch_via_transaction(page_revision_id, &mut transaction).await?;
+        let uuid = PageRevision::fetch(page_revision_id, &mut *transaction).await?;
 
         transaction.commit().await?;
 
@@ -253,29 +240,26 @@ impl From<EventError> for PageCheckoutRevisionError {
 }
 
 impl Page {
-    pub async fn checkout_revision<'a, E>(
+    pub async fn checkout_revision<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &checkout_revision_mutation::Payload,
-        executor: E,
-    ) -> Result<(), PageCheckoutRevisionError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), PageCheckoutRevisionError> {
+        let mut transaction = acquire_from.begin().await?;
 
         let revision_id = payload.revision_id;
-        let revision = PageRevision::fetch_via_transaction(revision_id, &mut transaction).await?;
+        let revision = PageRevision::fetch(revision_id, &mut *transaction).await?;
 
         if let ConcreteUuid::PageRevision(page_revision) = revision.concrete_uuid {
             let repository_id = page_revision.repository_id;
 
-            let repository = Page::fetch_via_transaction(repository_id, &mut transaction).await?;
+            let repository = Page::fetch(repository_id, &mut *transaction).await?;
 
             if let ConcreteUuid::Page(page) = repository.concrete_uuid {
                 if page.current_revision_id == Some(revision_id) {
                     return Err(PageCheckoutRevisionError::RevisionAlreadyCheckedOut);
                 }
 
-                Uuid::set_state(revision_id, false, &mut transaction).await?;
+                Uuid::set_state(revision_id, false, &mut *transaction).await?;
 
                 sqlx::query!(
                     r#"
@@ -286,7 +270,7 @@ impl Page {
                     revision_id,
                     repository_id,
                 )
-                .execute(&mut transaction)
+                .execute(&mut *transaction)
                 .await?;
 
                 RevisionEventPayload::new(
@@ -297,7 +281,7 @@ impl Page {
                     payload.reason.clone(),
                     page.instance,
                 )
-                .save(&mut transaction)
+                .save(&mut *transaction)
                 .await?;
 
                 transaction.commit().await?;
@@ -313,14 +297,11 @@ impl Page {
 }
 
 impl Page {
-    pub async fn create<'a, E>(
+    pub async fn create<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &create_mutation::Payload,
-        executor: E,
-    ) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"
@@ -328,15 +309,15 @@ impl Page {
                     VALUES (0, 'page')
             "#
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let page_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .id as i32;
 
-        let instance_id = Instance::fetch_id(&payload.instance, &mut transaction).await?;
+        let instance_id = Instance::fetch_id(&payload.instance, &mut *transaction).await?;
 
         sqlx::query!(
             r#"
@@ -348,7 +329,7 @@ impl Page {
             payload.license_id,
             payload.discussions_enabled
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         if let Some(forum_id) = payload.forum_id {
@@ -361,7 +342,7 @@ impl Page {
                 forum_id,
                 page_id,
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         };
 
@@ -372,11 +353,11 @@ impl Page {
                 page_id,
                 user_id: payload.user_id,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await?;
 
-        let page = Page::fetch_via_transaction(page_id, &mut transaction).await?;
+        let page = Page::fetch(page_id, &mut *transaction).await?;
 
         transaction.commit().await?;
 
@@ -429,17 +410,14 @@ impl From<EventError> for PageRejectRevisionError {
 }
 
 impl Page {
-    pub async fn reject_revision<'a, E>(
+    pub async fn reject_revision<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &reject_revision_mutation::Payload,
-        executor: E,
-    ) -> Result<(), PageRejectRevisionError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), PageRejectRevisionError> {
+        let mut transaction = acquire_from.begin().await?;
 
         let revision_id = payload.revision_id;
-        let revision = PageRevision::fetch_via_transaction(revision_id, &mut transaction).await?;
+        let revision = PageRevision::fetch(revision_id, &mut *transaction).await?;
 
         if let ConcreteUuid::PageRevision(page_revision) = revision.concrete_uuid {
             if revision.trashed {
@@ -448,14 +426,14 @@ impl Page {
 
             let repository_id = page_revision.repository_id;
 
-            let repository = Page::fetch_via_transaction(repository_id, &mut transaction).await?;
+            let repository = Page::fetch(repository_id, &mut *transaction).await?;
 
             if let ConcreteUuid::Page(page) = repository.concrete_uuid {
                 if page.current_revision_id == Some(revision_id) {
                     return Err(PageRejectRevisionError::RevisionCurrentlyCheckedOut);
                 }
 
-                Uuid::set_state(revision_id, true, &mut transaction).await?;
+                Uuid::set_state(revision_id, true, &mut *transaction).await?;
 
                 RevisionEventPayload::new(
                     true,
@@ -465,7 +443,7 @@ impl Page {
                     payload.reason.clone(),
                     page.instance,
                 )
-                .save(&mut transaction)
+                .save(&mut *transaction)
                 .await?;
 
                 transaction.commit().await?;
@@ -481,13 +459,11 @@ impl Page {
 }
 
 impl Page {
-    pub async fn fetch_all_pages<'a, E>(
+    pub async fn fetch_all_pages<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &pages_query::Payload,
-        executor: E,
-    ) -> Result<Vec<i32>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Vec<i32>, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         Ok(sqlx::query!(
             r#"
                 SELECT page_repository.id
@@ -501,7 +477,7 @@ impl Page {
             payload.instance,
             payload.instance,
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?
         .into_iter()
         .map(|result| result.id as i32)
@@ -532,7 +508,7 @@ mod tests {
                 user_id: 1,
                 page_id: 19860,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
@@ -558,7 +534,7 @@ mod tests {
                 user_id: 1,
                 page_id: 1,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await;
 
@@ -580,15 +556,13 @@ mod tests {
                 user_id: 1,
                 reason: "Revert changes".to_string(),
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
         // Verify that revision was checked out.
-        let entity = Page::fetch_via_transaction(19767, &mut transaction)
-            .await
-            .unwrap();
+        let entity = Page::fetch(19767, &mut *transaction).await.unwrap();
         if let ConcreteUuid::Page(page) = entity.concrete_uuid {
             assert_eq!(page.current_revision_id, Some(33220));
         } else {
@@ -596,7 +570,7 @@ mod tests {
         }
 
         // Verify that the event was created.
-        let duration = fetch_age_of_newest_event(33220, &mut transaction)
+        let duration = fetch_age_of_newest_event(33220, &mut *transaction)
             .await
             .unwrap();
         assert!(duration < Duration::minutes(1));
@@ -610,13 +584,11 @@ mod tests {
         let revision_id: i32 = 33220;
         let entity_id: i32 = 19767;
 
-        Uuid::set_state(revision_id, true, &mut transaction)
+        Uuid::set_state(revision_id, true, &mut *transaction)
             .await
             .unwrap();
 
-        let entity = Page::fetch_via_transaction(entity_id, &mut transaction)
-            .await
-            .unwrap();
+        let entity = Page::fetch(entity_id, &mut *transaction).await.unwrap();
         assert!(!entity.trashed);
     }
 
@@ -631,7 +603,7 @@ mod tests {
                 user_id: 1,
                 reason: "Revert changes".to_string(),
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await;
 
@@ -656,19 +628,17 @@ mod tests {
                 user_id: 1,
                 reason: "Contains an error".to_string(),
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
         // Verify that revision was trashed.
-        let revision = PageRevision::fetch_via_transaction(33220, &mut transaction)
-            .await
-            .unwrap();
+        let revision = PageRevision::fetch(33220, &mut *transaction).await.unwrap();
         assert!(revision.trashed);
 
         // Verify that the event was created.
-        let duration = fetch_age_of_newest_event(33220, &mut transaction)
+        let duration = fetch_age_of_newest_event(33220, &mut *transaction)
             .await
             .unwrap();
         assert!(duration < Duration::minutes(1));
@@ -679,7 +649,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        Uuid::set_state(33220, true, &mut transaction)
+        Uuid::set_state(33220, true, &mut *transaction)
             .await
             .unwrap();
 
@@ -689,7 +659,7 @@ mod tests {
                 user_id: 1,
                 reason: "Contains an error".to_string(),
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await;
 
@@ -714,7 +684,7 @@ mod tests {
                 user_id: 1,
                 reason: "Contains an error".to_string(),
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await;
 

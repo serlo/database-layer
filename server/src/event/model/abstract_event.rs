@@ -1,12 +1,9 @@
 use std::collections::HashMap;
 
-use futures::join;
 use serde::Serialize;
-use sqlx::MySqlPool;
 
 use super::event_type::{EventType, RawEventType};
 use super::EventError;
-use crate::database::Executor;
 use crate::datetime::DateTime;
 use crate::instance::Instance;
 
@@ -62,9 +59,14 @@ impl EventUuidParameters {
     }
 }
 
-macro_rules! fetch_one_event {
-    ($id: expr, $executor: expr) => {
-        sqlx::query!(
+impl AbstractEvent {
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Self, EventError> {
+        let mut transaction = acquire_from.begin().await?;
+
+        let event = sqlx::query!(
             r#"
                 SELECT l.id, l.actor_id, l.uuid_id, l.date, i.subdomain, e.name
                     FROM event_log l
@@ -73,15 +75,15 @@ macro_rules! fetch_one_event {
                     JOIN event e ON l.event_id = e.id
                     WHERE l.id = ?
             "#,
-            $id
+            id
         )
-        .fetch_one($executor)
-    };
-}
-
-macro_rules! fetch_all_string_parameters {
-    ($id: expr, $executor: expr) => {
-        sqlx::query!(
+        .fetch_one(&mut *transaction)
+        .await
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => EventError::NotFound,
+            error => error.into(),
+        })?;
+        let string_parameters = sqlx::query!(
             r#"
                 SELECT n.name, s.value
                     FROM event_parameter p
@@ -89,15 +91,11 @@ macro_rules! fetch_all_string_parameters {
                     JOIN event_parameter_string s ON s.event_parameter_id = p.id
                     WHERE p.name_id = n.id AND p.log_id = ?
             "#,
-            $id
+            id
         )
-        .fetch_all($executor)
-    };
-}
-
-macro_rules! fetch_all_uuid_parameters {
-    ($id: expr, $executor: expr) => {
-        sqlx::query!(
+        .fetch_all(&mut *transaction)
+        .await?;
+        let uuid_parameters = sqlx::query!(
             r#"
                 SELECT n.name, u.uuid_id
                     FROM event_parameter p
@@ -105,20 +103,10 @@ macro_rules! fetch_all_uuid_parameters {
                     JOIN event_parameter_uuid u ON u.event_parameter_id = p.id
                     WHERE p.name_id = n.id AND p.log_id = ?
             "#,
-            $id
+            id
         )
-        .fetch_all($executor)
-    };
-}
-
-macro_rules! to_abstract_event {
-    ($event: expr, $string_parameters: expr, $uuid_parameters: expr) => {{
-        let event = $event.map_err(|error| match error {
-            sqlx::Error::RowNotFound => EventError::NotFound,
-            error => error.into(),
-        })?;
-        let string_parameters = $string_parameters?;
-        let uuid_parameters = $uuid_parameters?;
+        .fetch_all(&mut *transaction)
+        .await?;
 
         let raw_typename: RawEventType = event.name.parse().map_err(|_| EventError::InvalidType)?;
         let uuid_id = event.uuid_id as i32;
@@ -135,7 +123,7 @@ macro_rules! to_abstract_event {
             .collect();
         let uuid_parameters = EventUuidParameters(uuid_parameters);
 
-        AbstractEvent {
+        Ok(AbstractEvent {
             __typename: raw_typename.clone().into(),
             id: event.id as i32,
             instance: event
@@ -149,36 +137,6 @@ macro_rules! to_abstract_event {
 
             string_parameters,
             uuid_parameters,
-        }
-    }};
-}
-
-impl AbstractEvent {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, EventError> {
-        let event = fetch_one_event!(id, pool);
-        let string_parameters = fetch_all_string_parameters!(id, pool);
-        let uuid_parameters = fetch_all_uuid_parameters!(id, pool);
-        let (event, string_parameters, uuid_parameters) =
-            join!(event, string_parameters, uuid_parameters);
-
-        let abstract_event = to_abstract_event!(event, string_parameters, uuid_parameters);
-        Ok(abstract_event)
-    }
-
-    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, EventError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
-
-        let event = fetch_one_event!(id, &mut transaction).await;
-        let string_parameters = fetch_all_string_parameters!(id, &mut transaction).await;
-        let uuid_parameters = fetch_all_uuid_parameters!(id, &mut transaction).await;
-
-        let abstract_event = to_abstract_event!(event, string_parameters, uuid_parameters);
-
-        transaction.commit().await?;
-
-        Ok(abstract_event)
+        })
     }
 }

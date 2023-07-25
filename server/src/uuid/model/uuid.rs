@@ -2,7 +2,6 @@ use crate::operation;
 use crate::uuid::messages::uuid_set_state_mutation;
 use async_trait::async_trait;
 use serde::Serialize;
-use sqlx::MySqlPool;
 use thiserror::Error;
 
 use super::discriminator::Discriminator;
@@ -83,23 +82,24 @@ impl From<UuidError> for operation::Error {
 
 #[async_trait]
 pub trait UuidFetcher {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Uuid, UuidError>
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Uuid, UuidError>
     where
-        Self: Sized;
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Uuid, UuidError>
-    where
-        E: Executor<'a>,
         Self: Sized;
 }
 
 #[async_trait]
 pub trait AssertExists: UuidFetcher {
-    async fn assert_exists<'a, E>(id: i32, executor: E) -> Result<(), operation::Error>
+    async fn assert_exists<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<(), operation::Error>
     where
-        E: Executor<'a>,
         Self: Sized,
     {
-        if let Err(UuidError::NotFound) = Self::fetch_via_transaction(id, executor).await {
+        if let Err(UuidError::NotFound) = Self::fetch(id, acquire_from).await {
             return Err(operation::Error::BadRequest {
                 reason: format!("Id {id} does not exist or does not correspond to the type"),
             });
@@ -108,74 +108,43 @@ pub trait AssertExists: UuidFetcher {
     }
 }
 
-macro_rules! fetch_one_uuid {
-    ($id: expr, $executor: expr) => {
-        sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, $id)
-            .fetch_one($executor)
-            .await
-            .map_err(|e| match e {
-                sqlx::Error::RowNotFound => UuidError::NotFound,
-                error => error.into(),
-            })
-    };
-}
-
-macro_rules! get_discriminator {
-    ($uuid: expr) => {
-        $uuid.discriminator.parse::<Discriminator>().map_err(|_| {
-            UuidError::UnsupportedDiscriminator {
-                discriminator: $uuid.discriminator,
-            }
+async fn get_discriminator<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+    id: i32,
+    acquire_from: A,
+) -> Result<Discriminator, UuidError> {
+    let mut transaction = acquire_from.begin().await?;
+    let uuid = sqlx::query!(r#"SELECT discriminator FROM uuid WHERE id = ?"#, id)
+        .fetch_one(&mut *transaction)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => UuidError::NotFound,
+            error => error.into(),
+        })?;
+    uuid.discriminator
+        .parse::<Discriminator>()
+        .map_err(|_| UuidError::UnsupportedDiscriminator {
+            discriminator: uuid.discriminator,
         })
-    };
 }
 
 #[async_trait]
 impl UuidFetcher for Uuid {
-    async fn fetch(id: i32, pool: &MySqlPool) -> Result<Self, UuidError> {
-        let uuid = fetch_one_uuid!(id, pool)?;
-        let discriminator = get_discriminator!(uuid)?;
+    async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Self, UuidError> {
+        let mut transaction = acquire_from.begin().await?;
+        let discriminator = get_discriminator(id, &mut *transaction).await?;
         let uuid = match discriminator {
-            Discriminator::Attachment => Attachment::fetch(id, pool).await?,
-            Discriminator::BlogPost => BlogPost::fetch(id, pool).await?,
-            Discriminator::Comment => Comment::fetch(id, pool).await?,
-            Discriminator::Entity => Entity::fetch(id, pool).await?,
-            Discriminator::EntityRevision => EntityRevision::fetch(id, pool).await?,
-            Discriminator::Page => Page::fetch(id, pool).await?,
-            Discriminator::PageRevision => PageRevision::fetch(id, pool).await?,
-            Discriminator::TaxonomyTerm => TaxonomyTerm::fetch(id, pool).await?,
-            Discriminator::User => User::fetch(id, pool).await?,
-        };
-        Ok(uuid)
-    }
-
-    async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Self, UuidError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
-        let uuid = fetch_one_uuid!(id, &mut transaction)?;
-        let discriminator = get_discriminator!(uuid)?;
-        let uuid = match discriminator {
-            Discriminator::Attachment => {
-                Attachment::fetch_via_transaction(id, &mut transaction).await?
-            }
-            Discriminator::BlogPost => {
-                BlogPost::fetch_via_transaction(id, &mut transaction).await?
-            }
-            Discriminator::Comment => Comment::fetch_via_transaction(id, &mut transaction).await?,
-            Discriminator::Entity => Entity::fetch_via_transaction(id, &mut transaction).await?,
-            Discriminator::EntityRevision => {
-                EntityRevision::fetch_via_transaction(id, &mut transaction).await?
-            }
-            Discriminator::Page => Page::fetch_via_transaction(id, &mut transaction).await?,
-            Discriminator::PageRevision => {
-                PageRevision::fetch_via_transaction(id, &mut transaction).await?
-            }
-            Discriminator::TaxonomyTerm => {
-                TaxonomyTerm::fetch_via_transaction(id, &mut transaction).await?
-            }
-            Discriminator::User => User::fetch_via_transaction(id, &mut transaction).await?,
+            Discriminator::Attachment => Attachment::fetch(id, &mut *transaction).await?,
+            Discriminator::BlogPost => BlogPost::fetch(id, &mut *transaction).await?,
+            Discriminator::Comment => Comment::fetch(id, &mut *transaction).await?,
+            Discriminator::Entity => Entity::fetch(id, &mut *transaction).await?,
+            Discriminator::EntityRevision => EntityRevision::fetch(id, &mut *transaction).await?,
+            Discriminator::Page => Page::fetch(id, &mut *transaction).await?,
+            Discriminator::PageRevision => PageRevision::fetch(id, &mut *transaction).await?,
+            Discriminator::TaxonomyTerm => TaxonomyTerm::fetch(id, &mut *transaction).await?,
+            Discriminator::User => User::fetch(id, &mut *transaction).await?,
         };
         transaction.commit().await?;
         Ok(uuid)
@@ -183,59 +152,29 @@ impl UuidFetcher for Uuid {
 }
 
 impl Uuid {
-    pub async fn fetch_context(id: i32, pool: &MySqlPool) -> Result<Option<String>, UuidError> {
-        let uuid = fetch_one_uuid!(id, pool)?;
-        let discriminator = get_discriminator!(uuid)?;
-        let context = match discriminator {
-            Discriminator::Attachment => Attachment::get_context(),
-            Discriminator::BlogPost => BlogPost::get_context(),
-            // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
-            Discriminator::Comment => None,
-            Discriminator::Entity => Entity::fetch_canonical_subject(id, pool)
-                .await?
-                .map(|subject| subject.name),
-            Discriminator::EntityRevision => EntityRevision::fetch_canonical_subject(id, pool)
-                .await?
-                .map(|subject| subject.name),
-            Discriminator::Page => None,         // TODO:
-            Discriminator::PageRevision => None, // TODO:
-            Discriminator::TaxonomyTerm => TaxonomyTerm::fetch_canonical_subject(id, pool)
-                .await?
-                .map(|subject| subject.name),
-            Discriminator::User => User::get_context(),
-        };
-        Ok(context)
-    }
-
-    pub async fn fetch_context_via_transaction<'a, E>(
-        id: i32,
-        executor: E,
-    ) -> Result<Option<String>, UuidError>
+    pub async fn fetch_context<'a, E>(id: i32, executor: E) -> Result<Option<String>, UuidError>
     where
         E: Executor<'a>,
     {
         let mut transaction = executor.begin().await?;
-        let uuid = fetch_one_uuid!(id, &mut transaction)?;
-        let discriminator = get_discriminator!(uuid)?;
+        let discriminator = get_discriminator(id, &mut *transaction).await?;
         let context = match discriminator {
             Discriminator::Attachment => Attachment::get_context(),
             Discriminator::BlogPost => BlogPost::get_context(),
             // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
             Discriminator::Comment => None,
-            Discriminator::Entity => {
-                Entity::fetch_canonical_subject_via_transaction(id, &mut transaction)
-                    .await?
-                    .map(|subject| subject.name)
-            }
+            Discriminator::Entity => Entity::fetch_canonical_subject(id, &mut *transaction)
+                .await?
+                .map(|subject| subject.name),
             Discriminator::EntityRevision => {
-                EntityRevision::fetch_canonical_subject_via_transaction(id, &mut transaction)
+                EntityRevision::fetch_canonical_subject(id, &mut *transaction)
                     .await?
                     .map(|subject| subject.name)
             }
             Discriminator::Page => None,         // TODO:
             Discriminator::PageRevision => None, // TODO:
             Discriminator::TaxonomyTerm => {
-                TaxonomyTerm::fetch_canonical_subject(id, &mut transaction)
+                TaxonomyTerm::fetch_canonical_subject(id, &mut *transaction)
                     .await?
                     .map(|subject| subject.name)
             }
@@ -251,14 +190,11 @@ impl Uuid {
 }
 
 impl Uuid {
-    pub async fn set_uuid_state<'a, E>(
+    pub async fn set_uuid_state<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &uuid_set_state_mutation::Payload,
-        executor: E,
-    ) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         for id in &payload.ids {
             let result = sqlx::query!(
@@ -285,7 +221,7 @@ impl Uuid {
                 "#,
                 id
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await;
             match result {
                 Ok(uuid) => {
@@ -311,10 +247,10 @@ impl Uuid {
                         }
                     })?;
 
-                    Uuid::set_state(*id, payload.trashed, &mut transaction).await?;
+                    Uuid::set_state(*id, payload.trashed, &mut *transaction).await?;
 
                     SetUuidStateEventPayload::new(payload.trashed, payload.user_id, *id, instance)
-                        .save(&mut transaction)
+                        .save(&mut *transaction)
                         .await?;
                 }
                 Err(sqlx::Error::RowNotFound) => {
@@ -367,7 +303,7 @@ mod tests {
                 user_id: 1,
                 trashed: true,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
@@ -384,20 +320,20 @@ mod tests {
                 user_id: 1,
                 trashed: true,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
         // Verify that the object was trashed.
         let uuid = sqlx::query!(r#"SELECT trashed FROM uuid WHERE id = ?"#, 1855)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap();
         assert!(uuid.trashed != 0);
 
         // Verify that the event was created.
-        let duration = fetch_age_of_newest_event(1855, &mut transaction)
+        let duration = fetch_age_of_newest_event(1855, &mut *transaction)
             .await
             .unwrap();
         assert!(duration < Duration::minutes(1));
@@ -414,20 +350,20 @@ mod tests {
                 user_id: 1,
                 trashed: false,
             },
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
 
         // Verify that the object is not trashed.
         let uuid = sqlx::query!(r#"SELECT trashed FROM uuid WHERE id = ?"#, 1855)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap();
         assert!(uuid.trashed == 0);
 
         // Verify that no event was created.
-        let duration = fetch_age_of_newest_event(1855, &mut transaction)
+        let duration = fetch_age_of_newest_event(1855, &mut *transaction)
             .await
             .unwrap();
         assert!(duration > Duration::minutes(1));

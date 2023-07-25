@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "update page_revision set author_id = ? where author_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "6a2b23f82cae92c92627c27b8e1ab145c4d99e689ab9d1be6434fdf84db552e6"
+}

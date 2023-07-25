@@ -3,7 +3,6 @@ use std::convert::{TryFrom, TryInto};
 
 use futures::TryStreamExt;
 use serde::Serialize;
-use sqlx::MySqlPool;
 
 use super::super::messages::*;
 use super::abstract_event::AbstractEvent;
@@ -21,7 +20,7 @@ use super::set_uuid_state::SetUuidStateEvent;
 use super::taxonomy_link::TaxonomyLinkEvent;
 use super::taxonomy_term::TaxonomyTermEvent;
 use super::EventError;
-use crate::database::Executor;
+
 use crate::datetime::DateTime;
 use crate::event::{EventStringParameters, EventUuidParameters};
 use crate::instance::Instance;
@@ -57,16 +56,11 @@ pub enum ConcreteEvent {
 }
 
 impl Event {
-    pub async fn fetch(id: i32, pool: &MySqlPool) -> Result<Event, EventError> {
-        let abstract_event = AbstractEvent::fetch(id, pool).await?;
-        abstract_event.try_into()
-    }
-
-    pub async fn fetch_via_transaction<'a, E>(id: i32, executor: E) -> Result<Event, EventError>
-    where
-        E: Executor<'a>,
-    {
-        let abstract_event = AbstractEvent::fetch_via_transaction(id, executor).await?;
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Event, EventError> {
+        let abstract_event = AbstractEvent::fetch(id, acquire_from).await?;
         abstract_event.try_into()
     }
 }
@@ -154,11 +148,11 @@ impl EventPayload {
         }
     }
 
-    pub async fn save<'a, E>(&self, executor: E) -> Result<Event, EventError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    pub async fn save<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> Result<Event, EventError> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"
@@ -168,7 +162,7 @@ impl EventPayload {
             "#,
             self.actor_id,
         )
-        .fetch_optional(&mut transaction)
+        .fetch_optional(&mut *transaction)
         .await?
         .ok_or(EventError::MissingUser)?;
 
@@ -185,11 +179,11 @@ impl EventPayload {
             self.date,
             self.raw_typename,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         let event_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await?
             .id as i32;
 
@@ -204,11 +198,11 @@ impl EventPayload {
                 event_id,
                 parameter
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
 
             let parameter_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-                .fetch_one(&mut transaction)
+                .fetch_one(&mut *transaction)
                 .await?
                 .id as i32;
 
@@ -220,7 +214,7 @@ impl EventPayload {
                 value,
                 parameter_id
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 
@@ -235,11 +229,11 @@ impl EventPayload {
                 event_id,
                 parameter
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
 
             let parameter_id = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-                .fetch_one(&mut transaction)
+                .fetch_one(&mut *transaction)
                 .await?
                 .id as i32;
 
@@ -251,12 +245,12 @@ impl EventPayload {
                 uuid_id,
                 parameter_id
             )
-            .execute(&mut transaction)
+            .execute(&mut *transaction)
             .await?;
         }
 
-        let event = Event::fetch_via_transaction(event_id, &mut transaction).await?;
-        Notifications::create_notifications(&event, &mut transaction).await?;
+        let event = Event::fetch(event_id, &mut *transaction).await?;
+        Notifications::create_notifications(&event, &mut *transaction).await?;
 
         transaction.commit().await?;
 
@@ -265,16 +259,13 @@ impl EventPayload {
 }
 
 impl Event {
-    pub async fn fetch_events<'a, E>(
+    pub async fn fetch_events<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &events_query::Payload,
-        executor: E,
-    ) -> Result<events_query::Output, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<events_query::Output, sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
         let instance_id = match payload.instance.as_ref() {
-            Some(instance) => Some(Instance::fetch_id(instance, &mut transaction).await?),
+            Some(instance) => Some(Instance::fetch_id(instance, &mut *transaction).await?),
             None => None,
         };
         let mut event_records = sqlx::query!(
@@ -329,7 +320,7 @@ impl Event {
             instance_id,
             payload.first + 1
         )
-        .fetch(&mut transaction);
+        .fetch(&mut *transaction);
 
         let mut events: Vec<Event> = Vec::new();
         let mut has_next_page = false;

@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT type.id FROM type\n                JOIN taxonomy\n                    ON taxonomy.type_id = type.id\n                WHERE type.name = ?\n                    AND instance_id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Long",
+          "flags": "NOT_NULL | PRIMARY_KEY | AUTO_INCREMENT",
+          "char_set": 63,
+          "max_size": 11
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d3ba269d63917ac3bb8679df4a041ac5972b46d7648f4d7ad9f4ffd86c597de0"
+}

@@ -12,7 +12,6 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use server::create_database_pool;
-use server::database::Connection;
 use server::message::{Message as ServerMessage, MessageResponder};
 use server::uuid::abstract_entity_revision::EntityRevisionType;
 use server::uuid::{EntityType, TaxonomyType};
@@ -34,9 +33,12 @@ impl<'a> Message<'a> {
         &self,
         transaction: &mut sqlx::Transaction<'_, sqlx::MySql>,
     ) -> MessageResult {
-        let message = json!({ "type": self.message_type, "payload": self.payload });
-        let message = from_value::<ServerMessage>(message).unwrap();
-        let http_response = message.handle(Connection::Transaction(transaction)).await;
+        let http_response = from_value::<ServerMessage>(
+            json!({ "type": self.message_type, "payload": self.payload }),
+        )
+        .unwrap()
+        .handle(&mut *transaction)
+        .await;
 
         MessageResult::new(http_response).await
     }
@@ -106,22 +108,21 @@ pub async fn begin_transaction<'a>() -> sqlx::Transaction<'a, sqlx::MySql> {
     create_database_pool().await.unwrap().begin().await.unwrap()
 }
 
-pub async fn create_new_test_user<'a, E>(executor: E) -> Result<i32, sqlx::Error>
-where
-    E: sqlx::Acquire<'a, Database = sqlx::MySql>,
-{
-    let mut transaction = executor.begin().await?;
+pub async fn create_new_test_user<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+    acquire_from: A,
+) -> Result<i32, sqlx::Error> {
+    let mut transaction = acquire_from.begin().await?;
 
     sqlx::query!(
         r#"
                 INSERT INTO uuid (trashed, discriminator) VALUES (0, "user")
             "#
     )
-    .execute(&mut transaction)
+    .execute(&mut *transaction)
     .await?;
 
     let new_user_id = sqlx::query!("SELECT LAST_INSERT_ID() as id FROM uuid")
-        .fetch_one(&mut transaction)
+        .fetch_one(&mut *transaction)
         .await?
         .id as i32;
 
@@ -136,7 +137,7 @@ where
         "",
         random_string(10)
     )
-    .execute(&mut transaction)
+    .execute(&mut *transaction)
     .await?;
 
     transaction.commit().await?;
@@ -196,7 +197,7 @@ pub async fn set_entity_revision_field<'a>(
         revision_id,
         value
     )
-    .execute(&mut transaction)
+    .execute(&mut *transaction)
     .await?
     .rows_affected()
         == 0
@@ -207,7 +208,7 @@ pub async fn set_entity_revision_field<'a>(
             field,
             value
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
     };
     transaction.commit().await?;
@@ -230,13 +231,13 @@ pub const ALLOWED_TAXONOMY_TYPES_CREATE: [TaxonomyType; 2] =
 pub async fn assert_event_revision_ok(
     revision_id: Value,
     entity_id: i32,
-    executor: &mut sqlx::Transaction<'_, sqlx::MySql>,
+    transaction: &mut sqlx::Transaction<'_, sqlx::MySql>,
 ) {
     Message::new(
         "EventsQuery",
         json!({ "first": 1, "objectId": revision_id }),
     )
-    .execute_on(executor)
+    .execute_on(&mut *transaction)
     .await
     .should_be_ok_with(|result| {
         assert_json_include!(

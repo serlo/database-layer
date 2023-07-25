@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO taxonomy (type_id, instance_id)\n                    VALUES (?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "b59a46d428d4becb6e149c8e61fa505f2a1144310abf8ad4c843c8915487126c"
+}

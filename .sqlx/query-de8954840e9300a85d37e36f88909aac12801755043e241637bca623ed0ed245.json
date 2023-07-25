@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT term_taxonomy_id as id\n                    FROM (\n                        SELECT term_taxonomy_id, entity_id FROM term_taxonomy_entity\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l ON t.entity_id = l.parent_id\n                        UNION ALL\n                        SELECT t.term_taxonomy_id, l2.child_id as entity_id\n                            FROM term_taxonomy_entity t\n                            JOIN entity_link l1 ON t.entity_id = l1.parent_id\n                            JOIN entity_link l2 ON l2.parent_id = l1.child_id\n                    ) u\n                    WHERE entity_id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "char_set": 63,
+          "max_size": 20
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "de8954840e9300a85d37e36f88909aac12801755043e241637bca623ed0ed245"
+}

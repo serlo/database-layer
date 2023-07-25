@@ -1,0 +1,36 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT n.name, u.uuid_id\n                    FROM event_parameter p\n                    JOIN event_parameter_name n ON n.id = p.name_id\n                    JOIN event_parameter_uuid u ON u.event_parameter_id = p.id\n                    WHERE p.name_id = n.id AND p.log_id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "uuid_id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | MULTIPLE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 20
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "efc0ab4bd3f789c0cce63a358761f13a56e0455dac5527bf499feb72883c62ae"
+}

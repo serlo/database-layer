@@ -2,12 +2,10 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 
 use serde::Serialize;
-use sqlx::MySqlPool;
 
 use super::navigation_child::{
     NavigationChild, NavigationChildError, RawNavigationChild, RawNavigationChildError,
 };
-use crate::database::Executor;
 use crate::instance::Instance;
 
 #[derive(Serialize)]
@@ -93,37 +91,13 @@ macro_rules! to_navigation {
 }
 
 impl Navigation {
-    pub async fn fetch(instance: Instance, pool: &MySqlPool) -> Result<Navigation, sqlx::Error> {
-        let pages = fetch_all_pages!(instance, pool).await?;
-
-        let mut raw_navigation_children: HashMap<i32, RawNavigationChild> = HashMap::new();
-        let mut stack: Vec<i32> = pages.iter().map(|page| page.id).collect();
-        let mut ids_dfs: Vec<i32> = Vec::new();
-
-        while let Some(id) = stack.pop() {
-            handle_raw_navigation_child!(
-                id,
-                RawNavigationChild::fetch(id, pool).await,
-                raw_navigation_children,
-                stack,
-                ids_dfs
-            );
-        }
-
-        to_navigation!(instance, pages, raw_navigation_children, ids_dfs)
-    }
-
-    #[allow(dead_code)]
-    pub async fn fetch_via_transaction<'a, E>(
+    pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         instance: Instance,
-        executor: E,
-    ) -> Result<Navigation, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<Navigation, sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
-        let pages = fetch_all_pages!(instance, &mut transaction).await?;
+        let pages = fetch_all_pages!(instance, &mut *transaction).await?;
 
         let mut raw_navigation_children: HashMap<i32, RawNavigationChild> = HashMap::new();
         let mut stack: Vec<i32> = pages.iter().map(|page| page.id).collect();
@@ -132,7 +106,7 @@ impl Navigation {
         while let Some(id) = stack.pop() {
             handle_raw_navigation_child!(
                 id,
-                RawNavigationChild::fetch_via_transaction(id, &mut transaction).await,
+                RawNavigationChild::fetch(id, &mut *transaction).await,
                 raw_navigation_children,
                 stack,
                 ids_dfs

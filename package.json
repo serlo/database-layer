@@ -21,7 +21,7 @@
     "mysql:import-anonymous-data": "ts-node --experimental-specifier-resolution=node scripts/mysql/mysql-import-anonymous-data",
     "mysql:rollback": "docker compose exec mysql sh -c \"pv /docker-entrypoint-initdb.d/001-init.sql | serlo-mysql\"",
     "pacts": "NODE_OPTIONS=--dns-result-order=ipv4first node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config-pacts.js",
-    "sqlx:prepare": "cargo sqlx prepare --merged",
+    "sqlx:prepare": "cargo sqlx prepare --workspace",
     "start": "docker-compose up --detach",
     "test": "cargo test",
     "update-version": "./scripts/update_server_version.sh",

@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "insert into entity_revision_field (entity_revision_id, field, value) values (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "6a17979932c1f7bed8da7136ced51cec3e92cf766b5850d690e46c8c11cb9184"
+}

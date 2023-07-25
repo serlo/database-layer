@@ -62,7 +62,7 @@ impl EntityLinkEventPayload {
                 .cloned()
                 .collect(),
         )
-        .save(&mut transaction)
+        .save(&mut *transaction)
         .await?;
 
         transaction.commit().await?;

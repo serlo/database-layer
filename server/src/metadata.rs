@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::env;
 
-use crate::database::{Connection, Executor};
 use crate::message::MessageResponder;
 use crate::operation::Error;
 use crate::operation::{self, Operation};
@@ -19,10 +18,13 @@ pub enum MetadataMessage {
 #[async_trait]
 impl MessageResponder for MetadataMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
             MetadataMessage::EntitiesMetadataQuery(payload) => {
-                payload.handle("EntitiesMetadataQuery", connection).await
+                payload.handle("EntitiesMetadataQuery", acquire_from).await
             }
         }
     }
@@ -107,29 +109,24 @@ pub mod entities_metadata_query {
     impl Operation for Payload {
         type Output = Output;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
             if self.first > 10_000 {
                 return Err(Error::BadRequest {
                     reason: "The 'first' value should be less than or equal 10_000".to_string(),
                 });
             };
-
-            let entities = match connection {
-                Connection::Pool(pool) => query(self, pool).await?,
-                Connection::Transaction(transaction) => query(self, transaction).await?,
-            };
-
+            let entities = query(self, acquire_from).await?;
             Ok(Output { entities })
         }
     }
 
-    async fn query<'a, E>(
+    async fn query<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &Payload,
-        executor: E,
-    ) -> Result<Vec<EntityMetadata>, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+        acquire_from: A,
+    ) -> Result<Vec<EntityMetadata>, operation::Error> {
         // See https://github.com/serlo/private-issues-sso-metadata-wallet/issues/37
         let metadata_api_last_changes_date: DateTime<Utc> = DateTime::parse_from_rfc3339(
             &env::var("METADATA_API_LAST_CHANGES_DATE")
@@ -146,6 +143,7 @@ pub mod entities_metadata_query {
             Option::None
         };
 
+        let mut connection = acquire_from.acquire().await?;
         Ok(sqlx::query!(
             r#"
                 WITH RECURSIVE ancestors AS (
@@ -208,7 +206,7 @@ pub mod entities_metadata_query {
             modified_after,
             modified_after,
             payload.first
-        ).fetch_all(executor)
+        ).fetch_all(&mut *connection)
             .await?
             .into_iter()
             .map(|result| {

@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "delete from notification where user_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "2b34c5a1d2b6d04cb9bbbf5777daf02acc00c15dacb0f26ce3edf473b6759aa1"
+}

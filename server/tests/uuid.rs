@@ -28,7 +28,7 @@ mod uuid_query {
             exercise_group_revision_id,
             "cohesive",
             "true",
-            &mut transaction,
+            &mut *transaction,
         )
         .await
         .unwrap();
@@ -70,7 +70,7 @@ mod set_uuid_state_mutation {
                 "select id from uuid where discriminator = ? and trashed = false",
                 discriminator
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap()
             .id as i32;

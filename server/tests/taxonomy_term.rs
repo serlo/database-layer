@@ -313,7 +313,7 @@ mod create_entity_link_mutation {
         let taxonomy_term_id = 1307;
 
         let count_before =
-            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut transaction).await;
+            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut *transaction).await;
 
         Message::new(
             "TaxonomyCreateEntityLinksMutation",
@@ -329,7 +329,7 @@ mod create_entity_link_mutation {
 
         assert_eq!(
             count_before,
-            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut transaction).await
+            count_taxonomy_entity_links(entity_id, taxonomy_term_id, &mut *transaction).await
         );
     }
 }

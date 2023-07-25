@@ -6,7 +6,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use super::model::Threads;
-use crate::database::Connection;
 use crate::message::MessageResponder;
 
 #[derive(Deserialize, Serialize)]
@@ -23,32 +22,35 @@ pub enum ThreadMessage {
 #[async_trait]
 impl MessageResponder for ThreadMessage {
     #[allow(clippy::async_yields_async)]
-    async fn handle(&self, connection: Connection<'_, '_>) -> HttpResponse {
+    async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> HttpResponse {
         match self {
             ThreadMessage::AllThreadsQuery(message) => {
-                message.handle("AllThreadsQuery", connection).await
+                message.handle("AllThreadsQuery", acquire_from).await
             }
             ThreadMessage::ThreadsQuery(message) => {
-                message.handle("ThreadsQuery", connection).await
+                message.handle("ThreadsQuery", acquire_from).await
             }
             ThreadMessage::ThreadCreateThreadMutation(message) => {
                 message
-                    .handle("ThreadCreateThreadMutation", connection)
+                    .handle("ThreadCreateThreadMutation", acquire_from)
                     .await
             }
             ThreadMessage::ThreadCreateCommentMutation(message) => {
                 message
-                    .handle("ThreadCreateCommentMutation", connection)
+                    .handle("ThreadCreateCommentMutation", acquire_from)
                     .await
             }
             ThreadMessage::ThreadSetThreadArchivedMutation(message) => {
                 message
-                    .handle("ThreadSetThreadArchivedMutation", connection)
+                    .handle("ThreadSetThreadArchivedMutation", acquire_from)
                     .await
             }
             ThreadMessage::ThreadEditCommentMutation(message) => {
                 message
-                    .handle("ThreadEditCommentMutation", connection)
+                    .handle("ThreadEditCommentMutation", acquire_from)
                     .await
             }
         }
@@ -71,29 +73,18 @@ pub mod all_threads_query {
     impl Operation for Payload {
         type Output = Threads;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => {
-                    Threads::fetch_all_threads(
-                        self.first,
-                        self.after.clone(),
-                        self.instance.clone(),
-                        self.subject_id,
-                        pool,
-                    )
-                    .await?
-                }
-                Connection::Transaction(transaction) => {
-                    Threads::fetch_all_threads(
-                        self.first,
-                        self.after.clone(),
-                        self.instance.clone(),
-                        self.subject_id,
-                        transaction,
-                    )
-                    .await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(Threads::fetch_all_threads(
+                self.first,
+                self.after.clone(),
+                self.instance.clone(),
+                self.subject_id,
+                acquire_from,
+            )
+            .await?)
         }
     }
 }
@@ -111,13 +102,11 @@ pub mod threads_query {
     impl Operation for Payload {
         type Output = Threads;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => Threads::fetch(self.id, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Threads::fetch_via_transaction(self.id, transaction).await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(Threads::fetch(self.id, acquire_from).await?)
         }
     }
 }
@@ -140,13 +129,11 @@ pub mod create_thread_mutation {
     impl Operation for Payload {
         type Output = Uuid;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => Threads::start_thread(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Threads::start_thread(self, transaction).await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(Threads::start_thread(self, acquire_from).await?)
         }
     }
 }
@@ -167,13 +154,11 @@ pub mod create_comment_mutation {
     impl Operation for Payload {
         type Output = Uuid;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => Threads::comment_thread(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Threads::comment_thread(self, transaction).await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(Threads::comment_thread(self, acquire_from).await?)
         }
     }
 }
@@ -193,13 +178,11 @@ pub mod set_thread_archived_mutation {
     impl Operation for Payload {
         type Output = ();
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            match connection {
-                Connection::Pool(pool) => Threads::set_archive(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Threads::set_archive(self, transaction).await?
-                }
-            }
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Threads::set_archive(self, acquire_from).await?;
             Ok(())
         }
     }
@@ -220,13 +203,11 @@ pub mod edit_comment_mutation {
     impl Operation for Payload {
         type Output = operation::SuccessOutput;
 
-        async fn execute(&self, connection: Connection<'_, '_>) -> operation::Result<Self::Output> {
-            Ok(match connection {
-                Connection::Pool(pool) => Threads::edit_comment(self, pool).await?,
-                Connection::Transaction(transaction) => {
-                    Threads::edit_comment(self, transaction).await?
-                }
-            })
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            Ok(Threads::edit_comment(self, acquire_from).await?)
         }
     }
 }

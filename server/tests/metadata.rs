@@ -662,7 +662,7 @@ mod entities_metadata_query {
             where id = 41509 and field = "meta_description";
         "#
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await
         .unwrap();
 

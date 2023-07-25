@@ -1,0 +1,36 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT u.trashed, f.name\n                    FROM attachment_file f\n                    JOIN attachment_container c ON c.id = f.attachment_id\n                    JOIN uuid u ON u.id = c.id\n                    WHERE c.id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "trashed",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL",
+          "char_set": 63,
+          "max_size": 1
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 1020
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "c59169ef14ada9959cae905ce9f60992497174d2f8cb57332d855974f911040a"
+}

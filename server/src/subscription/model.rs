@@ -1,7 +1,5 @@
 use crate::subscription::messages::{subscription_set_mutation, subscriptions_query};
-use sqlx::MySqlPool;
 
-use crate::database::Executor;
 use crate::datetime::DateTime;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -15,10 +13,11 @@ pub struct Subscription {
 }
 
 impl Subscriptions {
-    pub async fn fetch_by_user<'a, E>(user_id: i32, executor: E) -> Result<Self, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn fetch_by_user<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        user_id: i32,
+        acquire_from: A,
+    ) -> Result<Self, sqlx::Error> {
+        let mut connection = acquire_from.acquire().await?;
         let subscriptions = sqlx::query!(
             r#"
                 SELECT s.uuid_id, s.user_id, s.notify_mailman FROM subscription s
@@ -30,7 +29,7 @@ impl Subscriptions {
             "#,
             user_id
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *connection)
         .await?;
 
         let subscriptions = subscriptions
@@ -45,15 +44,16 @@ impl Subscriptions {
         Ok(Subscriptions(subscriptions))
     }
 
-    pub async fn fetch_by_object<'a, E>(object_id: i32, executor: E) -> Result<Self, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn fetch_by_object<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        object_id: i32,
+        acquire_from: A,
+    ) -> Result<Self, sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
         let subscriptions = sqlx::query!(
             r#"SELECT uuid_id, user_id, notify_mailman FROM subscription WHERE uuid_id = ?"#,
             object_id
         )
-        .fetch_all(executor)
+        .fetch_all(&mut *transaction)
         .await?;
 
         let subscriptions = subscriptions
@@ -70,11 +70,11 @@ impl Subscriptions {
 }
 
 impl Subscription {
-    pub async fn save<'a, E>(&self, executor: E) -> Result<(), sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    pub async fn save<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        &self,
+        acquire_from: A,
+    ) -> Result<(), sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
         sqlx::query!(
             r#"
                 INSERT INTO subscription (uuid_id, user_id, notify_mailman, date)
@@ -87,7 +87,7 @@ impl Subscription {
             DateTime::now(),
             self.send_email,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         transaction.commit().await?;
@@ -95,17 +95,17 @@ impl Subscription {
         Ok(())
     }
 
-    pub async fn remove<'a, E>(&self, executor: E) -> Result<(), sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    pub async fn remove<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        &self,
+        acquire_from: A,
+    ) -> Result<(), sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
         sqlx::query!(
             r#"DELETE FROM subscription WHERE uuid_id = ? AND user_id = ?"#,
             self.object_id,
             self.user_id,
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
         transaction.commit().await?;
@@ -114,21 +114,11 @@ impl Subscription {
     }
 }
 
-pub async fn fetch_subscriptions_by_user(
+pub async fn fetch_subscriptions_by_user<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
     user_id: i32,
-    pool: &MySqlPool,
+    acquire_from: A,
 ) -> Result<subscriptions_query::Output, sqlx::Error> {
-    fetch_subscriptions_by_user_via_transaction(user_id, pool).await
-}
-
-pub async fn fetch_subscriptions_by_user_via_transaction<'a, E>(
-    user_id: i32,
-    executor: E,
-) -> Result<subscriptions_query::Output, sqlx::Error>
-where
-    E: Executor<'a>,
-{
-    let subscriptions = Subscriptions::fetch_by_user(user_id, executor).await?;
+    let subscriptions = Subscriptions::fetch_by_user(user_id, acquire_from).await?;
     let subscriptions = subscriptions
         .0
         .iter()
@@ -142,14 +132,11 @@ where
 }
 
 impl Subscription {
-    pub async fn change_subscription<'a, E>(
+    pub async fn change_subscription<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
         payload: &subscription_set_mutation::Payload,
-        executor: E,
-    ) -> Result<(), sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         for id in &payload.ids {
             let subscription = Subscription {
@@ -159,9 +146,9 @@ impl Subscription {
             };
 
             if payload.subscribe {
-                subscription.save(&mut transaction).await?;
+                subscription.save(&mut *transaction).await?;
             } else {
-                subscription.remove(&mut transaction).await?;
+                subscription.remove(&mut *transaction).await?;
             }
         }
         transaction.commit().await?;
@@ -174,7 +161,6 @@ impl Subscription {
 pub mod tests {
     use super::{Subscription, Subscriptions};
     use crate::create_database_pool;
-    use crate::database::Executor;
 
     #[actix_rt::test]
     async fn get_subscriptions_does_not_return_unsupported_uuids() {
@@ -186,12 +172,12 @@ pub mod tests {
                 "SELECT id FROM uuid WHERE discriminator = ?",
                 unsupported_uuid
             )
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap()
             .id as i32;
 
-            assert_get_subscriptions_does_not_return(uuid_id, &mut transaction)
+            assert_get_subscriptions_does_not_return(uuid_id, &mut *transaction)
                 .await
                 .unwrap();
         }
@@ -203,24 +189,24 @@ pub mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         let entity_id = sqlx::query!("SELECT id FROM entity WHERE type_id = 43",)
-            .fetch_one(&mut transaction)
+            .fetch_one(&mut *transaction)
             .await
             .unwrap()
             .id as i32;
 
-        assert_get_subscriptions_does_not_return(entity_id, &mut transaction)
+        assert_get_subscriptions_does_not_return(entity_id, &mut *transaction)
             .await
             .unwrap();
     }
 
-    async fn assert_get_subscriptions_does_not_return<'a, E>(
+    async fn assert_get_subscriptions_does_not_return<
+        'a,
+        A: sqlx::Acquire<'a, Database = sqlx::MySql>,
+    >(
         uuid_id: i32,
-        executor: E,
-    ) -> Result<(), sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+        acquire_from: A,
+    ) -> Result<(), sqlx::Error> {
+        let mut transaction = acquire_from.begin().await?;
         let user_id: i32 = 35408;
 
         sqlx::query!(
@@ -231,10 +217,10 @@ pub mod tests {
             uuid_id,
             user_id
         )
-        .execute(&mut transaction)
+        .execute(&mut *transaction)
         .await?;
 
-        let subscriptions = Subscriptions::fetch_by_user(user_id, &mut transaction).await?;
+        let subscriptions = Subscriptions::fetch_by_user(user_id, &mut *transaction).await?;
 
         assert!(!subscriptions.0.iter().any(|sub| sub.object_id == uuid_id));
 
@@ -247,7 +233,7 @@ pub mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         // Verify assumption that the user is not subscribed to object
-        let subscription = fetch_subscription_by_user_and_object(1, 1555, &mut transaction)
+        let subscription = fetch_subscription_by_user_and_object(1, 1555, &mut *transaction)
             .await
             .unwrap();
         assert!(subscription.is_none());
@@ -257,10 +243,10 @@ pub mod tests {
             user_id: 1,
             send_email: true,
         };
-        subscription.save(&mut transaction).await.unwrap();
+        subscription.save(&mut *transaction).await.unwrap();
 
         // Verify that user is now subscribed to object
-        let new_subscription = fetch_subscription_by_user_and_object(1, 1555, &mut transaction)
+        let new_subscription = fetch_subscription_by_user_and_object(1, 1555, &mut *transaction)
             .await
             .unwrap();
         assert_eq!(new_subscription, Some(subscription));
@@ -273,7 +259,7 @@ pub mod tests {
 
         // Get existing subscription for comparison
         let existing_subscription =
-            fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
+            fetch_subscription_by_user_and_object(1, 1565, &mut *transaction)
                 .await
                 .unwrap()
                 .unwrap();
@@ -283,10 +269,10 @@ pub mod tests {
             user_id: 1,
             send_email: false,
         };
-        subscription.save(&mut transaction).await.unwrap();
+        subscription.save(&mut *transaction).await.unwrap();
 
         // Verify that subscription was changed
-        let subscription = fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
+        let subscription = fetch_subscription_by_user_and_object(1, 1565, &mut *transaction)
             .await
             .unwrap();
         assert_eq!(
@@ -305,7 +291,7 @@ pub mod tests {
 
         // Verify assumption that the user is subscribed to object
         let existing_subscription =
-            fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
+            fetch_subscription_by_user_and_object(1, 1565, &mut *transaction)
                 .await
                 .unwrap();
         assert!(existing_subscription.is_some());
@@ -315,24 +301,24 @@ pub mod tests {
             user_id: 1,
             send_email: false,
         };
-        subscription.remove(&mut transaction).await.unwrap();
+        subscription.remove(&mut *transaction).await.unwrap();
 
         // Verify that user is no longer subscribed to object
-        let subscription = fetch_subscription_by_user_and_object(1, 1565, &mut transaction)
+        let subscription = fetch_subscription_by_user_and_object(1, 1565, &mut *transaction)
             .await
             .unwrap();
         assert!(subscription.is_none());
     }
 
-    pub async fn fetch_subscription_by_user_and_object<'a, E>(
+    pub async fn fetch_subscription_by_user_and_object<
+        'a,
+        A: sqlx::Acquire<'a, Database = sqlx::MySql>,
+    >(
         user_id: i32,
         object_id: i32,
-        executor: E,
-    ) -> Result<Option<Subscription>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
-        let subscriptions = Subscriptions::fetch_by_object(object_id, executor).await?;
+        acquire_from: A,
+    ) -> Result<Option<Subscription>, sqlx::Error> {
+        let subscriptions = Subscriptions::fetch_by_object(object_id, acquire_from).await?;
         let subscription = subscriptions
             .0
             .into_iter()

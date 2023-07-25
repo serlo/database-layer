@@ -6,7 +6,6 @@ use sqlx::encode::IsNull;
 use sqlx::mysql::MySqlTypeInfo;
 use sqlx::{Error, MySql};
 
-use crate::database::Executor;
 use std::fmt::Formatter;
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
@@ -21,13 +20,14 @@ pub enum Instance {
 }
 
 impl Instance {
-    pub async fn fetch_id<'a, E>(&self, executor: E) -> Result<i32, Error>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn fetch_id<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        &self,
+        acquire_from: A,
+    ) -> Result<i32, Error> {
+        let mut connection = acquire_from.begin().await?;
         Ok(
             sqlx::query!("SELECT id FROM instance WHERE subdomain = ?", self)
-                .fetch_one(executor)
+                .fetch_one(&mut *connection)
                 .await?
                 .id,
         )

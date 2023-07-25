@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "update user set email = ? where id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c226097970dc8f6303ae58f2d12f1c39f46200ae321f8ec8e369c35d8a07ccde"
+}

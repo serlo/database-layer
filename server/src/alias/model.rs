@@ -107,8 +107,6 @@ pub async fn fetch<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
 
     let uuid = Uuid::fetch(id, &mut *transaction).await?;
 
-    transaction.commit().await?;
-
     Ok(alias_query::Output {
         id,
         instance,

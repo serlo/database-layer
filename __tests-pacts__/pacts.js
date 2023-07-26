@@ -16,7 +16,7 @@ test('Pacts', async () => {
     path.join(__dirname, '..', 'server', 'Cargo.toml'),
     {
       encoding: 'utf-8',
-    }
+    },
   )
   const { version } = await parse(cargoToml).package
 

@@ -333,6 +333,20 @@ const content = generateChangelog({
       date: '2023-06-20',
       fixed: ['Fix metadata query 500 when hitting entity 1613'],
     },
+    {
+      tagName: 'v0.3.67',
+      date: '2023-07-26',
+      fixed: [
+        'Metadata API: Adjust subject mapping',
+        'Metadata API: Add "type" to "mainEntityOfPage"',
+      ],
+      internal: [
+        'Upgrade sqlx to 0.7.1',
+        'Upgrade various dependencies',
+        'Refactor to use Serlo MySQL database from serlo-mysql-database Docker image',
+        'Setup dependabot for dependencies upgrades',
+      ],
+    },
   ],
 })
 

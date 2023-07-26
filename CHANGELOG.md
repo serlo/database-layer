@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.67](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.66..v0.3.67) - July 26, 2023
+
+### Fixed
+
+- Metadata API: Adjust subject mapping
+
+- Metadata API: Add "type" to "mainEntityOfPage"
+
+### Internal
+
+- Upgrade sqlx to 0.7.1
+
+- Upgrade various dependencies
+
+- Refactor to use Serlo MySQL database from serlo-mysql-database Docker image
+
+- Setup dependabot for dependencies upgrades
+
 ## [v0.3.66](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.65..v0.3.66) - June 20, 2023
 
 ### Fixed

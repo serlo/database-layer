@@ -9,7 +9,7 @@ use crate::message::MessageResponder;
 use crate::operation::Error;
 use crate::operation::{self, Operation};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum MetadataMessage {
     EntitiesMetadataQuery(entities_metadata_query::Payload),
@@ -24,7 +24,9 @@ impl MessageResponder for MetadataMessage {
     ) -> HttpResponse {
         match self {
             MetadataMessage::EntitiesMetadataQuery(payload) => {
-                payload.handle("EntitiesMetadataQuery", acquire_from).await
+                payload
+                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .await
             }
         }
     }
@@ -36,7 +38,7 @@ pub mod entities_metadata_query {
 
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub first: i32,

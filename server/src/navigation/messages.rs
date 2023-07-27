@@ -7,7 +7,7 @@ use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum NavigationMessage {
     NavigationQuery(navigation_query::Payload),
@@ -22,7 +22,9 @@ impl MessageResponder for NavigationMessage {
     ) -> HttpResponse {
         match self {
             NavigationMessage::NavigationQuery(message) => {
-                message.handle("NavigationQuery", acquire_from).await
+                message
+                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .await
             }
         }
     }
@@ -31,7 +33,7 @@ impl MessageResponder for NavigationMessage {
 pub mod navigation_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub instance: Instance,

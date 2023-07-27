@@ -33,29 +33,7 @@ impl MessageResponder for UserMessage {
         &self,
         acquire_from: A,
     ) -> HttpResponse {
-        match self {
-            UserMessage::ActiveAuthorsQuery(_) => {
-                active_authors_query::Payload {}.handle(acquire_from).await
-            }
-            UserMessage::ActiveReviewersQuery(_) => {
-                active_reviewers_query::Payload {}
-                    .handle(acquire_from)
-                    .await
-            }
-            UserMessage::ActivityByTypeQuery(payload) => payload.handle(acquire_from).await,
-            UserMessage::UserActivityByTypeQuery(payload) => payload.handle(acquire_from).await,
-            UserMessage::UserAddRoleMutation(payload) => payload.handle(acquire_from).await,
-            UserMessage::UserCreateMutation(payload) => payload.handle(acquire_from).await,
-            UserMessage::UserDeleteBotsMutation(payload) => payload.handle(acquire_from).await,
-            UserMessage::UserDeleteRegularUsersMutation(payload) => {
-                payload.handle(acquire_from).await
-            }
-            UserMessage::UserPotentialSpamUsersQuery(payload) => payload.handle(acquire_from).await,
-            UserMessage::UserRemoveRoleMutation(payload) => payload.handle(acquire_from).await,
-            UserMessage::UsersByRoleQuery(payload) => payload.handle(acquire_from).await,
-            UserMessage::UserSetDescriptionMutation(payload) => payload.handle(acquire_from).await,
-            UserMessage::UserSetEmailMutation(payload) => payload.handle(acquire_from).await,
-        }
+        self.handle(acquire_from).await
     }
 }
 

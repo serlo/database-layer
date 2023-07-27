@@ -26,23 +26,7 @@ impl MessageResponder for TaxonomyTermMessage {
         &self,
         acquire_from: A,
     ) -> HttpResponse {
-        match self {
-            TaxonomyTermMessage::TaxonomyTermSetNameAndDescriptionMutation(payload) => {
-                payload.handle(acquire_from).await
-            }
-            TaxonomyTermMessage::TaxonomyTermCreateMutation(payload) => {
-                payload.handle(acquire_from).await
-            }
-            TaxonomyTermMessage::TaxonomyCreateEntityLinksMutation(payload) => {
-                payload.handle(acquire_from).await
-            }
-            TaxonomyTermMessage::TaxonomyDeleteEntityLinksMutation(payload) => {
-                payload.handle(acquire_from).await
-            }
-            TaxonomyTermMessage::TaxonomySortMutation(payload) => {
-                payload.handle(acquire_from).await
-            }
-        }
+        self.handle(acquire_from).await
     }
 }
 

@@ -21,10 +21,7 @@ impl MessageResponder for EventMessage {
         &self,
         acquire_from: A,
     ) -> HttpResponse {
-        match self {
-            EventMessage::EventQuery(payload) => payload.handle(acquire_from).await,
-            EventMessage::EventsQuery(payload) => payload.handle(acquire_from).await,
-        }
+        self.handle(acquire_from).await
     }
 }
 

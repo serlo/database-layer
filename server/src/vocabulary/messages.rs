@@ -7,7 +7,7 @@ use crate::operation::{self, Operation};
 
 use super::model::{Vocabulary, VocabularyError};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum VocabularyMessage {
     VocabularyTaxonomyQuery(taxonomy_vocabulary_query::Payload),
@@ -23,7 +23,7 @@ impl MessageResponder for VocabularyMessage {
         match self {
             VocabularyMessage::VocabularyTaxonomyQuery(payload) => {
                 payload
-                    .handle("VocabularyTaxonomyQuery", acquire_from)
+                    .handle(format!("{:?}", payload).as_str(), acquire_from)
                     .await
             }
         }

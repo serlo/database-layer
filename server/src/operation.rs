@@ -57,7 +57,6 @@ pub trait Operation: std::fmt::Debug {
         acquire_from: A,
     ) -> Result<Self::Output>;
 
-    #[allow(clippy::async_yields_async)]
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
         &self,
         acquire_from: A,

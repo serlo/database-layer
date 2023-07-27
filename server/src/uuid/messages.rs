@@ -23,12 +23,12 @@ impl MessageResponder for UuidMessage {
         match self {
             UuidMessage::UuidQuery(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             UuidMessage::UuidSetStateMutation(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
         }

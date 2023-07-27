@@ -24,12 +24,12 @@ impl MessageResponder for EventMessage {
         match self {
             EventMessage::EventQuery(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             EventMessage::EventsQuery(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
         }

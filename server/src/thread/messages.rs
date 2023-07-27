@@ -29,32 +29,32 @@ impl MessageResponder for ThreadMessage {
         match self {
             ThreadMessage::AllThreadsQuery(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             ThreadMessage::ThreadsQuery(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             ThreadMessage::ThreadCreateThreadMutation(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             ThreadMessage::ThreadCreateCommentMutation(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             ThreadMessage::ThreadSetThreadArchivedMutation(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             ThreadMessage::ThreadEditCommentMutation(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
         }

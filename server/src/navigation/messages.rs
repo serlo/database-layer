@@ -23,7 +23,7 @@ impl MessageResponder for NavigationMessage {
         match self {
             NavigationMessage::NavigationQuery(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
         }

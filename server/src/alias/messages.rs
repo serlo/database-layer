@@ -23,7 +23,7 @@ impl MessageResponder for AliasMessage {
         match self {
             AliasMessage::AliasQuery(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
         }

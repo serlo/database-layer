@@ -23,7 +23,7 @@ impl MessageResponder for VocabularyMessage {
         match self {
             VocabularyMessage::VocabularyTaxonomyQuery(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
         }

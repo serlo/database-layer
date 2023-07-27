@@ -29,27 +29,27 @@ impl MessageResponder for PageMessage {
         match self {
             PageMessage::PageAddRevisionMutation(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             PageMessage::PageCheckoutRevisionMutation(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             PageMessage::PageCreateMutation(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             PageMessage::PageRejectRevisionMutation(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             PageMessage::PagesQuery(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
         }

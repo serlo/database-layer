@@ -23,12 +23,12 @@ impl MessageResponder for NotificationMessage {
         match self {
             NotificationMessage::NotificationsQuery(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             NotificationMessage::NotificationSetStateMutation(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
         }

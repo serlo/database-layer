@@ -19,10 +19,8 @@ impl MessageResponder for SubjectsMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            SubjectsMessage::SubjectsQuery(payload) => {
-                subjects_query::Payload {}
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
-                    .await
+            SubjectsMessage::SubjectsQuery(_) => {
+                subjects_query::Payload {}.handle(acquire_from).await
             }
         }
     }

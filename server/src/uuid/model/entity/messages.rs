@@ -33,42 +33,42 @@ impl MessageResponder for EntityMessage {
         match self {
             EntityMessage::EntityAddRevisionMutation(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             EntityMessage::EntityCheckoutRevisionMutation(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             EntityMessage::EntityCreateMutation(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             EntityMessage::EntityRejectRevisionMutation(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             EntityMessage::UnrevisedEntitiesQuery(payload) => {
                 payload
-                    .handle(format!("{:?}", payload).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             EntityMessage::DeletedEntitiesQuery(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             EntityMessage::EntitySetLicenseMutation(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
             EntityMessage::EntitySortMutation(message) => {
                 message
-                    .handle(format!("{:?}", message).as_str(), acquire_from)
+                    .handle(acquire_from)
                     .await
             }
         }

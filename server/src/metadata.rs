@@ -23,11 +23,7 @@ impl MessageResponder for MetadataMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            MetadataMessage::EntitiesMetadataQuery(payload) => {
-                payload
-                    .handle(acquire_from)
-                    .await
-            }
+            MetadataMessage::EntitiesMetadataQuery(payload) => payload.handle(acquire_from).await,
         }
     }
 }

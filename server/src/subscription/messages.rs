@@ -21,15 +21,9 @@ impl MessageResponder for SubscriptionMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            SubscriptionMessage::SubscriptionsQuery(message) => {
-                message
-                    .handle(acquire_from)
-                    .await
-            }
+            SubscriptionMessage::SubscriptionsQuery(message) => message.handle(acquire_from).await,
             SubscriptionMessage::SubscriptionSetMutation(message) => {
-                message
-                    .handle(acquire_from)
-                    .await
+                message.handle(acquire_from).await
             }
         }
     }

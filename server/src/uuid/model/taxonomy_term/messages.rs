@@ -28,29 +28,19 @@ impl MessageResponder for TaxonomyTermMessage {
     ) -> HttpResponse {
         match self {
             TaxonomyTermMessage::TaxonomyTermSetNameAndDescriptionMutation(payload) => {
-                payload
-                    .handle(acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
             TaxonomyTermMessage::TaxonomyTermCreateMutation(payload) => {
-                payload
-                    .handle(acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
             TaxonomyTermMessage::TaxonomyCreateEntityLinksMutation(payload) => {
-                payload
-                    .handle(acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
             TaxonomyTermMessage::TaxonomyDeleteEntityLinksMutation(payload) => {
-                payload
-                    .handle(acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
             TaxonomyTermMessage::TaxonomySortMutation(payload) => {
-                payload
-                    .handle(acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
         }
     }

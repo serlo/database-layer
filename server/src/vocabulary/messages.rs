@@ -22,9 +22,7 @@ impl MessageResponder for VocabularyMessage {
     ) -> HttpResponse {
         match self {
             VocabularyMessage::VocabularyTaxonomyQuery(payload) => {
-                payload
-                    .handle(acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
         }
     }

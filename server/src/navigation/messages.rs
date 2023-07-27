@@ -21,11 +21,7 @@ impl MessageResponder for NavigationMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            NavigationMessage::NavigationQuery(message) => {
-                message
-                    .handle(acquire_from)
-                    .await
-            }
+            NavigationMessage::NavigationQuery(message) => message.handle(acquire_from).await,
         }
     }
 }

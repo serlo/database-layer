@@ -27,36 +27,18 @@ impl MessageResponder for ThreadMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            ThreadMessage::AllThreadsQuery(message) => {
-                message
-                    .handle(acquire_from)
-                    .await
-            }
-            ThreadMessage::ThreadsQuery(message) => {
-                message
-                    .handle(acquire_from)
-                    .await
-            }
+            ThreadMessage::AllThreadsQuery(message) => message.handle(acquire_from).await,
+            ThreadMessage::ThreadsQuery(message) => message.handle(acquire_from).await,
             ThreadMessage::ThreadCreateThreadMutation(message) => {
-                message
-                    .handle(acquire_from)
-                    .await
+                message.handle(acquire_from).await
             }
             ThreadMessage::ThreadCreateCommentMutation(message) => {
-                message
-                    .handle(acquire_from)
-                    .await
+                message.handle(acquire_from).await
             }
             ThreadMessage::ThreadSetThreadArchivedMutation(message) => {
-                message
-                    .handle(acquire_from)
-                    .await
+                message.handle(acquire_from).await
             }
-            ThreadMessage::ThreadEditCommentMutation(message) => {
-                message
-                    .handle(acquire_from)
-                    .await
-            }
+            ThreadMessage::ThreadEditCommentMutation(message) => message.handle(acquire_from).await,
         }
     }
 }

@@ -20,7 +20,10 @@ impl MessageResponder for UuidMessage {
         &self,
         acquire_from: A,
     ) -> HttpResponse {
-        self.handle(acquire_from).await
+        match self {
+            UuidMessage::UuidQuery(message) => message.handle(acquire_from).await,
+            UuidMessage::UuidSetStateMutation(message) => message.handle(acquire_from).await,
+        }
     }
 }
 

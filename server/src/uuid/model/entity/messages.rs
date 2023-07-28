@@ -30,7 +30,20 @@ impl MessageResponder for EntityMessage {
         &self,
         acquire_from: A,
     ) -> HttpResponse {
-        self.handle(acquire_from).await
+        match self {
+            EntityMessage::EntityAddRevisionMutation(message) => message.handle(acquire_from).await,
+            EntityMessage::EntityCheckoutRevisionMutation(payload) => {
+                payload.handle(acquire_from).await
+            }
+            EntityMessage::EntityCreateMutation(message) => message.handle(acquire_from).await,
+            EntityMessage::EntityRejectRevisionMutation(payload) => {
+                payload.handle(acquire_from).await
+            }
+            EntityMessage::UnrevisedEntitiesQuery(payload) => payload.handle(acquire_from).await,
+            EntityMessage::DeletedEntitiesQuery(message) => message.handle(acquire_from).await,
+            EntityMessage::EntitySetLicenseMutation(message) => message.handle(acquire_from).await,
+            EntityMessage::EntitySortMutation(message) => message.handle(acquire_from).await,
+        }
     }
 }
 

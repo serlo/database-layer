@@ -20,7 +20,12 @@ impl MessageResponder for NotificationMessage {
         &self,
         acquire_from: A,
     ) -> HttpResponse {
-        self.handle(acquire_from).await
+        match self {
+            NotificationMessage::NotificationsQuery(payload) => payload.handle(acquire_from).await,
+            NotificationMessage::NotificationSetStateMutation(payload) => {
+                payload.handle(acquire_from).await
+            }
+        }
     }
 }
 

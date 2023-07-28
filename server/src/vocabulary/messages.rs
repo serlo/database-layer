@@ -20,7 +20,11 @@ impl MessageResponder for VocabularyMessage {
         &self,
         acquire_from: A,
     ) -> HttpResponse {
-        self.handle(acquire_from).await
+        match self {
+            VocabularyMessage::VocabularyTaxonomyQuery(payload) => {
+                payload.handle(acquire_from).await
+            }
+        }
     }
 }
 

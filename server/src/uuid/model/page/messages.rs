@@ -26,7 +26,15 @@ impl MessageResponder for PageMessage {
         &self,
         acquire_from: A,
     ) -> HttpResponse {
-        self.handle(acquire_from).await
+        match self {
+            PageMessage::PageAddRevisionMutation(payload) => payload.handle(acquire_from).await,
+            PageMessage::PageCheckoutRevisionMutation(payload) => {
+                payload.handle(acquire_from).await
+            }
+            PageMessage::PageCreateMutation(payload) => payload.handle(acquire_from).await,
+            PageMessage::PageRejectRevisionMutation(payload) => payload.handle(acquire_from).await,
+            PageMessage::PagesQuery(payload) => payload.handle(acquire_from).await,
+        }
     }
 }
 

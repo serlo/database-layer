@@ -20,7 +20,9 @@ impl MessageResponder for AliasMessage {
         &self,
         acquire_from: A,
     ) -> HttpResponse {
-        self.handle(acquire_from).await
+        match self {
+            AliasMessage::AliasQuery(payload) => payload.handle(acquire_from).await,
+        }
     }
 }
 

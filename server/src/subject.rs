@@ -13,7 +13,6 @@ pub enum SubjectsMessage {
 
 #[async_trait]
 impl MessageResponder for SubjectsMessage {
-    #[allow(clippy::async_yields_async)]
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
         &self,
         acquire_from: A,

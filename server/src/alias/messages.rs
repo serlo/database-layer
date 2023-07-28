@@ -15,7 +15,6 @@ pub enum AliasMessage {
 
 #[async_trait]
 impl MessageResponder for AliasMessage {
-    #[allow(clippy::async_yields_async)]
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
         &self,
         acquire_from: A,
@@ -48,7 +47,6 @@ pub mod alias_query {
     impl Operation for Payload {
         type Output = Output;
 
-        #[allow(clippy::async_yields_async)]
         async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
             &self,
             acquire_from: A,

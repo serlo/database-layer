@@ -49,7 +49,7 @@ impl From<serde_json::Error> for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[async_trait]
-pub trait Operation {
+pub trait Operation: std::fmt::Debug {
     type Output: Serialize;
 
     async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
@@ -57,10 +57,8 @@ pub trait Operation {
         acquire_from: A,
     ) -> Result<Self::Output>;
 
-    #[allow(clippy::async_yields_async)]
     async fn handle<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
         &self,
-        operation_type: &str,
         acquire_from: A,
     ) -> HttpResponse {
         match &self.execute(acquire_from).await {
@@ -69,7 +67,7 @@ pub trait Operation {
                 .json(data),
 
             Err(error) => {
-                println!("{operation_type}: {error}");
+                println!("{:?}: {error}", self);
 
                 match error {
                     Error::NotFoundError => HttpResponse::NotFound()

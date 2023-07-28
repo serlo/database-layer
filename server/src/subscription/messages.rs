@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::model::{fetch_subscriptions_by_user, Subscription};
 use crate::message::MessageResponder;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum SubscriptionMessage {
     SubscriptionsQuery(subscriptions_query::Payload),
@@ -21,13 +21,9 @@ impl MessageResponder for SubscriptionMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            SubscriptionMessage::SubscriptionsQuery(message) => {
-                message.handle("SubscriptionsQuery", acquire_from).await
-            }
+            SubscriptionMessage::SubscriptionsQuery(message) => message.handle(acquire_from).await,
             SubscriptionMessage::SubscriptionSetMutation(message) => {
-                message
-                    .handle("SubscriptionSetMutation", acquire_from)
-                    .await
+                message.handle(acquire_from).await
             }
         }
     }
@@ -36,7 +32,7 @@ impl MessageResponder for SubscriptionMessage {
 pub mod subscriptions_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub user_id: i32,

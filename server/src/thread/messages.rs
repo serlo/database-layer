@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use super::model::Threads;
 use crate::message::MessageResponder;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum ThreadMessage {
     AllThreadsQuery(all_threads_query::Payload),
@@ -27,32 +27,18 @@ impl MessageResponder for ThreadMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            ThreadMessage::AllThreadsQuery(message) => {
-                message.handle("AllThreadsQuery", acquire_from).await
-            }
-            ThreadMessage::ThreadsQuery(message) => {
-                message.handle("ThreadsQuery", acquire_from).await
-            }
+            ThreadMessage::AllThreadsQuery(message) => message.handle(acquire_from).await,
+            ThreadMessage::ThreadsQuery(message) => message.handle(acquire_from).await,
             ThreadMessage::ThreadCreateThreadMutation(message) => {
-                message
-                    .handle("ThreadCreateThreadMutation", acquire_from)
-                    .await
+                message.handle(acquire_from).await
             }
             ThreadMessage::ThreadCreateCommentMutation(message) => {
-                message
-                    .handle("ThreadCreateCommentMutation", acquire_from)
-                    .await
+                message.handle(acquire_from).await
             }
             ThreadMessage::ThreadSetThreadArchivedMutation(message) => {
-                message
-                    .handle("ThreadSetThreadArchivedMutation", acquire_from)
-                    .await
+                message.handle(acquire_from).await
             }
-            ThreadMessage::ThreadEditCommentMutation(message) => {
-                message
-                    .handle("ThreadEditCommentMutation", acquire_from)
-                    .await
-            }
+            ThreadMessage::ThreadEditCommentMutation(message) => message.handle(acquire_from).await,
         }
     }
 }
@@ -60,7 +46,7 @@ impl MessageResponder for ThreadMessage {
 pub mod all_threads_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub first: i32,
@@ -92,7 +78,7 @@ pub mod all_threads_query {
 pub mod threads_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub id: i32,
@@ -114,7 +100,7 @@ pub mod threads_query {
 pub mod create_thread_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub title: String,
@@ -140,7 +126,7 @@ pub mod create_thread_mutation {
 
 pub mod create_comment_mutation {
     use super::*;
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub thread_id: i32,
@@ -166,7 +152,7 @@ pub mod create_comment_mutation {
 pub mod set_thread_archived_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub ids: Vec<i32>,
@@ -191,7 +177,7 @@ pub mod set_thread_archived_mutation {
 pub mod edit_comment_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub user_id: u32,

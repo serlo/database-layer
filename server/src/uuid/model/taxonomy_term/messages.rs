@@ -7,7 +7,7 @@ use crate::message::MessageResponder;
 use crate::operation::{self, Operation, SuccessOutput};
 use crate::uuid::{TaxonomyType, Uuid};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum TaxonomyTermMessage {
     TaxonomyTermSetNameAndDescriptionMutation(
@@ -28,27 +28,19 @@ impl MessageResponder for TaxonomyTermMessage {
     ) -> HttpResponse {
         match self {
             TaxonomyTermMessage::TaxonomyTermSetNameAndDescriptionMutation(payload) => {
-                payload
-                    .handle("TaxonomyTermSetNameAndDescriptionMutation", acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
             TaxonomyTermMessage::TaxonomyTermCreateMutation(payload) => {
-                payload
-                    .handle("TaxonomyTermCreateMutation", acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
             TaxonomyTermMessage::TaxonomyCreateEntityLinksMutation(payload) => {
-                payload
-                    .handle("TaxonomyCreateEntityLinksMutation", acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
             TaxonomyTermMessage::TaxonomyDeleteEntityLinksMutation(payload) => {
-                payload
-                    .handle("TaxonomyDeleteEntityLinksMutation", acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
             TaxonomyTermMessage::TaxonomySortMutation(payload) => {
-                payload.handle("TaxonomySortMutation", acquire_from).await
+                payload.handle(acquire_from).await
             }
         }
     }
@@ -57,7 +49,7 @@ impl MessageResponder for TaxonomyTermMessage {
 pub mod taxonomy_term_set_name_and_description_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub id: i32,
@@ -89,7 +81,7 @@ pub mod taxonomy_term_set_name_and_description_mutation {
 pub mod taxonomy_term_create_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub user_id: i32,
@@ -115,7 +107,7 @@ pub mod taxonomy_term_create_mutation {
 pub mod taxonomy_create_entity_links_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub user_id: i32,
@@ -140,7 +132,7 @@ pub mod taxonomy_create_entity_links_mutation {
 pub mod taxonomy_delete_entity_links_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub user_id: i32,
@@ -165,7 +157,7 @@ pub mod taxonomy_delete_entity_links_mutation {
 pub mod taxonomy_sort_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub user_id: i32,

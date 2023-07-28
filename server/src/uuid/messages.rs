@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::model::{Uuid, UuidFetcher};
 use crate::message::MessageResponder;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum UuidMessage {
     UuidQuery(uuid_query::Payload),
@@ -21,10 +21,8 @@ impl MessageResponder for UuidMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            UuidMessage::UuidQuery(message) => message.handle("UuidQuery", acquire_from).await,
-            UuidMessage::UuidSetStateMutation(message) => {
-                message.handle("UuidSetStateMutation", acquire_from).await
-            }
+            UuidMessage::UuidQuery(message) => message.handle(acquire_from).await,
+            UuidMessage::UuidSetStateMutation(message) => message.handle(acquire_from).await,
         }
     }
 }
@@ -32,7 +30,7 @@ impl MessageResponder for UuidMessage {
 pub mod uuid_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub id: i32,
@@ -54,7 +52,7 @@ pub mod uuid_query {
 pub mod uuid_set_state_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub ids: Vec<i32>,

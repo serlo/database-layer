@@ -9,7 +9,7 @@ use crate::uuid::Uuid;
 
 use super::{Page, PageCheckoutRevisionError, PageRejectRevisionError};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum PageMessage {
     PageAddRevisionMutation(add_revision_mutation::Payload),
@@ -27,25 +27,13 @@ impl MessageResponder for PageMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            PageMessage::PageAddRevisionMutation(payload) => {
-                payload
-                    .handle("PageAddRevisionMutation", acquire_from)
-                    .await
-            }
+            PageMessage::PageAddRevisionMutation(payload) => payload.handle(acquire_from).await,
             PageMessage::PageCheckoutRevisionMutation(payload) => {
-                payload
-                    .handle("PageCheckoutRevisionMutation", acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
-            PageMessage::PageCreateMutation(payload) => {
-                payload.handle("PageCreateMutation", acquire_from).await
-            }
-            PageMessage::PageRejectRevisionMutation(payload) => {
-                payload
-                    .handle("PageRejectRevisionMutation", acquire_from)
-                    .await
-            }
-            PageMessage::PagesQuery(payload) => payload.handle("PagesQuery", acquire_from).await,
+            PageMessage::PageCreateMutation(payload) => payload.handle(acquire_from).await,
+            PageMessage::PageRejectRevisionMutation(payload) => payload.handle(acquire_from).await,
+            PageMessage::PagesQuery(payload) => payload.handle(acquire_from).await,
         }
     }
 }
@@ -53,7 +41,7 @@ impl MessageResponder for PageMessage {
 pub mod add_revision_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub content: String,
@@ -89,7 +77,7 @@ pub mod add_revision_mutation {
 pub mod checkout_revision_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub revision_id: i32,
@@ -138,7 +126,7 @@ pub mod checkout_revision_mutation {
 pub mod create_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub content: String,
@@ -166,7 +154,7 @@ pub mod create_mutation {
 pub mod reject_revision_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub revision_id: i32,
@@ -216,7 +204,7 @@ pub mod reject_revision_mutation {
 pub mod pages_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub instance: Option<Instance>,

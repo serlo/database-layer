@@ -14,6 +14,7 @@ chrono = { version = "0.4.26", features = ["serde"] }
 chrono-tz = "~0.8.3"
 convert_case = "~0.6.0"
 dotenv = "0.15.0"
+enum_dispatch = "0.3.12"
 futures = "0.3.28"
 itertools = "~0.11.0"
 md5 = "0.7.0"

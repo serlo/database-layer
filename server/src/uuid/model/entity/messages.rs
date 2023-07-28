@@ -10,7 +10,7 @@ use crate::uuid::abstract_entity_revision::EntityRevisionType;
 use crate::uuid::{EntityType, Uuid};
 use std::collections::HashMap;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum EntityMessage {
     EntityAddRevisionMutation(entity_add_revision_mutation::Payload),
@@ -31,38 +31,18 @@ impl MessageResponder for EntityMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            EntityMessage::EntityAddRevisionMutation(message) => {
-                message
-                    .handle("EntityAddRevisionMutation", acquire_from)
-                    .await
-            }
+            EntityMessage::EntityAddRevisionMutation(message) => message.handle(acquire_from).await,
             EntityMessage::EntityCheckoutRevisionMutation(payload) => {
-                payload
-                    .handle("EntityCheckoutRevisionMutation", acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
-            EntityMessage::EntityCreateMutation(message) => {
-                message.handle("EntityCreateMutation", acquire_from).await
-            }
+            EntityMessage::EntityCreateMutation(message) => message.handle(acquire_from).await,
             EntityMessage::EntityRejectRevisionMutation(payload) => {
-                payload
-                    .handle("EntityRejectRevisionMutation", acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
-            EntityMessage::UnrevisedEntitiesQuery(payload) => {
-                payload.handle("UnrevisedEntitiesQuery", acquire_from).await
-            }
-            EntityMessage::DeletedEntitiesQuery(message) => {
-                message.handle("DeletedEntitiesQuery", acquire_from).await
-            }
-            EntityMessage::EntitySetLicenseMutation(message) => {
-                message
-                    .handle("EntitySetLicenseMutation", acquire_from)
-                    .await
-            }
-            EntityMessage::EntitySortMutation(message) => {
-                message.handle("EntitySortMutation", acquire_from).await
-            }
+            EntityMessage::UnrevisedEntitiesQuery(payload) => payload.handle(acquire_from).await,
+            EntityMessage::DeletedEntitiesQuery(message) => message.handle(acquire_from).await,
+            EntityMessage::EntitySetLicenseMutation(message) => message.handle(acquire_from).await,
+            EntityMessage::EntitySortMutation(message) => message.handle(acquire_from).await,
         }
     }
 }
@@ -81,7 +61,7 @@ pub mod entity_add_revision_mutation {
         pub fields: HashMap<String, String>,
     }
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub input: Input,
@@ -118,7 +98,7 @@ pub mod entity_add_revision_mutation {
 pub mod checkout_revision_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub revision_id: i32,
@@ -156,7 +136,7 @@ pub mod entity_create_mutation {
         pub taxonomy_term_id: Option<i32>,
     }
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub input: Input,
@@ -180,7 +160,7 @@ pub mod entity_create_mutation {
 pub mod reject_revision_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub revision_id: i32,
@@ -205,7 +185,7 @@ pub mod reject_revision_mutation {
 pub mod unrevised_entities_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {}
 
@@ -233,7 +213,7 @@ pub mod unrevised_entities_query {
 pub mod deleted_entities_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub first: i32,
@@ -275,7 +255,7 @@ pub mod deleted_entities_query {
 pub mod entity_set_license_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub entity_id: i32,
@@ -306,7 +286,7 @@ pub mod entity_set_license_mutation {
 pub mod entity_sort_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub children_ids: Vec<i32>,

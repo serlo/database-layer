@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum SubjectsMessage {
     SubjectsQuery(Option<serde_json::Value>),
@@ -20,9 +20,7 @@ impl MessageResponder for SubjectsMessage {
     ) -> HttpResponse {
         match self {
             SubjectsMessage::SubjectsQuery(_) => {
-                subjects_query::Payload {}
-                    .handle("SubjectsQuery", acquire_from)
-                    .await
+                subjects_query::Payload {}.handle(acquire_from).await
             }
         }
     }
@@ -31,7 +29,7 @@ impl MessageResponder for SubjectsMessage {
 pub mod subjects_query {
     use super::*;
 
-    #[derive(Deserialize)]
+    #[derive(Debug, Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {}
 

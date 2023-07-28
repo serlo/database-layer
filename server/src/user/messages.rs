@@ -6,7 +6,7 @@ use super::model::User;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum UserMessage {
     ActiveAuthorsQuery(Option<serde_json::Value>),
@@ -35,54 +35,26 @@ impl MessageResponder for UserMessage {
     ) -> HttpResponse {
         match self {
             UserMessage::ActiveAuthorsQuery(_) => {
-                active_authors_query::Payload {}
-                    .handle("ActiveAuthorsQuery", acquire_from)
-                    .await
+                active_authors_query::Payload {}.handle(acquire_from).await
             }
             UserMessage::ActiveReviewersQuery(_) => {
                 active_reviewers_query::Payload {}
-                    .handle("ActiveReviewersQuery", acquire_from)
+                    .handle(acquire_from)
                     .await
             }
-            UserMessage::ActivityByTypeQuery(payload) => {
-                payload.handle("ActivityByTypeQuery", acquire_from).await
-            }
-            UserMessage::UserActivityByTypeQuery(payload) => {
-                payload.handle("ActivityByTypeQuery", acquire_from).await
-            }
-            UserMessage::UserAddRoleMutation(payload) => {
-                payload.handle("UserAddRoleMutation", acquire_from).await
-            }
-            UserMessage::UserCreateMutation(payload) => {
-                payload.handle("UserCreateMutation", acquire_from).await
-            }
-            UserMessage::UserDeleteBotsMutation(payload) => {
-                payload.handle("UserDeleteBotsMutation", acquire_from).await
-            }
+            UserMessage::ActivityByTypeQuery(payload) => payload.handle(acquire_from).await,
+            UserMessage::UserActivityByTypeQuery(payload) => payload.handle(acquire_from).await,
+            UserMessage::UserAddRoleMutation(payload) => payload.handle(acquire_from).await,
+            UserMessage::UserCreateMutation(payload) => payload.handle(acquire_from).await,
+            UserMessage::UserDeleteBotsMutation(payload) => payload.handle(acquire_from).await,
             UserMessage::UserDeleteRegularUsersMutation(payload) => {
-                payload
-                    .handle("UserDeleteRegularUsersMutation", acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
-            UserMessage::UserPotentialSpamUsersQuery(payload) => {
-                payload
-                    .handle("UserPotentialSpamUsersQuery", acquire_from)
-                    .await
-            }
-            UserMessage::UserRemoveRoleMutation(payload) => {
-                payload.handle("UserRemoveRoleMutation", acquire_from).await
-            }
-            UserMessage::UsersByRoleQuery(payload) => {
-                payload.handle("UsersByRoleQuery", acquire_from).await
-            }
-            UserMessage::UserSetDescriptionMutation(payload) => {
-                payload
-                    .handle("UserSetDescriptionMutation", acquire_from)
-                    .await
-            }
-            UserMessage::UserSetEmailMutation(payload) => {
-                payload.handle("UserSetEmailMutation", acquire_from).await
-            }
+            UserMessage::UserPotentialSpamUsersQuery(payload) => payload.handle(acquire_from).await,
+            UserMessage::UserRemoveRoleMutation(payload) => payload.handle(acquire_from).await,
+            UserMessage::UsersByRoleQuery(payload) => payload.handle(acquire_from).await,
+            UserMessage::UserSetDescriptionMutation(payload) => payload.handle(acquire_from).await,
+            UserMessage::UserSetEmailMutation(payload) => payload.handle(acquire_from).await,
         }
     }
 }

@@ -7,7 +7,7 @@ use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum EventMessage {
     EventQuery(event_query::Payload),
@@ -22,8 +22,8 @@ impl MessageResponder for EventMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            EventMessage::EventQuery(payload) => payload.handle("EventQuery", acquire_from).await,
-            EventMessage::EventsQuery(payload) => payload.handle("EventsQuery", acquire_from).await,
+            EventMessage::EventQuery(payload) => payload.handle(acquire_from).await,
+            EventMessage::EventsQuery(payload) => payload.handle(acquire_from).await,
         }
     }
 }
@@ -31,7 +31,7 @@ impl MessageResponder for EventMessage {
 pub mod event_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub id: i32,
@@ -60,7 +60,7 @@ pub mod event_query {
 pub mod events_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub after: Option<i32>,

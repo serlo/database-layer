@@ -6,7 +6,7 @@ use super::model::Notifications;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation, SuccessOutput};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum NotificationMessage {
     NotificationsQuery(notifications_query::Payload),
@@ -21,13 +21,9 @@ impl MessageResponder for NotificationMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            NotificationMessage::NotificationsQuery(payload) => {
-                payload.handle("NotificationsQuery", acquire_from).await
-            }
+            NotificationMessage::NotificationsQuery(payload) => payload.handle(acquire_from).await,
             NotificationMessage::NotificationSetStateMutation(payload) => {
-                payload
-                    .handle("NotificationSetStateMutation", acquire_from)
-                    .await
+                payload.handle(acquire_from).await
             }
         }
     }
@@ -36,7 +32,7 @@ impl MessageResponder for NotificationMessage {
 pub mod notifications_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub user_id: i32,
@@ -58,7 +54,7 @@ pub mod notifications_query {
 pub mod set_state_mutation {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub ids: Vec<i32>,

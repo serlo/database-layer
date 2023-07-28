@@ -7,7 +7,7 @@ use crate::instance::Instance;
 use crate::message::MessageResponder;
 use crate::operation::{self, Operation};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum AliasMessage {
     AliasQuery(alias_query::Payload),
@@ -21,7 +21,7 @@ impl MessageResponder for AliasMessage {
         acquire_from: A,
     ) -> HttpResponse {
         match self {
-            AliasMessage::AliasQuery(payload) => payload.handle("AliasQuery", acquire_from).await,
+            AliasMessage::AliasQuery(payload) => payload.handle(acquire_from).await,
         }
     }
 }
@@ -29,7 +29,7 @@ impl MessageResponder for AliasMessage {
 pub mod alias_query {
     use super::*;
 
-    #[derive(Deserialize, Serialize)]
+    #[derive(Debug, Deserialize, Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Payload {
         pub instance: Instance,

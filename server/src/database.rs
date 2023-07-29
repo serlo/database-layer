@@ -1,8 +1,3 @@
-//! Provides wrappers around sqlx traits.
-pub trait Acquire<'a>: sqlx::Acquire<'a, Database = sqlx::MySql> {}
-
-impl<'a, A> Acquire<'a> for A where A: sqlx::Acquire<'a, Database = sqlx::MySql> {}
-
 /// This trait should be used for functions that can accept either `&sqlx::MySqlPool` or `&mut Transaction<MySql>`.
 ///
 /// # Defining a function accepting `Executor`
@@ -42,15 +37,12 @@ impl<'a, A> Acquire<'a> for A where A: sqlx::Acquire<'a, Database = sqlx::MySql>
 /// will consider `executor` as moved. For this reason, we write our models using `MySqlPool`
 /// by default instead and only provide an unoptimized `Executor`-variant (suffixed by `_via_transaction`)
 /// if we need it in a mutation or in tests.
-pub trait Executor<'a>: sqlx::Executor<'a, Database = sqlx::MySql> + Acquire<'a> {}
-
-impl<'a, E> Executor<'a> for E where E: sqlx::Executor<'a, Database = sqlx::MySql> + Acquire<'a> {}
-
-#[derive(Debug)]
-pub enum Connection<'c, 'e>
-where
-    'c: 'e,
+pub trait Executor<'a>:
+    sqlx::Executor<'a, Database = sqlx::MySql> + sqlx::Acquire<'a, Database = sqlx::MySql>
 {
-    Pool(&'e sqlx::MySqlPool),
-    Transaction(&'e mut sqlx::Transaction<'c, sqlx::MySql>),
+}
+
+impl<'a, E> Executor<'a> for E where
+    E: sqlx::Executor<'a, Database = sqlx::MySql> + sqlx::Acquire<'a, Database = sqlx::MySql>
+{
 }

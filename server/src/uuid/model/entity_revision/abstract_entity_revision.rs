@@ -1,7 +1,6 @@
 use convert_case::{Case, Casing};
 use std::collections::HashMap;
 
-
 use serde::{Deserialize, Serialize};
 
 use super::UuidError;

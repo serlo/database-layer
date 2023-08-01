@@ -1,4 +1,3 @@
-
 use actix_web::HttpResponse;
 use criterion::{
     async_executor::AsyncExecutor, black_box, criterion_group, criterion_main, Criterion,

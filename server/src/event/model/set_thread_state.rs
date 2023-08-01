@@ -4,7 +4,6 @@ use serde::Serialize;
 
 use super::{AbstractEvent, Event, EventError, EventPayload, RawEventType};
 
-
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetThreadStateEvent {

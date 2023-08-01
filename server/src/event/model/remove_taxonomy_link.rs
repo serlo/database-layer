@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
-
 use serde::Serialize;
 
 use super::{AbstractEvent, Event, EventError, EventPayload, RawEventType};

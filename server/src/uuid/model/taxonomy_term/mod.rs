@@ -11,7 +11,6 @@ use sqlx::MySql;
 
 use super::{AssertExists, ConcreteUuid, Uuid, UuidError, UuidFetcher};
 
-
 use crate::event::{
     CreateTaxonomyLinkEventPayload, CreateTaxonomyTermEventPayload, RemoveTaxonomyLinkEventPayload,
     SetTaxonomyTermEventPayload,

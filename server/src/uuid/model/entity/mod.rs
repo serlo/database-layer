@@ -1072,10 +1072,7 @@ mod tests {
         let mut transaction = pool.begin().await.unwrap();
 
         match Entity::assert_entity_exists(1, &mut *transaction).await {
-            Err(error) => match error {
-                operation::Error::BadRequest { reason: _ } => {}
-                _ => panic!("check_entity_exists didn't throw expected error"),
-            },
+            Err(operation::Error::BadRequest { reason: _ }) => {}
             _ => panic!("check_entity_exists didn't throw expected error"),
         }
     }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::Serialize;
 
 use super::{AbstractEvent, Event, EventError, EventPayload, RawEventType};
-use crate::database::Executor;
+
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

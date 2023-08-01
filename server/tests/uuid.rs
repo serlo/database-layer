@@ -11,7 +11,7 @@ mod uuid_query {
         let app = test::init_service(app).await;
         let req = test::TestRequest::post()
             .uri("/")
-            .set_json(&json!({ "type": "UuidQuery", "payload": { "id": 1 } }))
+            .set_json(json!({ "type": "UuidQuery", "payload": { "id": 1 } }))
             .to_request();
 
         MessageResult::new(HttpResponse::from(test::call_service(&app, req).await))

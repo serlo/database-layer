@@ -1,7 +1,7 @@
 use convert_case::{Case, Casing};
 use std::collections::HashMap;
 
-use crate::database::Executor;
+
 use serde::{Deserialize, Serialize};
 
 use super::UuidError;

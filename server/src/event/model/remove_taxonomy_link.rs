@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
-use crate::database::Executor;
+
 use serde::Serialize;
 
 use super::{AbstractEvent, Event, EventError, EventPayload, RawEventType};

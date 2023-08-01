@@ -13,7 +13,7 @@ pub use entity_type::EntityType;
 use super::entity_revision::abstract_entity_revision::EntityRevisionPayload;
 use super::taxonomy_term::TaxonomyTerm;
 use super::{ConcreteUuid, EntityRevision, Uuid, UuidError, UuidFetcher};
-use crate::database::Executor;
+
 use crate::event::{
     CreateEntityEventPayload, CreateEntityRevisionEventPayload, CreateSetLicenseEventPayload,
     CreateTaxonomyLinkEventPayload, EntityLinkEventPayload, RevisionEventPayload,

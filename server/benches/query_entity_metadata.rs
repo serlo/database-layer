@@ -3,7 +3,7 @@ use actix_web::HttpResponse;
 use criterion::{
     async_executor::AsyncExecutor, black_box, criterion_group, criterion_main, Criterion,
 };
-use server::{create_database_pool, database::Connection, message::*, metadata::*};
+use server::{create_database_pool, message::*, metadata::*};
 use std::future::Future;
 use std::time::Duration;
 
@@ -33,9 +33,7 @@ async fn query_metadata(number_entities: i32) -> HttpResponse {
         });
     black_box(
         metadata_message
-            .handle(Connection::Transaction(
-                &mut create_database_pool().await.unwrap().begin().await.unwrap(),
-            ))
+            .handle(&mut create_database_pool().await.unwrap().begin().await.unwrap())
             .await,
     )
 }

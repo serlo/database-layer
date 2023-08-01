@@ -1,4 +1,3 @@
-use crate::database::Executor;
 use crate::event::{Event, EventError, EventPayload};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -37,10 +36,10 @@ impl CreateSetLicenseEventPayload {
         }
     }
 
-    pub async fn save<'a, E>(&self, executor: E) -> Result<Event, EventError>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn save<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> Result<Event, EventError> {
         EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
@@ -49,7 +48,7 @@ impl CreateSetLicenseEventPayload {
             HashMap::new(),
             HashMap::new(),
         )
-        .save(executor)
+        .save(acquire_from)
         .await
     }
 }

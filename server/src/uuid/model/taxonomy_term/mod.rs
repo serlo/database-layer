@@ -208,13 +208,10 @@ pub struct Subject {
 }
 
 impl TaxonomyTerm {
-    pub async fn fetch_canonical_subject<'a, E>(
+    pub async fn fetch_canonical_subject<'a, E: sqlx::Executor<'a, Database = sqlx::MySql>>(
         id: i32,
         executor: E,
-    ) -> Result<Option<Subject>, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+    ) -> Result<Option<Subject>, sqlx::Error> {
         // Yes, this is super hacky. Didn't find a better way to handle recursion in MySQL 5 (in production, the max depth is around 10 at the moment)
         let subjects = sqlx::query!(
             r#"
@@ -290,13 +287,10 @@ impl TaxonomyTerm {
         typename.to_case(Case::Camel)
     }
 
-    pub async fn get_instance_id<'a, E>(
+    pub async fn get_instance_id<'a, E: sqlx::Executor<'a, Database = sqlx::MySql>>(
         term_taxonomy_id: i32,
         executor: E,
-    ) -> Result<i32, operation::Error>
-    where
-        E: Executor<'a>,
-    {
+    ) -> Result<i32, operation::Error> {
         Ok(sqlx::query!(
             r#"
                 SELECT term.instance_id

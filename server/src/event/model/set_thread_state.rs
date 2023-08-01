@@ -45,11 +45,11 @@ impl SetThreadStateEventPayload {
         }
     }
 
-    pub async fn save<'a, E>(&self, executor: E) -> Result<Event, EventError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    pub async fn save<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        &self,
+        acquire_from: A,
+    ) -> Result<Event, EventError> {
+        let mut transaction = acquire_from.begin().await?;
 
         let result = sqlx::query!(
             r#"SELECT instance_id FROM comment WHERE id = ?"#,

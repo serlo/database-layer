@@ -292,13 +292,10 @@ impl UuidFetcher for Entity {
 }
 
 impl Entity {
-    pub async fn fetch_entity_type<'a, E>(
+    pub async fn fetch_entity_type<'a, E: sqlx::Executor<'a, Database = sqlx::MySql>>(
         id: i32,
         executor: E,
-    ) -> Result<Option<EntityType>, UuidError>
-    where
-        E: Executor<'a>,
-    {
+    ) -> Result<Option<EntityType>, UuidError> {
         if let Some(result) = sqlx::query!(
             "select type.name from entity join type on type.id = entity.type_id where entity.id = ?",
             id
@@ -322,10 +319,10 @@ impl Entity {
         Ok(subject)
     }
 
-    async fn find_parent_by_id<'a, E>(id: i32, executor: E) -> Result<i32, UuidError>
-    where
-        E: Executor<'a>,
-    {
+    async fn find_parent_by_id<'a, E: sqlx::Executor<'a, Database = sqlx::MySql>>(
+        id: i32,
+        executor: E,
+    ) -> Result<i32, UuidError> {
         let parents = sqlx::query!(
             r#"
                 SELECT l.parent_id as id
@@ -345,14 +342,15 @@ impl Entity {
             .map(|parent_id| *parent_id)
     }
 
-    async fn find_parent_by_id_and_types<'a, E, const N: usize>(
+    async fn find_parent_by_id_and_types<
+        'a,
+        E: sqlx::Executor<'a, Database = sqlx::MySql>,
+        const N: usize,
+    >(
         id: i32,
         parent_types: [EntityType; N],
         executor: E,
-    ) -> Result<i32, UuidError>
-    where
-        E: Executor<'a>,
-    {
+    ) -> Result<i32, UuidError> {
         let query = format!(
             r#"
                 SELECT l.parent_id as id
@@ -380,14 +378,11 @@ impl Entity {
         Ok(parent_id)
     }
 
-    async fn find_children_by_id_and_type<'a, E>(
+    async fn find_children_by_id_and_type<'a, E: sqlx::Executor<'a, Database = sqlx::MySql>>(
         id: i32,
         child_type: EntityType,
         executor: E,
-    ) -> Result<Vec<(i32, bool)>, UuidError>
-    where
-        E: Executor<'a>,
-    {
+    ) -> Result<Vec<(i32, bool)>, UuidError> {
         let children = sqlx::query!(
             r#"
                 SELECT c.id, uuid.trashed
@@ -409,14 +404,11 @@ impl Entity {
             .collect())
     }
 
-    async fn find_child_by_id_and_type<'a, E>(
+    async fn find_child_by_id_and_type<'a, E: sqlx::Executor<'a, Database = sqlx::MySql>>(
         id: i32,
         child_type: EntityType,
         executor: E,
-    ) -> Result<Option<i32>, UuidError>
-    where
-        E: Executor<'a>,
-    {
+    ) -> Result<Option<i32>, UuidError> {
         Ok(Self::find_children_by_id_and_type(id, child_type, executor)
             .await?
             .iter()
@@ -542,10 +534,10 @@ impl Entity {
         Ok(entity_revision)
     }
 
-    pub async fn assert_entity_exists<'a, E>(id: i32, executor: E) -> Result<(), operation::Error>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn assert_entity_exists<'a, E: sqlx::Executor<'a, Database = sqlx::MySql>>(
+        id: i32,
+        executor: E,
+    ) -> Result<(), operation::Error> {
         sqlx::query!(r#"SELECT id FROM entity WHERE id = ?"#, id)
             .fetch_one(executor)
             .await

@@ -10,7 +10,6 @@ use super::{
     entity_revision::EntityRevision, page::Page, page_revision::PageRevision,
     taxonomy_term::TaxonomyTerm, user::User,
 };
-use crate::database::Executor;
 use crate::event::SetUuidStateEventPayload;
 use crate::instance::Instance;
 
@@ -152,11 +151,11 @@ impl UuidFetcher for Uuid {
 }
 
 impl Uuid {
-    pub async fn fetch_context<'a, E>(id: i32, executor: E) -> Result<Option<String>, UuidError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    pub async fn fetch_context<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        id: i32,
+        acquire_from: A,
+    ) -> Result<Option<String>, UuidError> {
+        let mut transaction = acquire_from.begin().await?;
         let discriminator = get_discriminator(id, &mut *transaction).await?;
         let context = match discriminator {
             Discriminator::Attachment => Attachment::get_context(),
@@ -269,14 +268,11 @@ impl Uuid {
         Ok(())
     }
 
-    pub async fn set_state<'a, E>(
+    pub async fn set_state<'a, E: sqlx::Executor<'a, Database = sqlx::MySql>>(
         id: i32,
         trashed: bool,
         executor: E,
-    ) -> Result<sqlx::mysql::MySqlQueryResult, sqlx::Error>
-    where
-        E: Executor<'a>,
-    {
+    ) -> Result<sqlx::mysql::MySqlQueryResult, sqlx::Error> {
         sqlx::query!("UPDATE uuid SET trashed = ? WHERE id = ?", trashed, id)
             .execute(executor)
             .await

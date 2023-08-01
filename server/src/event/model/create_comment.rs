@@ -3,8 +3,6 @@ use std::convert::TryFrom;
 
 use serde::Serialize;
 
-use crate::database::Executor;
-
 use super::{AbstractEvent, Event, EventError, EventPayload, RawEventType};
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
@@ -47,10 +45,10 @@ impl CreateCommentEventPayload {
         }
     }
 
-    pub async fn save<'a, E>(&self, executor: E) -> Result<Event, EventError>
-    where
-        E: Executor<'a>,
-    {
+    pub async fn save<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql> + std::marker::Send>(
+        &self,
+        acquire_from: A,
+    ) -> Result<Event, EventError> {
         EventPayload::new(
             self.raw_typename.clone(),
             self.actor_id,
@@ -62,7 +60,7 @@ impl CreateCommentEventPayload {
                 .cloned()
                 .collect(),
         )
-        .save(executor)
+        .save(acquire_from)
         .await
     }
 }

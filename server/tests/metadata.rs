@@ -694,7 +694,7 @@ mod entities_metadata_query {
         .should_be_ok_with(|result| {
             let creator_urls: Vec<&str> = result["entities"][0]["creator"]
                 .as_array()
-                .map(|array| array.into_iter().filter_map(|x| x["id"].as_str()).collect())
+                .map(|array| array.iter().filter_map(|x| x["id"].as_str()).collect())
                 .unwrap();
 
             // There are two edits from user with id 15491 which is why they
@@ -820,7 +820,7 @@ mod entities_metadata_query {
         .should_be_ok_with(|actual_response: Value| {
             let parse_date = |property: &str| {
                 DateTime::parse_from_rfc3339(
-                    &actual_response["entities"][0]["mainEntityOfPage"][0][property]
+                    actual_response["entities"][0]["mainEntityOfPage"][0][property]
                         .as_str()
                         .unwrap(),
                 )

@@ -153,10 +153,10 @@ mod create_mutation {
         Message::new(
             "TaxonomyTermCreateMutation",
             json! ({
-            "parentId": 1 as i32,
+            "parentId": 1_i32,
             "name": "a name",
             "description": "a description",
-            "userId": 1 as i32,
+            "userId": 1_i32,
             "taxonomyType": "topic"
             }),
         )
@@ -533,7 +533,7 @@ mod sort_mutation {
             json! ({
                 "userId": 1,
                 "childrenIds": [1743, 2059],
-                "taxonomyTermId": 24503 as i32
+                "taxonomyTermId": 24503_i32
             }),
         )
         .execute()

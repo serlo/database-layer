@@ -27,7 +27,7 @@ mod add_revision_mutation {
             .should_be_ok_with(|result| {
                 assert_eq!(result["content"], "test content");
                 assert_eq!(result["title"], "test title");
-                assert_eq!(result["authorId"], 1 as i32);
+                assert_eq!(result["authorId"], 1_i32);
             });
     }
 }
@@ -45,16 +45,16 @@ mod create_mutation {
                 "discussionsEnabled": false,
                 "forumId": Null,
                 "instance": "de",
-                "licenseId": 1 as i32,
+                "licenseId": 1_i32,
                 "title": "test title",
-                "userId": 1 as i32,
+                "userId": 1_i32,
             }),
         )
         .execute()
         .await
         .should_be_ok_with(|result| {
             assert_eq!(result["instance"], "de");
-            assert_eq!(result["licenseId"], 1 as i32);
+            assert_eq!(result["licenseId"], 1_i32);
         })
     }
 }

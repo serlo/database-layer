@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use serde::Serialize;
 
 use super::{AbstractEvent, Event, EventError, EventPayload, RawEventType};
-use crate::{database::Executor, instance::Instance};
+use crate::instance::Instance;
 
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -63,11 +63,11 @@ impl RevisionEventPayload {
         }
     }
 
-    pub async fn save<'a, E>(&self, executor: E) -> Result<Event, EventError>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    pub async fn save<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        &self,
+        acquire_from: A,
+    ) -> Result<Event, EventError> {
+        let mut transaction = acquire_from.begin().await?;
 
         let event = EventPayload::new(
             self.raw_typename.clone(),

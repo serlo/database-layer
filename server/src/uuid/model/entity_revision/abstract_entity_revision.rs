@@ -1,7 +1,6 @@
 use convert_case::{Case, Casing};
 use std::collections::HashMap;
 
-use crate::database::Executor;
 use serde::{Deserialize, Serialize};
 
 use super::UuidError;
@@ -101,11 +100,11 @@ impl EntityRevisionPayload {
         }
     }
 
-    pub async fn save<'a, E>(&self, executor: E) -> Result<Uuid, operation::Error>
-    where
-        E: Executor<'a>,
-    {
-        let mut transaction = executor.begin().await?;
+    pub async fn save<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
+        &self,
+        acquire_from: A,
+    ) -> Result<Uuid, operation::Error> {
+        let mut transaction = acquire_from.begin().await?;
 
         sqlx::query!(
             r#"

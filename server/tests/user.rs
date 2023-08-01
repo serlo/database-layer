@@ -645,7 +645,7 @@ mod user_set_description_mutation {
             "UserSetDescriptionMutation",
             json!({
                 "userId": 1,
-                "description": std::iter::repeat("X").take(64*1024).collect::<String>()
+                "description": "X".repeat(64*1024)
             }),
         )
         .execute()

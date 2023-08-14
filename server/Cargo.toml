@@ -30,7 +30,7 @@ thiserror = "1.0.44"
 
 [dev-dependencies]
 criterion = { version = "~0.5.1", features = ["html_reports", "async"] }
-rstest = "~0.18.1"
+rstest = "~0.18.2"
 test-utils = { path="../test-utils" }
 
 [[bench]]

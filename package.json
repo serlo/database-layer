@@ -13,7 +13,7 @@
     "changelog": "ts-node scripts/changelog",
     "check:all": "scripts/run_all_checks.sh",
     "clippy": "cargo clippy --all-features -- -D warnings",
-    "deploy": "ts-node scripts/deploy",
+    "deploy": "ts-node --experimental-specifier-resolution=node scripts/deploy",
     "down": "docker-compose down",
     "fetch": "./scripts/fetch.sh",
     "format": "prettier --write .",

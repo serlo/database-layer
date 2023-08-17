@@ -82,7 +82,7 @@ pub async fn create_database_pool() -> Result<Pool<MySql>, ApplicationError> {
         .username(username)
         .password(password)
         .database(database)
-        .charset("latin1");
+        .charset("utf8");
     let pool = MySqlPoolOptions::new()
         .max_connections(database_max_connections)
         .acquire_timeout(Duration::from_secs(10 * 60))

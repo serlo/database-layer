@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.68](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.67..v0.3.68) - August 23, 2023
+
+### Added
+
+- metadata-api: Add new learning resource type of WLO, metadata-api: Change WebAPI to WebContent
+
 ## [v0.3.67](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.66..v0.3.67) - July 26, 2023
 
 ### Fixed

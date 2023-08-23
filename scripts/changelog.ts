@@ -347,6 +347,13 @@ const content = generateChangelog({
         'Setup dependabot for dependencies upgrades',
       ],
     },
+    {
+      tagName: 'v0.3.68',
+      date: '2023-08-23',
+      added: [
+        'metadata-api: Add new learning resource type of WLO, metadata-api: Change WebAPI to WebContent',
+      ],
+    },
   ],
 })
 

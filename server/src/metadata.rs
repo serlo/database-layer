@@ -351,7 +351,7 @@ pub mod entities_metadata_query {
                     main_entity_of_page: json!([
                         {
                             "id": "https://serlo.org/metadata",
-                            "type": "WebAPI",
+                            "type": "WebContent",
                             "provider": get_serlo_organization_metadata(),
                             "dateCreated": current_date,
                             "dateModified": current_date,
@@ -457,6 +457,29 @@ pub mod entities_metadata_query {
         .map(|vocab| {
             format!(
                 "http://w3id.org/openeduhub/vocabs/learningResourceType/{}",
+                vocab
+            )
+        })
+        .map(|id| LinkedNode { id })
+        .chain(get_new_lrt(entity_type).into_iter())
+        .collect()
+    }
+
+    fn get_new_lrt(entity_type: &str) -> Vec<LinkedNode> {
+        match entity_type {
+            "article" => vec!["588efe4f-976f-48eb-84aa-8bcb45679f85"],
+            "course" => vec!["ad9b9299-0913-40fb-8ad3-50c5fd367b6a"],
+            "text-exercise" | "text-exercise-group" => {
+                vec!["a33ef73d-9210-4305-97f9-7357bbf43486"]
+            }
+            "video" => vec!["7a6e9608-2554-4981-95dc-47ab9ba924de"],
+            "applet" => vec!["4665caac-99d7-4da3-b9fb-498d8ece034f"],
+            _ => vec![],
+        }
+        .into_iter()
+        .map(|vocab| {
+            format!(
+                "https://vocabs.openeduhub.de/w3id.org/openeduhub/vocabs/new_lrt/{}",
                 vocab
             )
         })

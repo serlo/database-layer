@@ -1,6 +1,6 @@
 [package]
 name = "server"
-version = "0.3.68-staging"
+version = "0.3.69"
 authors = ["Serlo Education e.V."]
 license = "Apache-2.0"
 edition = "2021"
@@ -22,11 +22,11 @@ rand = "0.8.5"
 regex = "1.9.3"
 sentry = "~0.31.5"
 sentry-actix = "~0.31.5"
-serde = "1.0.183"
-serde_json = "1.0.104"
+serde = "1.0.185"
+serde_json = "1.0.105"
 sophia = "0.7.2"
 sqlx = { version = "~0.7.0", features = ["chrono", "json", "mysql", "runtime-tokio-native-tls"] }
-thiserror = "1.0.44"
+thiserror = "1.0.47"
 
 [dev-dependencies]
 criterion = { version = "~0.5.1", features = ["html_reports", "async"] }

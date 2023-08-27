@@ -2349,7 +2349,7 @@ dependencies = [
 
 [[package]]
 name = "server"
-version = "0.3.69-staging.1"
+version = "0.3.69"
 dependencies = [
  "actix-rt",
  "actix-service",

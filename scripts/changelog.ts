@@ -354,6 +354,11 @@ const content = generateChangelog({
         'metadata-api: Add new learning resource type of WLO, metadata-api: Change WebAPI to WebContent',
       ],
     },
+    {
+      tagName: 'v0.3.69',
+      date: '2023-08-24',
+      changed: ['database base: change character encoding'],
+    },
   ],
 })
 

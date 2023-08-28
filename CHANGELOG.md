@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.69](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.68..v0.3.69) - August 24, 2023
+
+### Changed
+
+- database base: change character encoding
+
 ## [v0.3.68](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.67..v0.3.68) - August 23, 2023
 
 ### Added

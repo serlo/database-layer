@@ -7,4 +7,4 @@ runs:
         toolchain: 1.70.0
         override: true
         profile: minimal
-        components: [clippy, rustfmt]
+        components: rustfmt, clippy

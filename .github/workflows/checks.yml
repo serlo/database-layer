@@ -10,11 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.70.0
-          override: true
-          profile: minimal
+      - uses: ./.github/actions/setup-rust
       - run: echo "SQLX_OFFLINE=true" >> $GITHUB_ENV
       - uses: actions/cache@v3
         with:
@@ -31,12 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.70.0
-          override: true
-          profile: minimal
-          components: clippy
+      - uses: ./.github/actions/setup-rust
       - uses: actions/cache@v3
         with:
           path: |
@@ -53,12 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.70.0
-          override: true
-          profile: minimal
-          components: rustfmt
+      - uses: ./.github/actions/setup-rust
       - uses: actions/cache@v3
         with:
           path: |
@@ -77,11 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: docker-compose up -d
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.70.0
-          override: true
-          profile: minimal
+      - uses: ./.github/actions/setup-rust
       - run: cargo build
       - uses: serlo/configure-repositories/actions/setup-node@main
       - run: ./scripts/check_metadata_api.sh
@@ -91,11 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: serlo/configure-repositories/actions/setup-mysql@main
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.70.0
-          override: true
-          profile: minimal
+      - uses: ./.github/actions/setup-rust
       - uses: actions-rs/cargo@v1
         with:
           command: test

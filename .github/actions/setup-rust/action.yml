@@ -1,0 +1,10 @@
+name: Setup rust
+runs:
+  using: composite
+  steps:
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+        override: true
+        profile: minimal
+        components: rustfmt, clippy

@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id, c.uuid_id, p.title as parent_title\n                    FROM comment c\n                    LEFT JOIN comment p ON p.id = c.parent_id\n                    JOIN uuid u ON u.id = c.id\n                    WHERE c.id = ?\n            ",
+  "query": "\n                SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id,\n                        c.uuid_id, p.title as parent_title, comment_status.name as status\n                    FROM comment c\n                    LEFT JOIN comment p ON p.id = c.parent_id\n                    LEFT JOIN comment_status ON comment_status.id = c.comment_status_id\n                    JOIN uuid u ON u.id = c.id\n                    WHERE c.id = ?\n            ",
   "describe": {
     "columns": [
       {
@@ -92,6 +92,16 @@
           "char_set": 224,
           "max_size": 1020
         }
+      },
+      {
+        "ordinal": 9,
+        "name": "status",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 1020
+        }
       }
     ],
     "parameters": {
@@ -106,8 +116,9 @@
       true,
       true,
       true,
+      true,
       true
     ]
   },
-  "hash": "befb2d78ae7737e9d6e6a667301a984576cd5c451682394635e9e6c61b1b9669"
+  "hash": "9a3e1b4cb8f99c74056a2f2a6b7bdc276fe171a9059318c92cbf8536e83e45d0"
 }

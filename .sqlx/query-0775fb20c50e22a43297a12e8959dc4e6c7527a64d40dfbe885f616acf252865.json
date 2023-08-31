@@ -10,7 +10,7 @@
           "type": "Blob",
           "flags": "BLOB",
           "char_set": 224,
-          "max_size": 9204
+          "max_size": 12272
         }
       },
       {

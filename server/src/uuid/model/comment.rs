@@ -7,6 +7,8 @@ use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 use crate::datetime::DateTime;
 use crate::format_alias;
 
+use std::str::FromStr;
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Comment {
@@ -19,15 +21,39 @@ pub struct Comment {
     pub content: String,
     pub parent_id: i32,
     pub children_ids: Vec<i32>,
+    pub status: CommentStatus,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum CommentStatus {
+    NoStatus,
+    Open,
+    Done,
+}
+
+impl FromStr for CommentStatus {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "no_status" => Ok(CommentStatus::NoStatus),
+            "open" => Ok(CommentStatus::Open),
+            "done" => Ok(CommentStatus::Done),
+            _ => Err(()),
+        }
+    }
 }
 
 macro_rules! fetch_one_comment {
     ($id: expr, $executor: expr) => {
        sqlx::query!(
             r#"
-                SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id, c.uuid_id, p.title as parent_title
+                SELECT u.trashed, c.author_id, c.title, c.date, c.archived, c.content, c.parent_id,
+                        c.uuid_id, p.title as parent_title, comment_status.name as status
                     FROM comment c
                     LEFT JOIN comment p ON p.id = c.parent_id
+                    LEFT JOIN comment_status ON comment_status.id = c.comment_status_id
                     JOIN uuid u ON u.id = c.id
                     WHERE c.id = ?
             "#,
@@ -79,6 +105,10 @@ macro_rules! to_comment {
                 __typename: "Comment".to_string(),
                 author_id: comment.author_id as i32,
                 title: comment.title,
+                status: comment
+                    .status
+                    .and_then(|status| status.parse().ok())
+                    .unwrap_or(CommentStatus::NoStatus),
                 date: comment.date.into(),
                 archived: comment.archived != 0,
                 content: comment.content.unwrap_or_else(|| "".to_string()),

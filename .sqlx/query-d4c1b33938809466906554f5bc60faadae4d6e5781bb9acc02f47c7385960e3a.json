@@ -20,7 +20,7 @@
           "type": "Blob",
           "flags": "NOT_NULL | BLOB | NO_DEFAULT_VALUE",
           "char_set": 224,
-          "max_size": 262140
+          "max_size": 67108860
         }
       }
     ],

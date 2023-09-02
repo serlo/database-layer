@@ -264,7 +264,67 @@ pub mod edit_comment_mutation {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            Ok(Threads::edit_comment(self, acquire_from).await?)
+            if self.content.is_empty() {
+                return Err(operation::Error::BadRequest {
+                    reason: "content is empty".to_string(),
+                });
+            }
+
+            let mut transaction = acquire_from.begin().await?;
+
+            let comment = sqlx::query!(
+                r#"
+                SELECT content, author_id, archived, trashed
+                FROM comment JOIN uuid ON uuid.id = comment.id
+                WHERE comment.id = ?
+            "#,
+                self.comment_id
+            )
+            .fetch_one(&mut *transaction)
+            .await
+            .map_err(|error| match error {
+                sqlx::Error::RowNotFound => operation::Error::BadRequest {
+                    reason: "no comment with given ID".to_string(),
+                },
+                error => error.into(),
+            })?;
+
+            if self.user_id as i64 != comment.author_id {
+                return Err(operation::Error::BadRequest {
+                    reason: "given user is not author of the comment".to_string(),
+                });
+            }
+
+            if comment.archived != 0 {
+                return Err(operation::Error::BadRequest {
+                    reason: "archived comment cannot be edited".to_string(),
+                });
+            }
+
+            if comment.trashed != 0 {
+                return Err(operation::Error::BadRequest {
+                    reason: "trashed comment cannot be edited".to_string(),
+                });
+            }
+
+            if self.content != comment.content.as_deref().unwrap_or("") {
+                sqlx::query!(
+                    // todo: update edit_date (after database migration)
+                    // UPDATE comment SET content = ?, edit_date = ? WHERE id = ?
+                    r#"
+                    UPDATE comment SET content = ? WHERE id = ?
+                "#,
+                    self.content,
+                    // DateTime::now(),
+                    self.comment_id,
+                )
+                .execute(&mut *transaction)
+                .await?;
+            }
+
+            transaction.commit().await?;
+
+            Ok(operation::SuccessOutput { success: true })
         }
     }
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT instance_id, archived\n                    FROM comment\n                    WHERE id = ?\n            ",
+  "query": "SELECT instance_id, archived FROM comment WHERE id = ?",
   "describe": {
     "columns": [
       {
@@ -32,5 +32,5 @@
       false
     ]
   },
-  "hash": "59220da9f5e4677a6fdc380eca9b95923728d0efd09277eb85290b3b4aafa118"
+  "hash": "3ebe43905e2be38fa5ba0c47e0d4b617f7b734849b5118c4fdbcdcdeb7ad3809"
 }

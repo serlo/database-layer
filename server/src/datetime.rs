@@ -3,6 +3,7 @@
 //! The timestamps in our database are persisted as UTC but are actually Europe/Berlin. So we need
 //! to manipulate the timestamps accordingly. See [`DateTime`].
 use std::fmt;
+use std::str::FromStr;
 
 use chrono::{Duration, TimeZone, Utc};
 use chrono_tz::Europe::Berlin;
@@ -68,6 +69,14 @@ impl DateTime {
             }
         })?;
         Ok(DateTime(chrono::DateTime::<Utc>::from(date)))
+    }
+}
+
+impl FromStr for DateTime {
+    type Err = operation::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        DateTime::parse_from_rfc3339(s)
     }
 }
 

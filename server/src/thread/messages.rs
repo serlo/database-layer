@@ -66,10 +66,12 @@ pub mod all_threads_query {
         ) -> operation::Result<Self::Output> {
             let mut transaction = acquire_from.begin().await?;
 
-            let after_parsed = match self.after.as_ref() {
-                Some(date) => DateTime::parse_from_rfc3339(date.as_str())?,
-                None => DateTime::now(),
-            };
+            let after_parsed = self
+                .after
+                .as_ref()
+                .map(|date| date.parse())
+                .transpose()?
+                .unwrap_or(DateTime::now());
 
             let comment_status = self.status.as_ref().map(|s| s.to_string());
 
@@ -143,9 +145,9 @@ pub mod all_threads_query {
             .fetch_all(&mut *transaction)
             .await?;
 
-            let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();
-
-            Ok(Threads { first_comment_ids })
+            Ok(Threads {
+                first_comment_ids: result.iter().map(|child| child.id as i32).collect(),
+            })
         }
     }
 }

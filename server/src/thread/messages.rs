@@ -1,6 +1,7 @@
+use crate::datetime::DateTime;
 use crate::instance::Instance;
 use crate::operation::{self, Operation};
-use crate::uuid::Uuid;
+use crate::uuid::{CommentStatus, Uuid};
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -52,6 +53,7 @@ pub mod all_threads_query {
         pub after: Option<String>,
         pub instance: Option<Instance>,
         pub subject_id: Option<i32>,
+        pub status: Option<CommentStatus>,
     }
 
     #[async_trait]
@@ -73,6 +75,8 @@ pub mod all_threads_query {
                 Some(date) => DateTime::parse_from_rfc3339(date.as_str())?,
                 None => DateTime::now(),
             };
+
+            let comment_status = self.status.as_ref().map(|s| s.to_string());
 
             // TODO: use alias for MAX(GREATEST(...)) when sqlx supports it
             let result = sqlx::query!(
@@ -118,12 +122,14 @@ pub mod all_threads_query {
                     comment.id = answer.id
                 JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id
                 JOIN subject_entities ON subject_entities.entity_id = comment.uuid_id
+                JOIN comment_status on comment.comment_status_id = comment_status.id
                 WHERE
                     comment.uuid_id IS NOT NULL
                     AND uuid.trashed = 0
                     AND comment.archived = 0
                     AND (? is null OR comment.instance_id = ?)
                     AND parent_uuid.discriminator != "user"
+                    AND (? is null OR comment_status.name = ?)
                 GROUP BY comment.id
                 HAVING MAX(GREATEST(answer.date, comment.date)) < ?
                 ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC
@@ -133,6 +139,8 @@ pub mod all_threads_query {
                 self.subject_id,
                 instance_id,
                 instance_id,
+                comment_status,
+                comment_status,
                 after_parsed,
                 self.first
             )

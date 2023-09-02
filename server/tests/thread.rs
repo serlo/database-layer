@@ -85,6 +85,21 @@ mod all_threads_query {
     }
 
     #[actix_rt::test]
+    async fn fetches_threads_by_status() {
+        let mut transaction = begin_transaction().await;
+
+        sqlx::query!("update comment set comment_status_id = 2 where id = 35163")
+            .execute(&mut *transaction)
+            .await
+            .unwrap();
+
+        Message::new("AllThreadsQuery", json!({ "first": 10, "status": "open"}))
+            .execute_on(&mut transaction)
+            .await
+            .should_be_ok_with_body(json!({ "firstCommentIds": [35163] }));
+    }
+
+    #[actix_rt::test]
     async fn does_not_return_threads_on_user_page() {
         Message::new(
             "AllThreadsQuery",

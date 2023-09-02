@@ -9,7 +9,6 @@ use crate::datetime::DateTime;
 use crate::event::{
     CreateCommentEventPayload, CreateThreadEventPayload, SetThreadStateEventPayload,
 };
-use crate::instance::Instance;
 use crate::operation;
 use crate::subscription::Subscription;
 use crate::uuid::{Uuid, UuidFetcher};

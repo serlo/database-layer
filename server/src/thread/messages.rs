@@ -8,6 +8,7 @@ use crate::uuid::{CommentStatus, Uuid, UuidFetcher};
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use sqlx::Row;
 
 use super::model::Threads;
 use crate::message::MessageResponder;
@@ -419,7 +420,53 @@ pub mod set_thread_archived_mutation {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            Threads::set_archive(self, acquire_from).await?;
+            let mut transaction = acquire_from.begin().await?;
+
+            let number_comments = self.ids.len();
+            if number_comments == 0 {
+                return Ok(());
+            }
+            let params = format!("?{}", ", ?".repeat(number_comments - 1));
+            let query_str = format!("SELECT id, archived FROM comment WHERE id IN ( {params} )");
+            let mut query = sqlx::query(&query_str);
+            for id in self.ids.iter() {
+                query = query.bind(id);
+            }
+            let comments = query.fetch_all(&mut *transaction).await?;
+            if comments.len() < number_comments {
+                return Err(operation::Error::BadRequest {
+                    reason: "not all given ids are comments".to_string(),
+                });
+            }
+
+            let is_archived_after = self.archived;
+            for comment in comments {
+                let id: i32 = comment.get("id");
+                let is_archived_before: bool = comment.get("archived");
+                if is_archived_after != is_archived_before {
+                    sqlx::query!(
+                        r#"
+                        UPDATE comment
+                            SET archived = ?
+                            WHERE id = ?
+                    "#,
+                        is_archived_after,
+                        id
+                    )
+                    .execute(&mut *transaction)
+                    .await?;
+
+                    SetThreadStateEventPayload::new(is_archived_after, self.user_id, id)
+                        .save(&mut *transaction)
+                        .await
+                        .map_err(|error| operation::Error::InternalServerError {
+                            error: Box::new(error),
+                        })?;
+                }
+            }
+
+            transaction.commit().await?;
+
             Ok(())
         }
     }

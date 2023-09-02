@@ -67,7 +67,7 @@ pub mod all_threads_query {
             let mut transaction = acquire_from.begin().await?;
 
             let instance_id = match self.instance.as_ref() {
-                Some(instance) => Some(Instance::fetch_id(&instance, &mut *transaction).await?),
+                Some(instance) => Some(Instance::fetch_id(instance, &mut *transaction).await?),
                 None => None,
             };
 

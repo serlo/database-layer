@@ -62,39 +62,21 @@ pub mod all_threads_query {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            Ok(fetch_all_threads(
-                self.first,
-                self.after.clone(),
-                self.instance.clone(),
-                self.subject_id,
-                acquire_from,
-            )
-            .await?)
-        }
-    }
+            let mut transaction = acquire_from.begin().await?;
 
-    async fn fetch_all_threads<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
-        first: i32,
-        after: Option<String>,
-        instance: Option<Instance>,
-        subject_id: Option<i32>,
-        acquire_from: A,
-    ) -> Result<Threads, operation::Error> {
-        let mut transaction = acquire_from.begin().await?;
+            let instance_id = match self.instance.as_ref() {
+                Some(instance) => Some(Instance::fetch_id(&instance, &mut *transaction).await?),
+                None => None,
+            };
 
-        let instance_id = match instance.as_ref() {
-            Some(instance) => Some(Instance::fetch_id(instance, &mut *transaction).await?),
-            None => None,
-        };
+            let after_parsed = match self.after.as_ref() {
+                Some(date) => DateTime::parse_from_rfc3339(date.as_str())?,
+                None => DateTime::now(),
+            };
 
-        let after_parsed = match after.as_ref() {
-            Some(date) => DateTime::parse_from_rfc3339(date)?,
-            None => DateTime::now(),
-        };
-
-        // TODO: use alias for MAX(GREATEST(...)) when sqlx supports it
-        let result = sqlx::query!(
-            r#"
+            // TODO: use alias for MAX(GREATEST(...)) when sqlx supports it
+            let result = sqlx::query!(
+                r#"
                 WITH RECURSIVE descendants AS (
                     SELECT id, parent_id
                     FROM term_taxonomy
@@ -147,19 +129,20 @@ pub mod all_threads_query {
                 ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC
                 LIMIT ?;
             "#,
-            subject_id,
-            subject_id,
-            instance_id,
-            instance_id,
-            after_parsed,
-            first
-        )
-        .fetch_all(&mut *transaction)
-        .await?;
+                self.subject_id,
+                self.subject_id,
+                instance_id,
+                instance_id,
+                after_parsed,
+                self.first
+            )
+            .fetch_all(&mut *transaction)
+            .await?;
 
-        let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();
+            let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();
 
-        Ok(Threads { first_comment_ids })
+            Ok(Threads { first_comment_ids })
+        }
     }
 }
 

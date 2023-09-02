@@ -66,11 +66,6 @@ pub mod all_threads_query {
         ) -> operation::Result<Self::Output> {
             let mut transaction = acquire_from.begin().await?;
 
-            let instance_id = match self.instance.as_ref() {
-                Some(instance) => Some(Instance::fetch_id(&instance, &mut *transaction).await?),
-                None => None,
-            };
-
             let after_parsed = match self.after.as_ref() {
                 Some(date) => DateTime::parse_from_rfc3339(date.as_str())?,
                 None => DateTime::now(),
@@ -123,11 +118,12 @@ pub mod all_threads_query {
                 JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id
                 JOIN subject_entities ON subject_entities.entity_id = comment.uuid_id
                 JOIN comment_status on comment.comment_status_id = comment_status.id
+                JOIN instance on comment.instance_id = instance.id
                 WHERE
                     comment.uuid_id IS NOT NULL
                     AND uuid.trashed = 0
                     AND comment.archived = 0
-                    AND (? is null OR comment.instance_id = ?)
+                    AND (? is null OR instance.subdomain = ?)
                     AND parent_uuid.discriminator != "user"
                     AND (? is null OR comment_status.name = ?)
                 GROUP BY comment.id
@@ -137,8 +133,8 @@ pub mod all_threads_query {
             "#,
                 self.subject_id,
                 self.subject_id,
-                instance_id,
-                instance_id,
+                self.instance,
+                self.instance,
                 comment_status,
                 comment_status,
                 after_parsed,

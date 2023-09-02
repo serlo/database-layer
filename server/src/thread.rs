@@ -20,6 +20,7 @@ pub enum ThreadMessage {
     ThreadCreateThreadMutation(create_thread_mutation::Payload),
     ThreadCreateCommentMutation(create_comment_mutation::Payload),
     ThreadSetThreadArchivedMutation(set_thread_archived_mutation::Payload),
+    ThreadSetThreadStatusMutation(set_thread_state_mutation::Payload),
     ThreadEditCommentMutation(edit_comment_mutation::Payload),
 }
 
@@ -39,6 +40,9 @@ impl MessageResponder for ThreadMessage {
                 message.handle(acquire_from).await
             }
             ThreadMessage::ThreadSetThreadArchivedMutation(message) => {
+                message.handle(acquire_from).await
+            }
+            ThreadMessage::ThreadSetThreadStatusMutation(message) => {
                 message.handle(acquire_from).await
             }
             ThreadMessage::ThreadEditCommentMutation(message) => message.handle(acquire_from).await,
@@ -483,6 +487,54 @@ pub mod set_thread_archived_mutation {
             transaction.commit().await?;
 
             Ok(())
+        }
+    }
+}
+
+pub mod set_thread_state_mutation {
+    use super::*;
+
+    #[derive(Debug, Deserialize, Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct Payload {
+        pub ids: Vec<i32>,
+        pub status: CommentStatus,
+    }
+
+    #[async_trait]
+    impl Operation for Payload {
+        type Output = operation::SuccessOutput;
+
+        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
+            &self,
+            acquire_from: A,
+        ) -> operation::Result<Self::Output> {
+            let mut transaction = acquire_from.begin().await?;
+
+            for id in &self.ids {
+                let rows_affected = sqlx::query!(
+                    r#"
+                        UPDATE comment
+                        SET comment_status_id = (SELECT id from comment_status where name = ?)
+                        WHERE comment.id = ?
+                    "#,
+                    self.status.to_string(),
+                    id
+                )
+                .execute(&mut *transaction)
+                .await?
+                .rows_affected();
+
+                if rows_affected != 1 {
+                    return Err(operation::Error::BadRequest {
+                        reason: format!("Id {} does not belong to a comment", id),
+                    });
+                }
+            }
+
+            transaction.commit().await?;
+
+            Ok(operation::SuccessOutput { success: true })
         }
     }
 }

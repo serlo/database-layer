@@ -10,7 +10,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 
-use super::model::Threads;
 use crate::message::MessageResponder;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -45,6 +44,12 @@ impl MessageResponder for ThreadMessage {
             ThreadMessage::ThreadEditCommentMutation(message) => message.handle(acquire_from).await,
         }
     }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Threads {
+    pub first_comment_ids: Vec<i32>,
 }
 
 pub mod all_threads_query {
@@ -167,7 +172,17 @@ pub mod threads_query {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            Ok(Threads::fetch(self.id, acquire_from).await?)
+            let mut connection = acquire_from.acquire().await?;
+            let result = sqlx::query!(
+                "SELECT id FROM comment WHERE uuid_id = ? ORDER BY date DESC",
+                self.id
+            )
+            .fetch_all(&mut *connection)
+            .await?;
+
+            Ok(Threads {
+                first_comment_ids: result.iter().map(|child| child.id as i32).collect(),
+            })
         }
     }
 }

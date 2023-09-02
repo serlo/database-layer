@@ -66,13 +66,7 @@ pub mod all_threads_query {
         ) -> operation::Result<Self::Output> {
             let mut transaction = acquire_from.begin().await?;
 
-            let after_parsed = self
-                .after
-                .as_ref()
-                .map(|date| date.parse())
-                .transpose()?
-                .unwrap_or(DateTime::now());
-
+            let after_time = DateTime::parse_after_option(self.after.as_ref())?;
             let comment_status = self.status.as_ref().map(|s| s.to_string());
 
             // TODO: use alias for MAX(GREATEST(...)) when sqlx supports it
@@ -139,7 +133,7 @@ pub mod all_threads_query {
                 self.instance,
                 comment_status,
                 comment_status,
-                after_parsed,
+                after_time,
                 self.first
             )
             .fetch_all(&mut *transaction)

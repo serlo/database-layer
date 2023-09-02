@@ -61,6 +61,13 @@ impl DateTime {
     pub fn signed_duration_since(&self, rhs: DateTime) -> Duration {
         self.0.signed_duration_since(rhs.0)
     }
+
+    pub fn parse_after_option(input: Option<&String>) -> operation::Result<DateTime> {
+        Ok(input
+            .map(|s| s.parse())
+            .transpose()?
+            .unwrap_or(DateTime::now()))
+    }
 }
 
 impl FromStr for DateTime {

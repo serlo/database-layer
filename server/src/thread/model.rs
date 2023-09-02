@@ -1,12 +1,9 @@
-use super::messages::{create_comment_mutation, set_thread_archived_mutation};
+use super::messages::set_thread_archived_mutation;
 use serde::Serialize;
 use sqlx::Row;
 
-use crate::datetime::DateTime;
-use crate::event::{CreateCommentEventPayload, SetThreadStateEventPayload};
+use crate::event::SetThreadStateEventPayload;
 use crate::operation;
-use crate::subscription::Subscription;
-use crate::uuid::{Uuid, UuidFetcher};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -84,103 +81,5 @@ impl Threads {
         transaction.commit().await?;
 
         Ok(())
-    }
-
-    pub async fn comment_thread<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
-        payload: &create_comment_mutation::Payload,
-        acquire_from: A,
-    ) -> Result<Uuid, operation::Error> {
-        if payload.content.is_empty() {
-            return Err(operation::Error::BadRequest {
-                reason: "content is empty".to_string(),
-            });
-        };
-
-        let mut transaction = acquire_from.begin().await?;
-
-        let thread = sqlx::query!(
-            r#"
-                SELECT instance_id, archived
-                    FROM comment
-                    WHERE id = ?
-            "#,
-            payload.thread_id
-        )
-        .fetch_one(&mut *transaction)
-        .await
-        .map_err(|error| match error {
-            sqlx::Error::RowNotFound => operation::Error::BadRequest {
-                reason: "thread does not exist".to_string(),
-            },
-            error => error.into(),
-        })?;
-
-        if thread.archived != 0 {
-            // TODO: test is missing
-            return Err(operation::Error::BadRequest {
-                reason: "thread is already archived".to_string(),
-            });
-        }
-
-        sqlx::query!(
-            r#"
-                INSERT INTO uuid (trashed, discriminator)
-                    VALUES (0, 'comment')
-            "#
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        sqlx::query!(
-            r#"
-                INSERT INTO comment (id, date, archived, title, content, uuid_id, parent_id, author_id, instance_id )
-                    VALUES (LAST_INSERT_ID(), ?, 0, NULL, ?, NULL, ?, ?, ?)
-            "#,
-            DateTime::now(),
-            payload.content,
-            payload.thread_id,
-            payload.user_id,
-            thread.instance_id
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut *transaction)
-            .await?;
-        let comment_id = value.id as i32;
-
-        CreateCommentEventPayload::new(
-            payload.thread_id,
-            comment_id,
-            payload.user_id,
-            thread.instance_id,
-        )
-        .save(&mut *transaction)
-        .await
-        .map_err(|error| operation::Error::InternalServerError {
-            error: Box::new(error),
-        })?;
-
-        if payload.subscribe {
-            for object_id in [payload.thread_id, comment_id].iter() {
-                let subscription = Subscription {
-                    object_id: *object_id,
-                    user_id: payload.user_id,
-                    send_email: payload.send_email,
-                };
-                subscription.save(&mut *transaction).await?;
-            }
-        }
-
-        let comment = Uuid::fetch(comment_id, &mut *transaction)
-            .await
-            .map_err(|error| operation::Error::InternalServerError {
-                error: Box::new(error),
-            })?;
-
-        transaction.commit().await?;
-
-        Ok(comment)
     }
 }

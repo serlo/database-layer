@@ -1,5 +1,6 @@
 use crate::datetime::DateTime;
 use crate::event::CreateThreadEventPayload;
+use crate::event::{CreateCommentEventPayload, SetThreadStateEventPayload};
 use crate::instance::Instance;
 use crate::operation::{self, Operation};
 use crate::subscription::Subscription;
@@ -310,7 +311,100 @@ pub mod create_comment_mutation {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            Ok(Threads::comment_thread(self, acquire_from).await?)
+            if self.content.is_empty() {
+                return Err(operation::Error::BadRequest {
+                    reason: "content is empty".to_string(),
+                });
+            };
+
+            let mut transaction = acquire_from.begin().await?;
+
+            let thread = sqlx::query!(
+                r#"
+                SELECT instance_id, archived
+                    FROM comment
+                    WHERE id = ?
+            "#,
+                self.thread_id
+            )
+            .fetch_one(&mut *transaction)
+            .await
+            .map_err(|error| match error {
+                sqlx::Error::RowNotFound => operation::Error::BadRequest {
+                    reason: "thread does not exist".to_string(),
+                },
+                error => error.into(),
+            })?;
+
+            if thread.archived != 0 {
+                // TODO: test is missing
+                return Err(operation::Error::BadRequest {
+                    reason: "thread is already archived".to_string(),
+                });
+            }
+
+            sqlx::query!(
+                r#"
+                INSERT INTO uuid (trashed, discriminator)
+                    VALUES (0, 'comment')
+            "#
+            )
+            .execute(&mut *transaction)
+            .await?;
+
+            sqlx::query!(
+                r#"
+                    INSERT INTO comment
+                            (id, date, archived, title, content, uuid_id,
+                            parent_id, author_id, instance_id )
+                        VALUES (LAST_INSERT_ID(), ?, 0, NULL, ?, NULL, ?, ?, ?)
+                "#,
+                DateTime::now(),
+                self.content,
+                self.thread_id,
+                self.user_id,
+                thread.instance_id
+            )
+            .execute(&mut *transaction)
+            .await?;
+
+            let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
+                .fetch_one(&mut *transaction)
+                .await?;
+            let comment_id = value.id as i32;
+
+            CreateCommentEventPayload::new(
+                self.thread_id,
+                comment_id,
+                self.user_id,
+                thread.instance_id,
+            )
+            .save(&mut *transaction)
+            .await
+            .map_err(|error| operation::Error::InternalServerError {
+                error: Box::new(error),
+            })?;
+
+            if self.subscribe {
+                for object_id in [self.thread_id, comment_id].iter() {
+                    let subscription = Subscription {
+                        object_id: *object_id,
+                        user_id: self.user_id,
+                        send_email: self.send_email,
+                    };
+                    subscription.save(&mut *transaction).await?;
+                }
+            }
+
+            let comment = Uuid::fetch(comment_id, &mut *transaction)
+                .await
+                .map_err(|error| operation::Error::InternalServerError {
+                    error: Box::new(error),
+                })?;
+
+            transaction.commit().await?;
+
+            Ok(comment)
         }
     }
 }

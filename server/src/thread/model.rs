@@ -1,14 +1,9 @@
-use super::messages::{
-    create_comment_mutation, create_thread_mutation, edit_comment_mutation,
-    set_thread_archived_mutation,
-};
+use super::messages::{create_comment_mutation, set_thread_archived_mutation};
 use serde::Serialize;
 use sqlx::Row;
 
 use crate::datetime::DateTime;
-use crate::event::{
-    CreateCommentEventPayload, CreateThreadEventPayload, SetThreadStateEventPayload,
-};
+use crate::event::{CreateCommentEventPayload, SetThreadStateEventPayload};
 use crate::operation;
 use crate::subscription::Subscription;
 use crate::uuid::{Uuid, UuidFetcher};
@@ -179,109 +174,6 @@ impl Threads {
         }
 
         let comment = Uuid::fetch(comment_id, &mut *transaction)
-            .await
-            .map_err(|error| operation::Error::InternalServerError {
-                error: Box::new(error),
-            })?;
-
-        transaction.commit().await?;
-
-        Ok(comment)
-    }
-
-    pub async fn start_thread<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
-        payload: &create_thread_mutation::Payload,
-        acquire_from: A,
-    ) -> Result<Uuid, operation::Error> {
-        if payload.content.is_empty() {
-            return Err(operation::Error::BadRequest {
-                reason: "content is empty".to_string(),
-            });
-        }
-
-        let mut transaction = acquire_from.begin().await?;
-
-        let instance_id = sqlx::query!(
-            r#"
-                SELECT i.id as instance_id
-                    FROM uuid
-                    JOIN (
-                        SELECT id, instance_id FROM attachment_container
-                        UNION ALL
-                        SELECT id, instance_id FROM blog_post
-                        UNION ALL
-                        SELECT id, instance_id FROM comment
-                        UNION ALL
-                        SELECT id, instance_id FROM entity
-                        UNION ALL
-                        SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id
-                        UNION ALL
-                        SELECT id, instance_id FROM page_repository
-                        UNION ALL
-                        SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id
-                        UNION ALL
-                        SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id
-                        UNION ALL
-                        SELECT user.id, 1 FROM user) u
-                    JOIN instance i ON i.id = u.instance_id
-                    WHERE u.id = ?
-            "#,
-            payload.object_id
-        )
-        .fetch_one(&mut *transaction)
-        .await.map_err(|error| match error {
-            sqlx::Error::RowNotFound => operation::Error::BadRequest{
-                reason: "UUID not found".to_string(),
-            },
-            error => error.into(),})?
-        .instance_id;
-
-        sqlx::query!(
-            r#"
-                INSERT INTO uuid (trashed, discriminator)
-                    VALUES (0, 'comment')
-            "#
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        sqlx::query!(
-            r#"
-                INSERT INTO comment ( id , date , archived , title , content , uuid_id , parent_id , author_id , instance_id )
-                    VALUES (LAST_INSERT_ID(), ?, 0, ?, ?, ?, NULL, ?, ?)
-            "#,
-            DateTime::now(),
-            payload.title,
-            payload.content,
-            payload.object_id,
-            payload.user_id,
-            instance_id
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        let value = sqlx::query!(r#"SELECT LAST_INSERT_ID() as id"#)
-            .fetch_one(&mut *transaction)
-            .await?;
-        let thread_id = value.id as i32;
-
-        CreateThreadEventPayload::new(thread_id, payload.object_id, payload.user_id, instance_id)
-            .save(&mut *transaction)
-            .await
-            .map_err(|error| operation::Error::InternalServerError {
-                error: Box::new(error),
-            })?;
-
-        if payload.subscribe {
-            let subscription = Subscription {
-                object_id: thread_id,
-                user_id: payload.user_id,
-                send_email: payload.send_email,
-            };
-            subscription.save(&mut *transaction).await?;
-        }
-
-        let comment = Uuid::fetch(thread_id, &mut *transaction)
             .await
             .map_err(|error| operation::Error::InternalServerError {
                 error: Box::new(error),

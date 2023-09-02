@@ -61,22 +61,17 @@ impl DateTime {
     pub fn signed_duration_since(&self, rhs: DateTime) -> Duration {
         self.0.signed_duration_since(rhs.0)
     }
-
-    pub fn parse_from_rfc3339(string_ref: &str) -> Result<Self, operation::Error> {
-        let date = chrono::DateTime::parse_from_rfc3339(string_ref).map_err(|_| {
-            operation::Error::BadRequest {
-                reason: "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}".to_string(),
-            }
-        })?;
-        Ok(DateTime(chrono::DateTime::<Utc>::from(date)))
-    }
 }
 
 impl FromStr for DateTime {
     type Err = operation::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        DateTime::parse_from_rfc3339(s)
+        let date =
+            chrono::DateTime::parse_from_rfc3339(s).map_err(|_| operation::Error::BadRequest {
+                reason: "The date format should be YYYY-MM-DDThh:mm:ss{Timezone}".to_string(),
+            })?;
+        Ok(DateTime(chrono::DateTime::<Utc>::from(date)))
     }
 }
 

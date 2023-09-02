@@ -906,7 +906,7 @@ impl Entity {
     ) -> Result<Vec<deleted_entities_query::DeletedEntity>, operation::Error> {
         let mut connection = acquire_from.acquire().await?;
         let after_db_time = match payload.after.as_ref() {
-            Some(date) => DateTime::parse_from_rfc3339(date)?,
+            Some(date) => date.parse()?,
             None => DateTime::now(),
         };
 

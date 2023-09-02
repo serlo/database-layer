@@ -320,11 +320,7 @@ pub mod create_comment_mutation {
             let mut transaction = acquire_from.begin().await?;
 
             let thread = sqlx::query!(
-                r#"
-                SELECT instance_id, archived
-                    FROM comment
-                    WHERE id = ?
-            "#,
+                "SELECT instance_id, archived FROM comment WHERE id = ?",
                 self.thread_id
             )
             .fetch_one(&mut *transaction)
@@ -343,14 +339,9 @@ pub mod create_comment_mutation {
                 });
             }
 
-            sqlx::query!(
-                r#"
-                INSERT INTO uuid (trashed, discriminator)
-                    VALUES (0, 'comment')
-            "#
-            )
-            .execute(&mut *transaction)
-            .await?;
+            sqlx::query!("INSERT INTO uuid (trashed, discriminator) VALUES (0, 'comment')")
+                .execute(&mut *transaction)
+                .await?;
 
             sqlx::query!(
                 r#"

@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.70](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.69..v0.3.70) - September 4, 2023
+
+### Added
+
+- threads: query property status
+
+- Add ThreadSetThreadStatusMutation
+
+- Add param status to AllThreadsQuery
+
+### Internal
+
+- New DB dump to add `status` to `comment`
+
 ## [v0.3.69](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.68..v0.3.69) - August 24, 2023
 
 ### Changed

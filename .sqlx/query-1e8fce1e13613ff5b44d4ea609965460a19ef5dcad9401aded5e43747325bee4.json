@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                    INSERT INTO comment\n                            (id, date, archived, title, content, uuid_id,\n                            parent_id, author_id, instance_id )\n                        VALUES (LAST_INSERT_ID(), ?, 0, NULL, ?, NULL, ?, ?, ?)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "1e8fce1e13613ff5b44d4ea609965460a19ef5dcad9401aded5e43747325bee4"
+}

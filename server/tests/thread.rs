@@ -341,4 +341,37 @@ mod thread_mutations {
                 });
         }
     }
+
+    #[rstest]
+    #[case(StatusCode::OK, &[])]
+    #[case(StatusCode::OK, &[17666])]
+    #[case(StatusCode::BAD_REQUEST, &[1])]
+    #[case(StatusCode::BAD_REQUEST, &[1, 17666])]
+    #[actix_rt::test]
+    async fn set_thread_status(#[case] expected_response: StatusCode, #[case] ids: &[i32]) {
+        let mut transaction = begin_transaction().await;
+
+        let result = Message::new(
+            "ThreadSetThreadStatusMutation",
+            json!({ "ids": ids, "status": "open",
+            }),
+        )
+        .execute_on(&mut transaction)
+        .await;
+
+        assert_eq!(result.status, expected_response);
+
+        for id in ids.iter() {
+            Message::new("UuidQuery", json!({ "id": id }))
+                .execute_on(&mut transaction)
+                .await
+                .should_be_ok_with(|comment| {
+                    if expected_response == StatusCode::OK {
+                        assert_eq!(comment["status"], "open");
+                    } else if comment["__typename"] == "Comment" {
+                        assert_eq!(comment["status"], "noStatus");
+                    }
+                });
+        }
+    }
 }

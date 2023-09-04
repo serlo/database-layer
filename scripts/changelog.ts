@@ -359,6 +359,16 @@ const content = generateChangelog({
       date: '2023-08-24',
       changed: ['database base: change character encoding'],
     },
+    {
+      tagName: 'v0.3.70',
+      date: '2023-09-04',
+      added: [
+        'threads: query property status',
+        'Add ThreadSetThreadStatusMutation',
+        'Add param status to AllThreadsQuery',
+      ],
+      internal: ['New DB dump to add `status` to `comment`'],
+    },
   ],
 })
 

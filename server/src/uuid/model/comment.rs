@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 
@@ -24,7 +24,7 @@ pub struct Comment {
     pub status: CommentStatus,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CommentStatus {
     NoStatus,
@@ -41,6 +41,16 @@ impl FromStr for CommentStatus {
             "open" => Ok(CommentStatus::Open),
             "done" => Ok(CommentStatus::Done),
             _ => Err(()),
+        }
+    }
+}
+
+impl ToString for CommentStatus {
+    fn to_string(&self) -> String {
+        match self {
+            CommentStatus::NoStatus => "no_status".to_string(),
+            CommentStatus::Open => "open".to_string(),
+            CommentStatus::Done => "done".to_string(),
         }
     }
 }

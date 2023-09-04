@@ -1,6 +1,7 @@
+use crate::datetime::DateTime;
 use crate::instance::Instance;
 use crate::operation::{self, Operation};
-use crate::uuid::Uuid;
+use crate::uuid::{CommentStatus, Uuid};
 use actix_web::HttpResponse;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -52,6 +53,7 @@ pub mod all_threads_query {
         pub after: Option<String>,
         pub instance: Option<Instance>,
         pub subject_id: Option<i32>,
+        pub status: Option<CommentStatus>,
     }
 
     #[async_trait]
@@ -62,14 +64,92 @@ pub mod all_threads_query {
             &self,
             acquire_from: A,
         ) -> operation::Result<Self::Output> {
-            Ok(Threads::fetch_all_threads(
-                self.first,
-                self.after.clone(),
-                self.instance.clone(),
+            let mut transaction = acquire_from.begin().await?;
+
+            let instance_id = match self.instance.as_ref() {
+                Some(instance) => Some(Instance::fetch_id(instance, &mut *transaction).await?),
+                None => None,
+            };
+
+            let after_parsed = match self.after.as_ref() {
+                Some(date) => DateTime::parse_from_rfc3339(date.as_str())?,
+                None => DateTime::now(),
+            };
+
+            let comment_status = self.status.as_ref().map(|s| s.to_string());
+
+            // TODO: use alias for MAX(GREATEST(...)) when sqlx supports it
+            let result = sqlx::query!(
+                r#"
+                WITH RECURSIVE descendants AS (
+                    SELECT id, parent_id
+                    FROM term_taxonomy
+                    WHERE (? is null OR id = ?)
+
+                    UNION
+
+                    SELECT tt.id, tt.parent_id
+                    FROM term_taxonomy tt
+                    JOIN descendants d ON tt.parent_id = d.id
+                ), subject_entities AS (
+                SELECT id as entity_id FROM descendants
+
+                UNION
+
+                SELECT tte.entity_id
+                FROM descendants
+                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id
+
+                UNION
+
+                SELECT entity_link.child_id
+                FROM descendants
+                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id
+                JOIN entity_link ON entity_link.parent_id = tte.entity_id
+
+                UNION
+
+                SELECT entity_link.child_id
+                FROM descendants
+                JOIN term_taxonomy_entity tte ON descendants.id = tte.term_taxonomy_id
+                JOIN entity_link parent_link ON parent_link.parent_id = tte.entity_id
+                JOIN entity_link ON entity_link.parent_id = parent_link.child_id
+                )
+                SELECT comment.id
+                FROM comment
+                JOIN uuid ON uuid.id = comment.id
+                JOIN comment answer ON comment.id = answer.parent_id OR
+                    comment.id = answer.id
+                JOIN uuid parent_uuid ON parent_uuid.id = comment.uuid_id
+                JOIN subject_entities ON subject_entities.entity_id = comment.uuid_id
+                JOIN comment_status on comment.comment_status_id = comment_status.id
+                WHERE
+                    comment.uuid_id IS NOT NULL
+                    AND uuid.trashed = 0
+                    AND comment.archived = 0
+                    AND (? is null OR comment.instance_id = ?)
+                    AND parent_uuid.discriminator != "user"
+                    AND (? is null OR comment_status.name = ?)
+                GROUP BY comment.id
+                HAVING MAX(GREATEST(answer.date, comment.date)) < ?
+                ORDER BY MAX(GREATEST(answer.date, comment.date)) DESC
+                LIMIT ?;
+            "#,
                 self.subject_id,
-                acquire_from,
+                self.subject_id,
+                instance_id,
+                instance_id,
+                comment_status,
+                comment_status,
+                after_parsed,
+                self.first
             )
-            .await?)
+            .fetch_all(&mut *transaction)
+            .await?;
+
+            let first_comment_ids: Vec<i32> = result.iter().map(|child| child.id as i32).collect();
+
+            Ok(Threads { first_comment_ids })
         }
     }
 }

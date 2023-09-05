@@ -28,6 +28,7 @@ impl MessageResponder for MetadataMessage {
 }
 
 pub mod entities_metadata_query {
+    use chrono::SecondsFormat;
     use itertools::Itertools;
     use std::collections::{HashMap, HashSet};
 
@@ -304,7 +305,7 @@ pub mod entities_metadata_query {
                            .collect()
                     })
                     .unwrap_or(Vec::new());
-                let current_date = Utc::now().to_rfc3339();
+                let current_date = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
                 let subject_ids: Vec<i32> = result.subject_ids.as_ref()
                     .and_then(|value| value.as_array())
                     .map(|ids| {

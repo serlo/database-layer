@@ -1,4 +1,4 @@
-FROM rust:1.70-alpine3.18 as build
+FROM rust:1.72-alpine3.18 as build
 WORKDIR /usr/src/app
 RUN apk update && apk add --no-cache musl-dev pkgconfig openssl-dev
 COPY server server

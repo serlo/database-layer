@@ -859,8 +859,8 @@ __metadata:
   dependencies:
     "@inyono/changelog": 0.5.2
     "@pact-foundation/pact": ^10.4.1
-    "@types/node": ^18.18.3
-    "@types/ramda": ^0.29.5
+    "@types/node": ^18.18.4
+    "@types/ramda": ^0.29.6
     "@types/semver": ^7.5.3
     ajv-cli: ^5.0.0
     ajv-formats: ^2.1.1
@@ -868,7 +868,7 @@ __metadata:
     prettier: ^3.0.3
     prettier-plugin-packagejson: ^2.4.6
     prettier-plugin-sh: ^0.13.1
-    ramda: ^0.29.0
+    ramda: ^0.29.1
     semver: ^7.5.4
     toml: ^3.0.0
     ts-node: ^10.9.1
@@ -1094,17 +1094,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*":
-  version: 18.18.1
-  resolution: "@types/node@npm:18.18.1"
-  checksum: 079085afc8615b91727900628410a2077f7fff51c5c3e20c4ab2d9caae4010b035aac13dae1221155e9d6ca46084aebf68121642140527b4009eee17b716d339
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:^18.18.3":
-  version: 18.18.3
-  resolution: "@types/node@npm:18.18.3"
-  checksum: ed97a832179e0cfbb93738021fe16d0bc5c0f34bea35269c23c9dd5f0ecc8be93dbe5efd51630189a099b31786a47c1bde115508831a7245613a55c3ad1a7d6b
+"@types/node@npm:*, @types/node@npm:^18.18.4":
+  version: 18.18.4
+  resolution: "@types/node@npm:18.18.4"
+  checksum: 4901e91c4cc479bb58acbcd79236a97a0ad6db4a53cb1f4ba4cf32af15324c61b16faa6e31c1b09bf538a20feb5f5274239157ce5237f5741db0b9ab71e69c52
   languageName: node
   linkType: hard
 
@@ -1115,12 +1108,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/ramda@npm:^0.29.5":
-  version: 0.29.5
-  resolution: "@types/ramda@npm:0.29.5"
+"@types/ramda@npm:^0.29.6":
+  version: 0.29.6
+  resolution: "@types/ramda@npm:0.29.6"
   dependencies:
-    types-ramda: ^0.29.4
-  checksum: 01aa02655f712b5a1411a2399f94a77d8651da0cea95f753a3482ba00af558f54928b692cbb5629cd231aca461b5b9eeddeaeb46f25f4f224d1bba5e4334a7e7
+    types-ramda: ^0.29.5
+  checksum: b8198f90295e40b0f2aa6dc18c60535a88ecd6e2afdb421e0616398b9cbed03f2a760e9d712258ab8fdebe7da9e21ecf31d2bc9cae6d31406b0095ce8c4c8591
   languageName: node
   linkType: hard
 
@@ -4920,10 +4913,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ramda@npm:^0.29.0":
-  version: 0.29.0
-  resolution: "ramda@npm:0.29.0"
-  checksum: 9ab26c06eb7545cbb7eebcf75526d6ee2fcaae19e338f165b2bf32772121e7b28192d6664d1ba222ff76188ba26ab307342d66e805dbb02c860560adc4d5dd57
+"ramda@npm:^0.29.1":
+  version: 0.29.1
+  resolution: "ramda@npm:0.29.1"
+  checksum: df7c627597a66d5f317f6ba77ad17d7ba818efc9c2c4a638440bc23f2c651e823970ea05b05a28895738c0e4b738fadbdc17b2c97b3ad922826febc09c859c44
   languageName: node
   linkType: hard
 
@@ -5735,12 +5728,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"types-ramda@npm:^0.29.4":
-  version: 0.29.4
-  resolution: "types-ramda@npm:0.29.4"
+"types-ramda@npm:^0.29.5":
+  version: 0.29.5
+  resolution: "types-ramda@npm:0.29.5"
   dependencies:
     ts-toolbelt: ^9.6.0
-  checksum: 08a872e71555fe6a3f1fd9381989a573d493f2156d9689f3bb72278db73c848122d67a9efff1867ce97b3dfbb2fdadaa3864daaee014ab19cf9bbfe2c171ed52
+  checksum: 0013eec508b74ed98a3de25f9617c2f246ed387dbda084ae37d9f10c5ccac0bb0243a966e861262c918feef8322347616852abf30440a252335e50d9592590e9
   languageName: node
   linkType: hard
 

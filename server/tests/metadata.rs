@@ -130,7 +130,7 @@ mod entities_metadata_query {
           },
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
-          "image": "https://raw.githubusercontent.com/serlo/frontend/staging/public/_assets/img/meta/mathe.png",
+          "image": "https://de.serlo.org/_assets/img/meta/mathe.png",
           "inLanguage": [ "de" ],
           "learningResourceType": [
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/text" },
@@ -224,7 +224,7 @@ mod entities_metadata_query {
             "type": "PropertyValue",
             "value": 35596
           },
-          "image": "https://raw.githubusercontent.com/serlo/frontend/staging/public/_assets/img/meta/mathe.png",
+          "image": "https://de.serlo.org/_assets/img/meta/mathe.png",
           "inLanguage": [ "en" ],
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
@@ -323,7 +323,7 @@ mod entities_metadata_query {
             "type": "PropertyValue",
             "value": 18514
           },
-          "image": "https://raw.githubusercontent.com/serlo/frontend/staging/public/_assets/img/meta/mathe.png",
+          "image": "https://de.serlo.org/_assets/img/meta/mathe.png",
           "inLanguage": [ "de" ],
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
@@ -420,7 +420,7 @@ mod entities_metadata_query {
             "type": "PropertyValue",
             "value": 2823
           },
-          "image": "https://raw.githubusercontent.com/serlo/frontend/staging/public/_assets/img/meta/mathe.png",
+          "image": "https://de.serlo.org/_assets/img/meta/mathe.png",
           "inLanguage": [ "de" ],
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
@@ -507,7 +507,7 @@ mod entities_metadata_query {
             "type": "PropertyValue",
             "value": 2217
           },
-          "image": "https://raw.githubusercontent.com/serlo/frontend/staging/public/_assets/img/meta/mathe.png",
+          "image": "https://de.serlo.org/_assets/img/meta/mathe.png",
           "inLanguage": [ "de" ],
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
@@ -619,7 +619,7 @@ mod entities_metadata_query {
             "type": "PropertyValue",
             "value": 18865
           },
-          "image": "https://raw.githubusercontent.com/serlo/frontend/staging/public/_assets/img/meta/mathe.png",
+          "image": "https://de.serlo.org/_assets/img/meta/mathe.png",
           "inLanguage": [ "de" ],
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,

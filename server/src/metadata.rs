@@ -753,7 +753,7 @@ pub mod entities_metadata_query {
 
     fn map_serlo_subjects_to_thumbnail(id: Option<&i32>) -> String {
         let thumbnail_folder: String =
-            "https://raw.githubusercontent.com/serlo/frontend/staging/public/_assets/img/meta/"
+            "https://de.serlo.org/_assets/img/meta/"
                 .into();
         let thumbnail_image = match id {
             // Biologie (Schule)

@@ -752,9 +752,7 @@ pub mod entities_metadata_query {
     }
 
     fn map_serlo_subjects_to_thumbnail(id: Option<&i32>) -> String {
-        let thumbnail_folder: String =
-            "https://de.serlo.org/_assets/img/meta/"
-                .into();
+        let thumbnail_folder: String = "https://de.serlo.org/_assets/img/meta/".into();
         let thumbnail_image = match id {
             // Biologie (Schule)
             Some(23362) => "biologie.png",
@@ -763,9 +761,9 @@ pub mod entities_metadata_query {
             // Informatik (Schule)
             Some(47899) => "informatik.png",
             // Mathematik (Schule)
-            Some(5 | 23593 | 141587 | 169580) => "mathe.png",
+            Some(5) => "mathe.png",
             // Nachhaltigkeit
-            Some(17744 | 48416 | 242851) => "nachhaltigkeit.png",
+            Some(17744) => "nachhaltigkeit.png",
             // default
             _ => "serlo.png",
         };

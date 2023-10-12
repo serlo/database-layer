@@ -224,7 +224,7 @@ mod entities_metadata_query {
             "type": "PropertyValue",
             "value": 35596
           },
-          "image": "https://de.serlo.org/_assets/img/meta/mathe.png",
+          "image": "https://de.serlo.org/_assets/img/meta/serlo.png",
           "inLanguage": [ "en" ],
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,

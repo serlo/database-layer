@@ -241,7 +241,7 @@ mod entities_metadata_query {
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
             { "id": "https://vocabs.openeduhub.de/w3id.org/openeduhub/vocabs/new_lrt/4665caac-99d7-4da3-b9fb-498d8ece034f" }
           ],
-          "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
+          "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
             "type": "WebContent",

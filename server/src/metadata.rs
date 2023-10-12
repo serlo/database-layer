@@ -68,6 +68,7 @@ pub mod entities_metadata_query {
         #[serde(skip_serializing_if = "Option::is_none")]
         headline: Option<String>,
         identifier: serde_json::Value,
+        image: String,
         in_language: Vec<String>,
         is_accessible_for_free: bool,
         is_family_friendly: bool,
@@ -344,6 +345,7 @@ pub mod entities_metadata_query {
                         "propertyID": "UUID",
                         "value": identifier,
                     }),
+                    image: map_serlo_subjects_to_thumbnail(subject_ids.first()),
                     in_language: vec![result.instance],
                     is_accessible_for_free: true,
                     is_family_friendly: true,
@@ -747,5 +749,24 @@ pub mod entities_metadata_query {
             ],
             _ => vec![],
         }
+    }
+
+    fn map_serlo_subjects_to_thumbnail(id: Option<&i32>) -> String {
+        let thumbnail_folder: String = "https://de.serlo.org/_assets/img/meta/".into();
+        let thumbnail_image = match id {
+            // Biologie (Schule)
+            Some(23362) => "biologie.png",
+            // Chemie (Schule)
+            Some(18230) => "chemie.png",
+            // Informatik (Schule)
+            Some(47899) => "informatik.png",
+            // Mathematik (Schule)
+            Some(5) => "mathe.png",
+            // Nachhaltigkeit
+            Some(17744) => "nachhaltigkeit.png",
+            // default
+            _ => "serlo.png",
+        };
+        thumbnail_folder + thumbnail_image
     }
 }

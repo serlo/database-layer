@@ -806,6 +806,34 @@ mod entities_metadata_query {
     }
 
     #[actix_rt::test]
+    async fn returns_original_source_as_creator_followed_by_serlo_author() {
+        let expected_creators = json!([
+            {
+                "type": "Organization",
+                "id": "http://www.raschweb.de/",
+                "name": "http://www.raschweb.de/",
+            },
+            {
+                "affiliation": {
+                    "id": "https://serlo.org/organization",
+                    "name": "Serlo Education e.V.",
+                    "type": "Organization",
+                },
+                "id": "https://serlo.org/6",
+                "name": "12297c72",
+                "type": "Person",
+            },
+        ]);
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 12160 }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["creator"], expected_creators));
+    }
+
+    #[actix_rt::test]
     async fn fails_when_first_parameter_is_too_high() {
         Message::new("EntitiesMetadataQuery", json!({ "first": 1_000_000 }))
             .execute()

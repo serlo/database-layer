@@ -216,10 +216,10 @@ pub mod entities_metadata_query {
                 let title: Option<String> = result.title;
                 let id = get_iri(result.id as i32);
 
-                let original_source: Option<Creator> = result.original_author_url.map(|x| Creator {
+                let original_source: Option<Creator> = result.original_author_url.map(|url| Creator {
                             creator_type: CreatorType::Organization,
-                            id: x.to_string(),
-                            name: x.to_string(),
+                            id: url.to_string(),
+                            name: url,
                             affiliation: None,
                         });
 

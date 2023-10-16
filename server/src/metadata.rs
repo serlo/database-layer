@@ -90,7 +90,7 @@ pub mod entities_metadata_query {
         creator_type: CreatorType,
         id: String,
         name: String,
-        affiliation: serde_json::Value,
+        affiliation: Option<serde_json::Value>,
     }
 
     #[derive(Serialize)]
@@ -219,7 +219,7 @@ pub mod entities_metadata_query {
                             creator_type: CreatorType::Organization,
                             id: x.to_string(),
                             name: x.to_string(),
-                            affiliation: serde_json::Value::Null,
+                            affiliation: None,
                         });
 
                 let authors_map: HashMap<i32, String> = result.authors
@@ -252,7 +252,7 @@ pub mod entities_metadata_query {
                         // https://serlo.org/:userId
                         id: get_iri(*id),
                         name: username.to_string(),
-                        affiliation: get_serlo_organization_metadata()
+                        affiliation: Some(get_serlo_organization_metadata()),
                     }))
                     .collect();
                 let schema_type =

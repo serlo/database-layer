@@ -96,6 +96,7 @@ pub mod entities_metadata_query {
     #[derive(Serialize)]
     enum CreatorType {
         Person,
+        Organization,
     }
 
     #[derive(Serialize)]
@@ -165,6 +166,7 @@ pub mod entities_metadata_query {
                     entity_revision.date AS date_modified,
                     entity.current_revision_id AS version,
                     license.url AS license_url,
+                    license.original_author_url,
                     instance.subdomain AS instance,
                     JSON_ARRAYAGG(term_taxonomy.id) AS taxonomy_term_ids,
                     JSON_OBJECTAGG(term_taxonomy.id, term.name) AS term_names,
@@ -213,6 +215,13 @@ pub mod entities_metadata_query {
                 let title: Option<String> = result.title;
                 let id = get_iri(result.id as i32);
 
+                let original_source: Option<Creator> = result.original_author_url.map(|x| Creator {
+                            creator_type: CreatorType::Organization,
+                            id: x.to_string(),
+                            name: x.to_string(),
+                            affiliation: serde_json::Value::Null,
+                        });
+
                 let authors_map: HashMap<i32, String> = result.authors
                     .and_then(|x| serde_json::from_value(x).ok())
                     .unwrap_or_default();
@@ -229,7 +238,7 @@ pub mod entities_metadata_query {
                     )
                     .unwrap_or_default();
 
-                let creators: Vec<Creator> = authors_map.iter()
+                let creators: Vec<Creator> = original_source.into_iter().chain(authors_map.iter()
                     .map(|(id, username)| (id, username, edit_counts.get(id).unwrap_or(&0)))
                     .sorted_by(|(id1, _, count1), (id2, _, count2)| {
                         count2.cmp(count1).then(id1.cmp(id2))
@@ -244,7 +253,7 @@ pub mod entities_metadata_query {
                         id: get_iri(*id),
                         name: username.to_string(),
                         affiliation: get_serlo_organization_metadata()
-                    })
+                    }))
                     .collect();
                 let schema_type =
                         get_schema_type(&result.resource_type);

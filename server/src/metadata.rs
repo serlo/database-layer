@@ -90,6 +90,7 @@ pub mod entities_metadata_query {
         creator_type: CreatorType,
         id: String,
         name: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
         affiliation: Option<serde_json::Value>,
     }
 

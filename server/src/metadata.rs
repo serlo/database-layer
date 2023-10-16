@@ -315,7 +315,7 @@ pub mod entities_metadata_query {
                            .map(|id| LinkedNode { id: get_iri(id as i32) })
                            .collect()
                     })
-                    .unwrap_or(Vec::new());
+                    .unwrap_or_default();
                 let current_date = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
                 let subject_ids: Vec<i32> = result.subject_ids.as_ref()
                     .and_then(|value| value.as_array())
@@ -327,7 +327,7 @@ pub mod entities_metadata_query {
                             .map(|id| id as i32)
                             .collect()
                     })
-                    .unwrap_or(Vec::new());
+                    .unwrap_or_default();
                 let subject_metadata = Option::from(subject_ids.iter().flat_map(|id| {
                     map_serlo_subjects_to_amb_standard(*id)
                 }).collect::<Vec<SubjectMetadata>>()).filter(|v| !v.is_empty());
@@ -474,7 +474,7 @@ pub mod entities_metadata_query {
             )
         })
         .map(|id| LinkedNode { id })
-        .chain(get_new_lrt(entity_type).into_iter())
+        .chain(get_new_lrt(entity_type))
         .collect()
     }
 

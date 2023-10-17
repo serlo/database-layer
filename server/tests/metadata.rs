@@ -241,7 +241,7 @@ mod entities_metadata_query {
             { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
             { "id": "https://vocabs.openeduhub.de/w3id.org/openeduhub/vocabs/new_lrt/4665caac-99d7-4da3-b9fb-498d8ece034f" }
           ],
-          "license": { "id": "http://creativecommons.org/licenses/by/4.0/" },
+          "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
             "id": "https://serlo.org/metadata",
             "type": "WebContent",
@@ -803,6 +803,34 @@ mod entities_metadata_query {
         .execute()
         .await
         .should_be_ok_with(|value| assert_eq!(value["entities"][0]["about"], expected_about));
+    }
+
+    #[actix_rt::test]
+    async fn returns_original_source_as_creator_followed_by_serlo_author() {
+        let expected_creators = json!([
+            {
+                "type": "Organization",
+                "id": "http://www.raschweb.de/",
+                "name": "http://www.raschweb.de/",
+            },
+            {
+                "affiliation": {
+                    "id": "https://serlo.org/organization",
+                    "name": "Serlo Education e.V.",
+                    "type": "Organization",
+                },
+                "id": "https://serlo.org/6",
+                "name": "12297c72",
+                "type": "Person",
+            },
+        ]);
+        Message::new(
+            "EntitiesMetadataQuery",
+            json!({ "first": 1, "after": 12160 }),
+        )
+        .execute()
+        .await
+        .should_be_ok_with(|value| assert_eq!(value["entities"][0]["creator"], expected_creators));
     }
 
     #[actix_rt::test]

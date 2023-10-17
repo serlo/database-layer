@@ -410,12 +410,7 @@ pub mod entities_metadata_query {
             _ => vec![],
         }
         .into_iter()
-        .map(|vocab| {
-            format!(
-                "http://w3id.org/openeduhub/vocabs/new_lrt/{}",
-                vocab
-            )
-        })
+        .map(|vocab| format!("http://w3id.org/openeduhub/vocabs/new_lrt/{}", vocab))
         .map(|id| LinkedNode { id })
         .collect()
     }

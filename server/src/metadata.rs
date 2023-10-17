@@ -239,6 +239,7 @@ pub mod entities_metadata_query {
                     )
                     .unwrap_or_default();
 
+                // original author is probably the most important creator so we put them first
                 let creators: Vec<Creator> = original_source.into_iter().chain(authors_map.iter()
                     .map(|(id, username)| (id, username, edit_counts.get(id).unwrap_or(&0)))
                     .sorted_by(|(id1, _, count1), (id2, _, count2)| {

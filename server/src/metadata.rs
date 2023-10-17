@@ -399,87 +399,6 @@ pub mod entities_metadata_query {
     }
 
     fn get_learning_resource_type(entity_type: &str) -> Vec<LinkedNode> {
-        let mut resource_types_exercise = vec![
-            "assessment",
-            "drill_and_practice",
-            "text",
-            "web_page",
-            "wiki",
-            "open_activity",
-            "teaching_module",
-            "tool",
-            "worksheet",
-        ];
-
-        match entity_type {
-            "article" => vec![
-                "text",
-                "worksheet",
-                "course",
-                "web_page",
-                "wiki",
-                "demonstration",
-                "image",
-                "open_activity",
-                "teaching_module",
-                "tool",
-            ],
-            "course" => vec![
-                "course",
-                "exploration",
-                "web_page",
-                "wiki",
-                "assessment",
-                "demonstration",
-                "drill_and_practice",
-                "educational_game",
-                "enquiry_oriented_activity",
-                "experiment",
-                "text",
-                "open_activity",
-                "teaching_module",
-                "tool",
-            ],
-            "text-exercise" => resource_types_exercise,
-            "text-exercise-group" => {
-                resource_types_exercise.push("data");
-                resource_types_exercise
-            }
-            "video" => vec![
-                "video",
-                "audiovisual_medium",
-                "demonstration",
-                "audio",
-                "teaching_module",
-                "tool",
-            ],
-            "applet" => vec![
-                "application",
-                "assessment",
-                "demonstration",
-                "drill_and_practice",
-                "experiment",
-                "exploration",
-                "other_asset_type",
-                "teaching_module",
-                "tool",
-                "wiki",
-            ],
-            _ => vec![],
-        }
-        .into_iter()
-        .map(|vocab| {
-            format!(
-                "http://w3id.org/openeduhub/vocabs/learningResourceType/{}",
-                vocab
-            )
-        })
-        .map(|id| LinkedNode { id })
-        .chain(get_new_lrt(entity_type))
-        .collect()
-    }
-
-    fn get_new_lrt(entity_type: &str) -> Vec<LinkedNode> {
         match entity_type {
             "article" => vec!["588efe4f-976f-48eb-84aa-8bcb45679f85"],
             "course" => vec!["ad9b9299-0913-40fb-8ad3-50c5fd367b6a"],
@@ -491,12 +410,7 @@ pub mod entities_metadata_query {
             _ => vec![],
         }
         .into_iter()
-        .map(|vocab| {
-            format!(
-                "https://vocabs.openeduhub.de/w3id.org/openeduhub/vocabs/new_lrt/{}",
-                vocab
-            )
-        })
+        .map(|vocab| format!("http://w3id.org/openeduhub/vocabs/new_lrt/{}", vocab))
         .map(|id| LinkedNode { id })
         .collect()
     }

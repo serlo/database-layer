@@ -133,17 +133,7 @@ mod entities_metadata_query {
           "image": "https://de.serlo.org/_assets/img/meta/mathe.png",
           "inLanguage": [ "de" ],
           "learningResourceType": [
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/text" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/worksheet" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/course" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/demonstration" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/image" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/open_activity" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/teaching_module" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/tool" },
-            { "id": "https://vocabs.openeduhub.de/w3id.org/openeduhub/vocabs/new_lrt/588efe4f-976f-48eb-84aa-8bcb45679f85" }
+            { "id": "http://w3id.org/openeduhub/vocabs/new_lrt/588efe4f-976f-48eb-84aa-8bcb45679f85" }
           ],
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
@@ -229,17 +219,7 @@ mod entities_metadata_query {
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
           "learningResourceType": [
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/application" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/demonstration" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/experiment" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/exploration" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/other_asset_type" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/teaching_module" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/tool" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
-            { "id": "https://vocabs.openeduhub.de/w3id.org/openeduhub/vocabs/new_lrt/4665caac-99d7-4da3-b9fb-498d8ece034f" }
+            { "id": "http://w3id.org/openeduhub/vocabs/new_lrt/4665caac-99d7-4da3-b9fb-498d8ece034f" }
           ],
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
@@ -328,21 +308,7 @@ mod entities_metadata_query {
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
           "learningResourceType": [
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/course" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/exploration" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/demonstration" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/educational_game" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/enquiry_oriented_activity" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/experiment" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/text" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/open_activity" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/teaching_module" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/tool" },
-            { "id": "https://vocabs.openeduhub.de/w3id.org/openeduhub/vocabs/new_lrt/ad9b9299-0913-40fb-8ad3-50c5fd367b6a" }
+            { "id": "http://w3id.org/openeduhub/vocabs/new_lrt/ad9b9299-0913-40fb-8ad3-50c5fd367b6a" }
           ],
           "license": {
             "id": "https://creativecommons.org/licenses/by-sa/4.0/"
@@ -426,16 +392,7 @@ mod entities_metadata_query {
           "isFamilyFriendly": true,
           "isPartOf": [{ "id": "https://serlo.org/25614" }],
           "learningResourceType": [
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/text" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/open_activity" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/teaching_module" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/tool" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/worksheet" },
-            { "id": "https://vocabs.openeduhub.de/w3id.org/openeduhub/vocabs/new_lrt/a33ef73d-9210-4305-97f9-7357bbf43486" },
+            { "id": "http://w3id.org/openeduhub/vocabs/new_lrt/a33ef73d-9210-4305-97f9-7357bbf43486" },
           ],
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
@@ -512,17 +469,7 @@ mod entities_metadata_query {
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
           "learningResourceType": [
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/assessment" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/drill_and_practice" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/text" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/web_page" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/wiki" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/open_activity" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/teaching_module" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/tool" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/worksheet" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/data" },
-            { "id": "https://vocabs.openeduhub.de/w3id.org/openeduhub/vocabs/new_lrt/a33ef73d-9210-4305-97f9-7357bbf43486" },
+            { "id": "http://w3id.org/openeduhub/vocabs/new_lrt/a33ef73d-9210-4305-97f9-7357bbf43486" },
           ],
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{
@@ -624,13 +571,7 @@ mod entities_metadata_query {
           "isAccessibleForFree": true,
           "isFamilyFriendly": true,
           "learningResourceType": [
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/video" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/audiovisual_medium" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/demonstration" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/audio" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/teaching_module" },
-            { "id": "http://w3id.org/openeduhub/vocabs/learningResourceType/tool" },
-            { "id": "https://vocabs.openeduhub.de/w3id.org/openeduhub/vocabs/new_lrt/7a6e9608-2554-4981-95dc-47ab9ba924de" }
+            { "id": "http://w3id.org/openeduhub/vocabs/new_lrt/7a6e9608-2554-4981-95dc-47ab9ba924de" }
           ],
           "license": { "id": "https://creativecommons.org/licenses/by-sa/4.0/" },
           "mainEntityOfPage": [{

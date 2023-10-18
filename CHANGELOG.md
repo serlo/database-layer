@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.71](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.70..v0.3.71) - October 18, 2023
+
+### Fixed
+
+- metadata api: update learning resource type assertions
+
+- metadata api: add thumbnail image property to metadata
+
+- metadata api: update license queries regarding authors
+
 ## [v0.3.70](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.69..v0.3.70) - September 4, 2023
 
 ### Added

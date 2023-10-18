@@ -1,6 +1,6 @@
 [package]
 name = "server"
-version = "0.3.70"
+version = "0.3.71"
 authors = ["Serlo Education e.V."]
 license = "Apache-2.0"
 edition = "2021"

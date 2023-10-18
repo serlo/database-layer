@@ -369,6 +369,15 @@ const content = generateChangelog({
       ],
       internal: ['New DB dump to add `status` to `comment`'],
     },
+    {
+      tagName: 'v0.3.71',
+      date: '2023-10-18',
+      fixed: [
+        'metadata api: update learning resource type assertions',
+        'metadata api: add thumbnail image property to metadata',
+        'metadata api: update license queries regarding authors',
+      ],
+    },
   ],
 })
 

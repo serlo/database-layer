@@ -166,7 +166,7 @@ pub mod entities_metadata_query {
                     FROM term_taxonomy child
                     JOIN subject_mapping ON subject_mapping.term_taxonomy_id = child.parent_id
                     -- "Fächer im Aufbau" taxonomy is on the level of normal Serlo subjects, therefore we need a level below it.
-                    -- "Partner" taxonomy is below the subject "Mathematics", but we only want the entities with the specific partner as the subject.
+                    -- "Partner" taxonomy is below the subject "Mathematik", but we only want the entities with the specific partner as the subject.
                     WHERE child.parent_id NOT IN (106081, 146728)
                         -- Exclude content under "Baustelle", "Zum Testen" and "Testbereich" taxonomies
                         AND child.id NOT IN (75211, 105140, 107772, 135390, 25107, 106082)

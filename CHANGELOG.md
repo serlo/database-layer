@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.72](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.71..v0.3.72) - October 26, 2023
+
+### Fixed
+
+- metadata api: exclude non learning resources from the api
+
 ## [v0.3.71](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.70..v0.3.71) - October 18, 2023
 
 ### Fixed

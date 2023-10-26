@@ -147,19 +147,33 @@ pub mod entities_metadata_query {
         let mut connection = acquire_from.acquire().await?;
         Ok(sqlx::query!(
             r#"
-                WITH RECURSIVE ancestors AS (
-                    SELECT id AS root_id, parent_id, id AS origin_id, id AS subject_id
-                    FROM term_taxonomy
+                WITH RECURSIVE subject_mapping AS (
+                    SELECT
+                        subject.id AS term_taxonomy_id,
+                        subject.id AS subject_id,
+                        root.id AS root_id
+                    FROM term_taxonomy root
+                    JOIN term_taxonomy subject ON subject.parent_id = root.id
+                    WHERE root.parent_id IS NULL
+                    OR root.id IN (106081, 146728)
 
                     UNION
 
-                    SELECT tt.id, tt.parent_id,  a.origin_id, a.root_id
-                    FROM term_taxonomy tt
-                    JOIN ancestors a ON tt.id = a.parent_id
+                    SELECT
+                        child.id,
+                        subject_mapping.subject_id,
+                        subject_mapping.root_id
+                    FROM term_taxonomy child
+                    JOIN subject_mapping ON subject_mapping.term_taxonomy_id = child.parent_id
+                    -- "Fächer im Aufbau" taxonomy is on the level of normal Serlo subjects, therefore we need a level below it.
+                    -- "Partner" taxonomy is below the subject "Mathematik", but we only want the entities with the specific partner as the subject.
+                    WHERE child.parent_id NOT IN (106081, 146728)
+                        -- Exclude content under "Baustelle", "Zum Testen" and "Testbereich" taxonomies
+                        AND child.id NOT IN (75211, 105140, 107772, 135390, 25107, 106082)
                 )
                 SELECT
                     entity.id,
-                    JSON_ARRAYAGG(ancestors.subject_id) AS subject_ids,
+                    JSON_ARRAYAGG(subject_mapping.subject_id) AS subject_ids,
                     type.name AS resource_type,
                     MIN(field_title.value) AS title,
                     MIN(field_description.value) AS description,
@@ -190,14 +204,14 @@ pub mod entities_metadata_query {
                 JOIN term on term_taxonomy.term_id = term.id
                 JOIN entity_revision all_revisions_of_entity ON all_revisions_of_entity.repository_id = entity.id
                 JOIN user ON all_revisions_of_entity.author_id = user.id
-                JOIN ancestors on ancestors.origin_id = term_taxonomy_entity.term_taxonomy_id
+                JOIN subject_mapping on subject_mapping.term_taxonomy_id = term_taxonomy_entity.term_taxonomy_id
                 WHERE entity.id > ?
                     AND (? is NULL OR instance.subdomain = ?)
                     AND (? is NULL OR entity_revision.date > ?)
                     AND uuid.trashed = 0
                     AND type.name IN ("applet", "article", "course", "text-exercise",
                                       "text-exercise-group", "video")
-                    AND (ancestors.parent_id is NULL OR ancestors.root_id = 106081 OR ancestors.root_id = 146728)
+                    AND NOT subject_mapping.subject_id = 146728
                 GROUP BY entity.id
                 ORDER BY entity.id
                 LIMIT ?

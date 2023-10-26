@@ -378,6 +378,11 @@ const content = generateChangelog({
         'metadata api: update license queries regarding authors',
       ],
     },
+    {
+      tagName: 'v0.3.72',
+      date: '2023-10-26',
+      fixed: ['metadata api: exclude non learning resources from the api'],
+    },
   ],
 })
 

@@ -280,7 +280,7 @@ impl EntityTestWrapper<'static> {
         fields
     }
 
-    pub fn all() -> [Self; 10] {
+    pub fn all() -> [Self; 9] {
         [
             EntityTestWrapper {
                 revision_type: EntityRevisionType::Applet,
@@ -358,15 +358,6 @@ impl EntityTestWrapper<'static> {
                 typename: EntityType::GroupedExercise,
                 entity_id: 2219,
                 parent_id: Some(2217),
-                own_field_keys: vec!["content"],
-                query_fields: None,
-                taxonomy_term_id: None,
-            },
-            EntityTestWrapper {
-                revision_type: EntityRevisionType::Solution,
-                typename: EntityType::Solution,
-                entity_id: 2221,
-                parent_id: Some(2219),
                 own_field_keys: vec!["content"],
                 query_fields: None,
                 taxonomy_term_id: None,

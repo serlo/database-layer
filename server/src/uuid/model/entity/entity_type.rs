@@ -19,8 +19,6 @@ enum RawEntityType {
     ExerciseGroup,
     #[serde(rename = "grouped-text-exercise")]
     GroupedExercise,
-    #[serde(rename = "text-solution")]
-    Solution,
     Video,
 }
 
@@ -34,7 +32,6 @@ pub enum EntityType {
     Exercise,
     ExerciseGroup,
     GroupedExercise,
-    Solution,
     Video,
 }
 
@@ -49,7 +46,6 @@ impl From<RawEntityType> for EntityType {
             RawEntityType::Exercise => Self::Exercise,
             RawEntityType::ExerciseGroup => Self::ExerciseGroup,
             RawEntityType::GroupedExercise => Self::GroupedExercise,
-            RawEntityType::Solution => Self::Solution,
             RawEntityType::Video => Self::Video,
         }
     }
@@ -66,7 +62,6 @@ impl From<EntityType> for RawEntityType {
             EntityType::Exercise => Self::Exercise,
             EntityType::ExerciseGroup => Self::ExerciseGroup,
             EntityType::GroupedExercise => Self::GroupedExercise,
-            EntityType::Solution => Self::Solution,
             EntityType::Video => Self::Video,
         }
     }

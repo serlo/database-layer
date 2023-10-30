@@ -275,7 +275,7 @@ mod tests {
                     entity_revision.id as revision_id
                 from entity
                 join entity_revision on entity_revision.repository_id = entity.id
-                where type_id = 39
+                where type_id = 40
             "#
         )
         .fetch_one(&mut *transaction)

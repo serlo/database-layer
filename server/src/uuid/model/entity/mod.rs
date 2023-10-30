@@ -1261,7 +1261,7 @@ mod tests {
 
         let result = Entity::checkout_revision(
             &checkout_revision_mutation::Payload {
-                revision_id: 30674,
+                revision_id: 251267,
                 user_id: 1,
                 reason: "Revert changes".to_string(),
             },
@@ -1344,7 +1344,7 @@ mod tests {
 
         let result = Entity::reject_revision(
             &reject_revision_mutation::Payload {
-                revision_id: 30674,
+                revision_id: 251267,
                 user_id: 1,
                 reason: "Contains an error".to_string(),
             },

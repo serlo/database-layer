@@ -89,12 +89,12 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        // Add solution with id 100000 and math-puzzle with id 100001
+        // Add solution with id 1000000 and math-puzzle with id 1000001
         sqlx::query(
             r#"
                 INSERT INTO uuid (id, trashed, discriminator)
-                VALUES (100000, 0, 'entity'),
-                       (100001, 0, 'entity')
+                VALUES (1000000, 0, 'entity'),
+                       (1000001, 0, 'entity')
             "#,
         )
         .execute(&mut *transaction)
@@ -103,8 +103,8 @@ mod tests {
         sqlx::query(
             r#"
                 INSERT INTO entity (id, type_id, instance_id, license_id, date, current_revision_id)
-                VALUES (100000, 2, 1, 1, CURDATE(), 1),
-                       (100001, 39, 1, 1, CURDATE(), 2)
+                VALUES (1000000, 2, 1, 1, CURDATE(), 1),
+                       (1000001, 39, 1, 1, CURDATE(), 2)
             "#,
         )
         .execute(&mut *transaction)
@@ -115,14 +115,14 @@ mod tests {
         sqlx::query(
             r#"
                 INSERT INTO entity_link (parent_id, child_id, type_id)
-                VALUES (100001, 100000, 9)
+                VALUES (1000001, 1000000, 9)
             "#,
         )
         .execute(&mut *transaction)
         .await
         .unwrap();
 
-        let result = Uuid::fetch(100000, &mut *transaction).await;
+        let result = Uuid::fetch(1000000, &mut *transaction).await;
 
         assert!(result.is_err());
         match result.as_ref().err().unwrap() {

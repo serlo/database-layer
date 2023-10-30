@@ -506,7 +506,7 @@ mod tests {
                 content: "test content".to_string(),
                 title: "test title".to_string(),
                 user_id: 1,
-                page_id: 19860,
+                page_id: 21413,
             },
             &mut *transaction,
         )
@@ -599,7 +599,7 @@ mod tests {
 
         let result = Page::checkout_revision(
             &checkout_revision_mutation::Payload {
-                revision_id: 35476,
+                revision_id: 259843,
                 user_id: 1,
                 reason: "Revert changes".to_string(),
             },
@@ -680,7 +680,7 @@ mod tests {
 
         let result = Page::reject_revision(
             &reject_revision_mutation::Payload {
-                revision_id: 35476,
+                revision_id: 259843,
                 user_id: 1,
                 reason: "Contains an error".to_string(),
             },

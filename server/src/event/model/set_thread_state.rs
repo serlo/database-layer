@@ -89,7 +89,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let set_thread_state_event = SetThreadStateEventPayload::new(true, 16462, 17666);
+        let set_thread_state_event = SetThreadStateEventPayload::new(true, 16462, 282261);
 
         let event = set_thread_state_event
             .save(&mut *transaction)
@@ -105,14 +105,14 @@ mod tests {
             abstract_event:
                 AbstractEvent {
                     actor_id: 16462,
-                    object_id: 17666,
+                    object_id: 282261,
                     instance: Instance::De,
                     date,
                     ..
                 },
             concrete_event:
                 ConcreteEvent::SetThreadState(SetThreadStateEvent {
-                    thread_id: 17666,
+                    thread_id: 282261,
                     archived: true,
                 }),
         } = event

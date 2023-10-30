@@ -279,11 +279,11 @@ mod thread_mutations {
 
     #[rstest]
     #[case(StatusCode::OK, &[false], &[], 1, true)]
-    #[case(StatusCode::OK, &[true], &[17666], 1, true)]
-    #[case(StatusCode::OK, &[false], &[17666], 1, false)] // no state change
-    #[case(StatusCode::OK, &[false, true], &[17666, 16740], 1, false)] // 16740 is archived comment
+    #[case(StatusCode::OK, &[true], &[282261], 1, true)]
+    #[case(StatusCode::OK, &[false], &[282261], 1, false)] // no state change
+    #[case(StatusCode::OK, &[false, true], &[282261, 16740], 1, false)] // 16740 is archived comment
     #[case(StatusCode::BAD_REQUEST, &[false], &[1], 1, false)] // ID is no comment
-    #[case(StatusCode::BAD_REQUEST, &[false, false], &[17666, 1], 1, true)] // 2nd ID's no comment
+    #[case(StatusCode::BAD_REQUEST, &[false, false], &[282261, 1], 1, true)] // 2nd ID's no comment
     #[actix_rt::test]
     async fn set_archived(
         #[case] expected_response: StatusCode,
@@ -344,9 +344,9 @@ mod thread_mutations {
 
     #[rstest]
     #[case(StatusCode::OK, &[])]
-    #[case(StatusCode::OK, &[17666])]
+    #[case(StatusCode::OK, &[282261])]
     #[case(StatusCode::BAD_REQUEST, &[1])]
-    #[case(StatusCode::BAD_REQUEST, &[1, 17666])]
+    #[case(StatusCode::BAD_REQUEST, &[1, 282261])]
     #[actix_rt::test]
     async fn set_thread_status(#[case] expected_response: StatusCode, #[case] ids: &[i32]) {
         let mut transaction = begin_transaction().await;

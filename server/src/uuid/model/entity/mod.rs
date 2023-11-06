@@ -883,7 +883,7 @@ impl Entity {
                 FROM entity_revision r
                 JOIN uuid u_r ON r.id = u_r.id
                 JOIN entity e ON e.id = r.repository_id
-                JOIN type ON e.id = type.id
+                JOIN type ON e.type_id = type.id
                 JOIN uuid u_e ON e.id = u_e.id
                 WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )
                     AND u_r.trashed = 0

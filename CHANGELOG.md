@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.73](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.72..v0.3.73) - November 8, 2023
+
+### Added
+
+- Exclude unsupported entites from unrevised entities
+
 ## [v0.3.72](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.71..v0.3.72) - October 26, 2023
 
 ### Fixed

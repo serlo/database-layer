@@ -383,6 +383,11 @@ const content = generateChangelog({
       date: '2023-10-26',
       fixed: ['metadata api: exclude non learning resources from the api'],
     },
+    {
+      tagName: 'v0.3.73',
+      date: '2023-11-08',
+      added: ['Exclude unsupported entites from unrevised entities'],
+    },
   ],
 })
 

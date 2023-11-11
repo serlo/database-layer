@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                    INSERT INTO entity_link (parent_id, child_id, type_id, entity_link.order)\n                    VALUES (?, ?, 9, ?)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "d67e01c87b2d9dece1d1a6d36ea65508b30d5faea0c3dd12f72b574231bc5a3a"
+}

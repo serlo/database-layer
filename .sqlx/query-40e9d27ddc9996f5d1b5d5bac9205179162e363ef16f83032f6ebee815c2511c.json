@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                    SELECT IFNULL(MAX(et.order), 0) AS current_last\n                        FROM entity_link et\n                        WHERE et.parent_id = ?\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "current_last",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "char_set": 63,
+          "max_size": 11
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "40e9d27ddc9996f5d1b5d5bac9205179162e363ef16f83032f6ebee815c2511c"
+}

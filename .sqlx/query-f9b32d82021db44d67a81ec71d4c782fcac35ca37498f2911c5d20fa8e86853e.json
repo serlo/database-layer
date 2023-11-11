@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO entity (id, type_id, instance_id, license_id, date)\n                    VALUES (?, ?, ?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "f9b32d82021db44d67a81ec71d4c782fcac35ca37498f2911c5d20fa8e86853e"
+}

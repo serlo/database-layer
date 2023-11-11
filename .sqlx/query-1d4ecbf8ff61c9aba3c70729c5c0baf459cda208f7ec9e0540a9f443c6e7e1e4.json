@@ -1,0 +1,47 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT s.uuid_id, s.user_id, s.notify_mailman FROM subscription s\n                JOIN uuid on uuid.id = s.uuid_id\n                LEFT JOIN entity on entity.id = s.uuid_id\n                WHERE s.user_id = ?\n                    AND uuid.discriminator NOT IN (\"attachment\", \"blogPost\")\n                    AND (entity.type_id IS NULL OR entity.type_id IN (1,2,3,4,5,6,7,8,49,50))\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uuid_id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | MULTIPLE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 20
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | MULTIPLE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 20
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "notify_mailman",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL",
+          "char_set": 63,
+          "max_size": 1
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "1d4ecbf8ff61c9aba3c70729c5c0baf459cda208f7ec9e0540a9f443c6e7e1e4"
+}

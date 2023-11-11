@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                    UPDATE term_taxonomy_entity\n                    SET position = ?\n                    WHERE term_taxonomy_id = ?\n                        AND entity_id = ?\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "d35a02914b03d95c1205f1701e07b31ad0243d01a4bef67dac7d8b620176884b"
+}

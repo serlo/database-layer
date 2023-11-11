@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO notification_event (notification_id, event_log_id)\n                    SELECT LAST_INSERT_ID(), ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "65d605e2dbfb889b8efc8300283a96aae8696bb8f61aab612e652bc765211d30"
+}

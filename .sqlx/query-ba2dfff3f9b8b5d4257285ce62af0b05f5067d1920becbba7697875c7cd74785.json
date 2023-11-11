@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                    INSERT INTO term_taxonomy_entity (entity_id, term_taxonomy_id, position)\n                    VALUES (?, ?, ?)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "ba2dfff3f9b8b5d4257285ce62af0b05f5067d1920becbba7697875c7cd74785"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "delete from flag where reporter_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "5f0cc01572218475401132aa14ebfaabb4cd5f4643f34eec5bcd0a24afca5e12"
+}

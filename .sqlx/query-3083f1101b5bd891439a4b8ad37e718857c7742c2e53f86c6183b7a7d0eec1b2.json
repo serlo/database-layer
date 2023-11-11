@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "delete from comment_vote where user_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "3083f1101b5bd891439a4b8ad37e718857c7742c2e53f86c6183b7a7d0eec1b2"
+}

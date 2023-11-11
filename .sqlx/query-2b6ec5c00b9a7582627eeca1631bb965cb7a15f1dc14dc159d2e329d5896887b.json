@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "select child_id from entity_link where parent_id = ? order by entity_link.order",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "child_id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | MULTIPLE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 20
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2b6ec5c00b9a7582627eeca1631bb965cb7a15f1dc14dc159d2e329d5896887b"
+}

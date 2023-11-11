@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT discriminator FROM uuid WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "discriminator",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | MULTIPLE_KEY | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 180
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "544017b3c945f404442a6aacf8519449608b8b1cfacb8cf07b3495b313be09da"
+}

@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT IFNULL(MAX(tt.weight), 0) AS current_heaviest\n                    FROM term_taxonomy tt\n                    WHERE tt.parent_id = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "current_heaviest",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "char_set": 63,
+          "max_size": 11
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f4c0ed10e768ab3538997268981783d7d8348ad4e51c52db9d660be1d099a426"
+}

@@ -168,10 +168,8 @@ macro_rules! to_entity {
             }
             EntityType::GroupedExercise => {
                 let parent_id = Entity::find_parent_by_id($id, $executor).await?;
-                
-                ConcreteEntity::GroupedExercise(GroupedExercise {
-                    parent_id,
-                })
+
+                ConcreteEntity::GroupedExercise(GroupedExercise { parent_id })
             }
             _ => ConcreteEntity::Generic,
         };
@@ -497,9 +495,7 @@ impl Entity {
         let parent_id: i32;
         let instance_id: i32;
 
-        if let EntityType::CoursePage | EntityType::GroupedExercise =
-            payload.entity_type
-        {
+        if let EntityType::CoursePage | EntityType::GroupedExercise = payload.entity_type {
             parent_id = payload
                 .input
                 .parent_id
@@ -539,9 +535,7 @@ impl Entity {
         .execute(&mut *transaction)
         .await?;
 
-        if let EntityType::CoursePage | EntityType::GroupedExercise =
-            payload.entity_type
-        {
+        if let EntityType::CoursePage | EntityType::GroupedExercise = payload.entity_type {
             let last_order = sqlx::query!(
                 r#"
                     SELECT IFNULL(MAX(et.order), 0) AS current_last

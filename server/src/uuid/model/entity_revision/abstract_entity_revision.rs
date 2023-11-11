@@ -41,8 +41,6 @@ pub enum EntityRevisionType {
     ExerciseGroup,
     #[serde(rename = "GroupedExerciseRevision")]
     GroupedExercise,
-    #[serde(rename = "SolutionRevision")]
-    Solution,
     #[serde(rename = "VideoRevision")]
     Video,
 }
@@ -58,7 +56,6 @@ impl From<EntityType> for EntityRevisionType {
             EntityType::Exercise => Self::Exercise,
             EntityType::ExerciseGroup => Self::ExerciseGroup,
             EntityType::GroupedExercise => Self::GroupedExercise,
-            EntityType::Solution => Self::Solution,
             EntityType::Video => Self::Video,
         }
     }

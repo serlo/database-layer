@@ -378,9 +378,19 @@ mod entities_metadata_query {
                 "name": "Serlo Education e.V.",
               },
             },
+            {
+              "id": "https://serlo.org/15474",
+              "name": "125f3f63",
+              "type": "Person",
+              "affiliation": {
+                "id": "https://serlo.org/organization",
+                "type": "Organization",
+                "name": "Serlo Education e.V.",
+              },
+            },
           ],
           "dateCreated": "2014-03-01T21:02:56+00:00",
-          "dateModified": "2014-03-01T21:02:56+00:00",
+          "dateModified": "2014-04-03T09:17:57+00:00",
           "identifier": {
             "propertyID": "UUID",
             "type": "PropertyValue",
@@ -417,7 +427,7 @@ mod entities_metadata_query {
               "name": "Serlo Education e.V.",
             },
           ],
-          "version": { "id": "https://serlo.org/2824" },
+          "version": { "id": "https://serlo.org/22454" },
         }))
         .await;
     }

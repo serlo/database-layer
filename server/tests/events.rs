@@ -26,7 +26,7 @@ mod events_query {
 
     #[actix_rt::test]
     async fn with_after_parameter() {
-        Message::new("EventsQuery", json!({ "first": 100, "after": 80_015 }))
+        Message::new("EventsQuery", json!({ "first": 1, "after": 80_015 }))
             .execute()
             .await
             .should_be_ok_with(|result| {

@@ -7,7 +7,7 @@ mod user_activity_by_type_query {
             .execute()
             .await
             .should_be_ok_with_body(
-                json!({ "edits": 209, "reviews": 213, "comments": 62, "taxonomy": 836 }),
+                json!({ "edits": 197, "reviews": 201, "comments": 62, "taxonomy": 836 }),
             );
     }
 }

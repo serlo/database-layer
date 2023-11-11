@@ -228,7 +228,8 @@ mod create_entity_link_mutation {
     async fn fails_if_a_child_cannot_be_linked_into_a_taxonomy_term() {
         Message::new(
             "TaxonomyCreateEntityLinksMutation",
-            json! ({ "userId": 1, "entityIds": [29648], "taxonomyTermId": 1288 }),
+            // 52020 is a CoursePage
+            json! ({ "userId": 1, "entityIds": [52020], "taxonomyTermId": 1288 }),
         )
         .execute()
         .await

@@ -4,7 +4,6 @@ use convert_case::{Case, Casing};
 
 use serde::Serialize;
 
-use sqlx::Row;
 use std::collections::{HashMap, HashSet};
 
 use abstract_entity::AbstractEntity;
@@ -48,9 +47,7 @@ pub enum ConcreteEntity {
     Course(Course),
     CoursePage(CoursePage),
     ExerciseGroup(ExerciseGroup),
-    Exercise(Exercise),
     GroupedExercise(GroupedExercise),
-    Solution(Solution),
 }
 
 #[derive(Debug, Serialize)]
@@ -73,20 +70,7 @@ pub struct ExerciseGroup {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Exercise {
-    solution_id: Option<i32>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct GroupedExercise {
-    parent_id: i32,
-    solution_id: Option<i32>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Solution {
     parent_id: i32,
 }
 
@@ -182,31 +166,10 @@ macro_rules! to_entity {
 
                 ConcreteEntity::ExerciseGroup(ExerciseGroup { exercise_ids })
             }
-            EntityType::Exercise => {
-                let solution_id =
-                    Entity::find_child_by_id_and_type($id, EntityType::Solution, $executor).await?;
-
-                ConcreteEntity::Exercise(Exercise { solution_id })
-            }
             EntityType::GroupedExercise => {
                 let parent_id = Entity::find_parent_by_id($id, $executor).await?;
-                let solution_id =
-                    Entity::find_child_by_id_and_type($id, EntityType::Solution, $executor).await?;
 
-                ConcreteEntity::GroupedExercise(GroupedExercise {
-                    parent_id,
-                    solution_id,
-                })
-            }
-            EntityType::Solution => {
-                let parent_id = Entity::find_parent_by_id_and_types(
-                    $id,
-                    [EntityType::Exercise, EntityType::GroupedExercise],
-                    $executor,
-                )
-                .await?;
-
-                ConcreteEntity::Solution(Solution { parent_id })
+                ConcreteEntity::GroupedExercise(GroupedExercise { parent_id })
             }
             _ => ConcreteEntity::Generic,
         };
@@ -342,42 +305,6 @@ impl Entity {
             .map(|parent_id| *parent_id)
     }
 
-    async fn find_parent_by_id_and_types<
-        'a,
-        E: sqlx::Executor<'a, Database = sqlx::MySql>,
-        const N: usize,
-    >(
-        id: i32,
-        parent_types: [EntityType; N],
-        executor: E,
-    ) -> Result<i32, UuidError> {
-        let query = format!(
-            r#"
-                SELECT l.parent_id as id
-                    FROM entity_link l
-                    JOIN entity e on l.parent_id = e.id
-                    JOIN type t on t.id = e.type_id
-                    WHERE l.child_id = ?
-                        AND t.name in ({})
-            "#,
-            ["?"; N].join(", ")
-        );
-
-        let mut query = sqlx::query(&query);
-        query = query.bind(id);
-        for parent_type in parent_types.iter() {
-            query = query.bind(parent_type);
-        }
-
-        let parent_id: i32 = query
-            .fetch_one(executor)
-            .await
-            .and_then(|row| row.try_get(0))
-            .map_err(|_| UuidError::EntityMissingRequiredParent)?;
-
-        Ok(parent_id)
-    }
-
     async fn find_children_by_id_and_type<'a, E: sqlx::Executor<'a, Database = sqlx::MySql>>(
         id: i32,
         child_type: EntityType,
@@ -402,19 +329,6 @@ impl Entity {
             .iter()
             .map(|child| (child.id as i32, child.trashed != 0))
             .collect())
-    }
-
-    async fn find_child_by_id_and_type<'a, E: sqlx::Executor<'a, Database = sqlx::MySql>>(
-        id: i32,
-        child_type: EntityType,
-        executor: E,
-    ) -> Result<Option<i32>, UuidError> {
-        Ok(Self::find_children_by_id_and_type(id, child_type, executor)
-            .await?
-            .iter()
-            .filter(|(_id, trashed)| !trashed)
-            .map(|(id, _trashed)| *id)
-            .next())
     }
 }
 
@@ -559,28 +473,6 @@ impl Entity {
     ) -> Result<Uuid, operation::Error> {
         let mut transaction = acquire_from.begin().await?;
 
-        if payload.entity_type == EntityType::Solution
-            && sqlx::query!(
-                "SELECT uuid.id 
-                 FROM entity_link JOIN uuid ON uuid.id = entity_link.child_id
-                 WHERE uuid.trashed = 0 AND parent_id = ?",
-                payload
-                    .input
-                    .parent_id
-                    .ok_or(operation::Error::BadRequest {
-                        reason: "parent_id needs to be provided".to_string(),
-                    })?
-            )
-            .fetch_one(&mut *transaction)
-            .await
-            .ok()
-            .is_some()
-        {
-            return Err(operation::Error::BadRequest {
-                reason: "solution already exists".to_string(),
-            });
-        }
-
         sqlx::query!(
             r#"
                 INSERT INTO uuid (trashed, discriminator)
@@ -603,9 +495,7 @@ impl Entity {
         let parent_id: i32;
         let instance_id: i32;
 
-        if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
-            payload.entity_type
-        {
+        if let EntityType::CoursePage | EntityType::GroupedExercise = payload.entity_type {
             parent_id = payload
                 .input
                 .parent_id
@@ -645,9 +535,7 @@ impl Entity {
         .execute(&mut *transaction)
         .await?;
 
-        if let EntityType::CoursePage | EntityType::GroupedExercise | EntityType::Solution =
-            payload.entity_type
-        {
+        if let EntityType::CoursePage | EntityType::GroupedExercise = payload.entity_type {
             let last_order = sqlx::query!(
                 r#"
                     SELECT IFNULL(MAX(et.order), 0) AS current_last

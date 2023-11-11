@@ -42,6 +42,7 @@ test('Pacts', async () => {
         pactBrokerUrl: 'https://pact.serlo.org',
         pactBrokerUsername: process.env.PACT_BROKER_USERNAME ?? 'user',
         pactBrokerPassword: process.env.PACT_BROKER_PASSWORD ?? 'password',
+        pactUrls: [],
       }
 
   await new Verifier({

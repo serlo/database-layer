@@ -1,0 +1,36 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    MIN(e.id) as entity_id,\n                    MIN(r.id) as min_revision_id\n                FROM entity_revision r\n                JOIN uuid u_r ON r.id = u_r.id\n                JOIN entity e ON e.id = r.repository_id\n                JOIN type ON e.type_id = type.id\n                JOIN uuid u_e ON e.id = u_e.id\n                WHERE ( e.current_revision_id IS NULL OR r.id > e.current_revision_id )\n                    AND u_r.trashed = 0\n                    AND u_e.trashed = 0\n                    AND type.name NOT IN (\"input-expression-equal-match-challenge\",\n                        \"input-number-exact-match-challenge\", \"input-string-normalized-match-challenge\",\n                        \"math-puzzle\", \"multiple-choice-right-answer\", \"multiple-choice-wrong-answer\",\n                        \"single-choice-right-answer\", \"single-choice-wrong-answer\",\n                        \"text-solution\")\n                GROUP BY e.id\n                ORDER BY min_revision_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "entity_id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "BINARY",
+          "char_set": 63,
+          "max_size": 20
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "min_revision_id",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "BINARY",
+          "char_set": 63,
+          "max_size": 20
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "d9583697198814ba627c59ba24be78968d15fc8e75c9996e8ddae8dce3c11204"
+}

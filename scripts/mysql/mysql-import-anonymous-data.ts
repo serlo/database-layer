@@ -6,13 +6,17 @@ main()
 
 function main() {
   const latestDump = getLatestDump()
+  if (!latestDump) {
+    console.error('❌ Could not fetch latest dump, check your gsutil setup')
+    return
+  }
   const fileName = getFileName(latestDump)
   downloadDump(latestDump, fileName)
 
   const container = getMySQLContainer()
   if (!container) {
-    info(
-      'MySQL container not found. Please start the database first with "yarn start"!',
+    console.error(
+      '❌ MySQL container not found. Please start the database first with "yarn start"!',
     )
     return
   }
@@ -55,7 +59,7 @@ function downloadDump(dumpPath: string, fileName: string) {
 }
 
 function getMySQLContainer(): string | null {
-  const container = spawnSync('docker-compose', ['ps', '-q', 'mysql'], {
+  const container = spawnSync('docker', ['compose', 'ps', '-q', 'mysql'], {
     stdio: 'pipe',
     encoding: 'utf-8',
   })
@@ -76,9 +80,9 @@ function unzipAndCopyToContainer(fileName: string, container: string) {
 }
 
 function populateDumpInMySql() {
-  info('Start importing MySQL data')
+  console.log('🟢 Start importing MySQL data')
   execCommand(`pv ${TMP_DIR}/mysql.sql | serlo-mysql`)
-  info('Start importing anonymized user data')
+  console.log('🟢 Start importing anonymized user data')
   execSql(
     "LOAD DATA LOCAL INFILE '/tmp/user.csv' INTO TABLE user FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n' IGNORE 1 ROWS;",
   )
@@ -89,17 +93,12 @@ function execSql(command: string) {
 }
 
 function execCommand(command: string) {
-  const args = ['exec', 'mysql', 'sh', '-c', `${command}`]
+  const args = ['compose', 'exec', 'mysql', 'sh', '-c', `${command}`]
 
-  runCmd('docker-compose', args)
+  runCmd('docker', args)
 }
 
 function runCmd(cmd: string, args: string[]) {
   const opt = { stdio: [process.stdin, process.stdout, process.stderr] }
   spawnSync(cmd, args, opt)
-}
-
-function info(message: string) {
-  // eslint-disable-next-line no-console
-  console.error(`INFO: ${message}`)
 }

@@ -39,7 +39,7 @@ On Ubuntu you also need [`gcc`](https://gcc.gnu.org/) to run cargo.
 Run `yarn start` to start the database. It will be available under `mysql://root:secret@localhost:3306/serlo` and in it you will see an anonymized dump of our database from 2015. You can use the following commands together with the database:
 
 - `yarn mysql` – Start a shell for the database
-- `yarn mysql:import-anonymous-data` – Import a current and anonymized dump of the Serlo database (normally one day old)
+- `yarn mysql:import-anonymous-data` – Import a current and anonymized dump of the Serlo database (normally one day old) – This needs [`gsutil` installed](https://cloud.google.com/storage/docs/gsutil_install) and you need to auth as well
 - `yarn mysql:rollback` – Rollback to the 2015 dump of the database
 
 ## Development

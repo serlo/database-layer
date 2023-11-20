@@ -8,14 +8,11 @@ use super::{ConcreteUuid, Uuid, UuidError, UuidFetcher};
 use crate::datetime::DateTime;
 use crate::format_alias;
 use crate::instance::Instance;
-use messages::add_revision_mutation;
 
 use crate::event::{CreateEntityRevisionEventPayload, EventError, RevisionEventPayload};
 use crate::operation;
 use crate::uuid::PageRevision;
 pub use messages::*;
-
-use crate::uuid::model::page::pages_query;
 
 mod messages;
 

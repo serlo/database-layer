@@ -26,8 +26,6 @@ use crate::subscription::Subscription;
 use crate::uuid::abstract_entity_revision::EntityRevisionType;
 pub use messages::*;
 
-use crate::uuid::model::entity::messages::deleted_entities_query;
-
 mod abstract_entity;
 mod entity_type;
 mod messages;

@@ -16,7 +16,6 @@ use crate::event::{
     SetTaxonomyTermEventPayload,
 };
 use crate::instance::Instance;
-use crate::uuid::model::taxonomy_term::messages::taxonomy_term_set_name_and_description_mutation;
 use crate::uuid::Entity;
 use crate::uuid::EntityType;
 use crate::{format_alias, operation};

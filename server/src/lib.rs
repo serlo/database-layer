@@ -30,8 +30,8 @@ pub mod vocabulary;
 pub fn format_alias(prefix: Option<&str>, id: i32, suffix: Option<&str>) -> String {
     let prefix = prefix
         .map(|p| format!("/{}", slugify(p)))
-        .unwrap_or_else(|| "".to_string());
-    let suffix = suffix.map(slugify).unwrap_or_else(|| "".to_string());
+        .unwrap_or_default();
+    let suffix = suffix.map(slugify).unwrap_or_default();
     format!("{prefix}/{id}/{suffix}")
 }
 

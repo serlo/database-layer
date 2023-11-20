@@ -13,7 +13,6 @@ use crate::subscription::SubscriptionMessage;
 use crate::thread::ThreadMessage;
 use crate::user::UserMessage;
 use crate::uuid::{EntityMessage, PageMessage, TaxonomyTermMessage, UuidMessage};
-use crate::vocabulary::VocabularyMessage;
 
 /// A message responder maps the given message to a [`actix_web::HttpResponse`]
 #[async_trait]
@@ -42,5 +41,4 @@ pub enum Message {
     ThreadMessage(ThreadMessage),
     UserMessage(UserMessage),
     UuidMessage(UuidMessage),
-    VocabularyMessage(VocabularyMessage),
 }

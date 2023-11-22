@@ -8,6 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: serlo/configure-repositories/actions/setup-node@main
+      - run: yarn --check-cache
       - uses: serlo/configure-repositories/actions/setup-mysql@main
       - uses: ./.github/actions/setup-rust
       - uses: actions/cache@v3

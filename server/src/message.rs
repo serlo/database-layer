@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use crate::alias::AliasMessage;
 use crate::event::EventMessage;
 use crate::metadata::MetadataMessage;
-use crate::navigation::NavigationMessage;
 use crate::notification::NotificationMessage;
 use crate::subject::SubjectsMessage;
 use crate::subscription::SubscriptionMessage;
@@ -32,7 +31,6 @@ pub enum Message {
     EntityMessage(EntityMessage),
     EventMessage(EventMessage),
     MetadataMessage(MetadataMessage),
-    NavigationMessage(NavigationMessage),
     NotificationMessage(NotificationMessage),
     PageMessage(PageMessage),
     SubjectsMessage(SubjectsMessage),

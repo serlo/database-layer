@@ -288,14 +288,6 @@ impl User {
             })?;
 
         sqlx::query!(
-            r#"update ad set author_id = ? where author_id = ?"#,
-            deleted_user_id,
-            payload.user_id
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        sqlx::query!(
             r#"update blog_post set author_id = ? where author_id = ?"#,
             deleted_user_id,
             payload.user_id

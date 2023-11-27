@@ -388,6 +388,14 @@ const content = generateChangelog({
       date: '2023-11-08',
       added: ['Exclude unsupported entites from unrevised entities'],
     },
+    {
+      tagName: 'v0.3.74',
+      date: '2023-11-27',
+      internal: [
+        'Remove updating ad table',
+        'Do not use broker when PACT_FILE is defined',
+      ],
+    },
   ],
 })
 

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.74](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.73..v0.3.74) - November 27, 2023
+
+### Internal
+
+- Remove updating ad table
+
+- Do not use broker when PACT_FILE is defined
+
 ## [v0.3.73](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.72..v0.3.73) - November 8, 2023
 
 ### Added

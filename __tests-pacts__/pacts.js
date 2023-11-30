@@ -7,6 +7,8 @@ import { parse } from 'toml'
 import { jest } from '@jest/globals'
 import { fileURLToPath } from 'node:url'
 
+const targetBranch = 'add-pacts'
+const defaultPactFile = `https://raw.githubusercontent.com/serlo/api.serlo.org/${targetBranch}/pacts/api.serlo.org-serlo.org-database-layer.json`
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 jest.setTimeout(120 * 1000)
@@ -36,15 +38,6 @@ test('Pacts', async () => {
   }
   const stateHandlers = new Proxy({}, handler)
 
-  const pactDefinition = process.env.PACT_FILE
-    ? { pactUrls: [path.resolve(process.env.PACT_FILE)] }
-    : {
-        pactBrokerUrl: 'https://pact.serlo.org',
-        pactBrokerUsername: process.env.PACT_BROKER_USERNAME ?? 'user',
-        pactBrokerPassword: process.env.PACT_BROKER_PASSWORD ?? 'password',
-        pactUrls: [],
-      }
-
   await new Verifier({
     provider: 'serlo.org-database-layer',
     providerVersion,
@@ -55,6 +48,6 @@ test('Pacts', async () => {
     stateHandlers,
     timeout: 120 * 1000,
     customProviderHeaders: ['Rollback: true'],
-    ...pactDefinition,
+    pactUrls: [process.env.PACT_FILE ?? defaultPactFile],
   }).verifyProvider()
 })

@@ -226,10 +226,6 @@ pub mod create_thread_mutation {
                     SELECT i.id as instance_id
                         FROM uuid
                         JOIN (
-                            SELECT id, instance_id FROM attachment_container
-                            UNION ALL
-                            SELECT id, instance_id FROM blog_post
-                            UNION ALL
                             SELECT id, instance_id FROM comment
                             UNION ALL
                             SELECT id, instance_id FROM entity

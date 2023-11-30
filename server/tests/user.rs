@@ -234,13 +234,6 @@ mod user_delete_regular_users_mutation {
             json!({ "edits": 893, "reviews": 923, "comments": 154, "taxonomy": 944 }),
         );
 
-        let check_blog_post = sqlx::query!(r#"select author_id from blog_post where id = 1199"#)
-            .fetch_one(&mut *transaction)
-            .await
-            .unwrap();
-
-        assert_eq!(check_blog_post.author_id as i32, deleted_user_id);
-
         let check_comment = sqlx::query!(r#"select author_id from comment where id = 16740"#)
             .fetch_one(&mut *transaction)
             .await

@@ -7,8 +7,6 @@ use sqlx::MySql;
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Discriminator {
-    Attachment,
-    BlogPost,
     Comment,
     Entity,
     EntityRevision,

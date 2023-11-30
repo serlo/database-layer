@@ -288,23 +288,8 @@ impl User {
             })?;
 
         sqlx::query!(
-            r#"update blog_post set author_id = ? where author_id = ?"#,
-            deleted_user_id,
-            payload.user_id
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        sqlx::query!(
             r#"update comment set author_id = ? where author_id = ?"#,
             deleted_user_id,
-            payload.user_id
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        sqlx::query!(
-            r#"delete from comment_vote where user_id = ?"#,
             payload.user_id
         )
         .execute(&mut *transaction)
@@ -325,10 +310,6 @@ impl User {
         )
         .execute(&mut *transaction)
         .await?;
-
-        sqlx::query!(r#"delete from flag where reporter_id = ?"#, payload.user_id)
-            .execute(&mut *transaction)
-            .await?;
 
         sqlx::query!(
             r#"delete from notification where user_id = ?"#,

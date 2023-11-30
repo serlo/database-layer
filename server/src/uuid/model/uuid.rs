@@ -6,9 +6,8 @@ use thiserror::Error;
 
 use super::discriminator::Discriminator;
 use super::{
-    attachment::Attachment, blog_post::BlogPost, comment::Comment, entity::Entity,
-    entity_revision::EntityRevision, page::Page, page_revision::PageRevision,
-    taxonomy_term::TaxonomyTerm, user::User,
+    comment::Comment, entity::Entity, entity_revision::EntityRevision, page::Page,
+    page_revision::PageRevision, taxonomy_term::TaxonomyTerm, user::User,
 };
 use crate::event::SetUuidStateEventPayload;
 use crate::instance::Instance;
@@ -25,8 +24,6 @@ pub struct Uuid {
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
 pub enum ConcreteUuid {
-    Attachment,
-    BlogPost,
     Comment(Comment),
     Entity(Entity),
     EntityRevision(EntityRevision),
@@ -135,8 +132,6 @@ impl UuidFetcher for Uuid {
         let mut transaction = acquire_from.begin().await?;
         let discriminator = get_discriminator(id, &mut *transaction).await?;
         let uuid = match discriminator {
-            Discriminator::Attachment => Attachment::fetch(id, &mut *transaction).await?,
-            Discriminator::BlogPost => BlogPost::fetch(id, &mut *transaction).await?,
             Discriminator::Comment => Comment::fetch(id, &mut *transaction).await?,
             Discriminator::Entity => Entity::fetch(id, &mut *transaction).await?,
             Discriminator::EntityRevision => EntityRevision::fetch(id, &mut *transaction).await?,
@@ -158,8 +153,6 @@ impl Uuid {
         let mut transaction = acquire_from.begin().await?;
         let discriminator = get_discriminator(id, &mut *transaction).await?;
         let context = match discriminator {
-            Discriminator::Attachment => Attachment::get_context(),
-            Discriminator::BlogPost => BlogPost::get_context(),
             // This is done intentionally to avoid a recursive `async fn` and because this is not needed.
             Discriminator::Comment => None,
             Discriminator::Entity => Entity::fetch_canonical_subject(id, &mut *transaction)
@@ -201,10 +194,6 @@ impl Uuid {
                     SELECT u.trashed, i.subdomain, u.discriminator
                         FROM uuid u
                         JOIN (
-                        SELECT id, instance_id FROM attachment_container
-                        UNION ALL
-                        SELECT id, instance_id FROM blog_post
-                        UNION ALL
                         SELECT id, instance_id FROM comment
                         UNION ALL
                         SELECT id, instance_id FROM entity

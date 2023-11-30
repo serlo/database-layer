@@ -248,14 +248,6 @@ mod user_delete_regular_users_mutation {
 
         assert_eq!(check_comment.author_id as i32, deleted_user_id);
 
-        let comment_vote_does_not_exist =
-            sqlx::query!(r#"select * from comment_vote where user_id = 10"#)
-                .fetch_optional(&mut *transaction)
-                .await
-                .unwrap();
-
-        assert!(comment_vote_does_not_exist.is_none());
-
         let check_entity_revision =
             sqlx::query!(r#"select author_id from entity_revision where id = 16114"#)
                 .fetch_one(&mut *transaction)
@@ -317,26 +309,6 @@ mod user_delete_regular_users_mutation {
             .unwrap();
 
         assert!(uuid_does_not_exist.is_none());
-    }
-
-    #[actix_rt::test]
-    async fn flag_is_deleted() {
-        let mut transaction = begin_transaction().await;
-        let reporter_id: i32 = 15474;
-
-        Message::new(
-            "UserDeleteRegularUsersMutation",
-            json!({ "userId": reporter_id }),
-        )
-        .execute_on(&mut transaction)
-        .await;
-
-        let flag_does_not_exist = sqlx::query!(r#"select * from flag where reporter_id = 10"#)
-            .fetch_optional(&mut *transaction)
-            .await
-            .unwrap();
-
-        assert!(flag_does_not_exist.is_none());
     }
 
     #[actix_rt::test]

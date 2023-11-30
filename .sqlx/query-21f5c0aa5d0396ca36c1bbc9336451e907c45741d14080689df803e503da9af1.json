@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                    SELECT i.id as instance_id\n                        FROM uuid\n                        JOIN (\n                            SELECT id, instance_id FROM comment\n                            UNION ALL\n                            SELECT id, instance_id FROM entity\n                            UNION ALL\n                            SELECT er.id, e.instance_id FROM entity_revision er JOIN entity e ON er.repository_id = e.id\n                            UNION ALL\n                            SELECT id, instance_id FROM page_repository\n                            UNION ALL\n                            SELECT pr.id, p.instance_id FROM page_revision pr JOIN page_repository p ON pr.page_repository_id = p.id\n                            UNION ALL\n                            SELECT ta.id, t.instance_id FROM term_taxonomy ta JOIN term t ON t.id = ta.term_id\n                            UNION ALL\n                            SELECT user.id, 1 FROM user) u\n                        JOIN instance i ON i.id = u.instance_id\n                        WHERE u.id = ?\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "instance_id",
+        "type_info": {
+          "type": "Long",
+          "flags": "NOT_NULL | PRIMARY_KEY | AUTO_INCREMENT",
+          "char_set": 63,
+          "max_size": 11
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "21f5c0aa5d0396ca36c1bbc9336451e907c45741d14080689df803e503da9af1"
+}

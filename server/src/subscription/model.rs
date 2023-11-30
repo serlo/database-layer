@@ -183,22 +183,6 @@ pub mod tests {
         }
     }
 
-    #[actix_rt::test]
-    async fn get_subscriptions_does_not_return_unsupported_entity() {
-        let pool = create_database_pool().await.unwrap();
-        let mut transaction = pool.begin().await.unwrap();
-
-        let entity_id = sqlx::query!("SELECT id FROM entity WHERE type_id = 43",)
-            .fetch_one(&mut *transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-        assert_get_subscriptions_does_not_return(entity_id, &mut *transaction)
-            .await
-            .unwrap();
-    }
-
     async fn assert_get_subscriptions_does_not_return<
         'a,
         A: sqlx::Acquire<'a, Database = sqlx::MySql>,

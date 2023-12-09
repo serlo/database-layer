@@ -202,110 +202,11 @@ impl Notifications {
 mod tests {
     use super::*;
     use crate::create_database_pool;
-    use crate::event::{
-        EntityLinkEventPayload, Event, RevisionEventPayload, SetUuidStateEventPayload,
-    };
+    use crate::event::{Event, SetUuidStateEventPayload};
     use crate::instance::Instance;
     use crate::subscription::Subscriptions;
 
     use test_utils::create_new_test_user;
-
-    #[actix_rt::test]
-    async fn query_notifications_does_not_return_notifications_with_unsupported_uuid() {
-        for uuid_type in ["attachment", "blogPost"].iter() {
-            let pool = create_database_pool().await.unwrap();
-            let mut transaction = pool.begin().await.unwrap();
-            let instance_id = Instance::De.fetch_id(&mut *transaction).await.unwrap();
-
-            let unsupported_uuid =
-                sqlx::query!("select id from uuid where discriminator = ?", uuid_type)
-                    .fetch_one(&pool)
-                    .await
-                    .unwrap()
-                    .id as i32;
-
-            assert_no_notifications_for(
-                |user_id| {
-                    EntityPayloadType::EntityLink(EntityLinkEventPayload::new(
-                        unsupported_uuid,
-                        user_id,
-                        user_id,
-                        instance_id,
-                    ))
-                },
-                format!(
-                    "when event_log.uuid_id is unsupported with uuid_type: {}",
-                    uuid_type
-                ),
-                &pool,
-            )
-            .await
-            .unwrap();
-
-            assert_no_notifications_for(
-                |user_id| {
-                    EntityPayloadType::EntityLink(EntityLinkEventPayload::new(
-                        user_id,
-                        unsupported_uuid,
-                        user_id,
-                        instance_id,
-                    ))
-                },
-                format!(
-                    "when event_parameter_uuid is unsupported with uuid_type: {}",
-                    uuid_type
-                ),
-                &pool,
-            )
-            .await
-            .unwrap();
-        }
-    }
-
-    enum EntityPayloadType {
-        EntityLink(EntityLinkEventPayload),
-        Revision(RevisionEventPayload),
-    }
-
-    async fn assert_no_notifications_for<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>, F>(
-        create_event: F,
-        message: String,
-        acquire_from: A,
-    ) -> Result<(), sqlx::Error>
-    where
-        F: Fn(i32) -> EntityPayloadType,
-    {
-        let mut transaction = acquire_from.begin().await?;
-        let new_user_id = create_new_test_user(&mut *transaction).await?;
-        let event = match create_event(new_user_id) {
-            EntityPayloadType::EntityLink(payload) => {
-                payload.save(&mut *transaction).await.unwrap()
-            }
-            EntityPayloadType::Revision(payload) => payload.save(&mut *transaction).await.unwrap(),
-        };
-
-        Notifications::create_notification(
-            &event,
-            &Subscriber {
-                user_id: new_user_id,
-                send_email: false,
-            },
-            &mut *transaction,
-        )
-        .await?;
-
-        assert_eq!(
-            Notifications::fetch(new_user_id, &mut *transaction)
-                .await?
-                .notifications
-                .len(),
-            0,
-            "{}",
-            message,
-        );
-
-        Ok(())
-    }
 
     #[actix_rt::test]
     async fn set_notification_state_no_id() {

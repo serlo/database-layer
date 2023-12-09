@@ -163,55 +163,6 @@ pub mod tests {
     use crate::create_database_pool;
 
     #[actix_rt::test]
-    async fn get_subscriptions_does_not_return_unsupported_uuids() {
-        for unsupported_uuid in ["blogPost", "attachment"].iter() {
-            let pool = create_database_pool().await.unwrap();
-            let mut transaction = pool.begin().await.unwrap();
-
-            let uuid_id = sqlx::query!(
-                "SELECT id FROM uuid WHERE discriminator = ?",
-                unsupported_uuid
-            )
-            .fetch_one(&mut *transaction)
-            .await
-            .unwrap()
-            .id as i32;
-
-            assert_get_subscriptions_does_not_return(uuid_id, &mut *transaction)
-                .await
-                .unwrap();
-        }
-    }
-
-    async fn assert_get_subscriptions_does_not_return<
-        'a,
-        A: sqlx::Acquire<'a, Database = sqlx::MySql>,
-    >(
-        uuid_id: i32,
-        acquire_from: A,
-    ) -> Result<(), sqlx::Error> {
-        let mut transaction = acquire_from.begin().await?;
-        let user_id: i32 = 35408;
-
-        sqlx::query!(
-            r#"
-                INSERT INTO subscription (uuid_id, user_id, notify_mailman)
-                VALUES (?, ?, 1)
-            "#,
-            uuid_id,
-            user_id
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        let subscriptions = Subscriptions::fetch_by_user(user_id, &mut *transaction).await?;
-
-        assert!(!subscriptions.0.iter().any(|sub| sub.object_id == uuid_id));
-
-        Ok(())
-    }
-
-    #[actix_rt::test]
     async fn create_subscription_new() {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();

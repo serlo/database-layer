@@ -12,7 +12,7 @@ bench = false
 doc = false
 
 [dependencies]
-actix-web = "4.4.0"
+actix-web = "4.4.1"
 assert-json-diff = "2.0.2"
 convert_case = "~0.6.0"
 pretty_assertions = "1.4.0"

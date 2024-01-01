@@ -11,7 +11,7 @@ actix-service = "2.0.2"
 actix-web = "4.4.1"
 async-trait = "0.1.76"
 chrono = { version = "0.4.30", features = ["serde"] }
-chrono-tz = "~0.8.4"
+chrono-tz = "~0.8.5"
 convert_case = "~0.6.0"
 dotenv = "0.15.0"
 enum_dispatch = "0.3.12"

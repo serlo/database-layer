@@ -136,9 +136,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pact-foundation/pact@npm:^12.1.1":
-  version: 12.1.1
-  resolution: "@pact-foundation/pact@npm:12.1.1"
+"@pact-foundation/pact@npm:^12.1.2":
+  version: 12.1.2
+  resolution: "@pact-foundation/pact@npm:12.1.2"
   dependencies:
     "@pact-foundation/pact-core": ^14.0.1
     "@types/express": ^4.17.11
@@ -159,7 +159,7 @@ __metadata:
     pkginfo: ^0.4.1
     ramda: ^0.28.0
     randexp: ^0.5.3
-  checksum: 3ed709cab73dbbb184060f9e8772027774e96354bc66ac9415d957ada476f2783a19f7d5f319e813649e369818325d4f3a6c0b7d5b2f5309524b112383effb6f
+  checksum: 40fc473ec31b0481a68912f85bd570768cc2f89a2659586b4ac4d6356964caee9a587e22c3b3b30162623fb555fa45df37ad4f1ca9033277ea64dd71dfa92f1a
   languageName: node
   linkType: hard
 
@@ -175,7 +175,7 @@ __metadata:
   resolution: "@serlo/database-layer-actix-workspace@workspace:."
   dependencies:
     "@inyono/changelog": 0.5.2
-    "@pact-foundation/pact": ^12.1.1
+    "@pact-foundation/pact": ^12.1.2
     "@types/node": ^18.19.4
     "@types/ramda": ^0.29.9
     "@types/semver": ^7.5.6

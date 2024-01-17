@@ -18,7 +18,7 @@
     "fetch": "./scripts/fetch.sh",
     "format": "prettier --write .",
     "mysql": "docker compose exec mysql serlo-mysql",
-    "mysql:import-anonymous-data": "ts-node --experimental-specifier-resolution=node scripts/mysql/mysql-import-anonymous-data",
+    "mysql:import-anonymous-data": "./scripts/mysql/import-anonymous-data.sh",
     "mysql:rollback": "docker compose exec mysql sh -c \"pv /docker-entrypoint-initdb.d/001-init.sql | serlo-mysql\"",
     "pacts": "node scripts/pacts.js",
     "sqlx:prepare": "cargo sqlx prepare --workspace",

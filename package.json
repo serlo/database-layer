@@ -39,7 +39,7 @@
     "ajv-formats": "^2.1.1",
     "prettier": "^3.2.2",
     "prettier-plugin-packagejson": "^2.4.9",
-    "prettier-plugin-sh": "^0.13.1",
+    "prettier-plugin-sh": "^0.14.0",
     "ramda": "^0.29.1",
     "semver": "^7.5.4",
     "toml": "^3.0.0",

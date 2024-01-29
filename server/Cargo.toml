@@ -22,7 +22,7 @@ rand = "0.8.5"
 regex = "1.10.3"
 sentry = "~0.32.1"
 sentry-actix = "~0.32.1"
-serde = "1.0.195"
+serde = "1.0.196"
 serde_json = "1.0.111"
 sophia = "0.8.0"
 sqlx = { version = "~0.7.3", features = ["chrono", "json", "mysql", "runtime-tokio-native-tls"] }

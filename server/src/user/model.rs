@@ -3,8 +3,7 @@ use crate::operation;
 use crate::user::messages::{
     potential_spam_users_query, user_activity_by_type_query, user_add_role_mutation,
     user_create_mutation, user_delete_bots_mutation, user_delete_regular_users_mutation,
-    user_remove_role_mutation, user_set_description_mutation, user_set_email_mutation,
-    users_by_role_query,
+    user_remove_role_mutation, user_set_email_mutation, users_by_role_query,
 };
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
@@ -466,27 +465,6 @@ impl User {
         .into_iter()
         .map(|x| x.user_id as i32)
         .collect())
-    }
-
-    pub async fn set_description<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(
-        payload: &user_set_description_mutation::Payload,
-        acquire_from: A,
-    ) -> Result<(), operation::Error> {
-        let mut connection = acquire_from.acquire().await?;
-        if payload.description.len() >= 64 * 1024 {
-            return Err(operation::Error::BadRequest {
-                reason: "description is too long".to_string(),
-            });
-        }
-
-        sqlx::query!(
-            "update user set description = ? where id = ?",
-            payload.description,
-            payload.user_id
-        )
-        .execute(&mut *connection)
-        .await?;
-        Ok(())
     }
 
     pub async fn set_email<'a, A: sqlx::Acquire<'a, Database = sqlx::MySql>>(

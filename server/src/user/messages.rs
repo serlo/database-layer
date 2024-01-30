@@ -22,7 +22,6 @@ pub enum UserMessage {
     UserPotentialSpamUsersQuery(potential_spam_users_query::Payload),
     UserRemoveRoleMutation(user_remove_role_mutation::Payload),
     UsersByRoleQuery(users_by_role_query::Payload),
-    UserSetDescriptionMutation(user_set_description_mutation::Payload),
     UserSetEmailMutation(user_set_email_mutation::Payload),
 }
 
@@ -52,7 +51,6 @@ impl MessageResponder for UserMessage {
             UserMessage::UserPotentialSpamUsersQuery(payload) => payload.handle(acquire_from).await,
             UserMessage::UserRemoveRoleMutation(payload) => payload.handle(acquire_from).await,
             UserMessage::UsersByRoleQuery(payload) => payload.handle(acquire_from).await,
-            UserMessage::UserSetDescriptionMutation(payload) => payload.handle(acquire_from).await,
             UserMessage::UserSetEmailMutation(payload) => payload.handle(acquire_from).await,
         }
     }
@@ -349,36 +347,6 @@ pub mod users_by_role_query {
             Ok(Output {
                 users_by_role: User::users_by_role(self, acquire_from).await?,
             })
-        }
-    }
-}
-
-pub mod user_set_description_mutation {
-    use super::*;
-
-    #[derive(Debug, Deserialize, Serialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Payload {
-        pub user_id: i32,
-        pub description: String,
-    }
-
-    #[derive(Debug, Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Output {
-        pub success: bool,
-    }
-
-    #[async_trait]
-    impl Operation for Payload {
-        type Output = Output;
-
-        async fn execute<'e, A: sqlx::Acquire<'e, Database = sqlx::MySql> + std::marker::Send>(
-            &self,
-            acquire_from: A,
-        ) -> operation::Result<Self::Output> {
-            User::set_description(self, acquire_from).await?;
-            Ok(Output { success: true })
         }
     }
 }

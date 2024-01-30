@@ -17,6 +17,6 @@ assert-json-diff = "2.0.2"
 convert_case = "~0.6.0"
 pretty_assertions = "1.4.0"
 rand = "0.8.5"
-serde_json = "1.0.111"
+serde_json = "1.0.113"
 server = { path="../server" }
 sqlx = { version = "~0.7.3", features = ["chrono", "json", "mysql", "runtime-tokio-native-tls"] }

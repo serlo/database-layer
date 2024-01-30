@@ -573,45 +573,6 @@ mod user_by_role_query {
     }
 }
 
-mod user_set_description_mutation {
-    use test_utils::{assert_eq, *};
-
-    #[actix_rt::test]
-    async fn updates_user_description() {
-        let mut transaction = begin_transaction().await;
-        let user_id = create_new_test_user(&mut *transaction).await.unwrap();
-
-        Message::new(
-            "UserSetDescriptionMutation",
-            json!({ "userId": user_id, "description": "new description".to_string() }),
-        )
-        .execute_on(&mut transaction)
-        .await
-        .should_be_ok_with_body(json!({ "success": true }));
-
-        Message::new("UuidQuery", json!({ "id": user_id }))
-            .execute_on(&mut transaction)
-            .await
-            .should_be_ok_with(|result| {
-                assert_eq!(result["description"], "new description".to_string())
-            });
-    }
-
-    #[actix_rt::test]
-    async fn fails_when_description_is_longer_than_64kb() {
-        Message::new(
-            "UserSetDescriptionMutation",
-            json!({
-                "userId": 1,
-                "description": "X".repeat(64*1024)
-            }),
-        )
-        .execute()
-        .await
-        .should_be_bad_request();
-    }
-}
-
 mod user_set_email_mutation {
     use test_utils::{assert_eq, *};
 

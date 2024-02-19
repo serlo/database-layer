@@ -1,6 +1,6 @@
 import { Verifier } from '@pact-foundation/pact'
 
-const targetBranch = 'main'
+const targetBranch = 'staging'
 const defaultPactFile = `https://raw.githubusercontent.com/serlo/api.serlo.org/${targetBranch}/pacts/api.serlo.org-serlo.org-database-layer.json`
 
 await new Verifier({

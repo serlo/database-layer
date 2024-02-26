@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.75](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.74..v0.3.75) - February 16, 2024
+
+### Fixed
+
+- Exclude "Community" area from Metadata API
+
 ## [v0.3.74](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.73..v0.3.74) - November 27, 2023
 
 ### Internal

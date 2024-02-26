@@ -396,6 +396,11 @@ const content = generateChangelog({
         'Do not use broker when PACT_FILE is defined',
       ],
     },
+    {
+      tagName: 'v0.3.75',
+      date: '2024-02-16',
+      fixed: ['Exclude "Community" area from Metadata API'],
+    },
   ],
 })
 

@@ -32,7 +32,7 @@
   "devDependencies": {
     "@inyono/changelog": "0.5.2",
     "@pact-foundation/pact": "^12.2.0",
-    "@types/node": "^18.19.21",
+    "@types/node": "^18.19.22",
     "@types/ramda": "^0.29.11",
     "@types/semver": "^7.5.8",
     "ajv-cli": "^5.0.0",
@@ -44,7 +44,7 @@
     "semver": "^7.6.0",
     "toml": "^3.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.2"
   },
   "packageManager": "yarn@3.6.1",
   "engines": {

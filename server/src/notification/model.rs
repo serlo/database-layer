@@ -313,7 +313,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let event = Event::fetch(38513, &mut *transaction).await.unwrap();
+        let event = Event::fetch(86586, &mut *transaction).await.unwrap();
 
         // Verify assumption that the event has no subscribers.
         let subscriptions =
@@ -378,7 +378,7 @@ mod tests {
         let pool = create_database_pool().await.unwrap();
         let mut transaction = pool.begin().await.unwrap();
 
-        let event = Event::fetch(37373, &mut *transaction).await.unwrap();
+        let event = Event::fetch(86125, &mut *transaction).await.unwrap();
 
         // Verify the assumption that the event has no direct subscriber.
         let subscriptions =

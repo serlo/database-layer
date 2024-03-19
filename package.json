@@ -32,7 +32,7 @@
   "devDependencies": {
     "@inyono/changelog": "0.5.2",
     "@pact-foundation/pact": "^12.3.0",
-    "@types/node": "^18.19.24",
+    "@types/node": "^18.19.25",
     "@types/ramda": "^0.29.11",
     "@types/semver": "^7.5.8",
     "ajv-cli": "^5.0.0",

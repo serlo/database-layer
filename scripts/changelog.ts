@@ -401,6 +401,11 @@ const content = generateChangelog({
       date: '2024-02-16',
       fixed: ['Exclude "Community" area from Metadata API'],
     },
+    {
+      tagName: 'v0.3.76',
+      date: '2024-03-20',
+      added: ['Exclude "GroupedExercises" from EntityUnrevisedRevisionsQuery'],
+    },
   ],
 })
 

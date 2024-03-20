@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.76](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.75..v0.3.76) - March 20, 2024
+
+### Added
+
+- Exclude "GroupedExercises" from EntityUnrevisedRevisionsQuery
+
 ## [v0.3.75](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.74..v0.3.75) - February 16, 2024
 
 ### Fixed

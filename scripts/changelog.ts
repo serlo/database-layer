@@ -406,6 +406,11 @@ const content = generateChangelog({
       date: '2024-03-20',
       added: ['Exclude "GroupedExercises" from EntityUnrevisedRevisionsQuery'],
     },
+    {
+      tagName: 'v0.3.77',
+      date: '2024-03-22',
+      fixed: ['do not return GroupedExercises in SubscriptionQuery'],
+    },
   ],
 })
 

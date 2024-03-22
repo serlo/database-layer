@@ -778,7 +778,7 @@ impl Entity {
                         "input-number-exact-match-challenge", "input-string-normalized-match-challenge",
                         "math-puzzle", "multiple-choice-right-answer", "multiple-choice-wrong-answer",
                         "single-choice-right-answer", "single-choice-wrong-answer",
-                        "text-solution", "grouped-text-exercise")
+                        "text-solution", "grouped-text-exercise", "course-page")
                 GROUP BY e.id
                 ORDER BY min_revision_id
             "#,

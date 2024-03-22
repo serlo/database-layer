@@ -23,9 +23,12 @@ impl Subscriptions {
                 SELECT s.uuid_id, s.user_id, s.notify_mailman FROM subscription s
                 JOIN uuid on uuid.id = s.uuid_id
                 LEFT JOIN entity on entity.id = s.uuid_id
+                LEFT JOIN type on entity.type_id = type.id
                 WHERE s.user_id = ?
                     AND uuid.discriminator NOT IN ("attachment", "blogPost")
-                    AND (entity.type_id IS NULL OR entity.type_id IN (1,2,3,4,5,6,7,8,49,50))
+                    AND (type.name IS NULL
+                        OR type.name IN ("text-exercise", "article", "text-exercise-group",
+                                         "video", "course", "course-page", "applet", "event"))
             "#,
             user_id
         )

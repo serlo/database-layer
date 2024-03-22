@@ -522,7 +522,7 @@ impl TaxonomyTerm {
                 })?;
 
             match entity_type {
-                EntityType::CoursePage | EntityType::GroupedExercise => {
+                EntityType::CoursePage => {
                     return Err(operation::Error::BadRequest {
                         reason: format!(
                             "entity with id {child_id} cannot be linked to a taxonomy term"

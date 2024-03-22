@@ -44,8 +44,6 @@ pub enum ConcreteEntity {
     Generic,
     Course(Course),
     CoursePage(CoursePage),
-    ExerciseGroup(ExerciseGroup),
-    GroupedExercise(GroupedExercise),
 }
 
 #[derive(Debug, Serialize)]
@@ -57,18 +55,6 @@ pub struct Course {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CoursePage {
-    parent_id: i32,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ExerciseGroup {
-    exercise_ids: Vec<i32>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GroupedExercise {
     parent_id: i32,
 }
 
@@ -150,24 +136,6 @@ macro_rules! to_entity {
                 let parent_id = Entity::find_parent_by_id($id, $executor).await?;
 
                 ConcreteEntity::CoursePage(CoursePage { parent_id })
-            }
-            EntityType::ExerciseGroup => {
-                let exercise_ids = Entity::find_children_by_id_and_type(
-                    $id,
-                    EntityType::GroupedExercise,
-                    $executor,
-                )
-                .await?
-                .into_iter()
-                .map(|(id, _)| id)
-                .collect();
-
-                ConcreteEntity::ExerciseGroup(ExerciseGroup { exercise_ids })
-            }
-            EntityType::GroupedExercise => {
-                let parent_id = Entity::find_parent_by_id($id, $executor).await?;
-
-                ConcreteEntity::GroupedExercise(GroupedExercise { parent_id })
             }
             _ => ConcreteEntity::Generic,
         };
@@ -493,7 +461,7 @@ impl Entity {
         let parent_id: i32;
         let instance_id: i32;
 
-        if let EntityType::CoursePage | EntityType::GroupedExercise = payload.entity_type {
+        if let EntityType::CoursePage = payload.entity_type {
             parent_id = payload
                 .input
                 .parent_id
@@ -533,7 +501,7 @@ impl Entity {
         .execute(&mut *transaction)
         .await?;
 
-        if let EntityType::CoursePage | EntityType::GroupedExercise = payload.entity_type {
+        if let EntityType::CoursePage = payload.entity_type {
             let last_order = sqlx::query!(
                 r#"
                     SELECT IFNULL(MAX(et.order), 0) AS current_last

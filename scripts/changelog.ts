@@ -411,6 +411,11 @@ const content = generateChangelog({
       date: '2024-03-22',
       fixed: ['do not return GroupedExercises in SubscriptionQuery'],
     },
+    {
+      tagName: 'v0.3.78',
+      date: '2024-03-23',
+      changed: ['Remove support for grouped exercises'],
+    },
   ],
 })
 

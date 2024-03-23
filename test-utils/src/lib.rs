@@ -280,7 +280,7 @@ impl EntityTestWrapper<'static> {
         fields
     }
 
-    pub fn all() -> [Self; 9] {
+    pub fn all() -> [Self; 8] {
         [
             EntityTestWrapper {
                 revision_type: EntityRevisionType::Applet,
@@ -352,15 +352,6 @@ impl EntityTestWrapper<'static> {
                     // ("cohesive", true),
                 ])),
                 taxonomy_term_id: Some(7),
-            },
-            EntityTestWrapper {
-                revision_type: EntityRevisionType::GroupedExercise,
-                typename: EntityType::GroupedExercise,
-                entity_id: 2219,
-                parent_id: Some(2217),
-                own_field_keys: vec!["content"],
-                query_fields: None,
-                taxonomy_term_id: None,
             },
             EntityTestWrapper {
                 revision_type: EntityRevisionType::Video,

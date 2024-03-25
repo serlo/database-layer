@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@inyono/changelog": "0.5.2",
-    "@pact-foundation/pact": "^12.3.0",
+    "@pact-foundation/pact": "^12.4.0",
     "@types/node": "^18.19.26",
     "@types/ramda": "^0.29.11",
     "@types/semver": "^7.5.8",

@@ -79,9 +79,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pact-foundation/pact-core@npm:^14.3.0":
-  version: 14.3.2
-  resolution: "@pact-foundation/pact-core@npm:14.3.2"
+"@pact-foundation/pact-core@npm:^14.3.3":
+  version: 14.3.3
+  resolution: "@pact-foundation/pact-core@npm:14.3.3"
   dependencies:
     chalk: 4.1.2
     check-types: 7.3.0
@@ -103,16 +103,16 @@ __metadata:
     pact-provider-verifier: bin/pact-provider-verifier.js
     pact-stub-service: bin/pact-stub-service.js
     pactflow: bin/pactflow.js
-  checksum: 51fcbb1979271424b7d684b9bf6a70e62f5a5a56ad964e55b78c73c1d3078d0c34bfd96eccd322f2e1b87069f67f13cf92cbc9e54946eefd2f8e596dff95f7c9
+  checksum: b27ad178c67f9ea81695fa4c8d99d44b84c44fe8e16e64f13b17aa1ed07a4975159c5270b6a0ab29b4e7001c3b4e943ad6b9135edbb3e6c62c675d50b79b606f
   conditions: (os=darwin | os=linux | os=win32) & (cpu=x64 | cpu=ia32 | cpu=arm64)
   languageName: node
   linkType: hard
 
-"@pact-foundation/pact@npm:^12.3.0":
-  version: 12.3.0
-  resolution: "@pact-foundation/pact@npm:12.3.0"
+"@pact-foundation/pact@npm:^12.4.0":
+  version: 12.4.0
+  resolution: "@pact-foundation/pact@npm:12.4.0"
   dependencies:
-    "@pact-foundation/pact-core": ^14.3.0
+    "@pact-foundation/pact-core": ^14.3.3
     "@types/express": ^4.17.11
     axios: ^1.6.1
     body-parser: ^1.20.0
@@ -121,6 +121,7 @@ __metadata:
     graphql: ^14.0.0
     graphql-tag: ^2.9.1
     http-proxy: ^1.18.1
+    https-proxy-agent: ^7.0.4
     js-base64: ^3.6.1
     lodash: ^4.17.21
     lodash.isfunction: 3.0.8
@@ -130,7 +131,7 @@ __metadata:
     pkginfo: ^0.4.1
     ramda: ^0.28.0
     randexp: ^0.5.3
-  checksum: 31ece57f9135510530ce91e55a284b8044cfd205d86748a3099eac5a6ae9872ba9b5972360d470478d1c6a2a801155de0701bde09bb89741a7448fe2b9e9bf42
+  checksum: 618a0bbd3aebec6d6a8e73eedf3a8324604eed70db94a74e1268096a679d36a55663cbd431dbd2522b265282e6cba32529ae4a75c289d0094370071d94d3726f
   languageName: node
   linkType: hard
 
@@ -146,7 +147,7 @@ __metadata:
   resolution: "@serlo/database-layer-actix-workspace@workspace:."
   dependencies:
     "@inyono/changelog": 0.5.2
-    "@pact-foundation/pact": ^12.3.0
+    "@pact-foundation/pact": ^12.4.0
     "@types/node": ^18.19.26
     "@types/ramda": ^0.29.11
     "@types/semver": ^7.5.8
@@ -353,6 +354,15 @@ __metadata:
   bin:
     acorn: bin/acorn
   checksum: e0f79409d68923fbf1aa6d4166f3eedc47955320d25c89a20cc822e6ba7c48c5963d5bc657bc242d68f7a4ac9faf96eef033e8f73656da6c640d4219935fdfd0
+  languageName: node
+  linkType: hard
+
+"agent-base@npm:^7.0.2":
+  version: 7.1.0
+  resolution: "agent-base@npm:7.1.0"
+  dependencies:
+    debug: ^4.3.4
+  checksum: f7828f991470a0cc22cb579c86a18cbae83d8a3cbed39992ab34fc7217c4d126017f1c74d0ab66be87f71455318a8ea3e757d6a37881b8d0f2a2c6aa55e5418f
   languageName: node
   linkType: hard
 
@@ -704,6 +714,18 @@ __metadata:
   dependencies:
     ms: 2.0.0
   checksum: d2f51589ca66df60bf36e1fa6e4386b318c3f1e06772280eea5b1ae9fd3d05e9c2b7fd8a7d862457d00853c75b00451aa2d7459b924629ee385287a650f58fe6
+  languageName: node
+  linkType: hard
+
+"debug@npm:4, debug@npm:^4.3.4":
+  version: 4.3.4
+  resolution: "debug@npm:4.3.4"
+  dependencies:
+    ms: 2.1.2
+  peerDependenciesMeta:
+    supports-color:
+      optional: true
+  checksum: 3dbad3f94ea64f34431a9cbf0bafb61853eda57bff2880036153438f50fb5a84f27683ba0d8e5426bf41a8c6ff03879488120cf5b3a761e77953169c0600a708
   languageName: node
   linkType: hard
 
@@ -1273,6 +1295,16 @@ __metadata:
     follow-redirects: ^1.0.0
     requires-port: ^1.0.0
   checksum: f5bd96bf83e0b1e4226633dbb51f8b056c3e6321917df402deacec31dd7fe433914fc7a2c1831cf7ae21e69c90b3a669b8f434723e9e8b71fd68afe30737b6a5
+  languageName: node
+  linkType: hard
+
+"https-proxy-agent@npm:^7.0.4":
+  version: 7.0.4
+  resolution: "https-proxy-agent@npm:7.0.4"
+  dependencies:
+    agent-base: ^7.0.2
+    debug: 4
+  checksum: daaab857a967a2519ddc724f91edbbd388d766ff141b9025b629f92b9408fc83cee8a27e11a907aede392938e9c398e240d643e178408a59e4073539cde8cfe9
   languageName: node
   linkType: hard
 

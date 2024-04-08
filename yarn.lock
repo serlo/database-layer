@@ -148,7 +148,7 @@ __metadata:
   dependencies:
     "@inyono/changelog": 0.5.2
     "@pact-foundation/pact": ^12.4.0
-    "@types/node": ^18.19.28
+    "@types/node": ^18.19.30
     "@types/ramda": ^0.29.12
     "@types/semver": ^7.5.8
     ajv-cli: ^5.0.0
@@ -275,12 +275,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^18.19.28":
-  version: 18.19.28
-  resolution: "@types/node@npm:18.19.28"
+"@types/node@npm:^18.19.30":
+  version: 18.19.30
+  resolution: "@types/node@npm:18.19.30"
   dependencies:
     undici-types: ~5.26.4
-  checksum: b74f2b46c7732ed9eccd70548522700474384fc8bf4fafa0373c25483a4930a7e7ebdba7f481b339483857a673e1f89f5cb0ecfc2a36551993cdf1846fe26dc7
+  checksum: b3daafa3fe23312f493fc2548c5e03801e1e4a5657af1f327ffae76087b64b926b84daf839297348a7e3c90aced10e3d66126270ad8081d32c979418d93c7828
   languageName: node
   linkType: hard
 

@@ -97,7 +97,7 @@ __metadata:
     ajv-cli: ^5.0.0
     ajv-formats: ^3.0.1
     prettier: ^3.2.5
-    prettier-plugin-packagejson: ^2.4.14
+    prettier-plugin-packagejson: ^2.5.0
     prettier-plugin-sh: ^0.14.0
     ramda: ^0.29.1
     semver: ^7.6.0
@@ -1017,9 +1017,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier-plugin-packagejson@npm:^2.4.14":
-  version: 2.4.14
-  resolution: "prettier-plugin-packagejson@npm:2.4.14"
+"prettier-plugin-packagejson@npm:^2.5.0":
+  version: 2.5.0
+  resolution: "prettier-plugin-packagejson@npm:2.5.0"
   dependencies:
     sort-package-json: 2.10.0
     synckit: 0.9.0
@@ -1028,7 +1028,7 @@ __metadata:
   peerDependenciesMeta:
     prettier:
       optional: true
-  checksum: 9e53ca048577f524dd4bca7b65738cb7add3eb0c04ace761084b327ae21e7aae8877cf4d9e73c25e97bc0f8438368ba4690947f2ac5d48977f2ab9d5b3fe8e9a
+  checksum: 0b05b02e96173abc1220d11a5ae6fbdefd45823ad86e5aba70bd52377f555db82fbe41c67bdfb186fa3f4c2ef5d12d4803b7215cb301533829a8389b411bb99a
   languageName: node
   linkType: hard
 

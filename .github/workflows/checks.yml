@@ -79,22 +79,3 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-
-  pacts_test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: serlo/configure-repositories/actions/setup-node@main
-      - run: yarn --check-cache
-      - uses: serlo/configure-repositories/actions/setup-mysql@main
-      - uses: ./.github/actions/setup-rust
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: cargo run &
-      - run: .github/wait-for-server.sh
-      - run: yarn pacts

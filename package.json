@@ -20,7 +20,6 @@
     "mysql": "docker compose exec mysql serlo-mysql",
     "mysql:import-anonymous-data": "./scripts/mysql/import-anonymous-data.sh",
     "mysql:rollback": "docker compose exec mysql sh -c \"pv /docker-entrypoint-initdb.d/001-init.sql | serlo-mysql\"",
-    "pacts": "node scripts/pacts.js",
     "sqlx:prepare": "cargo sqlx prepare --workspace",
     "start": "docker compose up --detach",
     "test": "cargo test",
@@ -31,7 +30,6 @@
   },
   "devDependencies": {
     "@inyono/changelog": "0.5.2",
-    "@pact-foundation/pact": "^12.4.0",
     "@types/node": "^18.19.30",
     "@types/ramda": "^0.29.12",
     "@types/semver": "^7.5.8",

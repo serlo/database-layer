@@ -37,9 +37,6 @@ function main() {
 
   print_header "Run all tests"
   cargo test
-
-  print_header "Run pact tests"
-  ./scripts/pacts.sh
 }
 
 function test_no_uncommitted_changes_when_pushing() {

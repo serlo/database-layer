@@ -31,7 +31,7 @@
   "devDependencies": {
     "@inyono/changelog": "0.5.2",
     "@types/node": "^18.19.31",
-    "@types/ramda": "^0.29.12",
+    "@types/ramda": "^0.30.0",
     "@types/semver": "^7.5.8",
     "ajv-cli": "^5.0.0",
     "ajv-formats": "^3.0.1",

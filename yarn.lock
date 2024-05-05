@@ -92,7 +92,7 @@ __metadata:
   dependencies:
     "@inyono/changelog": 0.5.2
     "@types/node": ^18.19.31
-    "@types/ramda": ^0.29.12
+    "@types/ramda": ^0.30.0
     "@types/semver": ^7.5.8
     ajv-cli: ^5.0.0
     ajv-formats: ^3.0.1
@@ -169,12 +169,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/ramda@npm:^0.29.12":
-  version: 0.29.12
-  resolution: "@types/ramda@npm:0.29.12"
+"@types/ramda@npm:^0.30.0":
+  version: 0.30.0
+  resolution: "@types/ramda@npm:0.30.0"
   dependencies:
-    types-ramda: ^0.29.10
-  checksum: 2a57806fcadb1e70095824da2ba94de08be1d03eba0bf1844bc23cdf3c86085eda182cb152afd41c52656c78d17f96b018cc6ac467a348d4b4e1f6eac602b475
+    types-ramda: ^0.30.0
+  checksum: abe9d9c872778d2598298a0c4805fa715618fe79a4d7e203c71076bc72e28c97f04ffb108274cbfc33b0407a5aa3c2c37f609705a175d4102418e292e4e55a22
   languageName: node
   linkType: hard
 
@@ -1281,12 +1281,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"types-ramda@npm:^0.29.10":
-  version: 0.29.10
-  resolution: "types-ramda@npm:0.29.10"
+"types-ramda@npm:^0.30.0":
+  version: 0.30.0
+  resolution: "types-ramda@npm:0.30.0"
   dependencies:
     ts-toolbelt: ^9.6.0
-  checksum: 9308ad9ed0b53a3d108e605b59452249e0dac529972ec35d2ff9e90cb325e0960406e16e1712aa781bd1293dea49469420aeafcc30f0e72d46182287450665fc
+  checksum: 595be8f6ad2186b2838ee96bec73b601818382083866456cbabb59e8cec225e807cda9387843cbdc26a80d59040084f56d47edbcd59753f80da576dcc1faa476
   languageName: node
   linkType: hard
 

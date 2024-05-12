@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.79](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.78..v0.3.79) - May 12, 2024
+
+### Fixed
+
+- Courses shall return content
+
 ## [v0.3.78](https://github.com/serlo/serlo.org-database-layer/compare/v0.3.77..v0.3.78) - March 23, 2024
 
 ### Changed

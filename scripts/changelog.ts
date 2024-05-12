@@ -416,6 +416,11 @@ const content = generateChangelog({
       date: '2024-03-23',
       changed: ['Remove support for grouped exercises'],
     },
+    {
+      tagName: 'v0.3.79',
+      date: '2024-05-12',
+      fixed: ['Courses shall return content'],
+    },
   ],
 })
 

@@ -120,9 +120,6 @@ macro_rules! to_entity_revisions {
             EntityRevisionType::ExerciseGroup => {
                 ConcreteEntityRevision::ExerciseGroupRevision(abstract_entity_revision_ref.into())
             }
-            EntityRevisionType::GroupedExercise => {
-                ConcreteEntityRevision::Generic(abstract_entity_revision_ref.into())
-            }
             EntityRevisionType::Video => {
                 ConcreteEntityRevision::Video(abstract_entity_revision_ref.into())
             }

@@ -1,6 +1,6 @@
 [package]
 name = "server"
-version = "0.3.77"
+version = "0.3.79"
 authors = ["Serlo Education e.V."]
 license = "Apache-2.0"
 edition = "2021"
@@ -8,29 +8,29 @@ edition = "2021"
 [dependencies]
 actix-rt = "2.8.0"
 actix-service = "2.0.2"
-actix-web = "4.5.1"
-async-trait = "0.1.77"
-chrono = { version = "0.4.34", features = ["serde"] }
-chrono-tz = "~0.8.6"
+actix-web = "4.6.0"
+async-trait = "0.1.80"
+chrono = { version = "0.4.38", features = ["serde"] }
+chrono-tz = "~0.9.0"
 convert_case = "~0.6.0"
 dotenv = "0.15.0"
-enum_dispatch = "0.3.12"
+enum_dispatch = "0.3.13"
 futures = "0.3.30"
-itertools = "~0.12.1"
+itertools = "~0.13.0"
 md5 = "0.7.0"
 rand = "0.8.5"
 regex = "1.10.3"
 sentry = "~0.32.2"
 sentry-actix = "~0.32.2"
-serde = "1.0.196"
-serde_json = "1.0.113"
+serde = "1.0.202"
+serde_json = "1.0.115"
 sophia = "0.8.0"
 sqlx = { version = "~0.7.3", features = ["chrono", "json", "mysql", "runtime-tokio-native-tls"] }
-thiserror = "1.0.57"
+thiserror = "1.0.61"
 
 [dev-dependencies]
 criterion = { version = "~0.5.1", features = ["html_reports", "async"] }
-rstest = "~0.18.2"
+rstest = "~0.19.0"
 test-utils = { path="../test-utils" }
 
 [[bench]]

@@ -99,7 +99,7 @@ __metadata:
     prettier: ^3.2.5
     prettier-plugin-packagejson: ^2.5.0
     prettier-plugin-sh: ^0.14.0
-    ramda: ^0.30.0
+    ramda: ^0.30.1
     semver: ^7.6.2
     toml: ^3.0.0
     ts-node: ^10.9.2
@@ -1067,10 +1067,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ramda@npm:^0.30.0":
-  version: 0.30.0
-  resolution: "ramda@npm:0.30.0"
-  checksum: a2b0bfc3d505193a759e5d3a25f617fbfb0dfa4d30ee6917d1975142dbcc1bc92e8465467cc3ccf9260e4d2011aba639db7a915eb376ca485191aff51bad03d8
+"ramda@npm:^0.30.1":
+  version: 0.30.1
+  resolution: "ramda@npm:0.30.1"
+  checksum: ce6f4b6b967a84a4e65c01ab1b1cdd73d46b8efe71aeccf5d1443c56c4e31a0ea82ece7df6510453dd3d83b92cabf8a6b4d50d189a1b35c08a6f44b281bebf79
   languageName: node
   linkType: hard
 

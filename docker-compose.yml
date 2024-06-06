@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   mysql:
     image: eu.gcr.io/serlo-shared/serlo-mysql-database:latest

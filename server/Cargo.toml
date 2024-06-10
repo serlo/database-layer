@@ -6,7 +6,7 @@ license = "Apache-2.0"
 edition = "2021"
 
 [dependencies]
-actix-rt = "2.8.0"
+actix-rt = "2.10.0"
 actix-service = "2.0.2"
 actix-web = "4.6.0"
 async-trait = "0.1.80"

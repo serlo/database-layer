@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT s.uuid_id, s.user_id, s.notify_mailman FROM subscription s\n                JOIN uuid on uuid.id = s.uuid_id\n                LEFT JOIN entity on entity.id = s.uuid_id\n                LEFT JOIN type on entity.type_id = type.id\n                WHERE s.user_id = ?\n                    AND uuid.discriminator NOT IN (\"attachment\", \"blogPost\")\n                    AND (type.name IS NULL\n                        OR type.name IN (\"text-exercise\", \"article\", \"text-exercise-group\",\n                                         \"video\", \"course\", \"course-page\", \"applet\", \"event\"))\n            ",
+  "query": "\n                SELECT s.uuid_id, s.user_id, s.notify_mailman FROM subscription s\n                JOIN uuid on uuid.id = s.uuid_id\n                LEFT JOIN entity on entity.id = s.uuid_id\n                LEFT JOIN type on entity.type_id = type.id\n                WHERE s.user_id = ?\n                    AND uuid.discriminator NOT IN (\"attachment\", \"blogPost\")\n                    AND (type.name IS NULL\n                        OR type.name IN (\"text-exercise\", \"article\", \"text-exercise-group\",\n                                         \"video\", \"course\", \"applet\", \"event\"))\n            ",
   "describe": {
     "columns": [
       {
@@ -43,5 +43,5 @@
       false
     ]
   },
-  "hash": "0eeb0ce674433e953c3c6960cda24b7acc424b9e7552588556694f30a0d57a9e"
+  "hash": "18f96cb5e1963dc7b94c2aeff658400d04d2b8c5d65aa529041cb4f715f6bef3"
 }

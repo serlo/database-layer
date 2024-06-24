@@ -91,7 +91,7 @@ __metadata:
   resolution: "@serlo/database-layer-actix-workspace@workspace:."
   dependencies:
     "@inyono/changelog": 0.5.2
-    "@types/node": ^18.19.35
+    "@types/node": ^18.19.39
     "@types/ramda": ^0.30.0
     "@types/semver": ^7.5.8
     ajv-cli: ^5.0.0
@@ -160,12 +160,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^18.19.35":
-  version: 18.19.35
-  resolution: "@types/node@npm:18.19.35"
+"@types/node@npm:^18.19.39":
+  version: 18.19.39
+  resolution: "@types/node@npm:18.19.39"
   dependencies:
     undici-types: ~5.26.4
-  checksum: 219a3143d43e520202dcdde0c8b10a0741fb1b4e2a656471a511c10d68ba9bdedfb065681a79c17b0f696fb547d2fce1df1e408ea4226041488a938b401fb1fd
+  checksum: d1de755983127b405458c427ae2cf77c89d120a617ca70999086a75fb0b6c6dbc1bdddfe1a8a7374c9ae55ed0589a2bd023ffb3b09ee25440c013afc6502dfe6
   languageName: node
   linkType: hard
 

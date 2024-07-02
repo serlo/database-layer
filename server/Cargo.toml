@@ -23,7 +23,7 @@ regex = "1.10.5"
 sentry = "~0.34.0"
 sentry-actix = "~0.34.0"
 serde = "1.0.203"
-serde_json = "1.0.115"
+serde_json = "1.0.120"
 sophia = "0.8.0"
 sqlx = { version = "~0.7.3", features = ["chrono", "json", "mysql", "runtime-tokio-native-tls"] }
 thiserror = "1.0.61"

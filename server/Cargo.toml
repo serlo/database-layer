@@ -9,7 +9,7 @@ edition = "2021"
 actix-rt = "2.10.0"
 actix-service = "2.0.2"
 actix-web = "4.8.0"
-async-trait = "0.1.80"
+async-trait = "0.1.81"
 chrono = { version = "0.4.38", features = ["serde"] }
 chrono-tz = "~0.9.0"
 convert_case = "~0.6.0"

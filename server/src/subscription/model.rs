@@ -28,7 +28,7 @@ impl Subscriptions {
                     AND uuid.discriminator NOT IN ("attachment", "blogPost")
                     AND (type.name IS NULL
                         OR type.name IN ("text-exercise", "article", "text-exercise-group",
-                                         "video", "course", "course-page", "applet", "event"))
+                                         "video", "course", "applet", "event"))
             "#,
             user_id
         )

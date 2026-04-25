@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-rust
       - run: echo "SQLX_OFFLINE=true" >> $GITHUB_ENV
       - uses: actions/cache@v4
@@ -27,7 +27,7 @@ jobs:
   clippy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-rust
       - uses: actions/cache@v4
         with:
@@ -45,7 +45,7 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-rust
       - uses: actions/cache@v4
         with:
@@ -63,7 +63,7 @@ jobs:
     name: Check compatibility of metadata API with AMB
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: docker compose up -d
       - uses: ./.github/actions/setup-rust
       - run: cargo build
@@ -73,7 +73,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: serlo/configure-repositories/actions/setup-mysql@main
       - uses: ./.github/actions/setup-rust
       - uses: actions-rs/cargo@v1

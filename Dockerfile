@@ -8,7 +8,7 @@ COPY Cargo.toml .
 COPY .sqlx .sqlx
 RUN RUSTFLAGS='-C target-feature=-crt-static' cargo build --release
 
-FROM alpine:3.20
+FROM alpine:3.23
 WORKDIR /usr/src/app
 RUN apk update && apk add --no-cache openssl openssl-dev libgcc
 COPY --from=build /usr/src/app/target/release/server .
